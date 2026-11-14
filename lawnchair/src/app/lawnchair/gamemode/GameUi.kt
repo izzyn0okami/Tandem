@@ -1,5 +1,6 @@
 package app.lawnchair.gamemode
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -12,16 +13,21 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 /** Paleta do modo jogos (estilo SteamOS): fundo azul-escuro, destaque azul. */
 object GameColors {
@@ -96,18 +102,15 @@ fun GameButton(
     }
 }
 
-/** Capa de jogo: por enquanto um bloco colorido com o nome; capas reais chegam com o RomM. */
+/** Capa de jogo: a do RomM quando existe (aparece assim que baixa) ou uma capa gerada com o console e o título. */
 @Composable
 fun CoverTile(game: LocalGame, modifier: Modifier = Modifier) {
-    val palette = listOf(0xFF223244, 0xFF2A2640, 0xFF1F3A35, 0xFF3A2A2A, 0xFF2B3340)
-    val color = Color(palette[game.platform.sortOrder % palette.size])
-    Box(modifier = modifier.background(color), contentAlignment = Alignment.BottomStart) {
-        Text(
-            text = game.title,
-            color = GameColors.text,
-            fontSize = 13.sp,
-            maxLines = 3,
-            modifier = Modifier.padding(10.dp),
-        )
+    val context = LocalContext.current
+    val art by produceState<ImageBitmap?>(null, game.path, RomMCache.lastRefreshMs) {
+        value = withContext(Dispatchers.IO) { GameArt.quick(context, game) }
+        withContext(Dispatchers.IO) { GameArt.fetchCover(context, game) }?.let { value = it }
+    }
+    Box(modifier = modifier.background(GameColors.surfaceHigh)) {
+        art?.let { Image(bitmap = it, contentDescription = game.title, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize()) }
     }
 }

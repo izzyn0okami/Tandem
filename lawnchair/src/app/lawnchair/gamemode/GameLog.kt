@@ -45,6 +45,12 @@ object GameLog {
         log(tag, "$message: ${error.javaClass.simpleName}: ${error.message}")
     }
 
+    private fun installedCores(context: Context): String = CoreInstaller.coresDir(context)
+        .listFiles { file -> file.name.endsWith("_libretro_android.so") }
+        .orEmpty()
+        .joinToString { it.name.removeSuffix("_libretro_android.so") }
+        .ifEmpty { "nenhum" }
+
     /** Texto completo para exportar: cabeçalho do aparelho + registro. */
     @Synchronized
     fun export(context: Context): String {
@@ -54,6 +60,8 @@ object GameLog {
             appendLine("Aparelho: ${Build.MANUFACTURER} ${Build.MODEL}, Android ${Build.VERSION.RELEASE} (API ${Build.VERSION.SDK_INT})")
             appendLine("Servidor RomM: ${RomMSettings.url(context) ?: "não conectado"}")
             appendLine("Rede local permitida: ${localNetworkGranted(context)}")
+            appendLine("Núcleos instalados: ${installedCores(context)}")
+            appendLine("Espaço livre: ${context.filesDir.usableSpace / (1024 * 1024)} MB")
             appendLine("----")
         }
         return header + (runCatching { file.readText() }.getOrDefault("(registro vazio)\n"))

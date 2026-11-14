@@ -19,6 +19,9 @@ object RomMCache {
 
     private fun file(context: Context) = File(context.filesDir, FILE)
 
+    /** Muda sempre que a lista guardada muda. */
+    fun stamp(context: Context): Long = file(context).lastModified()
+
     fun load(context: Context, url: String): List<RemoteGame>? = runCatching<List<RemoteGame>?> {
         val root = JSONObject(file(context).readText())
         if (root.optString("url") != url) return@runCatching null

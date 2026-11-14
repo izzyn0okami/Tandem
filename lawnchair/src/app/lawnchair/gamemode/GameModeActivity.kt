@@ -62,6 +62,7 @@ class GameModeActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         GameLog.init(applicationContext)
+        Thread { SessionDiagnostics.reportPreviousCrashes(applicationContext) }.start()
         // Activity só possui Context válido depois que o Android conclui a anexação.
         // Inicializar o watcher aqui evita acessar applicationContext durante a construção.
         lostWatcher = ControllerLostWatcher(applicationContext) {
@@ -123,6 +124,7 @@ private fun GameModeRoot(refreshKey: Int, onExit: () -> Unit) {
     var showBios by remember { mutableStateOf(false) }
     var showEmulators by remember { mutableStateOf(false) }
     var showFolders by remember { mutableStateOf(false) }
+    var showCores by remember { mutableStateOf(false) }
 
     LaunchedEffect(refreshKey, scanTick, rootPath) {
         hasAccess = StorageAccess.isGranted()
@@ -132,16 +134,18 @@ private fun GameModeRoot(refreshKey: Int, onExit: () -> Unit) {
         version++
     }
 
-    BackHandler(enabled = detail != null || showBios || showEmulators || showFolders) {
+    BackHandler(enabled = detail != null || showBios || showEmulators || showFolders || showCores) {
         when {
             showBios -> showBios = false
             showEmulators -> showEmulators = false
             showFolders -> showFolders = false
+            showCores -> showCores = false
             else -> detail = null
         }
     }
 
     suspend fun startGame(coreId: String, romPath: String, title: String, loadState: Boolean, platform: GamePlatform?) {
+        GameLog.log("jogo", "abrir: $title (plataforma=${platform?.slug ?: "?"}, núcleo=$coreId)")
         if (platform != null && platform.launch != LaunchMode.LIBRETRO) {
             status = context.getString(R.string.game_external_opening, title)
             ExternalEmulators.launch(context, LocalGame(title, platform, romPath))
@@ -167,8 +171,11 @@ private fun GameModeRoot(refreshKey: Int, onExit: () -> Unit) {
     fun play(game: LocalGame, loadState: Boolean = false) {
         scope.launch {
             busy = true
-            runCatching { startGame(game.platform.coreId, game.path, game.title, loadState, game.platform) }
-                .onFailure { status = context.getString(R.string.game_mode_status_error, it.message ?: it.toString()) }
+            runCatching { startGame(CoreRegistry.chosen(context, game.platform), game.path, game.title, loadState, game.platform) }
+                .onFailure {
+                    GameLog.error("jogo", "falha ao abrir ${game.title}", it)
+                    status = context.getString(R.string.game_mode_status_error, it.message ?: it.toString())
+                }
             busy = false
         }
     }
@@ -192,7 +199,7 @@ private fun GameModeRoot(refreshKey: Int, onExit: () -> Unit) {
             runCatching {
                 status = context.getString(R.string.game_mode_status_importing)
                 val rom = RomLauncher.importRom(context, uri)
-                val coreId = checkNotNull(RomLauncher.coreFor(rom.name)) {
+                val coreId = checkNotNull(RomLauncher.coreFor(context, rom.name)) {
                     context.getString(R.string.game_mode_status_unsupported, rom.name)
                 }
                 startGame(coreId, rom.absolutePath, rom.name, false, GamePlatforms.resolve(emptyList(), rom.extension))
@@ -218,6 +225,7 @@ private fun GameModeRoot(refreshKey: Int, onExit: () -> Unit) {
                     showBios = false
                     showEmulators = false
                     showFolders = false
+                    showCores = false
                 },
             )
         }
@@ -251,6 +259,8 @@ private fun GameModeRoot(refreshKey: Int, onExit: () -> Unit) {
 
                 tab == GameTab.Settings && showFolders -> FoldersScreen()
 
+                tab == GameTab.Settings && showCores -> CoresScreen()
+
                 tab == GameTab.Settings -> SettingsScreen(
                     rootPath = rootPath,
                     needsAccess = needsAccess,
@@ -262,6 +272,7 @@ private fun GameModeRoot(refreshKey: Int, onExit: () -> Unit) {
                     onOpenBios = { showBios = true },
                     onOpenEmulators = { showEmulators = true },
                     onOpenFolders = { showFolders = true },
+                    onOpenCores = { showCores = true },
                     onExit = onExit,
                 )
 

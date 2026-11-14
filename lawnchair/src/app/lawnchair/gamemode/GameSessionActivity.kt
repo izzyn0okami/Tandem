@@ -51,6 +51,7 @@ import com.android.launcher3.R
 import com.swordfish.libretrodroid.GLRetroView
 import com.swordfish.libretrodroid.GLRetroViewData
 import com.swordfish.libretrodroid.Variable
+import java.io.Closeable
 import java.io.File
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -87,6 +88,10 @@ class GameSessionActivity : ComponentActivity() {
     private var raEntries by mutableStateOf<List<RaEntry>>(emptyList())
     private var raHardcore by mutableStateOf(false)
     private var raListOpen by mutableStateOf(false)
+    private var optionsOpen by mutableStateOf(false)
+    private var coreOptions by mutableStateOf<List<CoreOption>>(emptyList())
+    private var coreLog: Closeable? = null
+    private var coreIdForOptions = ""
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -115,8 +120,13 @@ class GameSessionActivity : ComponentActivity() {
         }
 
         val coreId = File(corePath).name.removeSuffix("_libretro_android.so")
-        val store = SaveStore(this, coreId, File(romPath))
+        val platformSlug = intent.getStringExtra(EXTRA_PLATFORM)
+        val siblings = platformSlug?.let(GamePlatforms::bySlug)?.let { CoreRegistry.cores(it) }.orEmpty().map { it.id }
+        val store = SaveStore(this, coreId, File(romPath), siblings)
         saveStore = store
+        coreIdForOptions = coreId
+        SessionDiagnostics.sessionStarted(this, coreId, romPath, platformSlug)
+        coreLog = SessionDiagnostics.startCoreLog()
 
         val data = GLRetroViewData(this).apply {
             coreFilePath = corePath
@@ -124,10 +134,8 @@ class GameSessionActivity : ComponentActivity() {
             systemDirectory = GameFolders.dir(this@GameSessionActivity, FolderKind.Bios).absolutePath
             savesDirectory = GameFolders.dir(this@GameSessionActivity, FolderKind.Saves).absolutePath
             saveRAMState = store.readSram()
-            // DS: as duas telas lado a lado cabem melhor no celular em paisagem; o toque cai na tela certa.
-            if (intent.getStringExtra(EXTRA_PLATFORM) == "nds") {
-                variables = arrayOf(Variable(key = "melonds_screen_layout", value = "Left/Right"))
-            }
+            // Opções salvas do núcleo; no DS, as duas telas lado a lado cabem melhor no celular em paisagem.
+            variables = CoreRegistry.variables(this@GameSessionActivity, coreId)
         }
 
         val view = GLRetroView(this, data)
@@ -182,6 +190,7 @@ class GameSessionActivity : ComponentActivity() {
                                     canLoad = store.hasState() && !raHardcore,
                                     hasAchievements = raEntries.isNotEmpty(),
                                     onAchievements = { raListOpen = true },
+                                    onCoreOptions = { openCoreOptions() },
                                     onResume = { setMenu(false) },
                                     onSave = { saveQuickState() },
                                     onLoad = { loadQuickState() },
@@ -190,6 +199,17 @@ class GameSessionActivity : ComponentActivity() {
                                         setMenu(false)
                                     },
                                     onExit = { exitGame() },
+                                )
+                            }
+                            if (menuOpen && optionsOpen) {
+                                CoreOptionsPanel(
+                                    coreLabel = coreLabel(),
+                                    options = coreOptions,
+                                    onChange = { option, value -> changeCoreOption(option, value) },
+                                    onReset = {
+                                        CoreRegistry.resetOptions(this@GameSessionActivity, coreIdForOptions)
+                                        Toast.makeText(this@GameSessionActivity, R.string.game_core_options_reset_done, Toast.LENGTH_LONG).show()
+                                    },
                                 )
                             }
                             if (menuOpen && raListOpen) {
@@ -210,13 +230,14 @@ class GameSessionActivity : ComponentActivity() {
             this,
             object : OnBackPressedCallback(true) {
                 override fun handleOnBackPressed() {
-                    if (raListOpen) raListOpen = false else setMenu(!menuOpen)
+                    closeTopPanelOr { setMenu(!menuOpen) }
                 }
             },
         )
 
         lifecycleScope.launch {
             view.getGLRetroErrors().collect { code ->
+                GameLog.log("motor", "erro do motor (código $code) no núcleo $coreIdForOptions")
                 Toast.makeText(this@GameSessionActivity, getString(R.string.game_session_engine_error, code), Toast.LENGTH_LONG).show()
                 finish()
             }
@@ -243,6 +264,10 @@ class GameSessionActivity : ComponentActivity() {
 
     private fun setMenu(open: Boolean) {
         menuOpen = open
+        if (!open) {
+            optionsOpen = false
+            raListOpen = false
+        }
         if (open) retroView?.pauseEmulation() else retroView?.resumeEmulation()
     }
 
@@ -286,7 +311,36 @@ class GameSessionActivity : ComponentActivity() {
 
     override fun onDestroy() {
         raSession?.stop()
+        coreLog?.close()
+        if (isFinishing) SessionDiagnostics.sessionEnded(this, "encerrado normalmente")
         super.onDestroy()
+    }
+
+    /** Fecha a lista de opções ou a de conquistas, se alguma estiver aberta; senão faz [otherwise]. */
+    private fun closeTopPanelOr(otherwise: () -> Unit) {
+        when {
+            optionsOpen -> optionsOpen = false
+            raListOpen -> raListOpen = false
+            else -> otherwise()
+        }
+    }
+
+    private fun coreLabel(): String {
+        val platform = intent.getStringExtra(EXTRA_PLATFORM)?.let(GamePlatforms::bySlug)
+        return platform?.let { CoreRegistry.cores(it).firstOrNull { core -> core.id == coreIdForOptions }?.label } ?: coreIdForOptions
+    }
+
+    private fun openCoreOptions() {
+        coreOptions = retroView?.let { CoreRegistry.parse(it.getVariables()) }.orEmpty()
+        GameLog.log("núcleos", "opções abertas: ${coreOptions.size} no núcleo $coreIdForOptions")
+        optionsOpen = true
+    }
+
+    private fun changeCoreOption(option: CoreOption, value: String) {
+        retroView?.updateVariables(Variable(key = option.key, value = value))
+        CoreRegistry.saveOption(this, coreIdForOptions, option.key, value)
+        coreOptions = coreOptions.map { if (it.key == option.key) it.copy(current = value) else it }
+        GameLog.log("núcleos", "$coreIdForOptions: ${option.key} = $value")
     }
 
     override fun onStop() {
@@ -333,9 +387,7 @@ class GameSessionActivity : ComponentActivity() {
                 KeyEvent.KEYCODE_BUTTON_A -> super.dispatchKeyEvent(KeyEvent(event.action, KeyEvent.KEYCODE_DPAD_CENTER))
 
                 KeyEvent.KEYCODE_BUTTON_B -> {
-                    if (event.action == KeyEvent.ACTION_UP) {
-                        if (raListOpen) raListOpen = false else setMenu(false)
-                    }
+                    if (event.action == KeyEvent.ACTION_UP) closeTopPanelOr { setMenu(false) }
                     true
                 }
 
@@ -382,6 +434,7 @@ private fun PauseMenu(
     canLoad: Boolean,
     hasAchievements: Boolean,
     onAchievements: () -> Unit,
+    onCoreOptions: () -> Unit,
     onResume: () -> Unit,
     onSave: () -> Unit,
     onLoad: () -> Unit,
@@ -421,6 +474,7 @@ private fun PauseMenu(
             GameButton(stringResource(R.string.game_session_load_state), onLoad, enabled = canLoad)
             GameButton(stringResource(R.string.game_session_reset), onReset)
             if (hasAchievements) GameButton(stringResource(R.string.game_session_achievements), onAchievements)
+            GameButton(stringResource(R.string.game_session_core_options), onCoreOptions)
             GameButton(stringResource(R.string.game_session_exit), onExit, danger = true, modifier = Modifier.padding(top = 8.dp))
             Text(
                 text = stringResource(R.string.game_session_autosave_note),

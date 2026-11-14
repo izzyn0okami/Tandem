@@ -5,6 +5,7 @@ import android.graphics.BitmapFactory
 import android.util.LruCache
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
+import java.io.File
 
 /** Capas já decodificadas, em tamanho de miniatura, para a grade rolar sem engasgar. */
 object RomMCovers {
@@ -14,10 +15,14 @@ object RomMCovers {
 
     fun cached(id: Long): ImageBitmap? = memory.get(id)
 
+    /** Onde a capa fica guardada no aparelho (dentro da pasta de imagens escolhida). */
+    fun coverFile(context: Context, id: Long): File = File(File(GameFolders.dir(context, FolderKind.Assets), "covers"), "$id.img")
+
     /** Bloqueante: baixa (se preciso) e decodifica a capa. */
-    fun load(context: Context, client: RomMClient, game: RemoteGame): ImageBitmap? {
+    fun load(context: Context, client: RomMClient, game: RemoteGame, allowNetwork: Boolean = true): ImageBitmap? {
         memory.get(game.id)?.let { return it }
-        val file = client.cover(context, game) ?: return null
+        val cached = coverFile(context, game.id).takeIf { it.isFile && it.length() > 0 }
+        val file = (if (allowNetwork) client.cover(context, game) else cached) ?: return null
         val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
         BitmapFactory.decodeFile(file.absolutePath, bounds)
         var sample = 1

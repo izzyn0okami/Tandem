@@ -34,6 +34,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -46,7 +47,8 @@ import java.util.Date
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
-private val CARD_SIZE = 108.dp
+private val CARD_WIDTH = 96.dp
+private val CARD_HEIGHT = 128.dp
 private val CARD_GAP = 10.dp
 
 @Composable
@@ -86,7 +88,7 @@ internal fun LibraryScreen(
     }
 
     BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
-        val columns = (((maxWidth - 48.dp) + CARD_GAP) / (CARD_SIZE + CARD_GAP)).toInt().coerceAtLeast(2)
+        val columns = (((maxWidth - 48.dp) + CARD_GAP) / (CARD_WIDTH + CARD_GAP)).toInt().coerceAtLeast(2)
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
             verticalArrangement = Arrangement.spacedBy(14.dp),
@@ -163,19 +165,11 @@ private const val ANDROID_FILTER = "android"
 @Composable
 private fun AndroidCard(game: AndroidGame, onClick: () -> Unit) {
     val context = LocalContext.current
-    val icon by produceState<ImageBitmap?>(null, game.packageName) {
-        value = withContext(Dispatchers.IO) { AndroidGames.icon(context, game) }
+    val art by produceState<ImageBitmap?>(null, game.packageName) {
+        value = withContext(Dispatchers.IO) { GameArt.androidArt(context, game) }
     }
-    FocusSurface(onClick = onClick, modifier = Modifier.size(CARD_SIZE)) {
-        Column(
-            modifier = Modifier.fillMaxSize().padding(10.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.SpaceBetween,
-        ) {
-            icon?.let { Image(bitmap = it, contentDescription = null, modifier = Modifier.size(56.dp)) }
-                ?: Box(modifier = Modifier.size(56.dp))
-            Text(text = game.title, color = GameColors.text, fontSize = 12.sp, maxLines = 2)
-        }
+    FocusSurface(onClick = onClick, modifier = Modifier.size(width = CARD_WIDTH, height = CARD_HEIGHT)) {
+        art?.let { Image(bitmap = it, contentDescription = game.title, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize()) }
     }
 }
 
@@ -186,7 +180,7 @@ private fun SectionTitle(text: String) {
 
 @Composable
 private fun GameCard(game: LocalGame, onClick: () -> Unit) {
-    FocusSurface(onClick = onClick, modifier = Modifier.size(CARD_SIZE)) {
+    FocusSurface(onClick = onClick, modifier = Modifier.size(width = CARD_WIDTH, height = CARD_HEIGHT)) {
         CoverTile(game, modifier = Modifier.fillMaxSize())
     }
 }
@@ -252,7 +246,7 @@ internal fun GameDetailScreen(
     val context = LocalContext.current
     val history = remember(game.path) { PlayHistory.get(context, game.path) }
     val hasState = remember(game.path) {
-        SaveStore(context, game.platform.coreId, File(game.path)).hasState() && !RaSettings.blocksStates(context, game.platform)
+        SaveStore(context, CoreRegistry.chosen(context, game.platform), File(game.path)).hasState() && !RaSettings.blocksStates(context, game.platform)
     }
     val playFocus = remember { FocusRequester() }
     LaunchedEffect(game.path) { runCatching { playFocus.requestFocus() } }
@@ -330,6 +324,7 @@ internal fun SettingsScreen(
     onOpenBios: () -> Unit,
     onOpenEmulators: () -> Unit,
     onOpenFolders: () -> Unit,
+    onOpenCores: () -> Unit,
     onExit: () -> Unit,
 ) {
     val context = LocalContext.current
@@ -361,6 +356,7 @@ internal fun SettingsScreen(
         GameButton(stringResource(R.string.game_bios_open), onOpenBios)
         GameButton(stringResource(R.string.game_emulators_open), onOpenEmulators)
         GameButton(stringResource(R.string.game_folders_open), onOpenFolders)
+        GameButton(stringResource(R.string.game_cores_open), onOpenCores)
         FocusSurface(onClick = toggleAuto, modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(8.dp)) {
             Row(
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 18.dp, vertical = 8.dp),

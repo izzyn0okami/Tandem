@@ -10,7 +10,10 @@ import kotlinx.coroutines.withContext
 /** Abre uma ROM avulsa escolhida no seletor de arquivos (fora da pasta de jogos). */
 object RomLauncher {
 
-    fun coreFor(fileName: String): String? = GamePlatforms.resolve(emptyList(), fileName.substringAfterLast('.', ""))?.coreId
+    fun coreFor(context: Context, fileName: String): String? {
+        val platform = GamePlatforms.resolve(emptyList(), fileName.substringAfterLast('.', "")) ?: return null
+        return CoreRegistry.chosen(context, platform)
+    }
 
     /** Copia a ROM escolhida pelo seletor de arquivos para a pasta do app e devolve o arquivo. */
     suspend fun importRom(context: Context, uri: Uri): File = withContext(Dispatchers.IO) {

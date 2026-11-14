@@ -5,9 +5,6 @@ import android.content.Intent
 import android.content.pm.ApplicationInfo
 import android.content.pm.LauncherApps
 import android.os.Process
-import androidx.compose.ui.graphics.ImageBitmap
-import androidx.compose.ui.graphics.asImageBitmap
-import androidx.core.graphics.drawable.toBitmap
 
 /** Jogo nativo do Android instalado no aparelho. */
 data class AndroidGame(val packageName: String, val title: String)
@@ -38,10 +35,4 @@ object AndroidGames {
         context.startActivity(intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
         return true
     }
-
-    fun icon(context: Context, game: AndroidGame): ImageBitmap? = runCatching {
-        context.packageManager.getApplicationIcon(game.packageName).toBitmap(ICON_SIZE, ICON_SIZE).asImageBitmap()
-    }.getOrNull()
-
-    private const val ICON_SIZE = 144
 }

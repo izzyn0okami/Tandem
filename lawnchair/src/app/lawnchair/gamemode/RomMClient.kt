@@ -456,7 +456,7 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
     /** Baixa a capa para o cache e devolve o arquivo (ou nulo se falhar). */
     fun cover(context: Context, game: RemoteGame): File? {
         val path = game.coverPath ?: return null
-        val file = File(File(GameFolders.dir(context, FolderKind.Assets), "covers").apply { mkdirs() }, "${game.id}.img")
+        val file = RomMCovers.coverFile(context, game.id).apply { parentFile?.mkdirs() }
         if (file.isFile && file.length() > 0) return file
         val url = if (path.startsWith("http")) path.toHttpUrl() else base.resolve(path.trimStart('/')) ?: return null
         // Grava num arquivo temporário e só então renomeia: outra tela nunca lê uma capa pela metade.

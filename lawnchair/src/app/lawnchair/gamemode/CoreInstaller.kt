@@ -35,6 +35,7 @@ object CoreInstaller {
             val target = coreFile(context, coreId)
             if (target.isFile && isElf(target)) return@runCatching target
 
+            GameLog.log("núcleos", "baixando $coreId")
             val part = File(target.parentFile, "${target.name}.part")
             val connection = URL("$BASE_URL/${target.name}.zip").openConnection() as HttpURLConnection
             connection.connectTimeout = 30_000
@@ -64,12 +65,13 @@ object CoreInstaller {
                 target.delete()
                 check(part.renameTo(target)) { "Não consegui instalar ${target.name}" }
                 target.setExecutable(true)
+                GameLog.log("núcleos", "$coreId instalado (${target.length() / 1024} KB)")
                 target
             } finally {
                 connection.disconnect()
                 part.delete()
             }
-        }
+        }.onFailure { GameLog.error("núcleos", "falha ao baixar $coreId", it) }
     }
 
     private fun isElf(file: File): Boolean = runCatching {
