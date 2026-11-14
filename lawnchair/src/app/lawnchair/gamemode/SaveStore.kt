@@ -15,9 +15,9 @@ class SaveStore(
     private val siblingCores: List<String> = emptyList(),
 ) {
 
-    private val savesRoot = GameFolders.dir(context, FolderKind.Saves)
-    private val gameDirName = romFile.nameWithoutExtension.replace(Regex("[^A-Za-z0-9._ -]"), "_")
-    private val dir = File(File(savesRoot, coreId), gameDirName).apply { mkdirs() }
+    private val savesRoot: File = GameFolders.dir(context, FolderKind.Saves)
+    private val gameDirName: String = romFile.nameWithoutExtension.replace(Regex("[^A-Za-z0-9._ -]"), "_")
+    private val dir: File = File(File(savesRoot, coreId), gameDirName).apply { mkdirs() }
 
     val sramFile = File(dir, "sram.srm")
     val stateFile = File(dir, "state1.state")
