@@ -161,6 +161,7 @@ private fun GameModeRoot(refreshKey: Int, onExit: () -> Unit) {
         }
         status = context.getString(R.string.game_mode_status_starting, title)
         context.startActivity(GameSessionActivity.intent(context, core.absolutePath, romPath, loadState, platform?.slug))
+        status = ""
     }
 
     fun play(game: LocalGame, loadState: Boolean = false) {

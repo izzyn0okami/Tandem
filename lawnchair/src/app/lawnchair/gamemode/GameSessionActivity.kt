@@ -333,7 +333,9 @@ class GameSessionActivity : ComponentActivity() {
                 KeyEvent.KEYCODE_BUTTON_A -> super.dispatchKeyEvent(KeyEvent(event.action, KeyEvent.KEYCODE_DPAD_CENTER))
 
                 KeyEvent.KEYCODE_BUTTON_B -> {
-                    if (event.action == KeyEvent.ACTION_UP) setMenu(false)
+                    if (event.action == KeyEvent.ACTION_UP) {
+                        if (raListOpen) raListOpen = false else setMenu(false)
+                    }
                     true
                 }
 
