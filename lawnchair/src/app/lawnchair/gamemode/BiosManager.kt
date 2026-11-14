@@ -11,7 +11,7 @@ import java.io.InputStream
  */
 object BiosManager {
 
-    fun systemDir(context: Context): File = File(context.filesDir, "libretro/system").apply { mkdirs() }
+    fun systemDir(context: Context): File = GameFolders.dir(context, FolderKind.Bios)
 
     /** Plataformas que usam algum BIOS. */
     fun platformsWithBios(): List<GamePlatform> = GamePlatforms.all.filter { it.bios.isNotEmpty() }

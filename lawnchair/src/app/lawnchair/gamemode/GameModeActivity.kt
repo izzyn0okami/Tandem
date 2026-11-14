@@ -122,6 +122,7 @@ private fun GameModeRoot(refreshKey: Int, onExit: () -> Unit) {
     var version by remember { mutableIntStateOf(0) }
     var showBios by remember { mutableStateOf(false) }
     var showEmulators by remember { mutableStateOf(false) }
+    var showFolders by remember { mutableStateOf(false) }
 
     LaunchedEffect(refreshKey, scanTick, rootPath) {
         hasAccess = StorageAccess.isGranted()
@@ -131,10 +132,11 @@ private fun GameModeRoot(refreshKey: Int, onExit: () -> Unit) {
         version++
     }
 
-    BackHandler(enabled = detail != null || showBios || showEmulators) {
+    BackHandler(enabled = detail != null || showBios || showEmulators || showFolders) {
         when {
             showBios -> showBios = false
             showEmulators -> showEmulators = false
+            showFolders -> showFolders = false
             else -> detail = null
         }
     }
@@ -214,6 +216,7 @@ private fun GameModeRoot(refreshKey: Int, onExit: () -> Unit) {
                     tab = it
                     showBios = false
                     showEmulators = false
+                    showFolders = false
                 },
             )
         }
@@ -245,6 +248,8 @@ private fun GameModeRoot(refreshKey: Int, onExit: () -> Unit) {
 
                 tab == GameTab.Settings && showEmulators -> EmulatorsScreen()
 
+                tab == GameTab.Settings && showFolders -> FoldersScreen()
+
                 tab == GameTab.Settings -> SettingsScreen(
                     rootPath = rootPath,
                     needsAccess = needsAccess,
@@ -255,6 +260,7 @@ private fun GameModeRoot(refreshKey: Int, onExit: () -> Unit) {
                     onPickRom = { romPicker.launch(arrayOf("*/*")) },
                     onOpenBios = { showBios = true },
                     onOpenEmulators = { showEmulators = true },
+                    onOpenFolders = { showFolders = true },
                     onExit = onExit,
                 )
 

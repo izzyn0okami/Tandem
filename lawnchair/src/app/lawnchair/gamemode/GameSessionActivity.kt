@@ -118,12 +118,11 @@ class GameSessionActivity : ComponentActivity() {
         val store = SaveStore(this, coreId, File(romPath))
         saveStore = store
 
-        val root = File(filesDir, "libretro")
         val data = GLRetroViewData(this).apply {
             coreFilePath = corePath
             gameFilePath = romPath
-            systemDirectory = File(root, "system").apply { mkdirs() }.absolutePath
-            savesDirectory = File(root, "saves").apply { mkdirs() }.absolutePath
+            systemDirectory = GameFolders.dir(this@GameSessionActivity, FolderKind.Bios).absolutePath
+            savesDirectory = GameFolders.dir(this@GameSessionActivity, FolderKind.Saves).absolutePath
             saveRAMState = store.readSram()
             // DS: as duas telas lado a lado cabem melhor no celular em paisagem; o toque cai na tela certa.
             if (intent.getStringExtra(EXTRA_PLATFORM) == "nds") {

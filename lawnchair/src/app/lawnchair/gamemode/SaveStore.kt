@@ -4,13 +4,13 @@ import android.content.Context
 import java.io.File
 
 /**
- * Saves por jogo, dentro do app: `filesDir/libretro/saves/<núcleo>/<jogo>/` com `sram.srm`
+ * Saves por jogo, na pasta de saves escolhida (padrão: dentro do app) em `<núcleo>/<jogo>/` com `sram.srm`
  * (save de bateria, gravado sozinho) e `state1.state` (estado rápido, gravado pelo menu).
  */
 class SaveStore(context: Context, coreId: String, romFile: File) {
 
     private val dir = File(
-        File(context.filesDir, "libretro/saves/$coreId"),
+        File(GameFolders.dir(context, FolderKind.Saves), coreId),
         romFile.nameWithoutExtension.replace(Regex("[^A-Za-z0-9._ -]"), "_"),
     ).apply { mkdirs() }
 
