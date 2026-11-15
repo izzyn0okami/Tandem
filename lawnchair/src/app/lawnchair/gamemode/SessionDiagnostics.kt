@@ -21,11 +21,12 @@ object SessionDiagnostics {
     private const val FILE = "game_mode_diag"
     private const val MAX_CORE_LINES = 400
     private const val MAX_TRACE_BYTES = 512 * 1024
-    private const val MAX_TRACE_HINTS = 30
+    private const val MAX_TRACE_HINTS = 10
+    private const val MAX_SYSTEM_LIBRARIES = 6
     private const val LOOKBACK_MS = 3L * 24 * 60 * 60 * 1000
 
-    private val hintPattern = Regex("""(?i)signal|sig[a-z]{3,}|abort|fatal|\.so|libretro|assert|cause|backtrace|segv""")
-    private val printable = Regex("""[\x20-\x7E]{5,}""")
+    private val signalPattern = Regex("""SIG[A-Z]{3,}|SEGV_[A-Z]+|Abort message[ -~]{0,120}""")
+    private val libraryPattern = Regex("""/[A-Za-z0-9_./+-]+\.so""")
 
     private fun prefs(context: Context) = context.getSharedPreferences(FILE, Context.MODE_PRIVATE)
 
@@ -151,12 +152,9 @@ object SessionDiagnostics {
             buffer.write(chunk, 0, read)
         }
         val text = String(buffer.toByteArray(), Charsets.ISO_8859_1)
-        return printable.findAll(text)
-            .map { it.value.trim() }
-            .filter { hintPattern.containsMatchIn(it) }
-            .distinct()
-            .take(MAX_TRACE_HINTS)
-            .map { it.take(160) }
-            .toList()
+        val signals = signalPattern.findAll(text).map { it.value }.distinct().take(MAX_TRACE_HINTS)
+        val libraries = libraryPattern.findAll(text).map { it.value }.distinct().toList()
+        val (app, system) = libraries.partition { it.startsWith("/data/") }
+        return (signals + app + system.take(MAX_SYSTEM_LIBRARIES)).map { it.take(160) }.toList()
     }
 }

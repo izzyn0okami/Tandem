@@ -53,7 +53,7 @@ object GameArt {
     private fun serverCover(context: Context, game: LocalGame, allowNetwork: Boolean): ImageBitmap? {
         val url = RomMSettings.url(context) ?: return null
         val remote = RomMIndex.find(context, url, game) ?: return null
-        if (remote.coverPath == null) return null
+        if (remote.coverPath == null && remote.coverUrl == null) return null
         val client = runCatching { RomMClient(url, RomMSettings.token(context)) }.getOrNull() ?: return null
         val image = RomMCovers.load(context, client, remote, allowNetwork)
         if (image == null && allowNetwork && !RomMCovers.coverFile(context, remote.id).isFile) {

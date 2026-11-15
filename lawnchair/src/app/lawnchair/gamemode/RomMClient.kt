@@ -24,6 +24,8 @@ data class RemoteGame(
     val fileName: String,
     val sizeBytes: Long,
     val coverPath: String?,
+    /** Endereço externo da capa (do scraper), usado se o servidor não tiver o arquivo. */
+    val coverUrl: String? = null,
     /** Nome do jogo no servidor (pasta ou arquivo), usado na URL de download. */
     val serverName: String = fileName,
     /** Arquivo dentro da pasta do jogo, quando o jogo é uma pasta com um único arquivo jogável. */
@@ -313,10 +315,25 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
             platform = platform,
             fileName = fileName,
             sizeBytes = item.optLong("fs_size_bytes", 0L),
-            coverPath = item.optString("path_cover_small").ifEmpty { null },
+            coverPath = (item.optString("path_cover_small").ifEmpty { null } ?: item.optString("path_cover_large").ifEmpty { null })
+                .also { logCoverSample(item) },
+            coverUrl = item.optString("url_cover").ifEmpty { null },
             serverName = serverName,
             fileId = fileId,
             folder = folder,
+        )
+    }
+
+    private var coverSamples = 0
+
+    /** Guarda no log os campos de capa dos primeiros jogos, para descobrir de onde o servidor serve as imagens. */
+    private fun logCoverSample(item: JSONObject) {
+        if (coverSamples >= 2) return
+        coverSamples++
+        GameLog.log(
+            "romm",
+            "capa exemplo: small=${item.optString("path_cover_small")}, large=${item.optString("path_cover_large")}, " +
+                "url=${item.optString("url_cover")}",
         )
     }
 
@@ -457,13 +474,13 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
 
     /** Baixa a capa para o cache e devolve o arquivo (ou nulo se falhar). */
     fun cover(context: Context, game: RemoteGame): File? {
-        val path = game.coverPath ?: return null
+        if (game.coverPath == null && game.coverUrl == null) return null
         val file = RomMCovers.coverFile(context, game.id).apply { parentFile?.mkdirs() }
         if (file.isFile && file.length() > 0) return file
         // Grava num arquivo temporário e só então renomeia: outra tela nunca lê uma capa pela metade.
         val temp = File(file.parentFile, "${file.name}.${Thread.currentThread().id}.part")
         return runCatching {
-            if (coverUrls(path).any { downloadCover(it, temp) } && temp.renameTo(file)) file else null
+            if (listOfNotNull(game.coverPath, game.coverUrl).flatMap { coverUrls(it) }.any { downloadCover(it, temp) } && temp.renameTo(file)) file else null
         }.also { temp.delete() }.getOrNull()
     }
 
@@ -480,7 +497,7 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
             http.newCall(request(url).build()).execute().use { response ->
                 if (!response.isSuccessful) {
                     if (coverFailuresLogged.getAndIncrement() < MAX_COVER_FAILURE_LOGS) {
-                        GameLog.log("romm", "capa: HTTP ${response.code} em ${url.encodedPath}")
+                        GameLog.log("romm", "capa: HTTP ${response.code} em ${url.host}${url.encodedPath}")
                     }
                     return@use false
                 }
@@ -543,7 +560,7 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
 
     private companion object {
         const val PAGE_SIZE = 100
-        const val MAX_COVER_FAILURE_LOGS = 4
+        const val MAX_COVER_FAILURE_LOGS = 8
         val coverFailuresLogged = AtomicInteger()
         val DEVICE_SCOPES = listOf(
             "me.read",

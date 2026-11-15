@@ -128,13 +128,16 @@ class GameSessionActivity : ComponentActivity() {
         SessionDiagnostics.sessionStarted(this, coreId, romPath, platformSlug)
         coreLog = SessionDiagnostics.startCoreLog()
 
+        val platformObject = platformSlug?.let(GamePlatforms::bySlug)
+        // Núcleos como N64 e DS não abrem .zip: extrai antes (os saves continuam com o nome do .zip).
+        val loadPath = RomUnzipper.prepare(this, romPath, platformObject).absolutePath
         val data = GLRetroViewData(this).apply {
             coreFilePath = corePath
-            gameFilePath = romPath
+            gameFilePath = loadPath
             systemDirectory = GameFolders.dir(this@GameSessionActivity, FolderKind.Bios).absolutePath
             savesDirectory = GameFolders.dir(this@GameSessionActivity, FolderKind.Saves).absolutePath
             saveRAMState = store.readSram()
-            // Opções salvas do núcleo; no DS, as duas telas lado a lado cabem melhor no celular em paisagem.
+            // Opções que o usuário salvou para este núcleo.
             variables = CoreRegistry.variables(this@GameSessionActivity, coreId)
         }
 
@@ -143,13 +146,20 @@ class GameSessionActivity : ComponentActivity() {
         lifecycle.addObserver(view)
         setContentView(view)
 
-        val platform = intent.getStringExtra(EXTRA_PLATFORM)?.let(GamePlatforms::bySlug)
+        if (coreId == "melonds") {
+            lifecycleScope.launch {
+                view.getGLRetroEvents().first { it is GLRetroView.GLRetroEvents.FrameRendered }
+                applyDsSideBySide(view)
+            }
+        }
+
+        val platform = platformObject
         if (platform?.raConsoleId != null && RaSettings.isLoggedIn(this)) {
             val session = RaSession(
                 context = applicationContext,
                 view = view,
                 platform = platform,
-                romPath = romPath,
+                romPath = loadPath,
                 scope = lifecycleScope,
                 hardcore = RaSettings.hardcore(this),
                 onUnlock = { raToast = getString(R.string.game_ra_unlocked, it.title, it.points) },
@@ -328,6 +338,15 @@ class GameSessionActivity : ComponentActivity() {
     private fun coreLabel(): String {
         val platform = intent.getStringExtra(EXTRA_PLATFORM)?.let(GamePlatforms::bySlug)
         return platform?.let { CoreRegistry.cores(it).firstOrNull { core -> core.id == coreIdForOptions }?.label } ?: coreIdForOptions
+    }
+
+    /** DS: as duas telas lado a lado cabem melhor no celular em paisagem. Só usa valores que o núcleo declara. */
+    private fun applyDsSideBySide(view: GLRetroView) {
+        if (CoreRegistry.savedOptions(this, "melonds").containsKey("melonds_screen_layout")) return
+        val option = CoreRegistry.parse(view.getVariables()).firstOrNull { it.key == "melonds_screen_layout" } ?: return
+        val sideBySide = option.values.firstOrNull { it.contains("Left", ignoreCase = true) && it.contains("Right", ignoreCase = true) } ?: return
+        view.updateVariables(Variable(key = option.key, value = sideBySide))
+        GameLog.log("núcleos", "DS: telas lado a lado ($sideBySide)")
     }
 
     private fun openCoreOptions() {

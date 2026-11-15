@@ -156,12 +156,9 @@ object CoreRegistry {
         prefs(context).edit { remove("opts_$coreId") }
     }
 
-    /** Variáveis aplicadas ao abrir o jogo: as salvas e, no DS, as telas lado a lado como padrão. */
-    fun variables(context: Context, coreId: String): Array<Variable> {
-        val saved = savedOptions(context, coreId).toMutableMap()
-        if (coreId == "melonds") saved.putIfAbsent("melonds_screen_layout", "Left/Right")
-        return saved.map { Variable(key = it.key, value = it.value) }.toTypedArray()
-    }
+    /** Variáveis aplicadas ao abrir o jogo: as que o usuário salvou para o núcleo. */
+    fun variables(context: Context, coreId: String): Array<Variable> =
+        savedOptions(context, coreId).map { Variable(key = it.key, value = it.value) }.toTypedArray()
 
     /** Converte as variáveis do núcleo ("Nome; a|b|c") em opções que dá para alternar. */
     fun parse(variables: Array<Variable>): List<CoreOption> = variables.mapNotNull { variable ->
