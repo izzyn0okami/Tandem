@@ -7,7 +7,7 @@ Um launcher para Android com um **modo jogos** inspirado nos antigos Sony Ericss
 - **Biblioteca única:** jogos do aparelho, do servidor [RomM](https://romm.app) e jogos Android numa só grade. Se o jogo está no aparelho, o botão é **Jogar**; se não, **Baixar**. Jogos com várias versões (regiões, revisões) deixam você escolher qual baixar.
 - **Emulação embutida** (libretro) para NES, SNES, Game Boy, GBA, Mega Drive, Master System, Game Gear, Mega-CD, N64, PlayStation, PC Engine, Atari, Saturn, Dreamcast, DS, PSP e outros. Vários núcleos por console, com as opções de cada núcleo no menu de pausa, saves de bateria e estados salvos.
 - **Emuladores externos** para PS2, GameCube, Wii, Switch, 3DS e Wii U, e integração com o GameNative para jogos de PC.
-- **RetroAchievements:** login, lista de conquistas por jogo, modo hardcore e aviso ao desbloquear (com ícone e som).
+- **RetroAchievements:** login, lista de conquistas por jogo, e aviso ao desbloquear (com ícone e som). Modo Hardcore ainda não implementado, requer testes e validação conforme as diretrizes do site RetroAchivements.org
 - **Capas automáticas:** do RomM, do acervo de miniaturas do Libretro, do SteamGridDB (com chave própria) ou geradas no aparelho.
 - **Feito para controle:** navegação por direcional, L1/R1 troca de aba, L2/R2 troca de console, Y vai aos consoles, X atualiza; BIOS, saves e imagens em pastas à sua escolha; modo paisagem em tela cheia.
 - **Diagnóstico:** exportação de log com o motivo de travamentos de núcleos.
