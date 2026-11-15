@@ -12,6 +12,16 @@ object GameModeSettings {
     private const val FILE = "game_mode"
     private const val KEY_AUTO_ENTER = "auto_enter_on_controller"
     private const val KEY_SCRAPER = "scraper_thumbnails"
+    private const val KEY_STEAMGRID = "steamgriddb_key"
+
+    /** Chave de API do SteamGridDB (opcional); sem ela o scraper do SteamGridDB fica desligado. */
+    fun steamGridKey(context: Context): String? = context.getSharedPreferences(FILE, Context.MODE_PRIVATE).getString(KEY_STEAMGRID, null)?.takeIf { it.isNotBlank() }
+
+    fun setSteamGridKey(context: Context, key: String?) {
+        context.getSharedPreferences(FILE, Context.MODE_PRIVATE).edit {
+            if (key.isNullOrBlank()) remove(KEY_STEAMGRID) else putString(KEY_STEAMGRID, key.trim())
+        }
+    }
 
     /** Baixar capas da internet (acervo do Libretro) para jogos sem capa do RomM. */
     fun isScraperEnabled(context: Context): Boolean = context.getSharedPreferences(FILE, Context.MODE_PRIVATE).getBoolean(KEY_SCRAPER, true)

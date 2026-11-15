@@ -147,6 +147,7 @@ private fun GameModeRoot(refreshKey: Int, onExit: () -> Unit) {
     var showEmulators by remember { mutableStateOf(false) }
     var showFolders by remember { mutableStateOf(false) }
     var showCores by remember { mutableStateOf(false) }
+    var showScraper by remember { mutableStateOf(false) }
 
     LaunchedEffect(refreshKey, scanTick, rootPath) {
         hasAccess = StorageAccess.isGranted()
@@ -156,12 +157,13 @@ private fun GameModeRoot(refreshKey: Int, onExit: () -> Unit) {
         version++
     }
 
-    BackHandler(enabled = detail != null || showBios || showEmulators || showFolders || showCores) {
+    BackHandler(enabled = detail != null || showBios || showEmulators || showFolders || showCores || showScraper) {
         when {
             showBios -> showBios = false
             showEmulators -> showEmulators = false
             showFolders -> showFolders = false
             showCores -> showCores = false
+            showScraper -> showScraper = false
             else -> detail = null
         }
     }
@@ -238,6 +240,7 @@ private fun GameModeRoot(refreshKey: Int, onExit: () -> Unit) {
         showEmulators = false
         showFolders = false
         showCores = false
+        showScraper = false
     }
     Column(
         modifier = Modifier
@@ -286,6 +289,7 @@ private fun GameModeRoot(refreshKey: Int, onExit: () -> Unit) {
                 tab == GameTab.Settings && showFolders -> FoldersScreen()
 
                 tab == GameTab.Settings && showCores -> CoresScreen()
+                tab == GameTab.Settings && showScraper -> ScraperScreen()
 
                 tab == GameTab.Settings -> SettingsScreen(
                     rootPath = rootPath,
@@ -299,6 +303,7 @@ private fun GameModeRoot(refreshKey: Int, onExit: () -> Unit) {
                     onOpenEmulators = { showEmulators = true },
                     onOpenFolders = { showFolders = true },
                     onOpenCores = { showCores = true },
+                    onOpenScraper = { showScraper = true },
                     onExit = onExit,
                 )
 

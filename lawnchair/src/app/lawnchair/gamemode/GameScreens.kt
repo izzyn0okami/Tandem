@@ -175,6 +175,7 @@ private fun AndroidCard(game: AndroidGame, onClick: () -> Unit) {
     val context = LocalContext.current
     val art by produceState<ImageBitmap?>(null, game.packageName) {
         value = withContext(Dispatchers.IO) { GameArt.androidArt(context, game) }
+        value = withContext(Dispatchers.IO) { GameArt.androidCover(context, game) } ?: value
     }
     FocusSurface(onClick = onClick, modifier = Modifier.size(width = CARD_WIDTH, height = CARD_HEIGHT)) {
         art?.let { Image(bitmap = it, contentDescription = game.title, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize()) }
@@ -333,6 +334,7 @@ internal fun SettingsScreen(
     onOpenEmulators: () -> Unit,
     onOpenFolders: () -> Unit,
     onOpenCores: () -> Unit,
+    onOpenScraper: () -> Unit,
     onExit: () -> Unit,
 ) {
     val context = LocalContext.current
@@ -370,6 +372,7 @@ internal fun SettingsScreen(
         GameButton(stringResource(R.string.game_emulators_open), onOpenEmulators)
         GameButton(stringResource(R.string.game_folders_open), onOpenFolders)
         GameButton(stringResource(R.string.game_cores_open), onOpenCores)
+        GameButton(stringResource(R.string.game_sgdb_open), onOpenScraper)
         FocusSurface(onClick = toggleAuto, modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(8.dp)) {
             Row(
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 18.dp, vertical = 8.dp),

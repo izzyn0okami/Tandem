@@ -29,13 +29,38 @@ object GameArt {
         memory.get("cover:${game.path}")?.let { return it }
         serverCover(context, game, allowNetwork = false)?.let { return it }
         scrapedCover(context, game, allowNetwork = false)?.let { return it }
+        gridCover(context, "${game.platform.slug}|${game.title}", game.title, "cover:${game.path}", allowNetwork = false)?.let { return it }
         return memory.get("gen:${game.path}") ?: ArtBox.forPlatform(game.title, game.platform).also { memory.put("gen:${game.path}", it) }
     }
 
     /** Pode usar a rede: baixa a capa do servidor se o jogo existir lá. Nulo = sem capa do servidor. */
     fun fetchCover(context: Context, game: LocalGame): ImageBitmap? {
         if (System.currentTimeMillis() < offlineUntilMs) return null
-        return serverCover(context, game, allowNetwork = true) ?: scrapedCover(context, game, allowNetwork = true)
+        return serverCover(context, game, allowNetwork = true)
+            ?: scrapedCover(context, game, allowNetwork = true)
+            ?: gridCover(context, "${game.platform.slug}|${game.title}", game.title, "cover:${game.path}", allowNetwork = true)
+    }
+
+    /** Capa do SteamGridDB (só com chave do usuário); serve para o que o Libretro não cobre. */
+    private fun gridCover(context: Context, key: String, title: String, memoryKey: String, allowNetwork: Boolean): ImageBitmap? {
+        if (GameModeSettings.steamGridKey(context) == null || !GameModeSettings.isScraperEnabled(context)) return null
+        var file = SteamGridDb.cachedFile(context, key)
+        if (file == null && allowNetwork) {
+            when (val result = SteamGridDb.download(context, key, title)) {
+                is ScrapeResult.Found -> file = result.file
+                ScrapeResult.Offline -> offlineUntilMs = System.currentTimeMillis() + OFFLINE_PAUSE_MS
+                ScrapeResult.NotFound -> Unit
+            }
+        }
+        val image = file?.let { RomMCovers.decode(it) } ?: return null
+        memory.put(memoryKey, image)
+        return image
+    }
+
+    /** Capa do SteamGridDB para um jogo Android, se houver chave; nulo = usa o ícone sobre cor. */
+    fun androidCover(context: Context, game: AndroidGame): ImageBitmap? {
+        if (System.currentTimeMillis() < offlineUntilMs) return null
+        return gridCover(context, "android|${game.title}", game.title, "androidcover:${game.packageName}", allowNetwork = true)
     }
 
     /** Capa do acervo do Libretro (scraper local), se o jogo for de um console suportado. */

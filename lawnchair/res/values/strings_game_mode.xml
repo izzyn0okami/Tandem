@@ -3,6 +3,14 @@
     <string name="game_mode_label">Modo jogos</string>
     <string name="game_mode_title">Modo jogos</string>
     <string name="game_mode_placeholder">Esqueleto do modo jogos. A biblioteca de jogos entra aqui nos próximos marcos.</string>
+    <string name="game_sgdb_open">Capas do SteamGridDB (chave de API)</string>
+    <string name="game_sgdb_title">SteamGridDB</string>
+    <string name="game_sgdb_note">Opcional. Cobre jogos Android, PC, Switch e o que o acervo do Libretro não tem. Crie uma chave gratuita em steamgriddb.com (perfil > Preferências > API) e cole aqui.</string>
+    <string name="game_sgdb_key">Chave de API</string>
+    <string name="game_sgdb_save">Testar e salvar</string>
+    <string name="game_sgdb_remove">Remover chave</string>
+    <string name="game_sgdb_ok">Chave salva. As capas novas aparecem ao reabrir as telas.</string>
+    <string name="game_sgdb_saved">Há uma chave salva.</string>
     <string name="game_mode_scraper">Baixar capas da internet (acervo do Libretro)</string>
     <string name="game_mode_auto_enter">Entrar ao conectar um controle</string>
     <string name="game_mode_exit">Voltar ao launcher</string>
