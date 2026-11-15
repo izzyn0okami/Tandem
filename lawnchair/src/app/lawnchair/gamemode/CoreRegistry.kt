@@ -157,8 +157,7 @@ object CoreRegistry {
     }
 
     /** Variáveis aplicadas ao abrir o jogo: as que o usuário salvou para o núcleo. */
-    fun variables(context: Context, coreId: String): Array<Variable> =
-        savedOptions(context, coreId).map { Variable(key = it.key, value = it.value) }.toTypedArray()
+    fun variables(context: Context, coreId: String): Array<Variable> = savedOptions(context, coreId).map { Variable(key = it.key, value = it.value) }.toTypedArray()
 
     /** Converte as variáveis do núcleo ("Nome; a|b|c") em opções que dá para alternar. */
     fun parse(variables: Array<Variable>): List<CoreOption> = variables.mapNotNull { variable ->
