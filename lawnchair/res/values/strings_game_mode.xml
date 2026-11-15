@@ -11,7 +11,7 @@
     <string name="game_sgdb_remove">Remover chave</string>
     <string name="game_sgdb_ok">Chave salva. As capas novas aparecem ao reabrir as telas.</string>
     <string name="game_sgdb_saved">Há uma chave salva.</string>
-    <string name="game_mode_sound">Som ao navegar com o controle</string>
+    <string name="game_mode_sound">Sons (navegação e conquistas)</string>
     <string name="game_server_open">Servidor RomM</string>
     <string name="game_romm_games_count">%1$d jogos no servidor</string>
     <string name="game_romm_versions_title">VERSÕES</string>
@@ -166,6 +166,7 @@
     <string name="game_ra_logging_in">Entrando…</string>
     <string name="game_ra_connected">Conectado como %1$s</string>
     <string name="game_ra_logout">Sair da conta</string>
+    <string name="game_ra_unlocked_title">CONQUISTA DESBLOQUEADA · +%1$d</string>
     <string name="game_ra_unlocked">Conquista desbloqueada: %1$s (+%2$d)</string>
     <string name="game_session_achievements">Conquistas</string>
     <string name="game_ra_summary">%1$d de %2$d conquistas · %3$d de %4$d pontos</string>

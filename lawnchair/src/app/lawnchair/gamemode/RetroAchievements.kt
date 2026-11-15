@@ -56,7 +56,7 @@ object RaSettings {
     }
 }
 
-data class RaAchievement(val id: Long, val title: String, val description: String, val points: Int, val memAddr: String)
+data class RaAchievement(val id: Long, val title: String, val description: String, val points: Int, val memAddr: String, val badge: String = "")
 
 /** Uma conquista do jogo e se o usuário já a tem (no modo em que está jogando). */
 data class RaEntry(val achievement: RaAchievement, val unlocked: Boolean)
@@ -110,6 +110,7 @@ class RaClient {
                     description = it.optString("Description"),
                     points = it.optInt("Points", 0),
                     memAddr = it.optString("MemAddr"),
+                    badge = it.optString("BadgeName"),
                 )
             }
             .filter { it.memAddr.isNotBlank() && !it.title.contains("Unknown Emulator", ignoreCase = true) }

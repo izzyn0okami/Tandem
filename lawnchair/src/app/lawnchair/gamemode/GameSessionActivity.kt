@@ -22,7 +22,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -31,7 +30,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
@@ -84,7 +82,7 @@ class GameSessionActivity : ComponentActivity() {
     private lateinit var lostWatcher: ControllerLostWatcher
     private var romPath: String? = null
     private var raSession: RaSession? = null
-    private var raToast by mutableStateOf<String?>(null)
+    private var raToast by mutableStateOf<RaAchievement?>(null)
     private var raEntries by mutableStateOf<List<RaEntry>>(emptyList())
     private var raHardcore by mutableStateOf(false)
     private var raListOpen by mutableStateOf(false)
@@ -162,7 +160,10 @@ class GameSessionActivity : ComponentActivity() {
                 romPath = loadPath,
                 scope = lifecycleScope,
                 hardcore = RaSettings.hardcore(this),
-                onUnlock = { raToast = getString(R.string.game_ra_unlocked, it.title, it.points) },
+                onUnlock = {
+                    raToast = it
+                    if (GameModeSettings.isSoundEnabled(this)) NavSound.unlock()
+                },
                 onState = { entries, hardcore ->
                     raEntries = entries
                     raHardcore = hardcore && entries.isNotEmpty()
@@ -180,12 +181,12 @@ class GameSessionActivity : ComponentActivity() {
                 ComposeView(this).apply {
                     setContent {
                         LawnchairTheme {
-                            raToast?.let { text ->
-                                LaunchedEffect(text) {
+                            raToast?.let { unlocked ->
+                                LaunchedEffect(unlocked) {
                                     delay(RA_TOAST_MS)
-                                    if (raToast == text) raToast = null
+                                    if (raToast == unlocked) raToast = null
                                 }
-                                AchievementToast(text)
+                                AchievementToast(unlocked)
                             }
                             if (menuOpen) {
                                 val progress = if (raEntries.isEmpty()) {
@@ -502,20 +503,5 @@ private fun PauseMenu(
                 modifier = Modifier.padding(top = 6.dp),
             )
         }
-    }
-}
-
-@Composable
-private fun AchievementToast(text: String) {
-    Box(modifier = Modifier.fillMaxSize().padding(top = 24.dp), contentAlignment = Alignment.TopCenter) {
-        Text(
-            text = text,
-            color = GameColors.text,
-            fontSize = 15.sp,
-            fontWeight = FontWeight.SemiBold,
-            modifier = Modifier
-                .background(GameColors.panel, RoundedCornerShape(12.dp))
-                .padding(horizontal = 20.dp, vertical = 12.dp),
-        )
     }
 }
