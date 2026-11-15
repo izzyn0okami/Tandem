@@ -6,6 +6,7 @@ import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
 import android.provider.Settings
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
@@ -373,7 +374,11 @@ private fun ServerLibrary(rootPath: String, onLibraryChange: () -> Unit, onDisco
     }
 
     val list = games
-    val groups = remember(list) { list.orEmpty().groupBy { it.platform }.toList().sortedBy { it.first.sortOrder } }
+    val groups = remember(list) {
+        list.orEmpty().groupBy { it.platform }.toList().sortedBy { it.first.sortOrder }.map { (platform, games) -> platform to groupVersions(games) }
+    }
+    var picking by remember { mutableStateOf<TitleGroup?>(null) }
+    BackHandler(enabled = picking != null) { picking = null }
     var filter by remember { mutableStateOf<String?>(null) }
     val activeFilter = filter?.takeIf { slug -> groups.any { it.first.slug == slug } }
     val shown = remember(groups, activeFilter) { groups.filter { activeFilter == null || it.first.slug == activeFilter } }
@@ -414,14 +419,22 @@ private fun ServerLibrary(rootPath: String, onLibraryChange: () -> Unit, onDisco
                 if (report.isNotEmpty()) Text(report, color = GameColors.textDim, fontSize = 12.sp)
             }
 
+            picking != null -> VersionPicker(
+                group = picking!!,
+                root = root,
+                diskTick = diskTick,
+                progress = progress,
+                onDownload = ::download,
+            )
+
             else -> {
                 LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     item(key = "all") {
-                        PlatformChip(stringResource(R.string.game_romm_all_count, list.size), activeFilter == null) { filter = null }
+                        PlatformChip(stringResource(R.string.game_romm_all_count, groups.sumOf { it.second.size }), activeFilter == null) { filter = null }
                     }
-                    items(groups, key = { it.first.slug }) { (platform, platformGames) ->
+                    items(groups, key = { it.first.slug }) { (platform, titles) ->
                         PlatformChip(
-                            stringResource(R.string.game_romm_platform_count, platform.name, platformGames.size),
+                            stringResource(R.string.game_romm_platform_count, platform.name, titles.size),
                             activeFilter == platform.slug,
                         ) { filter = platform.slug }
                     }
@@ -433,11 +446,11 @@ private fun ServerLibrary(rootPath: String, onLibraryChange: () -> Unit, onDisco
                     contentPadding = PaddingValues(bottom = 8.dp),
                     modifier = Modifier.fillMaxSize(),
                 ) {
-                    shown.forEach { (platform, platformGames) ->
+                    shown.forEach { (platform, titles) ->
                         if (activeFilter == null) {
                             item(key = "h-${platform.slug}", span = { GridItemSpan(maxLineSpan) }) {
                                 Text(
-                                    text = stringResource(R.string.game_romm_platform_count, platform.name, platformGames.size),
+                                    text = stringResource(R.string.game_romm_platform_count, platform.name, titles.size),
                                     color = GameColors.text,
                                     fontSize = 14.sp,
                                     fontWeight = FontWeight.SemiBold,
@@ -445,14 +458,25 @@ private fun ServerLibrary(rootPath: String, onLibraryChange: () -> Unit, onDisco
                                 )
                             }
                         }
-                        items(platformGames, key = { it.id }) { game ->
-                            val downloaded = remember(game.id, diskTick) { game.destination(root).isFile }
+                        items(titles, key = { it.id }) { group ->
+                            val downloaded = remember(group.id, diskTick) { group.versions.any { it.destination(root).isFile } }
+                            val percent = group.versions.firstNotNullOfOrNull { version ->
+                                progress[version.id]?.let { bytes ->
+                                    if (version.sizeBytes > 0) (bytes * 100 / version.sizeBytes).toInt().coerceIn(0, 100) else 0
+                                }
+                            }
                             RemoteCard(
-                                game = game,
+                                group = group,
                                 client = client,
                                 downloaded = downloaded,
-                                downloadedBytes = progress[game.id],
-                                onClick = { if (!downloaded) download(game) },
+                                percent = percent,
+                                onClick = {
+                                    val only = group.versions.singleOrNull()
+                                    when {
+                                        only == null -> picking = group
+                                        !downloaded -> download(only)
+                                    }
+                                },
                             )
                         }
                     }
@@ -463,20 +487,33 @@ private fun ServerLibrary(rootPath: String, onLibraryChange: () -> Unit, onDisco
 }
 
 @Composable
-private fun RemoteCard(game: RemoteGame, client: RomMClient, downloaded: Boolean, downloadedBytes: Long?, onClick: () -> Unit) {
+private fun RemoteCard(group: TitleGroup, client: RomMClient, downloaded: Boolean, percent: Int?, onClick: () -> Unit) {
     val context = LocalContext.current
+    val game = group.coverGame
     val cover by produceState(RomMCovers.cached(game.id), game.id) {
         if (value == null) {
-            value = withContext(Dispatchers.IO) { RomMCovers.load(context, client, game) ?: GameArt.generated(game.title, game.platform) }
+            value = withContext(Dispatchers.IO) { RomMCovers.load(context, client, game) ?: GameArt.generated(group.title, game.platform) }
         }
     }
-    val percent = downloadedBytes?.let { if (game.sizeBytes > 0) (it * 100 / game.sizeBytes).toInt().coerceIn(0, 100) else 0 }
     FocusSurface(onClick = onClick, modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(8.dp)) {
         Column {
             Box(modifier = Modifier.fillMaxWidth().aspectRatio(COVER_RATIO).background(GameColors.surfaceHigh)) {
                 val image = cover
                 if (image != null) {
                     Image(bitmap = image, contentDescription = null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
+                }
+                if (group.versions.size > 1) {
+                    Text(
+                        text = stringResource(R.string.game_romm_versions, group.versions.size),
+                        color = GameColors.text,
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier
+                            .align(Alignment.BottomStart)
+                            .padding(4.dp)
+                            .background(GameColors.scrim, RoundedCornerShape(4.dp))
+                            .padding(horizontal = 5.dp, vertical = 2.dp),
+                    )
                 }
                 if (downloaded) {
                     Text(
@@ -510,7 +547,7 @@ private fun RemoteCard(game: RemoteGame, client: RomMClient, downloaded: Boolean
                 }
             }
             Text(
-                text = game.title,
+                text = group.title,
                 color = GameColors.text,
                 fontSize = 11.sp,
                 lineHeight = 13.sp,
