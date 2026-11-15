@@ -48,6 +48,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -377,9 +378,11 @@ private fun ServerLibrary(rootPath: String, onLibraryChange: () -> Unit, onDisco
     val activeFilter = filter?.takeIf { slug -> groups.any { it.first.slug == slug } }
     val shown = remember(groups, activeFilter) { groups.filter { activeFilter == null || it.first.slug == activeFilter } }
 
+    val filterOrder = remember(groups) { listOf<String?>(null) + groups.map { it.first.slug } }
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .onStepKeys(Key.ButtonL2, Key.ButtonR2) { filter = cycle(filterOrder, activeFilter, it) }
             .padding(horizontal = 24.dp),
         verticalArrangement = Arrangement.spacedBy(6.dp),
     ) {
@@ -463,7 +466,9 @@ private fun ServerLibrary(rootPath: String, onLibraryChange: () -> Unit, onDisco
 private fun RemoteCard(game: RemoteGame, client: RomMClient, downloaded: Boolean, downloadedBytes: Long?, onClick: () -> Unit) {
     val context = LocalContext.current
     val cover by produceState(RomMCovers.cached(game.id), game.id) {
-        if (value == null) value = withContext(Dispatchers.IO) { RomMCovers.load(context, client, game) }
+        if (value == null) {
+            value = withContext(Dispatchers.IO) { RomMCovers.load(context, client, game) ?: GameArt.generated(game.title, game.platform) }
+        }
     }
     val percent = downloadedBytes?.let { if (game.sizeBytes > 0) (it * 100 / game.sizeBytes).toInt().coerceIn(0, 100) else 0 }
     FocusSurface(onClick = onClick, modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(8.dp)) {

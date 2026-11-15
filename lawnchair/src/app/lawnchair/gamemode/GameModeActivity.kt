@@ -3,6 +3,7 @@ package app.lawnchair.gamemode
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
+import android.view.WindowManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -14,11 +15,13 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.systemBarsPadding
+import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -34,11 +37,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.WindowInsetsControllerCompat
 import app.lawnchair.ui.theme.EdgeToEdge
 import app.lawnchair.ui.theme.LawnchairTheme
 import com.android.launcher3.R
@@ -69,6 +75,10 @@ class GameModeActivity : ComponentActivity() {
             if (GameModeSettings.isAutoEnterEnabled(applicationContext)) padLost = true
         }
         enableEdgeToEdge()
+        window.attributes = window.attributes.apply {
+            layoutInDisplayCutoutMode = WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES
+        }
+        hideSystemBars()
         setContent {
             LawnchairTheme {
                 EdgeToEdge()
@@ -80,6 +90,18 @@ class GameModeActivity : ComponentActivity() {
                 }
             }
         }
+    }
+
+    /** Tela cheia: esconde a barra de status e a de navegação (aparecem ao deslizar da borda). */
+    private fun hideSystemBars() {
+        val controller = WindowInsetsControllerCompat(window, window.decorView)
+        controller.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+        controller.hide(WindowInsetsCompat.Type.systemBars())
+    }
+
+    override fun onWindowFocusChanged(hasFocus: Boolean) {
+        super.onWindowFocusChanged(hasFocus)
+        if (hasFocus) hideSystemBars()
     }
 
     override fun onResume() {
@@ -210,23 +232,27 @@ private fun GameModeRoot(refreshKey: Int, onExit: () -> Unit) {
 
     val needsAccess = !hasAccess && !GameLibrarySettings.isInsideApp(context, rootPath)
 
+    val selectTab: (GameTab) -> Unit = {
+        tab = it
+        showBios = false
+        showEmulators = false
+        showFolders = false
+        showCores = false
+    }
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .onStepKeys(Key.ButtonL1, Key.ButtonR1) { step ->
+                if (detail == null) selectTab(cycle(GameTab.entries, tab, step))
+            }
             .background(Brush.verticalGradient(listOf(GameColors.backgroundTop, GameColors.background)))
-            .systemBarsPadding(),
+            .windowInsetsPadding(WindowInsets.safeDrawing),
     ) {
         val current = detail
         if (current == null) {
             TopBar(
                 selected = tab,
-                onSelect = {
-                    tab = it
-                    showBios = false
-                    showEmulators = false
-                    showFolders = false
-                    showCores = false
-                },
+                onSelect = selectTab,
             )
         }
         Box(modifier = Modifier.weight(1f)) {
@@ -289,7 +315,7 @@ private fun GameModeRoot(refreshKey: Int, onExit: () -> Unit) {
                 modifier = Modifier.padding(horizontal = 24.dp, vertical = 4.dp),
             )
         }
-        HintBar(inDetail = current != null)
+        HintBar(inDetail = current != null, tab = tab)
     }
 }
 
@@ -350,7 +376,7 @@ private fun TopBar(selected: GameTab, onSelect: (GameTab) -> Unit) {
 }
 
 @Composable
-private fun HintBar(inDetail: Boolean) {
+private fun HintBar(inDetail: Boolean, tab: GameTab) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -360,6 +386,10 @@ private fun HintBar(inDetail: Boolean) {
     ) {
         Hint("A", stringResource(if (inDetail) R.string.game_play else R.string.game_hint_select))
         Hint("B", stringResource(R.string.game_hint_back))
+        if (!inDetail) {
+            Hint("L1 R1", stringResource(R.string.game_hint_tabs))
+            if (tab == GameTab.Library || tab == GameTab.Server) Hint("L2 R2", stringResource(R.string.game_hint_consoles))
+        }
     }
 }
 

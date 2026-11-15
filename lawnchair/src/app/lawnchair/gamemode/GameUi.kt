@@ -22,6 +22,11 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.input.key.type
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -115,3 +120,17 @@ fun CoverTile(game: LocalGame, modifier: Modifier = Modifier) {
         art?.let { Image(bitmap = it, contentDescription = game.title, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize()) }
     }
 }
+
+/** Dois botões do controle (ex.: L1/R1) passam para o item anterior/seguinte; [onStep] recebe -1 ou +1. */
+fun Modifier.onStepKeys(previous: Key, next: Key, onStep: (Int) -> Unit): Modifier = onPreviewKeyEvent { event ->
+    val step = when (event.key) {
+        next -> 1
+        previous -> -1
+        else -> 0
+    }
+    if (step != 0 && event.type == KeyEventType.KeyUp) onStep(step)
+    step != 0
+}
+
+/** Item que fica [step] posições depois de [current] na lista, dando a volta no fim. */
+fun <T> cycle(order: List<T>, current: T, step: Int): T = order[(order.indexOf(current) + step + order.size) % order.size]

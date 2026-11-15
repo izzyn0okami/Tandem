@@ -34,6 +34,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -87,7 +88,14 @@ internal fun LibraryScreen(
         return
     }
 
-    BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+    val filterOrder = remember(platforms, androidGames) {
+        listOf<String?>(null) + platforms.map { it.slug } + listOfNotNull(ANDROID_FILTER.takeIf { androidGames.isNotEmpty() })
+    }
+    BoxWithConstraints(
+        modifier = Modifier
+            .fillMaxSize()
+            .onStepKeys(Key.ButtonL2, Key.ButtonR2) { platformFilter = cycle(filterOrder, platformFilter, it) },
+    ) {
         val columns = (((maxWidth - 48.dp) + CARD_GAP) / (CARD_WIDTH + CARD_GAP)).toInt().coerceAtLeast(2)
         LazyColumn(
             modifier = Modifier.fillMaxSize(),

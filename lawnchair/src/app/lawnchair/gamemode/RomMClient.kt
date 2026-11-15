@@ -5,8 +5,10 @@ import androidx.core.content.edit
 import java.io.File
 import java.io.IOException
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicInteger
 import okhttp3.HttpUrl
 import okhttp3.HttpUrl.Companion.toHttpUrl
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.MultipartBody
 import okhttp3.OkHttpClient
@@ -458,16 +460,34 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
         val path = game.coverPath ?: return null
         val file = RomMCovers.coverFile(context, game.id).apply { parentFile?.mkdirs() }
         if (file.isFile && file.length() > 0) return file
-        val url = if (path.startsWith("http")) path.toHttpUrl() else base.resolve(path.trimStart('/')) ?: return null
         // Grava num arquivo temporário e só então renomeia: outra tela nunca lê uma capa pela metade.
         val temp = File(file.parentFile, "${file.name}.${Thread.currentThread().id}.part")
         return runCatching {
-            http.newCall(request(url).build()).execute().use { response ->
-                if (!response.isSuccessful) return null
-                temp.outputStream().use { response.body.byteStream().copyTo(it) }
-            }
-            if (temp.renameTo(file)) file else null
+            if (coverUrls(path).any { downloadCover(it, temp) } && temp.renameTo(file)) file else null
         }.also { temp.delete() }.getOrNull()
+    }
+
+    /** O RomM serve as imagens em /assets/romm/resources/<caminho>; o caminho da lista vem sem esse prefixo. */
+    private fun coverUrls(path: String): List<HttpUrl> {
+        if (path.startsWith("http")) return listOfNotNull(path.toHttpUrlOrNull())
+        val clean = path.trimStart('/')
+        val candidates = if (clean.startsWith("assets/")) listOf(clean) else listOf("assets/romm/resources/$clean", clean)
+        return candidates.mapNotNull { base.resolve(it) }
+    }
+
+    private fun downloadCover(url: HttpUrl, temp: File): Boolean {
+        return runCatching {
+            http.newCall(request(url).build()).execute().use { response ->
+                if (!response.isSuccessful) {
+                    if (coverFailuresLogged.getAndIncrement() < MAX_COVER_FAILURE_LOGS) {
+                        GameLog.log("romm", "capa: HTTP ${response.code} em ${url.encodedPath}")
+                    }
+                    return@use false
+                }
+                temp.outputStream().use { response.body.byteStream().copyTo(it) }
+                true
+            }
+        }.getOrDefault(false)
     }
 
     /** Saves (bateria) e estados guardados no servidor para um jogo. */
@@ -523,6 +543,8 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
 
     private companion object {
         const val PAGE_SIZE = 100
+        const val MAX_COVER_FAILURE_LOGS = 4
+        val coverFailuresLogged = AtomicInteger()
         val DEVICE_SCOPES = listOf(
             "me.read",
             "platforms.read",

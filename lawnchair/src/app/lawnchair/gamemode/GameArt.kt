@@ -37,6 +37,12 @@ object GameArt {
         return serverCover(context, game, allowNetwork = true)
     }
 
+    /** Capa gerada para um jogo do servidor que não tem imagem. */
+    fun generated(title: String, platform: GamePlatform): ImageBitmap {
+        val key = "gen:${platform.slug}:$title"
+        return memory.get(key) ?: ArtBox.forPlatform(title, platform).also { memory.put(key, it) }
+    }
+
     fun androidArt(context: Context, game: AndroidGame): ImageBitmap {
         val key = "android:${game.packageName}"
         memory.get(key)?.let { return it }
