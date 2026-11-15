@@ -129,6 +129,7 @@
         <activity
             android:name="app.lawnchair.gamemode.GameModeActivity"
             android:label="@string/game_mode_label"
+            android:screenOrientation="sensorLandscape"
             android:icon="@mipmap/ic_launcher_home"
             android:exported="true"
             android:launchMode="singleTop"

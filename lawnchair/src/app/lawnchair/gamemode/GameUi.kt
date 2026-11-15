@@ -1,6 +1,5 @@
 package app.lawnchair.gamemode
 
-import android.view.SoundEffectConstants
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
@@ -33,7 +32,6 @@ import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -70,7 +68,6 @@ fun FocusSurface(
     content: @Composable BoxScope.() -> Unit,
 ) {
     var focused by remember { mutableStateOf(false) }
-    val view = LocalView.current
     val context = LocalContext.current
     val created = remember { System.currentTimeMillis() }
     val scale by animateFloatAsState(if (focused) 1.04f else 1f, tween(120), label = "focusScale")
@@ -83,7 +80,7 @@ fun FocusSurface(
             .onFocusChanged {
                 // Sem som no foco inicial da tela (primeiros instantes); depois, um clique leve ao navegar.
                 if (it.isFocused && !focused && System.currentTimeMillis() - created > FOCUS_SOUND_DELAY_MS && GameModeSettings.isSoundEnabled(context)) {
-                    view.playSoundEffect(SoundEffectConstants.NAVIGATION_DOWN)
+                    NavSound.click()
                 }
                 focused = it.isFocused
             }
