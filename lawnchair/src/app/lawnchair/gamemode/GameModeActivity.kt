@@ -289,6 +289,7 @@ private fun GameModeRoot(refreshKey: Int, onExit: () -> Unit) {
                 tab == GameTab.Settings && showFolders -> FoldersScreen()
 
                 tab == GameTab.Settings && showCores -> CoresScreen()
+
                 tab == GameTab.Settings && showScraper -> ScraperScreen()
 
                 tab == GameTab.Settings -> SettingsScreen(
