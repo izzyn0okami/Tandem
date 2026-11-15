@@ -124,7 +124,6 @@ private const val SYNC_TIMEOUT_MS = 15_000L
 
 private enum class GameTab(val label: Int) {
     Library(R.string.game_tab_library),
-    Server(R.string.game_tab_server),
     Achievements(R.string.game_tab_achievements),
     Settings(R.string.game_tab_settings),
 }
@@ -134,7 +133,7 @@ private fun GameModeRoot(refreshKey: Int, onExit: () -> Unit) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     var tab by remember { mutableStateOf(GameTab.Library) }
-    var detail by remember { mutableStateOf<LocalGame?>(null) }
+    var detailKey by remember { mutableStateOf<String?>(null) }
     var status by remember { mutableStateOf("") }
     var busy by remember { mutableStateOf(false) }
     var rootPath by remember { mutableStateOf(GameLibrarySettings.rootPath(context)) }
@@ -148,6 +147,18 @@ private fun GameModeRoot(refreshKey: Int, onExit: () -> Unit) {
     var showFolders by remember { mutableStateOf(false) }
     var showCores by remember { mutableStateOf(false) }
     var showScraper by remember { mutableStateOf(false) }
+    var showServer by remember { mutableStateOf(false) }
+    val remote = remember { RemoteLibrary(context, scope) }
+    val entries = remember(games, remote.games, rootPath, version) {
+        buildEntries(context, games, remote.games.orEmpty(), File(rootPath))
+    }
+    val detail = entries.firstOrNull { it.key == detailKey }
+    val networkRequest = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {}
+
+    LaunchedEffect(remote.connected, remote.tick, refreshKey) { remote.refresh() }
+    LaunchedEffect(remote.connected) {
+        if (remote.connected && !localNetworkGranted(context)) runCatching { networkRequest.launch(LOCAL_NETWORK_PERMISSION) }
+    }
 
     LaunchedEffect(refreshKey, scanTick, rootPath) {
         hasAccess = StorageAccess.isGranted()
@@ -157,14 +168,15 @@ private fun GameModeRoot(refreshKey: Int, onExit: () -> Unit) {
         version++
     }
 
-    BackHandler(enabled = detail != null || showBios || showEmulators || showFolders || showCores || showScraper) {
+    BackHandler(enabled = detail != null || showBios || showEmulators || showFolders || showCores || showScraper || showServer) {
         when {
             showBios -> showBios = false
             showEmulators -> showEmulators = false
             showFolders -> showFolders = false
             showCores -> showCores = false
             showScraper -> showScraper = false
-            else -> detail = null
+            showServer -> showServer = false
+            else -> detailKey = null
         }
     }
 
@@ -241,6 +253,7 @@ private fun GameModeRoot(refreshKey: Int, onExit: () -> Unit) {
         showFolders = false
         showCores = false
         showScraper = false
+        showServer = false
     }
     Column(
         modifier = Modifier
@@ -261,24 +274,32 @@ private fun GameModeRoot(refreshKey: Int, onExit: () -> Unit) {
         Box(modifier = Modifier.weight(1f)) {
             when {
                 current != null -> GameDetailScreen(
-                    game = current,
+                    entry = current,
+                    progress = remote.progress,
                     busy = busy,
-                    onPlay = { play(current) },
-                    onLoad = { play(current, loadState = true) },
-                    onBack = { detail = null },
+                    onPlay = { play(it) },
+                    onLoad = { play(it, loadState = true) },
+                    onDownload = { remote.download(it, File(rootPath)) { scanTick++ } },
+                    onBack = { detailKey = null },
                 )
 
                 tab == GameTab.Library -> LibraryScreen(
                     games = games,
+                    entries = entries,
                     androidGames = androidGames,
+                    progress = remote.progress,
                     version = version,
                     busy = busy,
                     onPlay = { play(it) },
-                    onDetails = { detail = it },
+                    onOpen = { detailKey = it.key },
                     onLaunchAndroid = { game ->
                         if (!AndroidGames.launch(context, game)) {
                             status = context.getString(R.string.game_mode_status_error, game.title)
                         }
+                    },
+                    onRefresh = {
+                        scanTick++
+                        remote.requestRefresh()
                     },
                 )
 
@@ -291,6 +312,8 @@ private fun GameModeRoot(refreshKey: Int, onExit: () -> Unit) {
                 tab == GameTab.Settings && showCores -> CoresScreen()
 
                 tab == GameTab.Settings && showScraper -> ScraperScreen()
+
+                tab == GameTab.Settings && showServer -> ServerScreen(remote)
 
                 tab == GameTab.Settings -> SettingsScreen(
                     rootPath = rootPath,
@@ -305,13 +328,29 @@ private fun GameModeRoot(refreshKey: Int, onExit: () -> Unit) {
                     onOpenFolders = { showFolders = true },
                     onOpenCores = { showCores = true },
                     onOpenScraper = { showScraper = true },
+                    onOpenServer = { showServer = true },
                     onExit = onExit,
                 )
 
-                tab == GameTab.Server -> ServerScreen(rootPath = rootPath, onLibraryChange = { scanTick++ })
-
                 else -> AchievementsScreen()
             }
+        }
+        if (remote.refreshing) {
+            Text(
+                text = stringResource(R.string.game_romm_updating),
+                color = GameColors.textDim,
+                fontSize = 12.sp,
+                modifier = Modifier.padding(horizontal = 24.dp, vertical = 2.dp),
+            )
+        }
+        if (remote.error.isNotEmpty()) {
+            Text(
+                text = remote.error,
+                color = GameColors.danger,
+                fontSize = 12.sp,
+                maxLines = 2,
+                modifier = Modifier.padding(horizontal = 24.dp, vertical = 2.dp),
+            )
         }
         if (status.isNotEmpty()) {
             Text(
@@ -390,11 +429,15 @@ private fun HintBar(inDetail: Boolean, tab: GameTab) {
             .padding(horizontal = 24.dp, vertical = 5.dp),
         horizontalArrangement = Arrangement.spacedBy(24.dp),
     ) {
-        Hint("A", stringResource(if (inDetail) R.string.game_play else R.string.game_hint_select))
+        Hint("A", stringResource(R.string.game_hint_select))
         Hint("B", stringResource(R.string.game_hint_back))
         if (!inDetail) {
             Hint("L1 R1", stringResource(R.string.game_hint_tabs))
-            if (tab == GameTab.Library || tab == GameTab.Server) Hint("L2 R2", stringResource(R.string.game_hint_consoles))
+            if (tab == GameTab.Library) {
+                Hint("L2 R2", stringResource(R.string.game_hint_consoles))
+                Hint("Y", stringResource(R.string.game_hint_filter_list))
+                Hint("X", stringResource(R.string.game_hint_refresh))
+            }
         }
     }
 }

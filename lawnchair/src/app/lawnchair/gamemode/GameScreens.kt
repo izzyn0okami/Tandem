@@ -1,8 +1,10 @@
 package app.lawnchair.gamemode
 
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -16,6 +18,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -27,12 +30,14 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.layout.ContentScale
@@ -46,6 +51,7 @@ import java.io.File
 import java.text.DateFormat
 import java.util.Date
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 private val CARD_WIDTH = 96.dp
@@ -55,19 +61,26 @@ private val CARD_GAP = 10.dp
 @Composable
 internal fun LibraryScreen(
     games: List<LocalGame>,
+    entries: List<LibraryEntry>,
     androidGames: List<AndroidGame>,
+    progress: Map<Long, Long>,
     version: Int,
     busy: Boolean,
     onPlay: (LocalGame) -> Unit,
-    onDetails: (LocalGame) -> Unit,
+    onOpen: (LibraryEntry) -> Unit,
     onLaunchAndroid: (AndroidGame) -> Unit,
+    onRefresh: () -> Unit,
 ) {
     val context = LocalContext.current
-    val recent = remember(version) { PlayHistory.recent(context, games).take(10) }
+    val scope = rememberCoroutineScope()
+    val listState = rememberLazyListState()
+    val chipFocus = remember { FocusRequester() }
+    val recent = remember(version, games) { PlayHistory.recent(context, games).take(10) }
+    val entryByPath = remember(entries) { entries.flatMap { entry -> entry.locals.map { it.path to entry } }.toMap() }
     var platformFilter by remember { mutableStateOf<String?>(null) }
-    val platforms = remember(games) { games.map { it.platform }.distinctBy { it.slug } }
-    val visible = remember(games, platformFilter) {
-        if (platformFilter == null) games else games.filter { it.platform.slug == platformFilter }
+    val platforms = remember(entries) { entries.map { it.platform }.distinctBy { it.slug } }
+    val visible = remember(entries, platformFilter) {
+        if (platformFilter == null) entries else entries.filter { it.platform.slug == platformFilter }
     }
     val androidSorted = remember(androidGames, version) { AndroidGames.sortedByRecent(context, androidGames) }
     val showAndroid = platformFilter == null || platformFilter == ANDROID_FILTER
@@ -77,7 +90,7 @@ internal fun LibraryScreen(
         if (hero != null) runCatching { heroFocus.requestFocus() }
     }
 
-    if (games.isEmpty() && androidGames.isEmpty()) {
+    if (entries.isEmpty() && androidGames.isEmpty()) {
         Column(modifier = Modifier.fillMaxSize().padding(24.dp)) {
             Text(
                 text = stringResource(R.string.game_mode_empty_library),
@@ -91,13 +104,22 @@ internal fun LibraryScreen(
     val filterOrder = remember(platforms, androidGames) {
         listOf<String?>(null) + platforms.map { it.slug } + listOfNotNull(ANDROID_FILTER.takeIf { androidGames.isNotEmpty() })
     }
+    val chipsIndex = (if (hero != null) 1 else 0) + (if (recent.isNotEmpty()) 1 else 0)
     BoxWithConstraints(
         modifier = Modifier
             .fillMaxSize()
-            .onStepKeys(Key.ButtonL2, Key.ButtonR2) { platformFilter = cycle(filterOrder, platformFilter, it) },
+            .onStepKeys(Key.ButtonL2, Key.ButtonR2) { platformFilter = cycle(filterOrder, platformFilter, it) }
+            .onShortcutKey(Key.ButtonX, onRefresh)
+            .onShortcutKey(Key.ButtonY) {
+                scope.launch {
+                    listState.animateScrollToItem(chipsIndex)
+                    runCatching { chipFocus.requestFocus() }
+                }
+            },
     ) {
         val columns = (((maxWidth - 48.dp) + CARD_GAP) / (CARD_WIDTH + CARD_GAP)).toInt().coerceAtLeast(2)
         LazyColumn(
+            state = listState,
             modifier = Modifier.fillMaxSize(),
             verticalArrangement = Arrangement.spacedBy(14.dp),
             contentPadding = PaddingValues(horizontal = 24.dp, vertical = 4.dp),
@@ -110,7 +132,7 @@ internal fun LibraryScreen(
                         busy = busy,
                         focus = heroFocus,
                         onPlay = { onPlay(hero) },
-                        onDetails = { onDetails(hero) },
+                        onDetails = { entryByPath[hero.path]?.let(onOpen) },
                     )
                 }
             }
@@ -120,7 +142,7 @@ internal fun LibraryScreen(
                         SectionTitle(stringResource(R.string.game_recent))
                         LazyRow(horizontalArrangement = Arrangement.spacedBy(CARD_GAP)) {
                             items(recent, key = { it.path }) { game ->
-                                GameCard(game, onClick = { onDetails(game) })
+                                GameCard(game, onClick = { entryByPath[game.path]?.let(onOpen) })
                             }
                         }
                     }
@@ -131,14 +153,16 @@ internal fun LibraryScreen(
                     SectionTitle(stringResource(R.string.game_by_platform))
                     LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                         item {
-                            PlatformChip(stringResource(R.string.game_all), platformFilter == null) { platformFilter = null }
+                            PlatformChip(stringResource(R.string.game_all), platformFilter == null, chipModifier(platformFilter == null, chipFocus)) { platformFilter = null }
                         }
                         items(platforms, key = { it.slug }) { platform ->
-                            PlatformChip(platform.name, platformFilter == platform.slug) { platformFilter = platform.slug }
+                            val selected = platformFilter == platform.slug
+                            PlatformChip(platform.name, selected, chipModifier(selected, chipFocus)) { platformFilter = platform.slug }
                         }
                         if (androidGames.isNotEmpty()) {
                             item(key = ANDROID_FILTER) {
-                                PlatformChip(stringResource(R.string.game_android), platformFilter == ANDROID_FILTER) { platformFilter = ANDROID_FILTER }
+                                val selected = platformFilter == ANDROID_FILTER
+                                PlatformChip(stringResource(R.string.game_android), selected, chipModifier(selected, chipFocus)) { platformFilter = ANDROID_FILTER }
                             }
                         }
                     }
@@ -158,14 +182,65 @@ internal fun LibraryScreen(
             }
             if (platformFilter != ANDROID_FILTER && visible.isNotEmpty()) {
                 item(key = "library-title") { SectionTitle(stringResource(R.string.game_library_section)) }
-                items(visible.chunked(columns), key = { row -> row.first().path }) { row ->
+                items(visible.chunked(columns), key = { row -> row.first().key }) { row ->
                     Row(horizontalArrangement = Arrangement.spacedBy(CARD_GAP)) {
-                        row.forEach { game -> GameCard(game, onClick = { onDetails(game) }) }
+                        row.forEach { entry -> EntryCard(entry, progress, onClick = { onOpen(entry) }) }
                     }
                 }
             }
         }
     }
+}
+
+/** Só o chip selecionado recebe o foco quando o botão Y pede para ir aos consoles. */
+private fun chipModifier(selected: Boolean, focus: FocusRequester): Modifier = if (selected) Modifier.focusRequester(focus) else Modifier
+
+/** Cartão da grade: capa, selo "Baixar" se só está no servidor, "N versões" e o andamento do download. */
+@Composable
+private fun EntryCard(entry: LibraryEntry, progress: Map<Long, Long>, onClick: () -> Unit) {
+    val percent = entry.percent(progress)
+    FocusSurface(onClick = onClick, modifier = Modifier.size(width = CARD_WIDTH, height = CARD_HEIGHT)) {
+        CoverTile(entry.cover, modifier = Modifier.fillMaxSize())
+        val versions = entry.group?.versions?.size ?: 0
+        if (versions > 1) {
+            CardBadge(stringResource(R.string.game_romm_versions, versions), GameColors.scrim, GameColors.text, Alignment.BottomStart)
+        }
+        if (entry.remoteOnly && percent == null) {
+            CardBadge(stringResource(R.string.game_romm_download), GameColors.accent, GameColors.onAccent, Alignment.TopEnd)
+        }
+        if (percent != null) {
+            Box(modifier = Modifier.fillMaxSize().background(GameColors.scrim), contentAlignment = Alignment.Center) {
+                Text(
+                    text = stringResource(R.string.game_romm_downloading, percent),
+                    color = GameColors.text,
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Bold,
+                )
+            }
+            Box(
+                modifier = Modifier
+                    .align(Alignment.BottomStart)
+                    .fillMaxWidth(percent / 100f)
+                    .height(4.dp)
+                    .background(GameColors.accent),
+            )
+        }
+    }
+}
+
+@Composable
+private fun BoxScope.CardBadge(text: String, background: Color, color: Color, alignment: Alignment) {
+    Text(
+        text = text,
+        color = color,
+        fontSize = 10.sp,
+        fontWeight = FontWeight.Bold,
+        modifier = Modifier
+            .align(alignment)
+            .padding(4.dp)
+            .background(background, RoundedCornerShape(4.dp))
+            .padding(horizontal = 5.dp, vertical = 2.dp),
+    )
 }
 
 private const val ANDROID_FILTER = "android"
@@ -195,9 +270,10 @@ private fun GameCard(game: LocalGame, onClick: () -> Unit) {
 }
 
 @Composable
-internal fun PlatformChip(label: String, selected: Boolean, onClick: () -> Unit) {
+internal fun PlatformChip(label: String, selected: Boolean, modifier: Modifier = Modifier, onClick: () -> Unit) {
     FocusSurface(
         onClick = onClick,
+        modifier = modifier,
         shape = RoundedCornerShape(20.dp),
         background = if (selected) GameColors.surfaceHigh else GameColors.surface,
     ) {
@@ -246,19 +322,25 @@ private fun HeroSection(
 
 @Composable
 internal fun GameDetailScreen(
-    game: LocalGame,
+    entry: LibraryEntry,
+    progress: Map<Long, Long>,
     busy: Boolean,
-    onPlay: () -> Unit,
-    onLoad: () -> Unit,
+    onPlay: (LocalGame) -> Unit,
+    onLoad: (LocalGame) -> Unit,
+    onDownload: (RemoteGame) -> Unit,
     onBack: () -> Unit,
 ) {
     val context = LocalContext.current
-    val history = remember(game.path) { PlayHistory.get(context, game.path) }
-    val hasState = remember(game.path) {
-        SaveStore(context, CoreRegistry.chosen(context, game.platform), File(game.path)).hasState() && !RaSettings.blocksStates(context, game.platform)
+    val local = entry.local
+    val group = entry.group
+    val history = remember(local?.path) { local?.let { PlayHistory.get(context, it.path) } ?: PlayHistory.Entry(0L, 0L) }
+    val hasState = remember(local?.path) {
+        local != null && SaveStore(context, CoreRegistry.chosen(context, local.platform), File(local.path)).hasState() && !RaSettings.blocksStates(context, local.platform)
     }
-    val playFocus = remember { FocusRequester() }
-    LaunchedEffect(game.path) { runCatching { playFocus.requestFocus() } }
+    val percent = entry.percent(progress)
+    val firstFocus = remember { FocusRequester() }
+    val manyVersions = (group?.versions?.size ?: 0) > 1
+    LaunchedEffect(entry.key) { runCatching { firstFocus.requestFocus() } }
 
     Row(
         modifier = Modifier
@@ -266,25 +348,46 @@ internal fun GameDetailScreen(
             .padding(horizontal = 32.dp, vertical = 12.dp),
         horizontalArrangement = Arrangement.spacedBy(28.dp),
     ) {
-        CoverTile(game, modifier = Modifier.size(width = 150.dp, height = 200.dp).clip(RoundedCornerShape(14.dp)))
+        CoverTile(entry.cover, modifier = Modifier.size(width = 150.dp, height = 200.dp).clip(RoundedCornerShape(14.dp)))
         Column(verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.verticalScroll(rememberScrollState())) {
-            Text(text = game.platform.name.uppercase(), color = GameColors.textDim, fontSize = 12.sp)
-            Text(text = game.title, color = GameColors.text, fontSize = 26.sp, fontWeight = FontWeight.Bold, maxLines = 3)
+            Text(text = entry.platform.name.uppercase(), color = GameColors.textDim, fontSize = 12.sp)
+            Text(text = entry.title, color = GameColors.text, fontSize = 26.sp, fontWeight = FontWeight.Bold, maxLines = 3)
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.padding(top = 4.dp)) {
-                GameButton(
-                    label = stringResource(R.string.game_play),
-                    onClick = onPlay,
-                    primary = true,
-                    enabled = !busy,
-                    modifier = Modifier.width(130.dp).focusRequester(playFocus),
-                )
-                GameButton(
-                    label = stringResource(R.string.game_load_state_start),
-                    onClick = onLoad,
-                    enabled = hasState && !busy,
-                    modifier = Modifier.width(170.dp),
-                )
+                when {
+                    local != null -> GameButton(
+                        label = stringResource(R.string.game_play),
+                        onClick = { onPlay(local) },
+                        primary = true,
+                        enabled = !busy,
+                        modifier = Modifier.width(130.dp).focusRequester(firstFocus),
+                    )
+
+                    group != null && !manyVersions -> GameButton(
+                        label = if (percent != null) stringResource(R.string.game_romm_downloading, percent) else stringResource(R.string.game_romm_download),
+                        onClick = { onDownload(group.versions.first()) },
+                        primary = true,
+                        enabled = percent == null,
+                        modifier = Modifier.width(150.dp).focusRequester(firstFocus),
+                    )
+                }
+                if (local != null) {
+                    GameButton(
+                        label = stringResource(R.string.game_load_state_start),
+                        onClick = { onLoad(local) },
+                        enabled = hasState && !busy,
+                        modifier = Modifier.width(170.dp),
+                    )
+                }
                 GameButton(label = stringResource(R.string.game_hint_back), onClick = onBack, modifier = Modifier.width(100.dp))
+            }
+            if (manyVersions) {
+                VersionList(
+                    entry = entry,
+                    progress = progress,
+                    firstFocus = firstFocus.takeIf { local == null },
+                    onPlay = onPlay,
+                    onDownload = onDownload,
+                )
             }
             Row(horizontalArrangement = Arrangement.spacedBy(28.dp), modifier = Modifier.padding(top = 8.dp)) {
                 Stat(stringResource(R.string.game_stat_playtime), formatPlaytime(history.playtimeMs))
@@ -296,9 +399,9 @@ internal fun GameDetailScreen(
                         stringResource(R.string.game_never_played)
                     },
                 )
-                Stat(stringResource(R.string.game_stat_origin), stringResource(R.string.game_origin_local))
+                Stat(stringResource(R.string.game_stat_origin), stringResource(if (group != null) R.string.game_origin_server else R.string.game_origin_local))
             }
-            Text(text = game.path, color = GameColors.textDim, fontSize = 12.sp, modifier = Modifier.padding(top = 8.dp))
+            local?.let { Text(text = it.path, color = GameColors.textDim, fontSize = 12.sp, modifier = Modifier.padding(top = 8.dp)) }
         }
     }
 }
@@ -335,6 +438,7 @@ internal fun SettingsScreen(
     onOpenFolders: () -> Unit,
     onOpenCores: () -> Unit,
     onOpenScraper: () -> Unit,
+    onOpenServer: () -> Unit,
     onExit: () -> Unit,
 ) {
     val context = LocalContext.current
@@ -376,6 +480,7 @@ internal fun SettingsScreen(
         GameButton(stringResource(R.string.game_bios_open), onOpenBios)
         GameButton(stringResource(R.string.game_emulators_open), onOpenEmulators)
         GameButton(stringResource(R.string.game_folders_open), onOpenFolders)
+        GameButton(stringResource(R.string.game_server_open), onOpenServer)
         GameButton(stringResource(R.string.game_cores_open), onOpenCores)
         GameButton(stringResource(R.string.game_sgdb_open), onOpenScraper)
         FocusSurface(onClick = toggleAuto, modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(8.dp)) {

@@ -12,6 +12,12 @@
     <string name="game_sgdb_ok">Chave salva. As capas novas aparecem ao reabrir as telas.</string>
     <string name="game_sgdb_saved">Há uma chave salva.</string>
     <string name="game_mode_sound">Som ao navegar com o controle</string>
+    <string name="game_server_open">Servidor RomM</string>
+    <string name="game_romm_games_count">%1$d jogos no servidor</string>
+    <string name="game_romm_versions_title">VERSÕES</string>
+    <string name="game_origin_server">Servidor RomM</string>
+    <string name="game_hint_filter_list">Lista de consoles</string>
+    <string name="game_hint_refresh">Atualizar</string>
     <string name="game_mode_scraper">Baixar capas da internet (acervo do Libretro)</string>
     <string name="game_mode_auto_enter">Entrar ao conectar um controle</string>
     <string name="game_mode_exit">Voltar ao launcher</string>

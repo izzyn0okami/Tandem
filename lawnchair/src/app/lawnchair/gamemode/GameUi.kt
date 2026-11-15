@@ -153,5 +153,12 @@ fun Modifier.onStepKeys(previous: Key, next: Key, onStep: (Int) -> Unit): Modifi
     step != 0
 }
 
+/** Um botão do controle (ex.: X ou Y) dispara [action] ao ser solto. */
+fun Modifier.onShortcutKey(key: Key, action: () -> Unit): Modifier = onPreviewKeyEvent { event ->
+    val hit = event.key == key
+    if (hit && event.type == KeyEventType.KeyUp) action()
+    hit
+}
+
 /** Item que fica [step] posições depois de [current] na lista, dando a volta no fim. */
 fun <T> cycle(order: List<T>, current: T, step: Int): T = order[(order.indexOf(current) + step + order.size) % order.size]
