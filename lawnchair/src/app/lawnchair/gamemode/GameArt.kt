@@ -28,13 +28,30 @@ object GameArt {
     fun quick(context: Context, game: LocalGame): ImageBitmap {
         memory.get("cover:${game.path}")?.let { return it }
         serverCover(context, game, allowNetwork = false)?.let { return it }
+        scrapedCover(context, game, allowNetwork = false)?.let { return it }
         return memory.get("gen:${game.path}") ?: ArtBox.forPlatform(game.title, game.platform).also { memory.put("gen:${game.path}", it) }
     }
 
     /** Pode usar a rede: baixa a capa do servidor se o jogo existir lá. Nulo = sem capa do servidor. */
     fun fetchCover(context: Context, game: LocalGame): ImageBitmap? {
         if (System.currentTimeMillis() < offlineUntilMs) return null
-        return serverCover(context, game, allowNetwork = true)
+        return serverCover(context, game, allowNetwork = true) ?: scrapedCover(context, game, allowNetwork = true)
+    }
+
+    /** Capa do acervo do Libretro (scraper local), se o jogo for de um console suportado. */
+    private fun scrapedCover(context: Context, game: LocalGame, allowNetwork: Boolean): ImageBitmap? {
+        if (!GameModeSettings.isScraperEnabled(context) || !ThumbnailScraper.supports(game.platform)) return null
+        var file = ThumbnailScraper.cachedFile(context, game)
+        if (file == null && allowNetwork) {
+            when (val result = ThumbnailScraper.download(context, game)) {
+                is ScrapeResult.Found -> file = result.file
+                ScrapeResult.Offline -> offlineUntilMs = System.currentTimeMillis() + OFFLINE_PAUSE_MS
+                ScrapeResult.NotFound -> Unit
+            }
+        }
+        val image = file?.let { RomMCovers.decode(it) } ?: return null
+        memory.put("cover:${game.path}", image)
+        return image
     }
 
     /** Capa gerada para um jogo do servidor que não tem imagem. */

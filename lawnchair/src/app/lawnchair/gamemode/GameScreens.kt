@@ -341,6 +341,11 @@ internal fun SettingsScreen(
         autoEnter = !autoEnter
         GameModeSettings.setAutoEnterEnabled(context, autoEnter)
     }
+    var scraper by remember { mutableStateOf(GameModeSettings.isScraperEnabled(context)) }
+    val toggleScraper = {
+        scraper = !scraper
+        GameModeSettings.setScraperEnabled(context, scraper)
+    }
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -373,6 +378,16 @@ internal fun SettingsScreen(
             ) {
                 Text(text = stringResource(R.string.game_mode_auto_enter), color = GameColors.text, fontSize = 16.sp)
                 Switch(checked = autoEnter, onCheckedChange = null)
+            }
+        }
+        FocusSurface(onClick = toggleScraper, modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(8.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 18.dp, vertical = 8.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(text = stringResource(R.string.game_mode_scraper), color = GameColors.text, fontSize = 16.sp)
+                Switch(checked = scraper, onCheckedChange = null)
             }
         }
         GameButton(stringResource(R.string.game_log_export), rememberLogExporter())

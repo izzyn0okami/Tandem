@@ -23,6 +23,11 @@ object RomMCovers {
         memory.get(game.id)?.let { return it }
         val cached = coverFile(context, game.id).takeIf { it.isFile && it.length() > 0 }
         val file = (if (allowNetwork) client.cover(context, game) else cached) ?: return null
+        return decode(file)?.also { memory.put(game.id, it) }
+    }
+
+    /** Decodifica a imagem em tamanho de miniatura; apaga o arquivo se estiver corrompido. */
+    fun decode(file: File): ImageBitmap? {
         val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
         BitmapFactory.decodeFile(file.absolutePath, bounds)
         var sample = 1
@@ -33,6 +38,6 @@ object RomMCovers {
             file.delete()
             return null
         }
-        return bitmap.asImageBitmap().also { memory.put(game.id, it) }
+        return bitmap.asImageBitmap()
     }
 }

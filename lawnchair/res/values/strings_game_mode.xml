@@ -3,6 +3,7 @@
     <string name="game_mode_label">Modo jogos</string>
     <string name="game_mode_title">Modo jogos</string>
     <string name="game_mode_placeholder">Esqueleto do modo jogos. A biblioteca de jogos entra aqui nos próximos marcos.</string>
+    <string name="game_mode_scraper">Baixar capas da internet (acervo do Libretro)</string>
     <string name="game_mode_auto_enter">Entrar ao conectar um controle</string>
     <string name="game_mode_exit">Voltar ao launcher</string>
     <string name="game_mode_play_rom">Abrir ROM avulsa</string>

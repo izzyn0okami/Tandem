@@ -11,6 +11,16 @@ object GameModeSettings {
 
     private const val FILE = "game_mode"
     private const val KEY_AUTO_ENTER = "auto_enter_on_controller"
+    private const val KEY_SCRAPER = "scraper_thumbnails"
+
+    /** Baixar capas da internet (acervo do Libretro) para jogos sem capa do RomM. */
+    fun isScraperEnabled(context: Context): Boolean = context.getSharedPreferences(FILE, Context.MODE_PRIVATE).getBoolean(KEY_SCRAPER, true)
+
+    fun setScraperEnabled(context: Context, enabled: Boolean) {
+        context.getSharedPreferences(FILE, Context.MODE_PRIVATE).edit {
+            putBoolean(KEY_SCRAPER, enabled)
+        }
+    }
 
     fun isAutoEnterEnabled(context: Context): Boolean = context.getSharedPreferences(FILE, Context.MODE_PRIVATE).getBoolean(KEY_AUTO_ENTER, true)
 
