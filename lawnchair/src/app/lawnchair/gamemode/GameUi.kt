@@ -1,5 +1,8 @@
 package app.lawnchair.gamemode
 
+import android.view.SoundEffectConstants
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -22,6 +25,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.key
@@ -29,6 +33,7 @@ import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -52,6 +57,8 @@ object GameColors {
     val bar = Color(0x59000000)
 }
 
+private const val FOCUS_SOUND_DELAY_MS = 400L
+
 /** Elemento que recebe foco do controle: destaca com borda azul e responde ao botão A. */
 @Composable
 fun FocusSurface(
@@ -63,9 +70,23 @@ fun FocusSurface(
     content: @Composable BoxScope.() -> Unit,
 ) {
     var focused by remember { mutableStateOf(false) }
+    val view = LocalView.current
+    val context = LocalContext.current
+    val created = remember { System.currentTimeMillis() }
+    val scale by animateFloatAsState(if (focused) 1.04f else 1f, tween(120), label = "focusScale")
     Box(
         modifier = modifier
-            .onFocusChanged { focused = it.isFocused }
+            .graphicsLayer {
+                scaleX = scale
+                scaleY = scale
+            }
+            .onFocusChanged {
+                // Sem som no foco inicial da tela (primeiros instantes); depois, um clique leve ao navegar.
+                if (it.isFocused && !focused && System.currentTimeMillis() - created > FOCUS_SOUND_DELAY_MS && GameModeSettings.isSoundEnabled(context)) {
+                    view.playSoundEffect(SoundEffectConstants.NAVIGATION_DOWN)
+                }
+                focused = it.isFocused
+            }
             .clip(shape)
             .background(background)
             .then(if (focused) Modifier.border(3.dp, GameColors.accent, shape) else Modifier)

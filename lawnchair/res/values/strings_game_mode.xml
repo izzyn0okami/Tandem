@@ -11,6 +11,7 @@
     <string name="game_sgdb_remove">Remover chave</string>
     <string name="game_sgdb_ok">Chave salva. As capas novas aparecem ao reabrir as telas.</string>
     <string name="game_sgdb_saved">Há uma chave salva.</string>
+    <string name="game_mode_sound">Som ao navegar com o controle</string>
     <string name="game_mode_scraper">Baixar capas da internet (acervo do Libretro)</string>
     <string name="game_mode_auto_enter">Entrar ao conectar um controle</string>
     <string name="game_mode_exit">Voltar ao launcher</string>

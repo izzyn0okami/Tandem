@@ -12,6 +12,16 @@ object GameModeSettings {
     private const val FILE = "game_mode"
     private const val KEY_AUTO_ENTER = "auto_enter_on_controller"
     private const val KEY_SCRAPER = "scraper_thumbnails"
+    private const val KEY_SOUND = "navigation_sound"
+
+    /** Som de clique ao mover o foco com o controle (usa o som do sistema; some se "sons de toque" estiver desligado). */
+    fun isSoundEnabled(context: Context): Boolean = context.getSharedPreferences(FILE, Context.MODE_PRIVATE).getBoolean(KEY_SOUND, true)
+
+    fun setSoundEnabled(context: Context, enabled: Boolean) {
+        context.getSharedPreferences(FILE, Context.MODE_PRIVATE).edit {
+            putBoolean(KEY_SOUND, enabled)
+        }
+    }
     private const val KEY_STEAMGRID = "steamgriddb_key"
 
     /** Chave de API do SteamGridDB (opcional); sem ela o scraper do SteamGridDB fica desligado. */
