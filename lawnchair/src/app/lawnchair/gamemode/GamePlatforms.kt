@@ -249,6 +249,20 @@ object GamePlatforms {
             bios = listOf(BiosFile("colecovision.rom", "ColecoVision")),
             biosRequired = true,
         ),
+        GamePlatform(
+            slug = "intellivision",
+            name = "Intellivision",
+            coreId = "freeintv",
+            extensions = setOf("int", "bin", "rom"),
+            folderAliases = setOf("intellivision", "inty", "int"),
+            sortOrder = 86,
+            raConsoleId = 45,
+            bios = listOf(
+                BiosFile("exec.bin", "Intellivision (Executive)"),
+                BiosFile("grom.bin", "Intellivision (GROM)"),
+            ),
+            biosRequired = true,
+        ),
     )
 
     /** Extensões genéricas: só valem quando a pasta já diz a plataforma. */

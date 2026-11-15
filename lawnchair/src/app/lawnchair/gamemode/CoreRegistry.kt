@@ -101,6 +101,9 @@ object CoreRegistry {
             core("gearcoleco", "Gearcoleco", "Padrão"),
             core("bluemsx", "blueMSX", "Alternativa"),
         ),
+        "intellivision" to listOf(
+            core("freeintv", "FreeIntv", "Padrão"),
+        ),
     )
 
     private fun gbCores() = listOf(
