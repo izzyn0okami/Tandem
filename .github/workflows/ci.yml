@@ -56,6 +56,17 @@ jobs:
             echo storeFile='${{ github.workspace }}/key.jks' >> keystore.properties
             echo ${{ secrets.KEYSTORE }} | base64 --decode > ${{ github.workspace }}/key.jks
           fi
+      # Tandem: assina com a chave do fork (guardada em Secrets), em vez da chave pública do repositório.
+      - name: Write sign info (Tandem)
+        if: github.repository_owner != 'LawnchairLauncher'
+        run: |
+          if [ ! -z "${{ secrets.TANDEM_KEYSTORE }}" ]; then
+            echo storePassword='${{ secrets.TANDEM_KEYSTORE_PASSWORD }}' >> keystore.properties
+            echo keyAlias='${{ secrets.TANDEM_KEY_ALIAS }}' >> keystore.properties
+            echo keyPassword='${{ secrets.TANDEM_KEY_PASSWORD }}' >> keystore.properties
+            echo storeFile='${{ github.workspace }}/key.jks' >> keystore.properties
+            echo ${{ secrets.TANDEM_KEYSTORE }} | base64 --decode > ${{ github.workspace }}/key.jks
+          fi
       - name: Build APK
         run: ./gradlew ${{ matrix.build-variant }}
       - name: Upload artifact
