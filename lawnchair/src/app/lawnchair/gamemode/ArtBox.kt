@@ -60,6 +60,8 @@ object ArtBox {
         "3do" to Theme(0xFF6B4E16.toInt(), "3DO"),
         "vb" to Theme(0xFFB0171F.toInt(), "VIRTUAL BOY"),
         "coleco" to Theme(0xFF1F4E79.toInt(), "COLECOVISION"),
+        "msx" to Theme(0xFF2E7D32.toInt(), "MSX"),
+        "neogeo" to Theme(0xFF212121.toInt(), "NEO GEO"),
         "intellivision" to Theme(0xFF8A1C1C.toInt(), "INTELLIVISION"),
         "ps2" to Theme(0xFF1E3A8A.toInt(), "PLAYSTATION 2"),
         "gc" to Theme(0xFF4B3F8C.toInt(), "GAMECUBE"),

@@ -17,6 +17,8 @@ data class GamePlatform(
     val biosRequired: Boolean = false,
     /** Dentro do Tandem (núcleo libretro) ou em outro app. */
     val launch: LaunchMode = LaunchMode.LIBRETRO,
+    /** Núcleos que não usam um arquivo de BIOS só, e sim uma pasta inteira de arquivos de sistema (ex.: blueMSX). Nomes das subpastas esperadas dentro da pasta de BIOS. */
+    val biosKit: List<String>? = null,
 )
 
 /** Um arquivo de BIOS esperado na pasta de sistema do núcleo. */
@@ -250,6 +252,17 @@ object GamePlatforms {
             biosRequired = true,
         ),
         GamePlatform(
+            slug = "msx",
+            name = "MSX / MSX2",
+            coreId = "bluemsx",
+            extensions = setOf("rom", "mx1", "mx2", "dsk", "cas"),
+            folderAliases = setOf("msx", "msx1", "msx2", "msx-msx2"),
+            sortOrder = 87,
+            raConsoleId = 29,
+            biosRequired = true,
+            biosKit = listOf("Databases", "Machines"),
+        ),
+        GamePlatform(
             slug = "intellivision",
             name = "Intellivision",
             coreId = "freeintv",
@@ -261,6 +274,17 @@ object GamePlatforms {
                 BiosFile("exec.bin", "Intellivision (Executive)"),
                 BiosFile("grom.bin", "Intellivision (GROM)"),
             ),
+            biosRequired = true,
+        ),
+        GamePlatform(
+            slug = "neogeo",
+            name = "Neo Geo (MVS/AES)",
+            coreId = "fbneo",
+            extensions = setOf("zip"),
+            folderAliases = setOf("neogeo", "neo-geo", "mvs", "aes"),
+            sortOrder = 88,
+            discBased = true,
+            bios = listOf(BiosFile("neogeo.zip", "Neo Geo (BIOS do conjunto)")),
             biosRequired = true,
         ),
     )

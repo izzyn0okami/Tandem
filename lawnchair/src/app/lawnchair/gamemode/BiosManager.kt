@@ -22,7 +22,48 @@ object BiosManager {
     fun has(context: Context, file: BiosFile): Boolean = File(systemDir(context), file.name).isFile
 
     /** O jogo pode rodar? (BIOS opcional ou ao menos um dos obrigatórios presente) */
-    fun isReady(context: Context, platform: GamePlatform): Boolean = !platform.biosRequired || platform.bios.any { has(context, it) }
+    fun isReady(context: Context, platform: GamePlatform): Boolean = when {
+        !platform.biosRequired -> true
+        platform.biosKit != null -> kitReady(context, platform)
+        else -> platform.bios.any { has(context, it) }
+    }
+
+    /** Plataformas que precisam de uma pasta de sistema inteira (ex.: blueMSX), em vez de um arquivo só. */
+    fun platformsWithKit(): List<GamePlatform> = GamePlatforms.all.filter { it.biosKit != null }
+
+    /** Cada subpasta pedida existe e tem pelo menos um arquivo dentro. */
+    fun kitReady(context: Context, platform: GamePlatform): Boolean {
+        val kit = platform.biosKit ?: return true
+        return kit.all { folder -> File(systemDir(context), folder).let { it.isDirectory && it.walkTopDown().any(File::isFile) } }
+    }
+
+    /** Quantas das subpastas pedidas já têm algum arquivo. */
+    fun kitStatus(context: Context, platform: GamePlatform): Pair<Int, Int> {
+        val kit = platform.biosKit ?: return 0 to 0
+        val ok = kit.count { folder -> File(systemDir(context), folder).let { it.isDirectory && it.walkTopDown().any(File::isFile) } }
+        return ok to kit.size
+    }
+
+    /**
+     * Copia para a pasta de sistema as subpastas pedidas (ex.: "Databases", "Machines") que
+     * existirem dentro de [source], em qualquer nível até 2 pastas de profundidade. Devolve quantos
+     * arquivos foram copiados.
+     */
+    fun importKit(context: Context, platform: GamePlatform, source: File): Int {
+        val kit = platform.biosKit ?: return 0
+        var copied = 0
+        for (folder in kit) {
+            val found = source.walkTopDown().maxDepth(2).firstOrNull { it.isDirectory && it.name.equals(folder, ignoreCase = true) } ?: continue
+            val target = File(systemDir(context), folder)
+            found.walkTopDown().filter { it.isFile }.forEach { file ->
+                val dest = File(target, file.relativeTo(found).path)
+                dest.parentFile?.mkdirs()
+                runCatching { file.copyTo(dest, overwrite = true) }.onSuccess { copied++ }
+            }
+        }
+        GameLog.log("bios", "${platform.slug}: pasta de sistema importada ($copied arquivos)")
+        return copied
+    }
 
     private fun canonical(name: String): BiosFile? {
         val lower = name.lowercase()

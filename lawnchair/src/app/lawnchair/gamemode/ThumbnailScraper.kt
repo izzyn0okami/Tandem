@@ -60,6 +60,8 @@ object ThumbnailScraper {
         "3do" to "The 3DO Company - 3DO",
         "vb" to "Nintendo - Virtual Boy",
         "coleco" to "Coleco - ColecoVision",
+        "msx" to "Microsoft - MSX2",
+        "neogeo" to "SNK - Neo Geo",
         "intellivision" to "Mattel - Intellivision",
         "ps2" to "Sony - PlayStation 2",
         "gc" to "Nintendo - GameCube",

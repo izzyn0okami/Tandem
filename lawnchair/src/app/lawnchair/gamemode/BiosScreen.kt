@@ -39,6 +39,23 @@ internal fun BiosScreen(rootPath: String) {
     var tick by remember { mutableIntStateOf(0) }
     var message by remember { mutableStateOf("") }
     var busy by remember { mutableStateOf(false) }
+    var kitTarget by remember { mutableStateOf<GamePlatform?>(null) }
+
+    val kitPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri ->
+        val platform = kitTarget ?: return@rememberLauncherForActivityResult
+        kitTarget = null
+        val path = uri?.let(StorageAccess::treeUriToPath)
+        if (uri != null && path == null) {
+            message = context.getString(R.string.game_mode_status_folder_invalid)
+            return@rememberLauncherForActivityResult
+        }
+        if (path == null) return@rememberLauncherForActivityResult
+        scope.launch {
+            val copied = withContext(Dispatchers.IO) { BiosManager.importKit(context, platform, File(path)) }
+            message = context.getString(R.string.game_bios_kit_imported, copied)
+            tick++
+        }
+    }
 
     val picker = rememberLauncherForActivityResult(ActivityResultContracts.OpenMultipleDocuments()) { uris ->
         scope.launch {
@@ -101,6 +118,31 @@ internal fun BiosScreen(rootPath: String) {
         }
         if (message.isNotEmpty()) Text(message, color = GameColors.textDim, fontSize = 12.sp, maxLines = 2)
         LazyColumn(verticalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxSize()) {
+            items(BiosManager.platformsWithKit(), key = { "kit-" + it.slug }) { platform ->
+                val (ok, total) = remember(tick) { BiosManager.kitStatus(context, platform) }
+                val ready = ok == total
+                Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                    Text(
+                        text = "${platform.name} · ${stringResource(R.string.game_bios_kit_required)}",
+                        color = if (ready) GameColors.success else GameColors.danger,
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.SemiBold,
+                    )
+                    Text(
+                        text = stringResource(R.string.game_bios_kit_note, ok, total),
+                        color = GameColors.textDim,
+                        fontSize = 12.sp,
+                    )
+                    GameButton(
+                        stringResource(R.string.game_bios_kit_import),
+                        compact = true,
+                        onClick = {
+                            kitTarget = platform
+                            kitPicker.launch(null)
+                        },
+                    )
+                }
+            }
             items(BiosManager.platformsWithBios(), key = { it.slug }) { platform ->
                 val ready = remember(tick) { BiosManager.isReady(context, platform) }
                 Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {

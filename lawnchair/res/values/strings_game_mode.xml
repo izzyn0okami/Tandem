@@ -94,6 +94,10 @@
     <string name="game_bios_found">Copiados da pasta: %1$d. Coloque os BIOS em %2$s.</string>
     <string name="game_bios_error">Não consegui baixar os BIOS: %1$s</string>
     <string name="game_bios_required">obrigatório (um dos arquivos)</string>
+    <string name="game_bios_kit_required">obrigatório (pasta de sistema)</string>
+    <string name="game_bios_kit_note">%1$d de %2$d pastas prontas</string>
+    <string name="game_bios_kit_import">Importar pasta</string>
+    <string name="game_bios_kit_imported">%1$d arquivos copiados para a pasta de sistema.</string>
     <string name="game_bios_optional">opcional</string>
     <string name="game_bios_missing">Falta o BIOS de %1$s. Adicione em Configurações > BIOS dos consoles.</string>
     <string name="game_emulators_open">Emuladores externos</string>
