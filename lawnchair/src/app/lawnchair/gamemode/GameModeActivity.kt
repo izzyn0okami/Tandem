@@ -311,68 +311,68 @@ private fun GameModeRoot(refreshKey: Int, onExit: () -> Unit) {
                 },
                 label = "gameScreen",
             ) {
-            when {
-                current != null -> GameDetailScreen(
-                    entry = current,
-                    progress = remote.progress,
-                    busy = busy,
-                    onPlay = { play(it) },
-                    onLoad = { play(it, loadState = true) },
-                    onDownload = { remote.download(it, File(rootPath)) { scanTick++ } },
-                    onBack = { detailKey = null },
-                )
+                when {
+                    current != null -> GameDetailScreen(
+                        entry = current,
+                        progress = remote.progress,
+                        busy = busy,
+                        onPlay = { play(it) },
+                        onLoad = { play(it, loadState = true) },
+                        onDownload = { remote.download(it, File(rootPath)) { scanTick++ } },
+                        onBack = { detailKey = null },
+                    )
 
-                tab == GameTab.Library -> LibraryScreen(
-                    games = games,
-                    entries = entries,
-                    androidGames = androidGames,
-                    progress = remote.progress,
-                    version = version,
-                    busy = busy,
-                    onPlay = { play(it) },
-                    onOpen = { detailKey = it.key },
-                    onLaunchAndroid = { game ->
-                        if (!AndroidGames.launch(context, game)) {
-                            status = context.getString(R.string.game_mode_status_error, game.title)
-                        }
-                    },
-                    onRefresh = {
-                        scanTick++
-                        remote.requestRefresh()
-                    },
-                )
+                    tab == GameTab.Library -> LibraryScreen(
+                        games = games,
+                        entries = entries,
+                        androidGames = androidGames,
+                        progress = remote.progress,
+                        version = version,
+                        busy = busy,
+                        onPlay = { play(it) },
+                        onOpen = { detailKey = it.key },
+                        onLaunchAndroid = { game ->
+                            if (!AndroidGames.launch(context, game)) {
+                                status = context.getString(R.string.game_mode_status_error, game.title)
+                            }
+                        },
+                        onRefresh = {
+                            scanTick++
+                            remote.requestRefresh()
+                        },
+                    )
 
-                tab == GameTab.Settings && showBios -> BiosScreen(rootPath = rootPath)
+                    tab == GameTab.Settings && showBios -> BiosScreen(rootPath = rootPath)
 
-                tab == GameTab.Settings && showEmulators -> EmulatorsScreen()
+                    tab == GameTab.Settings && showEmulators -> EmulatorsScreen()
 
-                tab == GameTab.Settings && showFolders -> FoldersScreen()
+                    tab == GameTab.Settings && showFolders -> FoldersScreen()
 
-                tab == GameTab.Settings && showCores -> CoresScreen()
+                    tab == GameTab.Settings && showCores -> CoresScreen()
 
-                tab == GameTab.Settings && showScraper -> ScraperScreen()
+                    tab == GameTab.Settings && showScraper -> ScraperScreen()
 
-                tab == GameTab.Settings && showServer -> ServerScreen(remote)
+                    tab == GameTab.Settings && showServer -> ServerScreen(remote)
 
-                tab == GameTab.Settings -> SettingsScreen(
-                    rootPath = rootPath,
-                    needsAccess = needsAccess,
-                    busy = busy,
-                    onChooseFolder = { folderPicker.launch(null) },
-                    onRefresh = { scanTick++ },
-                    onGrantAccess = { context.startActivity(StorageAccess.settingsIntent(context)) },
-                    onPickRom = { romPicker.launch(arrayOf("*/*")) },
-                    onOpenBios = { showBios = true },
-                    onOpenEmulators = { showEmulators = true },
-                    onOpenFolders = { showFolders = true },
-                    onOpenCores = { showCores = true },
-                    onOpenScraper = { showScraper = true },
-                    onOpenServer = { showServer = true },
-                    onExit = onExit,
-                )
+                    tab == GameTab.Settings -> SettingsScreen(
+                        rootPath = rootPath,
+                        needsAccess = needsAccess,
+                        busy = busy,
+                        onChooseFolder = { folderPicker.launch(null) },
+                        onRefresh = { scanTick++ },
+                        onGrantAccess = { context.startActivity(StorageAccess.settingsIntent(context)) },
+                        onPickRom = { romPicker.launch(arrayOf("*/*")) },
+                        onOpenBios = { showBios = true },
+                        onOpenEmulators = { showEmulators = true },
+                        onOpenFolders = { showFolders = true },
+                        onOpenCores = { showCores = true },
+                        onOpenScraper = { showScraper = true },
+                        onOpenServer = { showServer = true },
+                        onExit = onExit,
+                    )
 
-                else -> AchievementsScreen()
-            }
+                    else -> AchievementsScreen()
+                }
             }
         }
         if (remote.refreshing) {
