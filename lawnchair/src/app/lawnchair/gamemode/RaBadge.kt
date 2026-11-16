@@ -41,8 +41,7 @@ internal object RaBadges {
 
     private val http = OkHttpClient()
 
-    private fun file(context: Context, badge: String, locked: Boolean) =
-        File(File(context.cacheDir, "ra_badges"), if (locked) "${badge}_lock.png" else "$badge.png")
+    private fun file(context: Context, badge: String, locked: Boolean) = File(File(context.cacheDir, "ra_badges"), if (locked) "${badge}_lock.png" else "$badge.png")
 
     /**
      * Bloqueante: devolve o ícone da conquista (baixa se ainda não estiver no cache). Com `locked = true`,
