@@ -127,6 +127,12 @@ class GameSessionActivity : ComponentActivity() {
         coreLog = SessionDiagnostics.startCoreLog()
 
         val platformObject = platformSlug?.let(GamePlatforms::bySlug)
+        // Calculado uma vez, sem depender de rede: o menu de pausa usa isso para travar "Carregar estado"
+        // desde o primeiro frame, sem esperar a sessão do RetroAchievements (que é assíncrona) confirmar.
+        val statesBlocked = platformObject != null && RaSettings.blocksStates(this, platformObject)
+        if (platformObject?.raConsoleId != null && RaSettings.isLoggedIn(this)) {
+            toast(if (statesBlocked) R.string.game_ra_hardcore_label else R.string.game_ra_softcore_label)
+        }
         // Núcleos como N64 e DS não abrem .zip: extrai antes (os saves continuam com o nome do .zip).
         val loadPath = RomUnzipper.prepare(this, romPath, platformObject).absolutePath
         val data = GLRetroViewData(this).apply {
@@ -198,7 +204,7 @@ class GameSessionActivity : ComponentActivity() {
                                 PauseMenu(
                                     title = File(romPath).nameWithoutExtension,
                                     subtitle = progress,
-                                    canLoad = store.hasState() && !raHardcore,
+                                    canLoad = store.hasState() && !statesBlocked,
                                     hasAchievements = raEntries.isNotEmpty(),
                                     onAchievements = { raListOpen = true },
                                     onCoreOptions = { openCoreOptions() },
@@ -254,7 +260,6 @@ class GameSessionActivity : ComponentActivity() {
             }
         }
 
-        val statesBlocked = platform != null && RaSettings.blocksStates(this, platform)
         if (intent.getBooleanExtra(EXTRA_LOAD_STATE, false) && store.hasState() && !statesBlocked) {
             lifecycleScope.launch {
                 view.getGLRetroEvents().first { it is GLRetroView.GLRetroEvents.FrameRendered }
