@@ -10,6 +10,13 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -127,6 +134,9 @@ private enum class GameTab(val label: Int) {
     Achievements(R.string.game_tab_achievements),
     Settings(R.string.game_tab_settings),
 }
+
+/** Identidade da tela mostrada no meio (fora das abas) e sua "profundidade", para animar a troca: abrir um detalhe ou uma sub-tela desliza para dentro; voltar desliza para fora; trocar de aba só esmaece. */
+private data class ScreenState(val key: String, val depth: Int)
 
 @Composable
 private fun GameModeRoot(refreshKey: Int, onExit: () -> Unit) {
@@ -271,7 +281,36 @@ private fun GameModeRoot(refreshKey: Int, onExit: () -> Unit) {
                 onSelect = selectTab,
             )
         }
+        val subScreen = showBios || showEmulators || showFolders || showCores || showScraper || showServer
+        val depth = if (current != null || subScreen) 1 else 0
+        val screenKey = when {
+            current != null -> "detail:${current.key}"
+            tab == GameTab.Settings && showBios -> "bios"
+            tab == GameTab.Settings && showEmulators -> "emulators"
+            tab == GameTab.Settings && showFolders -> "folders"
+            tab == GameTab.Settings && showCores -> "cores"
+            tab == GameTab.Settings && showScraper -> "scraper"
+            tab == GameTab.Settings && showServer -> "server"
+            else -> "tab:${tab.name}"
+        }
         Box(modifier = Modifier.weight(1f)) {
+            AnimatedContent(
+                targetState = ScreenState(screenKey, depth),
+                transitionSpec = {
+                    when {
+                        targetState.depth > initialState.depth ->
+                            (slideInHorizontally(tween(220)) { it / 4 } + fadeIn(tween(220)))
+                                .togetherWith(slideOutHorizontally(tween(220)) { -it / 8 } + fadeOut(tween(150)))
+
+                        targetState.depth < initialState.depth ->
+                            (slideInHorizontally(tween(220)) { -it / 4 } + fadeIn(tween(220)))
+                                .togetherWith(slideOutHorizontally(tween(220)) { it / 8 } + fadeOut(tween(150)))
+
+                        else -> fadeIn(tween(180)).togetherWith(fadeOut(tween(140)))
+                    }
+                },
+                label = "gameScreen",
+            ) {
             when {
                 current != null -> GameDetailScreen(
                     entry = current,
@@ -333,6 +372,7 @@ private fun GameModeRoot(refreshKey: Int, onExit: () -> Unit) {
                 )
 
                 else -> AchievementsScreen()
+            }
             }
         }
         if (remote.refreshing) {
