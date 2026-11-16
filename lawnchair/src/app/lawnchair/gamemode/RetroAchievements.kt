@@ -64,6 +64,18 @@ data class RaEntry(val achievement: RaAchievement, val unlocked: Boolean)
 /** Conquistas que o usuário já tem: no modo normal e no hardcore. */
 data class RaUnlocks(val softcore: Set<Long>, val hardcore: Set<Long>)
 
+/** O que a sessão descobriu sobre o jogo no RetroAchievements, para mostrar um aviso ao entrar. */
+enum class RaGameStatus {
+    /** A ROM não bate com nenhum hash conhecido (pode ser uma versão diferente, tradução ou hack). */
+    UNSUPPORTED,
+
+    /** O jogo é reconhecido, mas ninguém cadastrou conquistas para ele ainda. */
+    NO_ACHIEVEMENTS,
+
+    /** Jogo reconhecido e com conquistas sendo acompanhadas nesta partida. */
+    TRACKING,
+}
+
 /** Cliente mínimo da API clássica do RetroAchievements (dorequest.php). Chamadas bloqueantes. */
 class RaClient {
 
@@ -159,6 +171,7 @@ class RaSession(
     private val hardcore: Boolean,
     private val onUnlock: (RaAchievement) -> Unit,
     private val onState: (entries: List<RaEntry>, hardcore: Boolean) -> Unit,
+    private val onStatus: (status: RaGameStatus, unlocked: Int, total: Int) -> Unit = { _, _, _ -> },
 ) {
     private val client = RaClient()
     private var all = emptyList<RaAchievement>()
@@ -176,7 +189,11 @@ class RaSession(
                 resendPending(user, token)
                 val hash = LibretroDroid.computeRomHash(romPath, consoleId) ?: return@launch
                 gameHash = hash
-                val gameId = client.gameIdForHash(hash) ?: return@launch
+                val gameId = client.gameIdForHash(hash)
+                if (gameId == null) {
+                    withContext(Dispatchers.Main) { onStatus(RaGameStatus.UNSUPPORTED, 0, 0) }
+                    return@launch
+                }
                 val unlocks = runCatching { client.startSession(user, token, gameId, hardcore) }
                     .getOrDefault(RaUnlocks(emptySet(), emptySet()))
                 // No hardcore só contam as já ganhas em hardcore; no normal, qualquer uma.
@@ -184,6 +201,13 @@ class RaSession(
                 all = client.achievements(user, token, gameId)
                 achievementsById = all.associateBy { it.id }
                 publish()
+                withContext(Dispatchers.Main) {
+                    onStatus(
+                        if (all.isEmpty()) RaGameStatus.NO_ACHIEVEMENTS else RaGameStatus.TRACKING,
+                        unlockedIds.size,
+                        all.size,
+                    )
+                }
                 val toWatch = all.filter { it.id !in unlockedIds }
                 if (toWatch.isNotEmpty()) {
                     LibretroDroid.initAchievements(toWatch.map { AchievementDef(it.id, it.memAddr) }.toTypedArray(), consoleId)

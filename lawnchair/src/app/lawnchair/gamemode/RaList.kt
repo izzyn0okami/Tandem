@@ -1,5 +1,6 @@
 package app.lawnchair.gamemode
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -9,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
@@ -16,17 +18,25 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.android.launcher3.R
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 /** Lista de conquistas do jogo em andamento; o controle rola pelo foco e B fecha (tratado pela tela). */
 @Composable
@@ -64,12 +74,7 @@ internal fun AchievementListPanel(title: String, entries: List<RaEntry>, hardcor
                             horizontalArrangement = Arrangement.spacedBy(12.dp),
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
-                            Text(
-                                text = if (entry.unlocked) "✓" else "○",
-                                color = if (entry.unlocked) GameColors.success else GameColors.textDim,
-                                fontSize = 18.sp,
-                                fontWeight = FontWeight.Bold,
-                            )
+                            AchievementBadge(badge = entry.achievement.badge, unlocked = entry.unlocked)
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(
                                     text = entry.achievement.title,
@@ -92,6 +97,35 @@ internal fun AchievementListPanel(title: String, entries: List<RaEntry>, hardcor
                     }
                 }
             }
+        }
+    }
+}
+
+/**
+ * Ícone da conquista (cinza com cadeado se ainda não ganha, colorido se já ganha); baixado do
+ * RetroAchievements e guardado no cache. Enquanto carrega, ou se não tiver ícone, mostra ✓/○.
+ */
+@Composable
+private fun AchievementBadge(badge: String, unlocked: Boolean) {
+    val context = LocalContext.current
+    val icon by produceState<ImageBitmap?>(null, badge, unlocked) {
+        value = withContext(Dispatchers.IO) { RaBadges.load(context, badge, locked = !unlocked) }
+    }
+    val bitmap = icon
+    if (bitmap != null) {
+        Image(
+            bitmap = bitmap,
+            contentDescription = null,
+            modifier = Modifier.size(32.dp).clip(RoundedCornerShape(6.dp)).alpha(if (unlocked) 1f else 0.85f),
+        )
+    } else {
+        Box(modifier = Modifier.size(32.dp), contentAlignment = Alignment.Center) {
+            Text(
+                text = if (unlocked) "✓" else "○",
+                color = if (unlocked) GameColors.success else GameColors.textDim,
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Bold,
+            )
         }
     }
 }

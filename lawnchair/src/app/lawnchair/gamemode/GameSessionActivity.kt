@@ -174,6 +174,13 @@ class GameSessionActivity : ComponentActivity() {
                     raEntries = entries
                     raHardcore = hardcore && entries.isNotEmpty()
                 },
+                onStatus = { status, unlocked, total ->
+                    when (status) {
+                        RaGameStatus.UNSUPPORTED -> toast(R.string.game_ra_status_unsupported)
+                        RaGameStatus.NO_ACHIEVEMENTS -> toast(R.string.game_ra_status_none)
+                        RaGameStatus.TRACKING -> toast(getString(R.string.game_ra_status_progress, unlocked, total))
+                    }
+                },
             )
             raSession = session
             lifecycleScope.launch {
@@ -318,6 +325,7 @@ class GameSessionActivity : ComponentActivity() {
     }
 
     private fun toast(message: Int) = Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
+    private fun toast(message: String) = Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
 
     override fun onResume() {
         super.onResume()

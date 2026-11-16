@@ -176,6 +176,9 @@
     <string name="game_ra_summary">%1$d de %2$d conquistas · %3$d de %4$d pontos</string>
     <string name="game_ra_hardcore_label">Hardcore</string>
     <string name="game_ra_softcore_label">Normal (sem hardcore)</string>
+    <string name="game_ra_status_unsupported">RetroAchievements: ROM não reconhecida (pode ser outra versão, tradução ou hack)</string>
+    <string name="game_ra_status_none">RetroAchievements: este jogo ainda não tem conquistas cadastradas</string>
+    <string name="game_ra_status_progress">RetroAchievements: %1$d de %2$d conquistas</string>
     <string name="game_ra_hardcore">Modo hardcore</string>
     <string name="game_ra_hardcore_note">No hardcore as conquistas valem mais no site, mas não dá para carregar estados salvos nos jogos compatíveis (salvar continua liberado). Vale a partir da próxima partida.</string>
     <string name="game_ra_progress">Conquistas: %1$d de %2$d</string>

@@ -41,16 +41,21 @@ internal object RaBadges {
 
     private val http = OkHttpClient()
 
-    private fun file(context: Context, badge: String) = File(File(context.cacheDir, "ra_badges"), "$badge.png")
+    private fun file(context: Context, badge: String, locked: Boolean) =
+        File(File(context.cacheDir, "ra_badges"), if (locked) "${badge}_lock.png" else "$badge.png")
 
-    /** Bloqueante: devolve o ícone da conquista (baixa se ainda não estiver no cache). */
-    fun load(context: Context, badge: String): ImageBitmap? {
+    /**
+     * Bloqueante: devolve o ícone da conquista (baixa se ainda não estiver no cache). Com `locked = true`,
+     * baixa a versão em cinza (cadeado) que o próprio RetroAchievements usa para conquista ainda não ganha.
+     */
+    fun load(context: Context, badge: String, locked: Boolean = false): ImageBitmap? {
         if (badge.isBlank() || !badge.all { it.isLetterOrDigit() || it == '_' }) return null
-        val target = file(context, badge)
+        val target = file(context, badge, locked)
         if (!target.isFile) {
             runCatching {
                 target.parentFile?.mkdirs()
-                val request = Request.Builder().url("https://media.retroachievements.org/Badge/$badge.png").build()
+                val name = if (locked) "${badge}_lock" else badge
+                val request = Request.Builder().url("https://media.retroachievements.org/Badge/$name.png").build()
                 http.newCall(request).execute().use { response ->
                     if (response.isSuccessful) {
                         val temp = File(target.parentFile, "$badge.part")
