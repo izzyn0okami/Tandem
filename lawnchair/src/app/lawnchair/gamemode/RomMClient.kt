@@ -301,6 +301,18 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
                 fileName = names.firstOrNull { it.endsWith(".m3u", ignoreCase = true) }
                     ?: names.singleOrNull()
                     ?: "${File(serverName).nameWithoutExtension}.m3u"
+            } else if (platform.multiFileFolder && playable.size > 1) {
+                // Switch e parecidos: jogo base + atualização + DLC em arquivos separados. Baixa a pasta
+                // toda (o emulador externo instala a atualização/DLC por conta própria depois) e abre o
+                // arquivo principal: entre os que não parecem atualização/DLC pelo nome, o de nome mais
+                // curto (o jogo base costuma ter o nome mais simples; a atualização/DLC vem com sufixo).
+                folder = true
+                val addonWords = listOf("update", "upd", "patch", "dlc", "atualiz", "addon", "add-on", "[v")
+                val names = playable.map { it.getString("file_name") }
+                val base = names.filterNot { name -> addonWords.any { name.contains(it, ignoreCase = true) } }
+                    .ifEmpty { names }
+                    .minByOrNull { File(it).nameWithoutExtension.length }
+                fileName = base ?: names.first()
             } else if (playable.size > 1) {
                 skippedMulti++
                 return null

@@ -19,6 +19,13 @@ data class GamePlatform(
     val launch: LaunchMode = LaunchMode.LIBRETRO,
     /** Núcleos que não usam um arquivo de BIOS só, e sim uma pasta inteira de arquivos de sistema (ex.: blueMSX). Nomes das subpastas esperadas dentro da pasta de BIOS. */
     val biosKit: List<String>? = null,
+    /**
+     * Jogo pode vir em vários arquivos sem ser "em disco" (ex.: Switch com jogo base + atualização + DLC,
+     * cada um um .nsp/.xci separado). Baixa a pasta inteira (como os jogos em disco), mas sem gerar .m3u:
+     * abre o arquivo principal (entre os que não parecem atualização/DLC pelo nome, o de nome mais curto)
+     * e deixa o resto do lado, para o emulador externo instalar por conta própria.
+     */
+    val multiFileFolder: Boolean = false,
 )
 
 /** Um arquivo de BIOS esperado na pasta de sistema do núcleo. */
@@ -212,6 +219,7 @@ object GamePlatforms {
             folderAliases = setOf("switch", "nintendoswitch", "ns"),
             sortOrder = 103,
             launch = LaunchMode.EMULATOR,
+            multiFileFolder = true,
         ),
         GamePlatform(
             slug = "3ds",
