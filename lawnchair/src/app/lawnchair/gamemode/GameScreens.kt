@@ -1,5 +1,6 @@
 package app.lawnchair.gamemode
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -37,6 +38,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.input.key.Key
@@ -340,68 +342,164 @@ internal fun GameDetailScreen(
     val percent = entry.percent(progress)
     val firstFocus = remember { FocusRequester() }
     val manyVersions = (group?.versions?.size ?: 0) > 1
+    val summary = remember(entry.key) { group?.versions?.firstOrNull()?.summary }
+    var showAchievements by remember(entry.key) { mutableStateOf(false) }
+    val achievements by produceState<List<RaEntry>?>(null, entry.key) {
+        value = if (local != null) withContext(Dispatchers.IO) { loadAchievementPreview(context, local.path) } else null
+    }
+    val coverArt by produceState<ImageBitmap?>(null, entry.cover.path) {
+        value = withContext(Dispatchers.IO) { GameArt.quick(context, entry.cover) }
+    }
+    val heroArt by produceState<ImageBitmap?>(null, entry.key) {
+        value = withContext(Dispatchers.IO) { GameArt.heroArt(context, "${entry.platform.slug}|${entry.title}", entry.title) }
+    }
     LaunchedEffect(entry.key) { runCatching { firstFocus.requestFocus() } }
 
-    Row(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(horizontal = 32.dp, vertical = 12.dp),
-        horizontalArrangement = Arrangement.spacedBy(28.dp),
-    ) {
-        CoverTile(entry.cover, modifier = Modifier.size(width = 150.dp, height = 200.dp).clip(RoundedCornerShape(14.dp)))
-        Column(verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.verticalScroll(rememberScrollState())) {
-            Text(text = entry.platform.name.uppercase(), color = GameColors.textDim, fontSize = 12.sp)
-            Text(text = entry.title, color = GameColors.text, fontSize = 26.sp, fontWeight = FontWeight.Bold, maxLines = 3)
-            Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.padding(top = 4.dp)) {
-                when {
-                    local != null -> GameButton(
-                        label = stringResource(R.string.game_play),
-                        onClick = { onPlay(local) },
-                        primary = true,
-                        enabled = !busy,
-                        modifier = Modifier.width(130.dp).focusRequester(firstFocus),
-                    )
+    Box(modifier = Modifier.fillMaxSize()) {
+        // Arte grande de fundo: do SteamGridDB quando tiver, senão a própria capa ampliada, com um
+        // gradiente escuro por cima pra manter o texto legível (estilo tela de detalhes do SteamOS).
+        (heroArt ?: coverArt)?.let { background ->
+            Image(
+                bitmap = background,
+                contentDescription = null,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.fillMaxSize(),
+            )
+        }
+        Box(
+            modifier = Modifier.fillMaxSize().background(
+                Brush.verticalGradient(
+                    0f to GameColors.background.copy(alpha = 0.55f),
+                    0.4f to GameColors.background.copy(alpha = 0.88f),
+                    1f to GameColors.background,
+                ),
+            ),
+        )
+        Row(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 32.dp, vertical = 12.dp),
+            horizontalArrangement = Arrangement.spacedBy(28.dp),
+        ) {
+            CoverTile(entry.cover, modifier = Modifier.size(width = 150.dp, height = 200.dp).clip(RoundedCornerShape(14.dp)))
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.verticalScroll(rememberScrollState())) {
+                Text(text = entry.platform.name.uppercase(), color = GameColors.textDim, fontSize = 12.sp)
+                Text(text = entry.title, color = GameColors.text, fontSize = 26.sp, fontWeight = FontWeight.Bold, maxLines = 3)
+                Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.padding(top = 4.dp)) {
+                    when {
+                        local != null -> GameButton(
+                            label = stringResource(R.string.game_play),
+                            onClick = { onPlay(local) },
+                            primary = true,
+                            enabled = !busy,
+                            modifier = Modifier.width(130.dp).focusRequester(firstFocus),
+                        )
 
-                    group != null && !manyVersions -> GameButton(
-                        label = if (percent != null) stringResource(R.string.game_romm_downloading, percent) else stringResource(R.string.game_romm_download),
-                        onClick = { onDownload(group.versions.first()) },
-                        primary = true,
-                        enabled = percent == null,
-                        modifier = Modifier.width(150.dp).focusRequester(firstFocus),
+                        group != null && !manyVersions -> GameButton(
+                            label = if (percent != null) stringResource(R.string.game_romm_downloading, percent) else stringResource(R.string.game_romm_download),
+                            onClick = { onDownload(group.versions.first()) },
+                            primary = true,
+                            enabled = percent == null,
+                            modifier = Modifier.width(150.dp).focusRequester(firstFocus),
+                        )
+                    }
+                    if (local != null) {
+                        GameButton(
+                            label = stringResource(R.string.game_load_state_start),
+                            onClick = { onLoad(local) },
+                            enabled = hasState && !busy,
+                            modifier = Modifier.width(170.dp),
+                        )
+                    }
+                    GameButton(label = stringResource(R.string.game_hint_back), onClick = onBack, modifier = Modifier.width(100.dp))
+                }
+                if (manyVersions) {
+                    VersionList(
+                        entry = entry,
+                        progress = progress,
+                        firstFocus = firstFocus.takeIf { local == null },
+                        onPlay = onPlay,
+                        onDownload = onDownload,
                     )
                 }
-                if (local != null) {
-                    GameButton(
-                        label = stringResource(R.string.game_load_state_start),
-                        onClick = { onLoad(local) },
-                        enabled = hasState && !busy,
-                        modifier = Modifier.width(170.dp),
+                Row(horizontalArrangement = Arrangement.spacedBy(28.dp), modifier = Modifier.padding(top = 8.dp)) {
+                    Stat(stringResource(R.string.game_stat_playtime), formatPlaytime(history.playtimeMs))
+                    Stat(
+                        stringResource(R.string.game_stat_last_played),
+                        if (history.played) {
+                            DateFormat.getDateInstance(DateFormat.MEDIUM).format(Date(history.lastPlayedMs))
+                        } else {
+                            stringResource(R.string.game_never_played)
+                        },
+                    )
+                    Stat(stringResource(R.string.game_stat_origin), stringResource(if (group != null) R.string.game_origin_server else R.string.game_origin_local))
+                }
+                if (!summary.isNullOrBlank()) {
+                    Text(
+                        text = summary,
+                        color = GameColors.textDim,
+                        fontSize = 14.sp,
+                        modifier = Modifier.padding(top = 6.dp).width(520.dp),
                     )
                 }
-                GameButton(label = stringResource(R.string.game_hint_back), onClick = onBack, modifier = Modifier.width(100.dp))
-            }
-            if (manyVersions) {
-                VersionList(
-                    entry = entry,
-                    progress = progress,
-                    firstFocus = firstFocus.takeIf { local == null },
-                    onPlay = onPlay,
-                    onDownload = onDownload,
+                AchievementSummaryRow(
+                    platform = entry.platform,
+                    hasLocal = local != null,
+                    entries = achievements,
+                    onOpen = { showAchievements = true },
                 )
+                local?.let { Text(text = it.path, color = GameColors.textDim, fontSize = 12.sp, modifier = Modifier.padding(top = 8.dp)) }
             }
-            Row(horizontalArrangement = Arrangement.spacedBy(28.dp), modifier = Modifier.padding(top = 8.dp)) {
-                Stat(stringResource(R.string.game_stat_playtime), formatPlaytime(history.playtimeMs))
-                Stat(
-                    stringResource(R.string.game_stat_last_played),
-                    if (history.played) {
-                        DateFormat.getDateInstance(DateFormat.MEDIUM).format(Date(history.lastPlayedMs))
-                    } else {
-                        stringResource(R.string.game_never_played)
-                    },
-                )
-                Stat(stringResource(R.string.game_stat_origin), stringResource(if (group != null) R.string.game_origin_server else R.string.game_origin_local))
+        }
+        achievements?.let { list ->
+            if (showAchievements) {
+                AchievementListPanel(title = entry.title, entries = list, hardcore = false)
             }
-            local?.let { Text(text = it.path, color = GameColors.textDim, fontSize = 12.sp, modifier = Modifier.padding(top = 8.dp)) }
+        }
+    }
+    // Fecha com o mesmo botão de voltar do controle (B) ou do Android, sem fechar a tela de detalhes junto.
+    BackHandler(enabled = showAchievements) { showAchievements = false }
+}
+
+/** Resuminho de conquistas na tela de detalhes: "X de Y" + alguns ícones, com botão pra ver a lista toda. */
+@Composable
+private fun AchievementSummaryRow(platform: GamePlatform, hasLocal: Boolean, entries: List<RaEntry>?, onOpen: () -> Unit) {
+    val context = LocalContext.current
+    if (platform.raConsoleId == null || !RaSettings.isLoggedIn(context)) return
+    Column(modifier = Modifier.padding(top = 6.dp)) {
+        when {
+            !hasLocal -> Text(
+                text = stringResource(R.string.game_ra_preview_need_local),
+                color = GameColors.textDim,
+                fontSize = 13.sp,
+            )
+            entries == null -> Text(
+                text = stringResource(R.string.game_ra_preview_unknown),
+                color = GameColors.textDim,
+                fontSize = 13.sp,
+            )
+            entries.isEmpty() -> Text(
+                text = stringResource(R.string.game_ra_status_none),
+                color = GameColors.textDim,
+                fontSize = 13.sp,
+            )
+            else -> FocusSurface(onClick = onOpen, shape = RoundedCornerShape(8.dp)) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                ) {
+                    Row(horizontalArrangement = Arrangement.spacedBy((-8).dp)) {
+                        entries.take(6).forEach { AchievementBadge(badge = it.achievement.badge, unlocked = it.unlocked) }
+                    }
+                    Text(
+                        text = stringResource(R.string.game_ra_summary_short, entries.count { it.unlocked }, entries.size),
+                        color = GameColors.text,
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.SemiBold,
+                    )
+                }
+            }
         }
     }
 }
@@ -465,6 +563,7 @@ internal fun SettingsScreen(
             .width(520.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
+        SettingsSection(stringResource(R.string.game_mode_section_library))
         Text(
             text = stringResource(R.string.game_mode_folder_label, rootPath),
             color = GameColors.textDim,
@@ -477,44 +576,51 @@ internal fun SettingsScreen(
             GameButton(stringResource(R.string.game_mode_grant_access), onGrantAccess, primary = true)
         }
         GameButton(stringResource(R.string.game_mode_play_rom), onPickRom, enabled = !busy)
-        GameButton(stringResource(R.string.game_bios_open), onOpenBios)
-        GameButton(stringResource(R.string.game_emulators_open), onOpenEmulators)
         GameButton(stringResource(R.string.game_folders_open), onOpenFolders)
-        GameButton(stringResource(R.string.game_server_open), onOpenServer)
+
+        SettingsSection(stringResource(R.string.game_mode_section_platforms))
+        GameButton(stringResource(R.string.game_bios_open), onOpenBios)
         GameButton(stringResource(R.string.game_cores_open), onOpenCores)
+        GameButton(stringResource(R.string.game_emulators_open), onOpenEmulators)
+
+        SettingsSection(stringResource(R.string.game_mode_section_online))
+        GameButton(stringResource(R.string.game_server_open), onOpenServer)
         GameButton(stringResource(R.string.game_sgdb_open), onOpenScraper)
-        FocusSurface(onClick = toggleAuto, modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(8.dp)) {
-            Row(
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 18.dp, vertical = 8.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Text(text = stringResource(R.string.game_mode_auto_enter), color = GameColors.text, fontSize = 16.sp)
-                Switch(checked = autoEnter, onCheckedChange = null)
-            }
-        }
-        FocusSurface(onClick = toggleScraper, modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(8.dp)) {
-            Row(
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 18.dp, vertical = 8.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Text(text = stringResource(R.string.game_mode_scraper), color = GameColors.text, fontSize = 16.sp)
-                Switch(checked = scraper, onCheckedChange = null)
-            }
-        }
-        FocusSurface(onClick = toggleSound, modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(8.dp)) {
-            Row(
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 18.dp, vertical = 8.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Text(text = stringResource(R.string.game_mode_sound), color = GameColors.text, fontSize = 16.sp)
-                Switch(checked = sound, onCheckedChange = null)
-            }
-        }
+        SettingsSwitchRow(label = stringResource(R.string.game_mode_scraper), checked = scraper, onToggle = toggleScraper)
+
+        SettingsSection(stringResource(R.string.game_mode_section_interface))
+        SettingsSwitchRow(label = stringResource(R.string.game_mode_auto_enter), checked = autoEnter, onToggle = toggleAuto)
+        SettingsSwitchRow(label = stringResource(R.string.game_mode_sound), checked = sound, onToggle = toggleSound)
+
+        SettingsSection(stringResource(R.string.game_mode_section_other))
         GameButton(stringResource(R.string.game_log_export), rememberLogExporter())
         GameButton(stringResource(R.string.game_mode_exit), onExit, danger = true)
         Box(modifier = Modifier.height(12.dp))
+    }
+}
+
+/** Cabeçalho de uma seção da tela de Configurações (ou das Opções do núcleo), só pra agrupar visualmente. */
+@Composable
+private fun SettingsSection(title: String) {
+    Text(
+        text = title.uppercase(),
+        color = GameColors.textDim,
+        fontSize = 12.sp,
+        fontWeight = FontWeight.Bold,
+        modifier = Modifier.padding(top = 10.dp, bottom = 2.dp),
+    )
+}
+
+@Composable
+private fun SettingsSwitchRow(label: String, checked: Boolean, onToggle: () -> Unit) {
+    FocusSurface(onClick = onToggle, modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(8.dp)) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 18.dp, vertical = 8.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(text = label, color = GameColors.text, fontSize = 16.sp)
+            Switch(checked = checked, onCheckedChange = null)
+        }
     }
 }

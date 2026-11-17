@@ -28,6 +28,16 @@
     <string name="game_mode_status_unsupported">Sem núcleo para %1$s (por enquanto: GBA, GB, GBC, SNES, NES e Mega Drive).</string>
     <string name="game_mode_status_error">Erro: %1$s</string>
     <string name="game_mode_folder_label">Pasta de jogos: %1$s</string>
+    <string name="game_mode_section_library">Biblioteca</string>
+    <string name="game_mode_section_platforms">Consoles e núcleos</string>
+    <string name="game_mode_section_online">Servidor e capas</string>
+    <string name="game_mode_section_interface">Interface</string>
+    <string name="game_mode_section_other">Diagnóstico</string>
+    <string name="game_core_category_video">Vídeo e imagem</string>
+    <string name="game_core_category_audio">Áudio</string>
+    <string name="game_core_category_controls">Controles</string>
+    <string name="game_core_category_system">Sistema e emulação</string>
+    <string name="game_core_category_other">Outras opções</string>
     <string name="game_mode_choose_folder">Escolher pasta</string>
     <string name="game_mode_refresh">Atualizar biblioteca</string>
     <string name="game_mode_needs_access">Para ler e gravar nessa pasta, o Android exige o acesso a todos os arquivos.</string>
@@ -174,6 +184,9 @@
     <string name="game_ra_unlocked">Conquista desbloqueada: %1$s (+%2$d)</string>
     <string name="game_session_achievements">Conquistas</string>
     <string name="game_ra_summary">%1$d de %2$d conquistas · %3$d de %4$d pontos</string>
+    <string name="game_ra_summary_short">%1$d de %2$d conquistas</string>
+    <string name="game_ra_preview_need_local">Baixe ou jogue uma vez para ver as conquistas aqui</string>
+    <string name="game_ra_preview_unknown">Jogue uma vez para carregar as conquistas aqui</string>
     <string name="game_ra_hardcore_label">Hardcore</string>
     <string name="game_ra_softcore_label">Normal (sem hardcore)</string>
     <string name="game_ra_status_unsupported">RetroAchievements: ROM não reconhecida (pode ser outra versão, tradução ou hack)</string>

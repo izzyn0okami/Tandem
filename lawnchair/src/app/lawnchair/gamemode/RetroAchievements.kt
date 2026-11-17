@@ -48,6 +48,18 @@ object RaSettings {
     /** O hardcore bloqueia estados salvos neste jogo? (só em plataformas com conquistas e com conta) */
     fun blocksStates(context: Context, platform: GamePlatform): Boolean = hardcore(context) && isLoggedIn(context) && platform.raConsoleId != null
 
+    /**
+     * Guarda, por caminho do arquivo, o id do jogo no RetroAchievements assim que é descoberto (ao
+     * jogar pela primeira vez). Achar o id exige o hash calculado pelo motor com o núcleo já rodando,
+     * então a tela de detalhes (sem o jogo aberto) só consegue mostrar conquistas depois dessa primeira vez.
+     */
+    fun cachedGameId(context: Context, romPath: String): Long? =
+        prefs(context).getLong("gameid:$romPath", -1L).takeIf { it > 0 }
+
+    fun setCachedGameId(context: Context, romPath: String, gameId: Long) {
+        prefs(context).edit { putLong("gameid:$romPath", gameId) }
+    }
+
     /** Conquistas desbloqueadas sem rede, guardadas como "idConquista|hashDoJogo|h" (h = 1 hardcore) para reenviar depois. */
     fun pending(context: Context): Set<String> = prefs(context).getStringSet("pending", emptySet()).orEmpty()
 
@@ -63,6 +75,30 @@ data class RaEntry(val achievement: RaAchievement, val unlocked: Boolean)
 
 /** Conquistas que o usuário já tem: no modo normal e no hardcore. */
 data class RaUnlocks(val softcore: Set<Long>, val hardcore: Set<Long>)
+
+/**
+ * Bloqueante: lista de conquistas e o que já foi ganho, para mostrar na tela de detalhes sem o jogo
+ * estar aberto. Só funciona depois que o jogo foi aberto pelo menos uma vez (é quando o id do jogo no
+ * RetroAchievements é descoberto e guardado; ver [RaSettings.cachedGameId]). Nulo = sem conta, ou jogo
+ * ainda não reconhecido.
+ */
+fun loadAchievementPreview(context: Context, romPath: String): List<RaEntry>? {
+    val user = RaSettings.user(context) ?: return null
+    val token = RaSettings.token(context) ?: return null
+    val gameId = RaSettings.cachedGameId(context, romPath) ?: return null
+    return try {
+        val client = RaClient()
+        val all = client.achievements(user, token, gameId)
+        if (all.isEmpty()) return emptyList()
+        // Só consulta (startsession também marca "jogando agora", mas é inofensivo e é a forma já usada no resto do app).
+        val unlocks = client.startSession(user, token, gameId, hardcore = false)
+        val unlocked = unlocks.softcore + unlocks.hardcore
+        all.map { RaEntry(it, unlocked = it.id in unlocked) }
+    } catch (e: IOException) {
+        GameLog.error("conquistas", "não consegui carregar a prévia de conquistas", e)
+        null
+    }
+}
 
 /** O que a sessão descobriu sobre o jogo no RetroAchievements, para mostrar um aviso ao entrar. */
 enum class RaGameStatus {
@@ -194,6 +230,7 @@ class RaSession(
                     withContext(Dispatchers.Main) { onStatus(RaGameStatus.UNSUPPORTED, 0, 0) }
                     return@launch
                 }
+                RaSettings.setCachedGameId(context, romPath, gameId)
                 val unlocks = runCatching { client.startSession(user, token, gameId, hardcore) }
                     .getOrDefault(RaUnlocks(emptySet(), emptySet()))
                 // No hardcore só contam as já ganhas em hardcore; no normal, qualquer uma.

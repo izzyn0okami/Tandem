@@ -106,7 +106,7 @@ internal fun AchievementListPanel(title: String, entries: List<RaEntry>, hardcor
  * RetroAchievements e guardado no cache. Enquanto carrega, ou se não tiver ícone, mostra ✓/○.
  */
 @Composable
-private fun AchievementBadge(badge: String, unlocked: Boolean) {
+internal fun AchievementBadge(badge: String, unlocked: Boolean) {
     val context = LocalContext.current
     val icon by produceState<ImageBitmap?>(null, badge, unlocked) {
         value = withContext(Dispatchers.IO) { RaBadges.load(context, badge, locked = !unlocked) }

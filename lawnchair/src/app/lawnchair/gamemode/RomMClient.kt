@@ -32,6 +32,8 @@ data class RemoteGame(
     val fileId: Long? = null,
     /** Jogo de vários arquivos (ex.: cue + bin): baixa a pasta inteira e abre [fileName]. */
     val folder: Boolean = false,
+    /** Descrição/sinopse do jogo, quando o RomM tiver (vem do provedor de metadados dele). */
+    val summary: String? = null,
 ) {
     /** Destino dentro da pasta de jogos: uma subpasta por plataforma (e uma pasta por jogo, se for de vários arquivos). */
     fun destination(root: File): File {
@@ -333,6 +335,7 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
             serverName = serverName,
             fileId = fileId,
             folder = folder,
+            summary = item.optString("summary").ifEmpty { null },
         )
     }
 
