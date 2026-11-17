@@ -594,6 +594,12 @@ internal fun SettingsScreen(
         SettingsSection(stringResource(R.string.game_mode_section_interface))
         SettingsSwitchRow(label = stringResource(R.string.game_mode_auto_enter), checked = autoEnter, onToggle = toggleAuto)
         SettingsSwitchRow(label = stringResource(R.string.game_mode_sound), checked = sound, onToggle = toggleSound)
+        GameButton(stringResource(R.string.game_overlay_open_settings), rememberAccessibilitySettingsOpener())
+        Text(
+            text = stringResource(R.string.game_overlay_settings_note),
+            color = GameColors.textDim,
+            fontSize = 12.sp,
+        )
 
         SettingsSection(stringResource(R.string.game_mode_section_other))
         GameButton(stringResource(R.string.game_log_export), rememberLogExporter())

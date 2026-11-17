@@ -1,7 +1,9 @@
 package app.lawnchair.gamemode
 
 import android.content.Context
+import android.content.Intent
 import android.os.Build
+import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.Composable
@@ -79,4 +81,15 @@ internal fun rememberLogExporter(): () -> Unit {
         }
     }
     return remember(launcher) { { launcher.launch("tandem-log.txt") } }
+}
+
+/** Abre os Ajustes de Acessibilidade do Android, onde o usuário liga o menu global do Tandem. */
+@Composable
+internal fun rememberAccessibilitySettingsOpener(): () -> Unit {
+    val context = LocalContext.current
+    return remember(context) {
+        {
+            runCatching { context.startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) }
+        }
+    }
 }
