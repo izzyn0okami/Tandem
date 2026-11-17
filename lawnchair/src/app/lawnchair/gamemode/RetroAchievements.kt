@@ -53,8 +53,7 @@ object RaSettings {
      * jogar pela primeira vez). Achar o id exige o hash calculado pelo motor com o núcleo já rodando,
      * então a tela de detalhes (sem o jogo aberto) só consegue mostrar conquistas depois dessa primeira vez.
      */
-    fun cachedGameId(context: Context, romPath: String): Long? =
-        prefs(context).getLong("gameid:$romPath", -1L).takeIf { it > 0 }
+    fun cachedGameId(context: Context, romPath: String): Long? = prefs(context).getLong("gameid:$romPath", -1L).takeIf { it > 0 }
 
     fun setCachedGameId(context: Context, romPath: String, gameId: Long) {
         prefs(context).edit { putLong("gameid:$romPath", gameId) }

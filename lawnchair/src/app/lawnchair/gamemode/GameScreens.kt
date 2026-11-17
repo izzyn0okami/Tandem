@@ -473,16 +473,19 @@ private fun AchievementSummaryRow(platform: GamePlatform, hasLocal: Boolean, ent
                 color = GameColors.textDim,
                 fontSize = 13.sp,
             )
+
             entries == null -> Text(
                 text = stringResource(R.string.game_ra_preview_unknown),
                 color = GameColors.textDim,
                 fontSize = 13.sp,
             )
+
             entries.isEmpty() -> Text(
                 text = stringResource(R.string.game_ra_status_none),
                 color = GameColors.textDim,
                 fontSize = 13.sp,
             )
+
             else -> FocusSurface(onClick = onOpen, shape = RoundedCornerShape(8.dp)) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
