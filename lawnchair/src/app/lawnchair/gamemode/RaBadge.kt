@@ -86,7 +86,7 @@ internal object RaBadges {
  * canto superior direito e usando a paleta do modo jogos. A camada permanece não interativa.
  */
 @Composable
-internal fun AchievementOverlay(achievement: RaAchievement, onDismiss: () -> Unit) {
+internal fun AchievementOverlay(achievement: RaAchievement, hardcore: Boolean, onDismiss: () -> Unit) {
     val context = LocalContext.current
     val icon by produceState<ImageBitmap?>(null, achievement.badge) {
         value = withContext(Dispatchers.IO) { RaBadges.load(context, achievement.badge) }
@@ -168,6 +168,14 @@ internal fun AchievementOverlay(achievement: RaAchievement, onDismiss: () -> Uni
                             overflow = TextOverflow.Ellipsis,
                         )
                     }
+                    Text(
+                        text = stringResource(
+                            if (hardcore) R.string.game_ra_hardcore_label else R.string.game_ra_softcore_label,
+                        ).uppercase(),
+                        color = if (hardcore) GameColors.success else GameColors.textDim,
+                        fontSize = 9.sp,
+                        fontWeight = FontWeight.Bold,
+                    )
                 }
             }
         }
