@@ -19,48 +19,90 @@
 #define LIBRETRODROID_ACHIEVEMENTS_H
 
 #include <string>
-#include <vector>
-#include <queue>
-#include <functional>
+#include <map>
 #include <mutex>
 #include <cstdint>
 
+#include <jni.h>
+#include <rc_client.h>
 #include <rc_libretro.h>
 
 namespace libretrodroid {
 
 class Core;
 
-struct AchievementDef {
-    uint32_t id;
-    std::string memAddr;
-};
-
+/**
+ * Motor de conquistas baseado no rc_client oficial da RetroAchievements (substitui o acesso
+ * direto ao rc_runtime que existia antes). O rc_client cuida de login, identificar/carregar o
+ * jogo, modo hardcore, e envio de desbloqueios com fila de novas tentativas se a internet cair;
+ * por baixo dele continua rodando o mesmo rc_runtime de sempre, lendo a memória do núcleo a cada
+ * quadro. A parte de rede (server_call) é só uma ponte: quem faz a chamada HTTP de verdade é o
+ * Kotlin (RetroAchievements.kt), usando o OkHttp que o app já tem.
+ */
 class Achievements {
 public:
-    void init(const std::vector<AchievementDef>& achievements);
-    void initMemory(uint32_t consoleId, const struct retro_memory_map* mmap);
-    void evaluateFrame();
-    void clear();
-    void handleUnlocks(const std::function<void(uint32_t)>& handler);
-    void queueUnlock(uint32_t id);
-    void markTriggered(uint32_t id);
-    bool isActive() const { return active; }
+    ~Achievements();
 
-    static void setCore(Core* core);
+    /** Chamado uma vez (JNI_OnLoad) para guardar a JavaVM e conseguir chamar o Kotlin depois. */
+    static void setJavaVM(JavaVM* vm);
+
+    /** Objeto Kotlin que implementa as callbacks (ver RaCallbacks.java). Referência global. */
+    void setCallbacks(JNIEnv* env, jobject callbacks);
+
+    /** Cria (ou recria) o cliente rc_client para uma nova sessão de jogo. */
+    void create();
+
+    /** Libera o jogo e destrói o cliente rc_client ao sair da sessão. */
+    void destroyClient();
+
+    void setHardcoreEnabled(bool enabled);
+
+    /** Login assíncrono; o resultado chega em RaCallbacks.onLoginResult. */
+    void beginLoginWithToken(JNIEnv* env, const std::string& user, const std::string& token);
+
+    /** Identifica e carrega o jogo pelo hash; resultado em RaCallbacks.onLoadGameResult. */
+    void beginLoadGame(JNIEnv* env, Core* core, uint32_t consoleId, const struct retro_memory_map* mmap, const std::string& hash);
+
+    void unloadGame();
+
+    /** Processa as conquistas do quadro atual; chamar a cada quadro emulado. */
+    void doFrame();
+
+    bool isGameLoaded() const;
+
+    /** Resposta HTTP que o Kotlin obteve para uma chamada pendente (ver onServerCall). */
+    void deliverServerResponse(JNIEnv* env, int32_t requestId, int httpStatus, const std::string& body, bool networkError);
+
+    /** Lista de conquistas do jogo atual, já em JSON (id, título, descrição, pontos, ícone, se já tem). */
+    std::string getAchievementListJson();
+
+    /** [desbloqueadas, total] do jogo atual. */
+    std::string getSummaryJson();
 
 private:
-    static uint32_t peekMemory(uint32_t address, uint32_t numBytes, void* userData);
+    static uint32_t peekMemory(uint32_t address, uint8_t* buffer, uint32_t numBytes, rc_client_t* client);
+    static void serverCallTrampoline(const rc_api_request_t* request, rc_client_server_callback_t callback, void* callbackData, rc_client_t* client);
+    static void eventHandlerTrampoline(const rc_client_event_t* event, rc_client_t* client);
+    static void loginCallbackTrampoline(int result, const char* errorMessage, rc_client_t* client, void* userdata);
+    static void loadGameCallbackTrampoline(int result, const char* errorMessage, rc_client_t* client, void* userdata);
 
-    void* runtime = nullptr;
-    bool active = false;
-    std::queue<uint32_t> pendingUnlocks;
-    std::mutex unlockMutex;
-    std::vector<uint32_t> triggeredIds;
+    void handleEvent(JNIEnv* env, const rc_client_event_t* event);
+    void handleLoginResult(JNIEnv* env, int result, const char* errorMessage);
+    void handleLoadGameResult(JNIEnv* env, int result, const char* errorMessage);
+
+    rc_client_t* client = nullptr;
+    jobject callbacksRef = nullptr;
+
+    struct PendingCall {
+        rc_client_server_callback_t callback;
+        void* callbackData;
+    };
+    std::map<int32_t, PendingCall> pendingCalls;
+    std::mutex pendingCallsMutex;
+    int32_t nextRequestId = 1;
 
     rc_libretro_memory_regions_t memoryRegions = {};
     bool memoryInitialized = false;
-    uint32_t consoleId = 0;
 };
 
 }

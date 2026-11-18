@@ -108,7 +108,7 @@ internal fun AchievementsScreen() {
                     scope.launch {
                         busy = true
                         message = context.getString(R.string.game_ra_logging_in)
-                        val result = withContext(Dispatchers.IO) { runCatching { RaClient().login(typedUser, password) } }
+                        val result = withContext(Dispatchers.IO) { runCatching { RaPreviewClient().login(typedUser, password) } }
                         result.onSuccess { (name, token) ->
                             RaSettings.save(context, name, token)
                             user = name

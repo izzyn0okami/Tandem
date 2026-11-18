@@ -2,18 +2,20 @@ package app.lawnchair.gamemode
 
 import android.content.Context
 import androidx.core.content.edit
-import com.swordfish.libretrodroid.AchievementDef
 import com.swordfish.libretrodroid.GLRetroView
 import com.swordfish.libretrodroid.LibretroDroid
+import com.swordfish.libretrodroid.RaCallbacks
 import java.io.IOException
-import java.security.MessageDigest
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import okhttp3.FormBody
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import okhttp3.RequestBody.Companion.toRequestBody
+import org.json.JSONArray
 import org.json.JSONObject
 
 /** Conta do RetroAchievements: só o nome e o token ficam no aparelho; a senha nunca é guardada. */
@@ -58,16 +60,9 @@ object RaSettings {
     fun setCachedGameId(context: Context, romPath: String, gameId: Long) {
         prefs(context).edit { putLong("gameid:$romPath", gameId) }
     }
-
-    /** Conquistas desbloqueadas sem rede, guardadas como "idConquista|hashDoJogo|h" (h = 1 hardcore) para reenviar depois. */
-    fun pending(context: Context): Set<String> = prefs(context).getStringSet("pending", emptySet()).orEmpty()
-
-    fun setPending(context: Context, entries: Set<String>) {
-        prefs(context).edit { putStringSet("pending", entries) }
-    }
 }
 
-data class RaAchievement(val id: Long, val title: String, val description: String, val points: Int, val memAddr: String, val badge: String = "")
+data class RaAchievement(val id: Long, val title: String, val description: String, val points: Int, val badge: String = "")
 
 /** Uma conquista do jogo e se o usuário já a tem (no modo em que está jogando). */
 data class RaEntry(val achievement: RaAchievement, val unlocked: Boolean)
@@ -80,16 +75,21 @@ data class RaUnlocks(val softcore: Set<Long>, val hardcore: Set<Long>)
  * estar aberto. Só funciona depois que o jogo foi aberto pelo menos uma vez (é quando o id do jogo no
  * RetroAchievements é descoberto e guardado; ver [RaSettings.cachedGameId]). Nulo = sem conta, ou jogo
  * ainda não reconhecido.
+ *
+ * Isso continua usando a API clássica (dorequest.php) direto, em vez do motor rc_client: o rc_client
+ * foi desenhado em torno de uma sessão com o jogo carregado de verdade, e não dá pra "espiar" as
+ * conquistas de um jogo que não está rodando. Essa é a única parte do app que ainda fala com a API
+ * dessa forma; durante a partida (classe [RaSession] abaixo) é tudo feito pelo rc_client oficial.
  */
 fun loadAchievementPreview(context: Context, romPath: String): List<RaEntry>? {
     val user = RaSettings.user(context) ?: return null
     val token = RaSettings.token(context) ?: return null
     val gameId = RaSettings.cachedGameId(context, romPath) ?: return null
     return try {
-        val client = RaClient()
+        val client = RaPreviewClient()
         val all = client.achievements(user, token, gameId)
         if (all.isEmpty()) return emptyList()
-        // Só consulta (startsession também marca "jogando agora", mas é inofensivo e é a forma já usada no resto do app).
+        // Só consulta (startsession também marca "jogando agora", mas é inofensivo e é a forma já usada pela API clássica).
         val unlocks = client.startSession(user, token, gameId, hardcore = false)
         val unlocked = unlocks.softcore + unlocks.hardcore
         all.map { RaEntry(it, unlocked = it.id in unlocked) }
@@ -101,7 +101,7 @@ fun loadAchievementPreview(context: Context, romPath: String): List<RaEntry>? {
 
 /** O que a sessão descobriu sobre o jogo no RetroAchievements, para mostrar um aviso ao entrar. */
 enum class RaGameStatus {
-    /** A ROM não bate com nenhum hash conhecido (pode ser uma versão diferente, tradução ou hack). */
+    /** A ROM não bate com nenhum hash conhecido (pode ser uma versão diferente, tradução ou hack), ou não deu pra entrar na conta. */
     UNSUPPORTED,
 
     /** O jogo é reconhecido, mas ninguém cadastrou conquistas para ele ainda. */
@@ -111,8 +111,12 @@ enum class RaGameStatus {
     TRACKING,
 }
 
-/** Cliente mínimo da API clássica do RetroAchievements (dorequest.php). Chamadas bloqueantes. */
-class RaClient {
+/**
+ * Cliente mínimo da API clássica do RetroAchievements (dorequest.php), usado só para: o login com
+ * senha (tela de configurações) e a prévia de conquistas na tela de detalhes (ver [loadAchievementPreview]),
+ * os dois únicos pontos do app que não passam pelo motor rc_client. Chamadas bloqueantes.
+ */
+class RaPreviewClient {
 
     private val http = OkHttpClient()
 
@@ -138,12 +142,6 @@ class RaClient {
         return json.getString("User") to json.getString("Token")
     }
 
-    /** Código do jogo no RetroAchievements a partir do hash da ROM; nulo se não for reconhecido. */
-    fun gameIdForHash(hash: String): Long? {
-        val id = call("r" to "gameid", "m" to hash).optLong("GameID", 0L)
-        return id.takeIf { it > 0 }
-    }
-
     fun achievements(user: String, token: String, gameId: Long): List<RaAchievement> {
         val json = call("r" to "patch", "u" to user, "t" to token, "g" to gameId.toString())
         val list = json.optJSONObject("PatchData")?.optJSONArray("Achievements") ?: return emptyList()
@@ -156,11 +154,10 @@ class RaClient {
                     title = it.optString("Title"),
                     description = it.optString("Description"),
                     points = it.optInt("Points", 0),
-                    memAddr = it.optString("MemAddr"),
                     badge = it.optString("BadgeName"),
                 )
             }
-            .filter { it.memAddr.isNotBlank() && !it.title.contains("Unknown Emulator", ignoreCase = true) }
+            .filter { !it.title.contains("Unknown Emulator", ignoreCase = true) }
     }
 
     /** Inicia a sessão de jogo e devolve as conquistas que o usuário já tem. */
@@ -172,34 +169,18 @@ class RaClient {
         }
         return RaUnlocks(softcore = ids("Unlocks"), hardcore = ids("HardcoreUnlocks"))
     }
-
-    /** Registra a conquista. "Já tinha" conta como sucesso. */
-    fun award(user: String, token: String, achievementId: Long, gameHash: String, hardcore: Boolean): Boolean {
-        val mode = if (hardcore) "1" else "0"
-        val validation = MessageDigest.getInstance("MD5")
-            .digest("$achievementId$user$mode".toByteArray())
-            .joinToString("") { "%02x".format(it) }
-        val json = call(
-            "r" to "awardachievement",
-            "u" to user,
-            "t" to token,
-            "a" to achievementId.toString(),
-            "h" to mode,
-            "m" to gameHash,
-            "v" to validation,
-        )
-        return json.optBoolean("Success", false) || json.optString("Error").contains("already", ignoreCase = true)
-    }
 }
 
 /**
- * Conquistas durante uma partida (normal ou hardcore): descobre o jogo pelo hash da ROM,
- * entrega as conquistas ao motor e registra no site as que forem desbloqueadas. Sem rede, as
- * conquistas ficam guardadas e são reenviadas na próxima partida.
+ * Conquistas durante uma partida (normal ou hardcore), usando o motor oficial da RetroAchievements
+ * (rc_client, do lado nativo): login, identificar/carregar o jogo pelo hash, modo hardcore e o envio
+ * dos desbloqueios ao site (com fila de novas tentativas automática se a internet cair) são todos
+ * cuidados por ele. Este objeto só faz a ponte: executa as chamadas HTTP que o rc_client pede (com o
+ * OkHttp do app) e repassa os eventos (conquista desbloqueada, etc.) para a UI.
  */
 class RaSession(
     private val context: Context,
-    private val view: GLRetroView,
+    @Suppress("UNUSED_PARAMETER") private val view: GLRetroView,
     private val platform: GamePlatform,
     private val romPath: String,
     private val scope: CoroutineScope,
@@ -207,86 +188,131 @@ class RaSession(
     private val onUnlock: (RaAchievement) -> Unit,
     private val onState: (entries: List<RaEntry>, hardcore: Boolean) -> Unit,
     private val onStatus: (status: RaGameStatus, unlocked: Int, total: Int) -> Unit = { _, _, _ -> },
-) {
-    private val client = RaClient()
-    private var all = emptyList<RaAchievement>()
+) : RaCallbacks {
+
+    private val http = OkHttpClient()
     private var achievementsById = emptyMap<Long, RaAchievement>()
-    private val unlockedIds = mutableSetOf<Long>()
-    private var gameHash: String? = null
+    private var active = false
 
     /** Chamar só depois que o jogo já está rodando (o motor precisa do mapa de memória do núcleo). */
     fun start() {
         val user = RaSettings.user(context) ?: return
         val token = RaSettings.token(context) ?: return
         val consoleId = platform.raConsoleId ?: return
+
+        active = true
+        LibretroDroid.raCreate()
+        LibretroDroid.raSetCallbacks(this)
+        LibretroDroid.raSetHardcoreEnabled(hardcore)
+
         scope.launch(Dispatchers.IO) {
-            runCatching {
-                resendPending(user, token)
-                val hash = LibretroDroid.computeRomHash(romPath, consoleId) ?: return@launch
-                gameHash = hash
-                val gameId = client.gameIdForHash(hash)
-                if (gameId == null) {
-                    withContext(Dispatchers.Main) { onStatus(RaGameStatus.UNSUPPORTED, 0, 0) }
-                    return@launch
-                }
-                RaSettings.setCachedGameId(context, romPath, gameId)
-                val unlocks = runCatching { client.startSession(user, token, gameId, hardcore) }
-                    .getOrDefault(RaUnlocks(emptySet(), emptySet()))
-                // No hardcore só contam as já ganhas em hardcore; no normal, qualquer uma.
-                unlockedIds += if (hardcore) unlocks.hardcore else unlocks.softcore + unlocks.hardcore
-                all = client.achievements(user, token, gameId)
-                achievementsById = all.associateBy { it.id }
-                publish()
-                withContext(Dispatchers.Main) {
-                    onStatus(
-                        if (all.isEmpty()) RaGameStatus.NO_ACHIEVEMENTS else RaGameStatus.TRACKING,
-                        unlockedIds.size,
-                        all.size,
-                    )
-                }
-                val toWatch = all.filter { it.id !in unlockedIds }
-                if (toWatch.isNotEmpty()) {
-                    LibretroDroid.initAchievements(toWatch.map { AchievementDef(it.id, it.memAddr) }.toTypedArray(), consoleId)
-                    view.achievementUnlockListener = { id -> handleUnlock(id, user, token) }
-                }
+            val hash = runCatching { LibretroDroid.computeRomHash(romPath, consoleId) }.getOrNull()
+            if (hash == null || !active) {
+                withContext(Dispatchers.Main) { onStatus(RaGameStatus.UNSUPPORTED, 0, 0) }
+                return@launch
             }
+            pendingHash = hash
+            pendingConsoleId = consoleId
+            LibretroDroid.raBeginLoginWithToken(user, token)
         }
     }
 
     fun stop() {
-        view.achievementUnlockListener = null
-        runCatching { LibretroDroid.clearAchievements() }
+        if (!active) return
+        active = false
+        runCatching { LibretroDroid.raUnloadGame() }
+        runCatching { LibretroDroid.raSetCallbacks(null) }
+        runCatching { LibretroDroid.raDestroy() }
     }
 
-    private fun handleUnlock(id: Long, user: String, token: String) {
-        val achievement = achievementsById[id] ?: return
-        unlockedIds += id
-        scope.launch(Dispatchers.Main) {
-            onUnlock(achievement)
-            publish()
-        }
-        val hash = gameHash ?: return
+    @Volatile private var pendingHash: String? = null
+    @Volatile private var pendingConsoleId: Int? = null
+
+    // --- RaCallbacks: chamado pelo nativo, em threads variadas (ver RaCallbacks.java) -----------
+
+    override fun onServerCall(requestId: Int, url: String, postData: String?, contentType: String?) {
         scope.launch(Dispatchers.IO) {
-            val sent = runCatching { client.award(user, token, id, hash, hardcore) }.getOrDefault(false)
-            if (!sent) RaSettings.setPending(context, RaSettings.pending(context) + "$id|$hash|${if (hardcore) 1 else 0}")
+            try {
+                val builder = Request.Builder().url(url).header("User-Agent", "Tandem/1.0")
+                if (postData != null) {
+                    val mediaType = (contentType ?: "application/x-www-form-urlencoded").toMediaTypeOrNull()
+                    builder.post(postData.toRequestBody(mediaType))
+                }
+                http.newCall(builder.build()).execute().use { response ->
+                    val body = response.body?.string().orEmpty()
+                    LibretroDroid.raDeliverServerResponse(requestId, response.code, body, false)
+                }
+            } catch (e: IOException) {
+                // Sem internet ou falha de rede: o rc_client sabe tentar de novo mais tarde sozinho.
+                LibretroDroid.raDeliverServerResponse(requestId, 0, "", true)
+            }
         }
     }
 
-    private suspend fun publish() {
-        val entries = all.map { RaEntry(it, it.id in unlockedIds) }
-        withContext(Dispatchers.Main) { onState(entries, hardcore) }
+    override fun onLoginResult(success: Boolean, errorMessage: String?) {
+        if (!active) return
+        if (!success) {
+            GameLog.log("conquistas", "não consegui entrar na conta RetroAchievements: $errorMessage")
+            scope.launch(Dispatchers.Main) { onStatus(RaGameStatus.UNSUPPORTED, 0, 0) }
+            return
+        }
+        val hash = pendingHash ?: return
+        val consoleId = pendingConsoleId ?: return
+        LibretroDroid.raBeginLoadGame(hash, consoleId)
     }
 
-    private fun resendPending(user: String, token: String) {
-        val pending = RaSettings.pending(context)
-        if (pending.isEmpty()) return
-        val remaining = pending.filterNot { entry ->
-            val parts = entry.split("|")
-            val id = parts[0].toLongOrNull()
-            val hash = parts.getOrNull(1)
-            val wasHardcore = parts.getOrNull(2) == "1"
-            id != null && hash != null && runCatching { client.award(user, token, id, hash, wasHardcore) }.getOrDefault(false)
+    override fun onLoadGameResult(success: Boolean, errorMessage: String?) {
+        if (!active) return
+        if (!success) {
+            GameLog.log("conquistas", "jogo não reconhecido pelo RetroAchievements: $errorMessage")
+            scope.launch(Dispatchers.Main) { onStatus(RaGameStatus.UNSUPPORTED, 0, 0) }
+            return
         }
-        RaSettings.setPending(context, remaining.toSet())
+        publish(reportStatus = true)
+    }
+
+    override fun onAchievementTriggered(achievementId: Int) {
+        val id = achievementId.toLong()
+        publish(reportStatus = false)
+        achievementsById[id]?.let { achievement ->
+            scope.launch(Dispatchers.Main) { onUnlock(achievement) }
+        }
+    }
+
+    override fun onServerError(api: String, message: String) {
+        GameLog.log("conquistas", "RetroAchievements ($api): $message")
+    }
+
+    override fun onReset() {
+        // O hardcore só é escolhido antes de começar a jogar, então isso não deve acontecer hoje;
+        // deixado pronto (e registrado) para quando/se o app permitir trocar de modo com o jogo aberto.
+        GameLog.log("conquistas", "RetroAchievements pediu reinício do jogo (mudança de modo hardcore)")
+    }
+
+    private fun publish(reportStatus: Boolean) {
+        val json = runCatching { JSONArray(LibretroDroid.raGetAchievementListJson()) }.getOrNull() ?: return
+        val entries = (0 until json.length()).map { json.getJSONObject(it) }.map { obj ->
+            val achievement = RaAchievement(
+                id = obj.getLong("id"),
+                title = obj.optString("title"),
+                description = obj.optString("description"),
+                points = obj.optInt("points"),
+                badge = obj.optString("badge"),
+            )
+            RaEntry(achievement, unlocked = obj.optBoolean("unlocked"))
+        }
+        achievementsById = entries.associate { it.achievement.id to it.achievement }
+
+        scope.launch(Dispatchers.Main) {
+            onState(entries, hardcore)
+            if (reportStatus) {
+                val unlockedCount = entries.count { it.unlocked }
+                onStatus(
+                    if (entries.isEmpty()) RaGameStatus.NO_ACHIEVEMENTS else RaGameStatus.TRACKING,
+                    unlockedCount,
+                    entries.size,
+                )
+            }
+        }
     }
 }

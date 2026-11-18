@@ -149,10 +149,8 @@ public:
     bool isRumbleEnabled() const;
     void handleRumbleUpdates(const std::function<void(int, float, float)> &handler);
 
-    void initAchievements(const std::vector<AchievementDef>& achievements, uint32_t consoleId);
-    void clearAchievements();
-    void handleAchievementUnlocks(const std::function<void(uint32_t)>& handler);
     Achievements& getAchievements() { return achievements; }
+    void achievementsBeginLoadGame(JNIEnv* env, uint32_t consoleId, const std::string& hash);
 
     void setFrameSpeed(unsigned int speed);
 

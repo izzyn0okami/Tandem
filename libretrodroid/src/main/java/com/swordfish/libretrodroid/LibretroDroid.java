@@ -218,8 +218,22 @@ public class LibretroDroid {
     public static native void setRewindSpeed(int speed);
     public static native double getContentFps();
 
-    public static native void initAchievements(AchievementDef[] achievements, int consoleId);
-    public static native void clearAchievements();
+    /**
+     * Motor oficial da RetroAchievements (rc_client). Ver RaCallbacks e RetroAchievements.kt:
+     * quem faz a chamada HTTP de verdade é o Kotlin (com o OkHttp que o app já tem); o nativo só
+     * monta o pedido (onServerCall) e recebe a resposta (raDeliverServerResponse).
+     */
+    public static native void raSetCallbacks(RaCallbacks callbacks);
+    public static native void raCreate();
+    public static native void raDestroy();
+    public static native void raSetHardcoreEnabled(boolean enabled);
+    public static native void raBeginLoginWithToken(String user, String token);
+    public static native void raBeginLoadGame(String hash, int consoleId);
+    public static native void raUnloadGame();
+    public static native void raDeliverServerResponse(int requestId, int httpStatus, String body, boolean networkError);
+    public static native String raGetAchievementListJson();
+    public static native String raGetSummaryJson();
+    public static native boolean raIsGameLoaded();
 
     /**
      * Run native achievement condition tests.
