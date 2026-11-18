@@ -226,6 +226,7 @@ class RaSession(
     }
 
     @Volatile private var pendingHash: String? = null
+
     @Volatile private var pendingConsoleId: Int? = null
 
     // --- RaCallbacks: chamado pelo nativo, em threads variadas (ver RaCallbacks.java) -----------
