@@ -26,6 +26,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -92,6 +93,26 @@ internal fun LibraryScreen(
         if (hero != null) runCatching { heroFocus.requestFocus() }
     }
 
+    // Tema musical do jogo em destaque (experimental, desligado por padrão): trocar de destaque
+    // para e sair da Biblioteca sempre encerra o que estiver tocando.
+    val themeMusicEnabled = GameModeSettings.isThemeMusicEnabled(context)
+    var themePlaying by remember { mutableStateOf(false) }
+    LaunchedEffect(hero?.path) { GameThemeMusic.stop(); themePlaying = false }
+    DisposableEffect(Unit) { onDispose { GameThemeMusic.stop() } }
+    val onToggleTheme: () -> Unit = toggle@{
+        val game = hero ?: return@toggle
+        if (themePlaying) {
+            themePlaying = false
+            scope.launch(Dispatchers.IO) { GameThemeMusic.stop() }
+        } else {
+            themePlaying = true
+            scope.launch(Dispatchers.IO) {
+                GameThemeMusic.play(context, game.path, game.title, game.platform.name)
+                withContext(Dispatchers.Main) { themePlaying = GameThemeMusic.isPlaying(game.path) }
+            }
+        }
+    }
+
     if (entries.isEmpty() && androidGames.isEmpty()) {
         Column(modifier = Modifier.fillMaxSize().padding(24.dp)) {
             Text(
@@ -135,6 +156,9 @@ internal fun LibraryScreen(
                         focus = heroFocus,
                         onPlay = { onPlay(hero) },
                         onDetails = { entryByPath[hero.path]?.let(onOpen) },
+                        showThemeButton = themeMusicEnabled,
+                        themePlaying = themePlaying,
+                        onToggleTheme = onToggleTheme,
                     )
                 }
             }
@@ -297,6 +321,9 @@ private fun HeroSection(
     focus: FocusRequester,
     onPlay: () -> Unit,
     onDetails: () -> Unit,
+    showThemeButton: Boolean = false,
+    themePlaying: Boolean = false,
+    onToggleTheme: () -> Unit = {},
 ) {
     Row(horizontalArrangement = Arrangement.spacedBy(20.dp), verticalAlignment = Alignment.Bottom) {
         CoverTile(game, modifier = Modifier.size(width = 112.dp, height = 150.dp).clip(RoundedCornerShape(12.dp)))
@@ -317,6 +344,13 @@ private fun HeroSection(
                     modifier = Modifier.width(140.dp).focusRequester(focus),
                 )
                 GameButton(label = stringResource(R.string.game_details), onClick = onDetails, modifier = Modifier.width(120.dp))
+                if (showThemeButton) {
+                    GameButton(
+                        label = stringResource(if (themePlaying) R.string.game_theme_stop else R.string.game_theme_play),
+                        onClick = onToggleTheme,
+                        modifier = Modifier.width(170.dp),
+                    )
+                }
             }
         }
     }
@@ -553,6 +587,11 @@ internal fun SettingsScreen(
         sound = !sound
         GameModeSettings.setSoundEnabled(context, sound)
     }
+    var themeMusic by remember { mutableStateOf(GameModeSettings.isThemeMusicEnabled(context)) }
+    val toggleThemeMusic = {
+        themeMusic = !themeMusic
+        GameModeSettings.setThemeMusicEnabled(context, themeMusic)
+    }
     var scraper by remember { mutableStateOf(GameModeSettings.isScraperEnabled(context)) }
     val toggleScraper = {
         scraper = !scraper
@@ -594,6 +633,12 @@ internal fun SettingsScreen(
         SettingsSection(stringResource(R.string.game_mode_section_interface))
         SettingsSwitchRow(label = stringResource(R.string.game_mode_auto_enter), checked = autoEnter, onToggle = toggleAuto)
         SettingsSwitchRow(label = stringResource(R.string.game_mode_sound), checked = sound, onToggle = toggleSound)
+        SettingsSwitchRow(label = stringResource(R.string.game_theme_music_toggle), checked = themeMusic, onToggle = toggleThemeMusic)
+        Text(
+            text = stringResource(R.string.game_theme_music_note),
+            color = GameColors.textDim,
+            fontSize = 12.sp,
+        )
         GameButton(stringResource(R.string.game_overlay_open_settings), rememberAccessibilitySettingsOpener())
         Text(
             text = stringResource(R.string.game_overlay_settings_note),

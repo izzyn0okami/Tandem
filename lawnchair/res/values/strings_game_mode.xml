@@ -46,6 +46,10 @@
     <string name="game_overlay_close">Fechar</string>
     <string name="game_overlay_open_settings">Menu global (fora do Tandem)</string>
     <string name="game_overlay_settings_note">Ativa o mesmo atalho do menu de pausa (Select + Start) dentro de outros apps: emuladores externos e jogos Android. Precisa ser ligado nos Ajustes de Acessibilidade do Android, uma vez só.</string>
+    <string name="game_theme_music_toggle">Tema musical do jogo em destaque (experimental)</string>
+    <string name="game_theme_music_note">Procura o tema do jogo em destaque num vídeo do YouTube e toca só o áudio, em repetição, quando você aperta o botão na tela principal. Nada fica salvo no aparelho. Recurso experimental: pode não achar o tema certo, parar de funcionar se o YouTube mudar algo, ou esbarrar em direitos autorais dependendo do vídeo encontrado.</string>
+    <string name="game_theme_play">▶ Tocar tema (experimental)</string>
+    <string name="game_theme_stop">■ Parar tema</string>
     <string name="game_mode_choose_folder">Escolher pasta</string>
     <string name="game_mode_refresh">Atualizar biblioteca</string>
     <string name="game_mode_needs_access">Para ler e gravar nessa pasta, o Android exige o acesso a todos os arquivos.</string>
