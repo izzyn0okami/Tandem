@@ -27,6 +27,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -82,7 +83,7 @@ class GameSessionActivity : ComponentActivity() {
     private lateinit var lostWatcher: ControllerLostWatcher
     private var romPath: String? = null
     private var raSession: RaSession? = null
-    private var raToast by mutableStateOf<RaAchievement?>(null)
+    private val raUnlockQueue = mutableStateListOf<RaAchievement>()
     private var raEntries by mutableStateOf<List<RaEntry>>(emptyList())
     private var raHardcore by mutableStateOf(false)
     private var raListOpen by mutableStateOf(false)
@@ -167,7 +168,7 @@ class GameSessionActivity : ComponentActivity() {
                 scope = lifecycleScope,
                 hardcore = RaSettings.hardcore(this),
                 onUnlock = {
-                    raToast = it
+                    raUnlockQueue.add(it)
                     if (GameModeSettings.isSoundEnabled(this)) NavSound.unlock()
                 },
                 onState = { entries, hardcore ->
@@ -194,9 +195,11 @@ class GameSessionActivity : ComponentActivity() {
                 ComposeView(this).apply {
                     setContent {
                         LawnchairTheme {
-                            raToast?.let { unlocked ->
-                                AchievementOverlay(unlocked) {
-                                    if (raToast == unlocked) raToast = null
+                            raUnlockQueue.firstOrNull()?.let { unlocked ->
+                                AchievementOverlay(unlocked, hardcore = raHardcore) {
+                                    if (raUnlockQueue.firstOrNull()?.id == unlocked.id) {
+                                        raUnlockQueue.removeAt(0)
+                                    }
                                 }
                             }
                             if (menuOpen) {
