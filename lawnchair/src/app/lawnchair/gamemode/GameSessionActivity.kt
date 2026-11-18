@@ -28,6 +28,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -82,7 +83,7 @@ class GameSessionActivity : ComponentActivity() {
     private lateinit var lostWatcher: ControllerLostWatcher
     private var romPath: String? = null
     private var raSession: RaSession? = null
-    private var raToast by mutableStateOf<RaAchievement?>(null)
+    private val raNotifications = mutableStateListOf<RaAchievement>()
     private var raEntries by mutableStateOf<List<RaEntry>>(emptyList())
     private var raHardcore by mutableStateOf(false)
     private var raListOpen by mutableStateOf(false)
@@ -167,7 +168,7 @@ class GameSessionActivity : ComponentActivity() {
                 scope = lifecycleScope,
                 hardcore = RaSettings.hardcore(this),
                 onUnlock = {
-                    raToast = it
+                    raNotifications.add(it)
                     if (GameModeSettings.isSoundEnabled(this)) NavSound.unlock()
                 },
                 onState = { entries, hardcore ->
@@ -194,12 +195,16 @@ class GameSessionActivity : ComponentActivity() {
                 ComposeView(this).apply {
                     setContent {
                         LawnchairTheme {
-                            raToast?.let { unlocked ->
-                                LaunchedEffect(unlocked) {
-                                    delay(RA_TOAST_MS)
-                                    if (raToast == unlocked) raToast = null
-                                }
-                                AchievementToast(unlocked)
+                            raNotifications.firstOrNull()?.let { unlocked ->
+                                AchievementNotification(
+                                    achievement = unlocked,
+                                    hardcore = raHardcore,
+                                    onDismiss = {
+                                        if (raNotifications.firstOrNull()?.id == unlocked.id) {
+                                            raNotifications.removeAt(0)
+                                        }
+                                    },
+                                )
                             }
                             if (menuOpen) {
                                 val progress = if (raEntries.isEmpty()) {
@@ -449,7 +454,6 @@ class GameSessionActivity : ComponentActivity() {
         private const val EXTRA_ROM_PATH = "rom_path"
         private const val EXTRA_LOAD_STATE = "load_state"
         private const val EXTRA_PLATFORM = "platform"
-        private const val RA_TOAST_MS = 4_000L
         private const val SRAM_AUTOSAVE_MS = 60_000L
 
         fun intent(context: Context, corePath: String, romPath: String, loadState: Boolean = false, platformSlug: String? = null): Intent = Intent(context, GameSessionActivity::class.java)
