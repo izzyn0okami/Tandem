@@ -544,6 +544,15 @@ licensee {
     allow(SpdxId.GPL_20_or_later)
     allowDependency(libs.libsu.core)
     allowDependency(libs.libsu.service)
+    allowDependency('io.github.junkfood02.youtubedl-android', 'library', '0.18.1') {
+        because 'GPL-3.0; tema musical experimental (Configurações > Interface), desligado por padrão'
+    }
+    allowDependency('io.github.junkfood02.youtubedl-android', 'ffmpeg', '0.18.1') {
+        because 'GPL-3.0; tema musical experimental (Configurações > Interface), desligado por padrão'
+    }
+    allowDependency('io.github.junkfood02.youtubedl-android', 'common', '0.18.1') {
+        because 'GPL-3.0; usado pela biblioteca do tema musical experimental acima'
+    }
     allowUrl("https://github.com/patrykmichalik/opto/blob/master/LICENSE")
     allowUrl("https://github.com/RikkaApps/HiddenApiRefinePlugin/blob/main/LICENSE")
     allowUrl("https://opensource.org/licenses/mit-license.php")

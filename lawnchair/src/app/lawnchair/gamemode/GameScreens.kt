@@ -97,7 +97,10 @@ internal fun LibraryScreen(
     // para e sair da Biblioteca sempre encerra o que estiver tocando.
     val themeMusicEnabled = GameModeSettings.isThemeMusicEnabled(context)
     var themePlaying by remember { mutableStateOf(false) }
-    LaunchedEffect(hero?.path) { GameThemeMusic.stop(); themePlaying = false }
+    LaunchedEffect(hero?.path) {
+        GameThemeMusic.stop()
+        themePlaying = false
+    }
     DisposableEffect(Unit) { onDispose { GameThemeMusic.stop() } }
     val onToggleTheme: () -> Unit = toggle@{
         val game = hero ?: return@toggle
