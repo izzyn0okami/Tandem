@@ -195,11 +195,9 @@ class GameSessionActivity : ComponentActivity() {
                     setContent {
                         LawnchairTheme {
                             raToast?.let { unlocked ->
-                                LaunchedEffect(unlocked) {
-                                    delay(RA_TOAST_MS)
+                                AchievementOverlay(unlocked) {
                                     if (raToast == unlocked) raToast = null
                                 }
-                                AchievementToast(unlocked)
                             }
                             if (menuOpen) {
                                 val progress = if (raEntries.isEmpty()) {
