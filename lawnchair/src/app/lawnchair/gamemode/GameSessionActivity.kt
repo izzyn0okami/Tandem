@@ -381,7 +381,8 @@ class GameSessionActivity : ComponentActivity() {
         raIdleJob?.cancel()
         raIdleJob = lifecycleScope.launch {
             while (isActive) {
-                retroView?.idleAchievements()
+                // runOnGLThread aguarda o GL thread; não bloquear a thread principal a cada segundo.
+                withContext(Dispatchers.Default) { retroView?.idleAchievements() }
                 delay(1_000)
             }
         }
