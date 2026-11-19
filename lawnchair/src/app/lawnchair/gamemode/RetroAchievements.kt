@@ -211,6 +211,7 @@ class RaSession(
     private val view: GLRetroView,
     private val platform: GamePlatform,
     private val romPath: String,
+    private val cacheKeyPath: String = romPath,
     private val scope: CoroutineScope,
     private val hardcore: Boolean,
     private val onUnlock: (RaAchievement) -> Unit,
@@ -293,7 +294,7 @@ class RaSession(
         if (!active) return
         if (success) {
             val gameId = view.getAchievementsGameId()
-            if (gameId > 0) RaSettings.setCachedGameId(context, romPath, gameId)
+            if (gameId > 0) RaSettings.setCachedGameId(context, cacheKeyPath, gameId)
         }
         if (!success) {
             GameLog.log("conquistas", "jogo não reconhecido pelo RetroAchievements: $errorMessage")
