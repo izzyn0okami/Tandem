@@ -582,6 +582,11 @@ class GLRetroView(
         LibretroDroid.raIsProcessingRequired()
     }
 
+    /** Validate a core option using rcheevos' official Hardcore disallowed-settings table. */
+    fun isAchievementsCoreSettingAllowed(key: String, value: String): Boolean = runOnGLThread {
+        LibretroDroid.isCoreSettingAllowed(key, value)
+    }
+
     fun setAchievementsHardcoreEnabled(enabled: Boolean) = runOnGLThread {
         achievementsHardcoreEnabled = enabled
         if (enabled) {
