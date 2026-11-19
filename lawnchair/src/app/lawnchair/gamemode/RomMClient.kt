@@ -329,9 +329,14 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
             platform = platform,
             fileName = fileName,
             sizeBytes = item.optLong("fs_size_bytes", 0L),
-            coverPath = (item.optString("path_cover_small").ifEmpty { null } ?: item.optString("path_cover_large").ifEmpty { null })
-                .also { logCoverSample(item) },
-            coverUrl = item.optString("url_cover").ifEmpty { null },
+            coverPath = (
+                item.optString("path_cover_small")
+                    .takeUnless { it.isBlank() || it.equals("null", ignoreCase = true) }
+                    ?: item.optString("path_cover_large")
+                        .takeUnless { it.isBlank() || it.equals("null", ignoreCase = true) }
+                ).also { logCoverSample(item) },
+            coverUrl = item.optString("url_cover")
+                .takeUnless { it.isBlank() || it.equals("null", ignoreCase = true) },
             serverName = serverName,
             fileId = fileId,
             folder = folder,
