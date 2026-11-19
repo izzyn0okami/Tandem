@@ -241,7 +241,7 @@ class RaSession(
             }
             pendingHash = hash
             pendingConsoleId = consoleId
-            view.beginAchievementsLogin(user, token)
+            view.beginAchievementsLogin(user, token) { active }
         }
     }
 
@@ -249,6 +249,7 @@ class RaSession(
         if (!active) return
         active = false
         runCatching { view.stopAchievements() }
+            .onFailure { GameLog.error("conquistas", "falha ao encerrar a sessão RetroAchievements", it) }
     }
 
     @Volatile private var pendingHash: String? = null
@@ -267,11 +268,11 @@ class RaSession(
                 }
                 http.newCall(builder.build()).execute().use { response ->
                     val body = response.body?.string().orEmpty()
-                    if (active) view.deliverAchievementsResponse(requestId, response.code, body, false)
+                    if (active) view.deliverAchievementsResponse(requestId, response.code, body, false) { active }
                 }
             } catch (e: IOException) {
                 // Sem internet ou falha de rede: o rc_client sabe tentar de novo mais tarde sozinho.
-                if (active) view.deliverAchievementsResponse(requestId, 0, "", true)
+                if (active) view.deliverAchievementsResponse(requestId, 0, "", true) { active }
             }
         }
     }
