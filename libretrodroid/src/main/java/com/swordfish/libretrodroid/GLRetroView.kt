@@ -570,6 +570,16 @@ class GLRetroView(
         LibretroDroid.raGetAchievementListJson()
     }
 
+    /** Persist rc_client's in-memory achievement progress independently from emulator save states. */
+    fun serializeAchievementsProgress(): ByteArray? = runOnGLThread {
+        LibretroDroid.raSerializeProgress()
+    }
+
+    /** Restore progress only after rc_client has successfully loaded the matching game. */
+    fun restoreAchievementsProgress(progress: ByteArray): Boolean = runOnGLThread {
+        LibretroDroid.raDeserializeProgress(progress)
+    }
+
     fun getAchievementsGameId(): Long = runOnGLThread {
         LibretroDroid.raGetGameId()
     }
