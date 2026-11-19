@@ -437,7 +437,7 @@ class GameSessionActivity : ComponentActivity() {
         if (raSession != null) {
             runCatching {
                 val progress = view.serializeAchievementsProgress()
-                if (!progress.isNullOrEmpty()) store.writeRaProgress(user, progress)
+                if (progress != null && progress.isNotEmpty()) store.writeRaProgress(user, progress)
             }.onFailure { GameLog.error("conquistas", "falha ao salvar progresso local", it) }
         }
     }
