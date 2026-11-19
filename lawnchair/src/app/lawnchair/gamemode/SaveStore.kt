@@ -62,10 +62,12 @@ class SaveStore(
     fun writeState(bytes: ByteArray) = write(stateFile, bytes)
 
     /** Grava por arquivo temporário e renomeia, para um corte de energia não estragar o save. */
+    @Synchronized
     private fun write(target: File, bytes: ByteArray) {
         val temp = File(dir, "${target.name}.tmp")
         temp.writeBytes(bytes)
-        target.delete()
+        // rename(2) substitui o destino atomicamente neste filesystem; não remova o save antigo
+        // antes, pois uma interrupção entre delete e rename poderia perder o último progresso.
         check(temp.renameTo(target)) { "Não consegui gravar ${target.name}" }
     }
 }
