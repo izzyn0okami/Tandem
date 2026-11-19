@@ -237,6 +237,8 @@ public class LibretroDroid {
     public static native String raGetSummaryJson();
     public static native boolean raIsGameLoaded();
     public static native long raGetGameId();
+    public static native String raGetUserAgentClause();
+    public static native boolean raIsProcessingRequired();
 
     /** Progresso das conquistas, para gravar junto ao estado rápido do emulador. */
     public static native byte[] raSerializeProgress();
