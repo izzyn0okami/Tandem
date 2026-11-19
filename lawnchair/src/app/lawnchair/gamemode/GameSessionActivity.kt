@@ -178,6 +178,7 @@ class GameSessionActivity : ComponentActivity() {
                 view = view,
                 platform = platform,
                 romPath = loadPath,
+                cacheKeyPath = romPath,
                 scope = lifecycleScope,
                 hardcore = RaSettings.hardcore(this),
                 onUnlock = {
