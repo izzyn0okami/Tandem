@@ -540,6 +540,10 @@ class GLRetroView(
         LibretroDroid.raGetAchievementListJson()
     }
 
+    fun getAchievementsGameId(): Long = runOnGLThread {
+        LibretroDroid.raGetGameId()
+    }
+
     fun setBackgroundFrame(bitmap: Bitmap) = runOnGLThread {
         val width = bitmap.width
         val height = bitmap.height
