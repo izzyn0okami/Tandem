@@ -478,6 +478,30 @@ class GLRetroView(
 
     fun reset() = runOnGLThread {
         LibretroDroid.reset()
+        LibretroDroid.raReset()
+    }
+
+    /**
+     * Snapshot the emulator and RetroAchievements runtime on the same GL thread/frame boundary.
+     * Keeping these operations together prevents a frame from advancing between the two snapshots.
+     */
+    fun serializeStateWithAchievements(): Pair<ByteArray, ByteArray?> = runOnGLThread {
+        LibretroDroid.serializeState() to LibretroDroid.raSerializeProgress()
+    }
+
+    /** Restore the emulator and achievement runtime in order on the GL thread. */
+    fun unserializeStateWithAchievements(state: ByteArray, progress: ByteArray?): Boolean = runOnGLThread {
+        val loaded = LibretroDroid.unserializeState(state)
+        if (loaded) LibretroDroid.raDeserializeProgress(progress)
+        loaded
+    }
+
+    fun idleAchievements() = runOnGLThread {
+        LibretroDroid.raIdle()
+    }
+
+    fun canPauseAchievements(): Boolean = runOnGLThread {
+        LibretroDroid.raCanPause()
     }
 
     fun setBackgroundFrame(bitmap: Bitmap) = runOnGLThread {
