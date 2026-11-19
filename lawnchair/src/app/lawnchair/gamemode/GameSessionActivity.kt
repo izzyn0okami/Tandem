@@ -222,16 +222,13 @@ class GameSessionActivity : ComponentActivity() {
                     },
                     onOverlayEvent = { event -> handleRaOverlayEvent(event) },
                     onGameLoaded = { onRestored ->
-                        if (savedRaProgress == null) {
-                            onRestored()
-                        } else {
-                            view.restoreAchievementsProgressAsync(savedRaProgress) { restored ->
-                                if (restored == false) {
-                                    progressUser?.let(store::deleteRaProgress)
-                                    GameLog.log("conquistas", "progresso local incompatível; arquivo descartado")
-                                }
-                                onRestored()
+                        // Sempre adia a publicação para depois que o callback nativo de load retornar.
+                        view.restoreAchievementsProgressAsync(savedRaProgress) { restored ->
+                            if (restored == false) {
+                                progressUser?.let(store::deleteRaProgress)
+                                GameLog.log("conquistas", "progresso local incompatível; arquivo descartado")
                             }
+                            onRestored()
                         }
                     },
                 )
