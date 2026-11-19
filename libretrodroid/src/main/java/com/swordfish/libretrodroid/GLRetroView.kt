@@ -482,6 +482,19 @@ class GLRetroView(
     }
 
     /**
+     * rc_client emits RESET when a mode change requires the core to restart.
+     * Defer the reset until the current rc_client callback has unwound.
+     */
+    fun resetAfterAchievementsModeChange() {
+        queueEvent {
+            if (!isDestroyed) {
+                LibretroDroid.reset()
+                LibretroDroid.raReset()
+            }
+        }
+    }
+
+    /**
      * Snapshot the emulator and RetroAchievements runtime on the same GL thread/frame boundary.
      * Keeping these operations together prevents a frame from advancing between the two snapshots.
      */
