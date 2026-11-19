@@ -363,10 +363,17 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
             downloadFolder(game, target, onProgress)
             return
         }
-        val url = base.resolve("api/roms/${game.id}/content/")!!.newBuilder()
-            .addPathSegment(game.serverName)
-            .apply { game.fileId?.let { addQueryParameter("file_ids", it.toString()) } }
-            .build()
+        // ROMs aninhadas usam o endpoint de arquivo individual: o ID da rota é o ID
+        // do arquivo, não o ID da ROM. O endpoint /content/{fs_name} baixa a ROM inteira.
+        val url = if (game.fileId != null) {
+            base.resolve("api/roms/${game.fileId}/files/content/")!!.newBuilder()
+                .addPathSegment(game.fileName)
+                .build()
+        } else {
+            base.resolve("api/roms/${game.id}/content/")!!.newBuilder()
+                .addPathSegment(game.serverName)
+                .build()
+        }
         target.parentFile?.mkdirs()
         val temp = File(target.parentFile, "${target.name}.part")
         longHttp.newCall(request(url).build()).execute().use { response ->
