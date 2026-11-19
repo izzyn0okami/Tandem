@@ -28,6 +28,7 @@ import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -120,13 +121,14 @@ internal fun AchievementOverlay(achievement: RaAchievement, hardcore: Boolean, o
         value = withContext(Dispatchers.IO) { RaBadges.load(context, achievement.badge) }
     }
     var visible by remember(achievement.id) { mutableStateOf(false) }
+    val currentOnDismiss by rememberUpdatedState(onDismiss)
 
     LaunchedEffect(achievement.id) {
         visible = true
         delay(4_200)
         visible = false
         delay(220)
-        onDismiss()
+        currentOnDismiss()
     }
 
     Box(
@@ -316,12 +318,13 @@ internal fun LeaderboardTrackersColumn(trackers: List<RaLeaderboardTracker>) {
 @Composable
 internal fun LeaderboardMessageToast(message: String, onDismiss: () -> Unit) {
     var visible by remember(message) { mutableStateOf(false) }
+    val currentOnDismiss by rememberUpdatedState(onDismiss)
     LaunchedEffect(message) {
         visible = true
         delay(3_000)
         visible = false
         delay(220)
-        onDismiss()
+        currentOnDismiss()
     }
     Box(modifier = Modifier.fillMaxSize().padding(top = 22.dp), contentAlignment = Alignment.TopCenter) {
         AnimatedVisibility(visible = visible, enter = fadeIn(), exit = fadeOut()) {
@@ -350,12 +353,13 @@ internal fun MasteryOverlay(mastery: RaMastery, playtimeLabel: String, userName:
         value = withContext(Dispatchers.IO) { RaBadges.loadUrl(context, mastery.badgeUrl) }
     }
     var visible by remember(mastery) { mutableStateOf(false) }
+    val currentOnDismiss by rememberUpdatedState(onDismiss)
     LaunchedEffect(mastery) {
         visible = true
         delay(6_500)
         visible = false
         delay(260)
-        onDismiss()
+        currentOnDismiss()
     }
     Box(modifier = Modifier.fillMaxSize().padding(top = 22.dp), contentAlignment = Alignment.TopCenter) {
         AnimatedVisibility(
