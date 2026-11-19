@@ -148,14 +148,13 @@ enum class RaGameStatus {
 class RaPreviewClient {
 
     private val http = OkHttpClient()
-    private var hardcoreEnabled = hardcore
-    @Volatile private var userAgent = "Tandem/1.0.0 (Android ${Build.VERSION.RELEASE})"
+    private val userAgent = "Tandem/1.0.0 (Android ${Build.VERSION.RELEASE})"
 
     private fun call(vararg params: Pair<String, String>): JSONObject {
         val form = FormBody.Builder().apply { params.forEach { (key, value) -> add(key, value) } }.build()
         val request = Request.Builder()
             .url("https://retroachievements.org/dorequest.php")
-            .header("User-Agent", "Tandem/1.0")
+            .header("User-Agent", userAgent)
             .post(form)
             .build()
         http.newCall(request).execute().use { response ->
@@ -224,6 +223,8 @@ class RaSession(
 ) : RaCallbacks {
 
     private val http = OkHttpClient()
+    private var hardcoreEnabled = hardcore
+    @Volatile private var userAgent = "Tandem/1.0.0 (Android ${Build.VERSION.RELEASE})"
     private var achievementsById = emptyMap<Long, RaAchievement>()
 
     @Volatile private var active = false
