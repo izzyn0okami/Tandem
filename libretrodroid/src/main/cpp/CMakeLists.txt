@@ -172,6 +172,7 @@ add_library(libretrodroid SHARED
         achievements.cpp
         achievements_test.h
         achievements_test.cpp
+        achievements_extra.cpp
         ${LIBRETRO_COMMON}
         ${RCHEEVOS_SOURCES}
         ${SOUNDTOUCH_SOURCES}

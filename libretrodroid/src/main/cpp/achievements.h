@@ -79,6 +79,24 @@ public:
     /** [desbloqueadas, total] do jogo atual. */
     std::string getSummaryJson();
 
+    /** Tamanho do progresso das conquistas, para gravar junto ao estado do emulador. */
+    uint32_t progressSize() const;
+
+    /** Salva o progresso das conquistas em [buffer] (deve ter progressSize() bytes). */
+    int serializeProgress(uint8_t* buffer);
+
+    /** Restaura o progresso; nulo reinicializa (saves antigos, sem progresso guardado). */
+    int deserializeProgress(const uint8_t* buffer);
+
+    /** Reinicia o progresso das conquistas (ex.: o usuário resetou o jogo). */
+    void reset();
+
+    /** Enquanto o emulador está pausado, chamar pelo menos uma vez por segundo. */
+    void idle();
+
+    /** Pode pausar agora? No hardcore, o rcheevos exige alguns quadros entre pausas. */
+    bool canPause() const;
+
 private:
     static uint32_t peekMemory(uint32_t address, uint8_t* buffer, uint32_t numBytes, rc_client_t* client);
     static void serverCallTrampoline(const rc_api_request_t* request, rc_client_server_callback_t callback, void* callbackData, rc_client_t* client);

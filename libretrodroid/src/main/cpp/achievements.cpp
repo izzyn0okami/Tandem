@@ -242,9 +242,8 @@ void Achievements::handleEvent(JNIEnv* env, const rc_client_event_t* event) {
             }
             break;
         case RC_CLIENT_EVENT_RESET:
-            // Hoje o hardcore só é escolhido antes de começar a jogar, então isso não deve
-            // disparar durante uma sessão ativa; deixado pronto (e registrado) para quando/se o
-            // app permitir trocar de modo com o jogo já aberto.
+            // O rcheevos pede o reinício do núcleo (normalmente ao mudar de hardcore com o jogo
+            // aberto). O Kotlin repassa para a Activity, que reinicia o emulador.
             LOGI("RetroAchievements pediu reset do núcleo (RC_CLIENT_EVENT_RESET)");
             if (g_onReset) env->CallVoidMethod(callbacksRef, g_onReset);
             break;
@@ -498,6 +497,32 @@ std::string Achievements::getSummaryJson() {
     json << "{\"unlocked\":" << summary.num_unlocked_achievements
          << ",\"total\":" << (summary.num_core_achievements) << "}";
     return json.str();
+}
+
+uint32_t Achievements::progressSize() const {
+    return client ? rc_client_progress_size(client) : 0;
+}
+
+int Achievements::serializeProgress(uint8_t* buffer) {
+    if (!client || !buffer) return RC_INVALID_STATE;
+    return rc_client_serialize_progress(client, buffer);
+}
+
+int Achievements::deserializeProgress(const uint8_t* buffer) {
+    if (!client) return RC_INVALID_STATE;
+    return rc_client_deserialize_progress(client, buffer);
+}
+
+void Achievements::reset() {
+    if (client) rc_client_reset(client);
+}
+
+void Achievements::idle() {
+    if (client) rc_client_idle(client);
+}
+
+bool Achievements::canPause() const {
+    return client && rc_client_can_pause(client, nullptr);
 }
 
 }
