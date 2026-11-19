@@ -25,7 +25,7 @@ class SaveStore(
 
     private fun raProgressFile(user: String): File {
         val digest = MessageDigest.getInstance("SHA-256").digest(user.toByteArray(Charsets.UTF_8))
-        val accountKey = digest.take(12).joinToString("") { "%02x".format(it) }
+        val accountKey = digest.take(12).joinToString("") { "%02x".format(it.toInt() and 0xFF) }
         return File(dir, "ra-progress-$accountKey.bin")
     }
 
