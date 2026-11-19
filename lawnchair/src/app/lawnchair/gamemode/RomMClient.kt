@@ -1,6 +1,7 @@
 package app.lawnchair.gamemode
 
 import android.content.Context
+import android.os.SystemClock
 import androidx.core.content.edit
 import java.io.File
 import java.io.IOException
@@ -13,6 +14,7 @@ import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.MultipartBody
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import okhttp3.Response
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONObject
 
@@ -357,6 +359,40 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
         )
     }
 
+    /**
+     * Instrumentação de download: registra rota, resposta e duração sem expor o token.
+     * Não altera os prazos, cabeçalhos ou a estratégia de transferência.
+     */
+    private fun <T> withDownloadResponse(url: HttpUrl, description: String, consume: (Response) -> T): T {
+        val startedAt = SystemClock.elapsedRealtime()
+        val path = url.encodedPath + (url.encodedQuery?.let { "?$it" } ?: "")
+        GameLog.log("romm", "download início: $description; caminho=$path")
+        try {
+            return longHttp.newCall(request(url).build()).execute().use { response ->
+                GameLog.log(
+                    "romm",
+                    "download HTTP: $description; status=${response.code}; " +
+                        "tipo=${response.header("Content-Type") ?: "-"}; " +
+                        "bytes=${response.body.contentLength()}; caminho=${response.request.url.encodedPath}",
+                )
+                if (!response.isSuccessful) {
+                    throw IOException("Servidor respondeu ${response.code} ao baixar $description")
+                }
+                consume(response)
+            }
+        } catch (e: Exception) {
+            GameLog.error(
+                "romm",
+                "download falhou: $description; caminho=$path; " +
+                    "duração=${SystemClock.elapsedRealtime() - startedAt}ms",
+                e,
+            )
+            throw e
+        } finally {
+            GameLog.log("romm", "download fim: $description; duração=${SystemClock.elapsedRealtime() - startedAt}ms")
+        }
+    }
+
     /** Baixa para um arquivo temporário e só renomeia no fim; [onProgress] recebe bytes baixados. */
     fun download(game: RemoteGame, target: File, onProgress: (Long) -> Unit) {
         if (game.folder) {
@@ -376,7 +412,8 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
         }
         target.parentFile?.mkdirs()
         val temp = File(target.parentFile, "${target.name}.part")
-        longHttp.newCall(request(url).build()).execute().use { response ->
+        val description = "rom=${game.id}, título=${game.title}, arquivo=${game.serverName}, fileId=${game.fileId ?: "-"}"
+        withDownloadResponse(url, description) { response ->
             if (!response.isSuccessful) throw IOException("Servidor respondeu ${response.code}")
             var total = 0L
             response.body.byteStream().use { input ->
@@ -404,7 +441,8 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
         val temp = File(dir.parentFile, "${dir.name}.part")
         temp.deleteRecursively()
         temp.mkdirs()
-        longHttp.newCall(request(url).build()).execute().use { response ->
+        val description = "rom=${game.id}, título=${game.title}, pasta=${game.serverName}"
+        withDownloadResponse(url, description) { response ->
             if (!response.isSuccessful) throw IOException("Servidor respondeu ${response.code}")
             var total = 0L
             val counting = object : java.io.FilterInputStream(response.body.byteStream()) {
