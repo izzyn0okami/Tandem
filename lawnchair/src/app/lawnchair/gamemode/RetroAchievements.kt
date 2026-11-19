@@ -1,6 +1,7 @@
 package app.lawnchair.gamemode
 
 import android.content.Context
+import android.os.Build
 import androidx.core.content.edit
 import com.android.launcher3.R
 import com.swordfish.libretrodroid.GLRetroView
@@ -147,6 +148,8 @@ enum class RaGameStatus {
 class RaPreviewClient {
 
     private val http = OkHttpClient()
+    private var hardcoreEnabled = hardcore
+    @Volatile private var userAgent = "Tandem/1.0.0 (Android ${Build.VERSION.RELEASE})"
 
     private fun call(vararg params: Pair<String, String>): JSONObject {
         val form = FormBody.Builder().apply { params.forEach { (key, value) -> add(key, value) } }.build()
@@ -213,7 +216,7 @@ class RaSession(
     private val romPath: String,
     private val cacheKeyPath: String = romPath,
     private val scope: CoroutineScope,
-    private val hardcore: Boolean,
+    hardcore: Boolean,
     private val onUnlock: (RaAchievement) -> Unit,
     private val onState: (entries: List<RaEntry>, hardcore: Boolean) -> Unit,
     private val onStatus: (status: RaGameStatus, unlocked: Int, total: Int) -> Unit = { _, _, _ -> },
@@ -232,7 +235,9 @@ class RaSession(
         val consoleId = platform.raConsoleId ?: return
 
         active = true
-        view.startAchievements(this, hardcore)
+        view.startAchievements(this, hardcoreEnabled)
+        val rcheevosClause = view.getAchievementsUserAgentClause()
+        if (rcheevosClause.isNotBlank()) userAgent = "Tandem/1.0.0 (Android ${Build.VERSION.RELEASE}) $rcheevosClause"
 
         scope.launch(Dispatchers.IO) {
             val hash = runCatching { LibretroDroid.computeRomHash(romPath, consoleId) }.getOrNull()
@@ -262,7 +267,7 @@ class RaSession(
     override fun onServerCall(requestId: Int, url: String, postData: String?, contentType: String?) {
         scope.launch(Dispatchers.IO) {
             try {
-                val builder = Request.Builder().url(url).header("User-Agent", "Tandem/1.0")
+                val builder = Request.Builder().url(url).header("User-Agent", userAgent)
                 if (postData != null) {
                     val mediaType = (contentType ?: "application/x-www-form-urlencoded").toMediaTypeOrNull()
                     builder.post(postData.toRequestBody(mediaType))
@@ -295,6 +300,18 @@ class RaSession(
         if (success) {
             val gameId = view.getAchievementsGameId()
             if (gameId > 0) RaSettings.setCachedGameId(context, cacheKeyPath, gameId)
+            if (!view.isAchievementsProcessingRequired()) {
+                // Jogos sem conquistas, placares ou Rich Presence não devem manter Hardcore ativo.
+                if (hardcoreEnabled) view.setAchievementsHardcoreEnabled(false)
+                hardcoreEnabled = false
+                scope.launch(Dispatchers.Main) {
+                    if (active) {
+                        onState(emptyList(), false)
+                        onStatus(RaGameStatus.NO_ACHIEVEMENTS, 0, 0)
+                    }
+                }
+                return
+            }
         }
         if (!success) {
             GameLog.log("conquistas", "jogo não reconhecido pelo RetroAchievements: $errorMessage")
@@ -398,7 +415,7 @@ class RaSession(
 
         scope.launch(Dispatchers.Main) {
             if (!active) return@launch
-            onState(entries, hardcore)
+            onState(entries, hardcoreEnabled)
             if (reportStatus) {
                 val unlockedCount = entries.count { it.unlocked }
                 onStatus(
