@@ -525,4 +525,15 @@ bool Achievements::canPause() const {
     return client && rc_client_can_pause(client, nullptr);
 }
 
+std::string Achievements::getUserAgentClause() const {
+    if (!client) return "";
+    char buffer[128] = {};
+    rc_client_get_user_agent_clause(client, buffer, sizeof(buffer));
+    return buffer;
+}
+
+bool Achievements::isProcessingRequired() const {
+    return client && rc_client_is_processing_required(client) != 0;
+}
+
 }
