@@ -224,6 +224,7 @@ class RaSession(
 
     private val http = OkHttpClient()
     private var hardcoreEnabled = hardcore
+
     @Volatile private var userAgent = "Tandem/1.0.0 (Android ${Build.VERSION.RELEASE})"
     private var achievementsById = emptyMap<Long, RaAchievement>()
 
