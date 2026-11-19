@@ -208,7 +208,7 @@ class RaPreviewClient {
  */
 class RaSession(
     private val context: Context,
-    @Suppress("UNUSED_PARAMETER") private val view: GLRetroView,
+    private val view: GLRetroView,
     private val platform: GamePlatform,
     private val romPath: String,
     private val scope: CoroutineScope,
@@ -231,9 +231,7 @@ class RaSession(
         val consoleId = platform.raConsoleId ?: return
 
         active = true
-        LibretroDroid.raCreate()
-        LibretroDroid.raSetCallbacks(this)
-        LibretroDroid.raSetHardcoreEnabled(hardcore)
+        view.startAchievements(this, hardcore)
 
         scope.launch(Dispatchers.IO) {
             val hash = runCatching { LibretroDroid.computeRomHash(romPath, consoleId) }.getOrNull()
@@ -243,16 +241,14 @@ class RaSession(
             }
             pendingHash = hash
             pendingConsoleId = consoleId
-            LibretroDroid.raBeginLoginWithToken(user, token)
+            view.beginAchievementsLogin(user, token)
         }
     }
 
     fun stop() {
         if (!active) return
         active = false
-        runCatching { LibretroDroid.raUnloadGame() }
-        runCatching { LibretroDroid.raSetCallbacks(null) }
-        runCatching { LibretroDroid.raDestroy() }
+        runCatching { view.stopAchievements() }
     }
 
     @Volatile private var pendingHash: String? = null
@@ -271,11 +267,11 @@ class RaSession(
                 }
                 http.newCall(builder.build()).execute().use { response ->
                     val body = response.body?.string().orEmpty()
-                    LibretroDroid.raDeliverServerResponse(requestId, response.code, body, false)
+                    if (active) view.deliverAchievementsResponse(requestId, response.code, body, false)
                 }
             } catch (e: IOException) {
                 // Sem internet ou falha de rede: o rc_client sabe tentar de novo mais tarde sozinho.
-                LibretroDroid.raDeliverServerResponse(requestId, 0, "", true)
+                if (active) view.deliverAchievementsResponse(requestId, 0, "", true)
             }
         }
     }
@@ -289,7 +285,7 @@ class RaSession(
         }
         val hash = pendingHash ?: return
         val consoleId = pendingConsoleId ?: return
-        LibretroDroid.raBeginLoadGame(hash, consoleId)
+        view.beginAchievementsGame(hash, consoleId)
     }
 
     override fun onLoadGameResult(success: Boolean, errorMessage: String?) {
@@ -375,7 +371,7 @@ class RaSession(
     }
 
     private fun publish(reportStatus: Boolean) {
-        val json = runCatching { JSONArray(LibretroDroid.raGetAchievementListJson()) }.getOrNull() ?: return
+        val json = runCatching { JSONArray(view.getAchievementsJson()) }.getOrNull() ?: return
         val entries = (0 until json.length()).map { json.getJSONObject(it) }.map { obj ->
             val achievement = RaAchievement(
                 id = obj.getLong("id"),
