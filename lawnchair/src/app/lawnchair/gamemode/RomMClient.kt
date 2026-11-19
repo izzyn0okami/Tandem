@@ -431,7 +431,7 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
                 if (!response.isSuccessful) {
                     val errorBody = runCatching { response.peekBody(2048).string() }.getOrDefault("")
                     val safeError = errorBody
-                        .replace(Regex("(?i)(token|authorization|password)(\\s*[:=]\\s*)[^\\",\\s}]+"), "$1$2[redacted]")
+                        .replace(Regex("""(?i)(token|authorization|password)(\\s*[:=]\\s*)[^",\\s}]+"""), "\\$1\\$2[redacted]")
                         .take(240)
                     GameLog.log(
                         "romm",
