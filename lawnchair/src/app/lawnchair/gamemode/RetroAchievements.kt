@@ -221,7 +221,7 @@ class RaSession(
 
     private val http = OkHttpClient()
     private var achievementsById = emptyMap<Long, RaAchievement>()
-    private var active = false
+    @Volatile private var active = false
 
     /** Chamar só depois que o jogo já está rodando (o motor precisa do mapa de memória do núcleo). */
     fun start() {
