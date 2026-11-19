@@ -462,8 +462,12 @@ class GameSessionActivity : ComponentActivity() {
     private fun toast(message: String) = Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
 
     override fun onResume() {
+        // A Activity restaura o estado do ciclo de vida automaticamente; preserve o menu pausado
+        // antes que o observer do GLRetroView tente retomar a emulação.
+        retroView?.suppressAutoResume = menuOpen
         super.onResume()
-        if (!menuOpen) stopRaIdleLoop()
+        retroView?.suppressAutoResume = false
+        if (menuOpen) startRaIdleLoop() else stopRaIdleLoop()
         resumedAtMs = SystemClock.elapsedRealtime()
         lostWatcher.start()
     }
