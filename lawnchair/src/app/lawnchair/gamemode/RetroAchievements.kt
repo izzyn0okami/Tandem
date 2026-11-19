@@ -305,18 +305,23 @@ class RaSession(
     }
 
     override fun onAchievementTriggered(achievementId: Int) {
+        if (!active) return
         val id = achievementId.toLong()
         publish(reportStatus = false)
         achievementsById[id]?.let { achievement ->
-            scope.launch(Dispatchers.Main) { onUnlock(achievement) }
+            scope.launch(Dispatchers.Main) {
+                if (active) onUnlock(achievement)
+            }
         }
     }
 
     override fun onServerError(api: String, message: String) {
+        if (!active) return
         GameLog.log("conquistas", "RetroAchievements ($api): $message")
     }
 
     override fun onReset() {
+        if (!active) return
         // O hardcore só é escolhido antes de começar a jogar, então isso não deve acontecer hoje;
         // deixado pronto (e registrado) para quando/se o app permitir trocar de modo com o jogo aberto.
         GameLog.log("conquistas", "RetroAchievements pediu reinício do jogo (mudança de modo hardcore)")
@@ -377,6 +382,7 @@ class RaSession(
     }
 
     private fun publish(reportStatus: Boolean) {
+        if (!active) return
         val json = runCatching { JSONArray(view.getAchievementsJson()) }.getOrNull() ?: return
         val entries = (0 until json.length()).map { json.getJSONObject(it) }.map { obj ->
             val achievement = RaAchievement(
@@ -391,6 +397,7 @@ class RaSession(
         achievementsById = entries.associate { it.achievement.id to it.achievement }
 
         scope.launch(Dispatchers.Main) {
+            if (!active) return@launch
             onState(entries, hardcore)
             if (reportStatus) {
                 val unlockedCount = entries.count { it.unlocked }
