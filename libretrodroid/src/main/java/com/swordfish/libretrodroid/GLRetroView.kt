@@ -500,6 +500,7 @@ class GLRetroView(
      * Keeping these operations together prevents a frame from advancing between the two snapshots.
      */
     fun serializeStateWithAchievements(): Pair<ByteArray?, ByteArray?> = runOnGLThread {
+        if (achievementsHardcoreEnabled) return@runOnGLThread null to null
         LibretroDroid.serializeState() to LibretroDroid.raSerializeProgress()
     }
 
