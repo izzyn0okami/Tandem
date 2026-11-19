@@ -89,6 +89,7 @@ class GameSessionActivity : ComponentActivity() {
     private lateinit var lostWatcher: ControllerLostWatcher
     private var romPath: String? = null
     private var raSession: RaSession? = null
+    private var nativeDestroyed = false
     private val raUnlockQueue = mutableStateListOf<RaAchievement>()
     private var raEntries by mutableStateOf<List<RaEntry>>(emptyList())
     private var raHardcore by mutableStateOf(false)
@@ -475,10 +476,11 @@ class GameSessionActivity : ComponentActivity() {
 
     override fun onDestroy() {
         stopRaIdleLoop()
-        raSession?.stop()
-        // Esta Activity não herda de LibretroActivity; portanto precisa liberar explicitamente
-        // os recursos nativos enquanto o GL thread ainda está ativo.
-        retroView?.destroyNative()
+        if (!nativeDestroyed) {
+            raSession?.stop()
+            retroView?.destroyNative()
+            nativeDestroyed = true
+        }
         coreLog?.close()
         if (isFinishing) SessionDiagnostics.sessionEnded(this, "encerrado normalmente")
         super.onDestroy()
@@ -538,9 +540,16 @@ class GameSessionActivity : ComponentActivity() {
         }
         resumedAtMs = 0L
         lostWatcher.stop()
+        // Ao encerrar ou recriar a Activity, descarte o cliente RA e o núcleo antes de o
+        // GLSurfaceView suspender o GL thread. Em uma pausa comum, preserve a sessão.
+        if (isFinishing || isChangingConfigurations) {
+            stopRaIdleLoop()
+            raSession?.stop()
+            retroView?.destroyNative()
+            nativeDestroyed = true
+        }
         super.onPause()
-        // GLSurfaceView suspende o GL thread junto com a Activity. O idle do rc_client é
-        // retomado em onResume; respostas de rede ficam enfileiradas até o GL thread voltar.
+        // Em uma pausa comum, o idle é retomado em onResume; respostas de rede aguardam o GL.
         stopRaIdleLoop()
     }
 
