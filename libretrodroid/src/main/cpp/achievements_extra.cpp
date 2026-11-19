@@ -1,5 +1,5 @@
 /*
- *     Copyright (C) 2026  Tandem
+ *     Copyright (C) 2024  Argosy
  *
  *     This program is free software: you can redistribute it and/or modify
  *     it under the terms of the GNU General Public License as published by
@@ -15,70 +15,100 @@
  *     along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-// Ponte JNI extra para os recursos de sessão do rc_client que faltavam:
-// salvar/restaurar o progresso das conquistas junto ao estado do emulador, reiniciar o progresso
-// quando o jogo é resetado, e manter o rc_client ativo enquanto o emulador está pausado.
-// Fica num arquivo separado para não mexer no libretrodroidjni.cpp original (grande e já estável).
+/*
+ * Implementações de progresso/pausa/reset das conquistas e os JNI wrappers correspondentes.
+ * Ficam num arquivo separado para não mexer no libretrodroidjni.cpp já grande; o rc_client é o
+ * mesmo criado em Achievements::create() (libretrodroidjni.cpp), então tudo compartilha o estado.
+ */
 
 #include <jni.h>
 #include <vector>
 
+#include "achievements.h"
 #include "libretrodroid.h"
+
+namespace libretrodroid {
+
+std::vector<uint8_t> Achievements::serializeProgress() {
+    if (!client) return {};
+    const uint32_t size = rc_client_progress_size(client);
+    if (size == 0) return {};
+
+    std::vector<uint8_t> data(size);
+    if (rc_client_serialize_progress(client, data.data()) != RC_OK) return {};
+    return data;
+}
+
+bool Achievements::deserializeProgress(const uint8_t* data, size_t size) {
+    if (!client) return false;
+
+    // Save antigo (sem progresso de conquistas): o guia oficial manda reinicializar o progresso.
+    if (!data || size == 0) {
+        rc_client_deserialize_progress(client, nullptr);
+        return true;
+    }
+
+    return rc_client_deserialize_progress(client, data) == RC_OK;
+}
+
+void Achievements::reset() {
+    if (client) rc_client_reset(client);
+}
+
+void Achievements::idle() {
+    if (client) rc_client_idle(client);
+}
+
+bool Achievements::canPause() {
+    return client && rc_client_can_pause(client, nullptr) != 0;
+}
+
+} // namespace libretrodroid
 
 extern "C" {
 
 JNIEXPORT jbyteArray JNICALL
 Java_com_swordfish_libretrodroid_LibretroDroid_raSerializeProgress(JNIEnv* env, jclass) {
-    using namespace libretrodroid;
+    const auto data = libretrodroid::LibretroDroid::getInstance().getAchievements().serializeProgress();
+    if (data.empty()) return nullptr;
 
-    auto& achievements = LibretroDroid::getInstance().getAchievements();
-    const uint32_t size = achievements.progressSize();
-    if (size == 0) return nullptr;
-
-    std::vector<uint8_t> buffer(size);
-    if (achievements.serializeProgress(buffer.data()) != RC_OK) return nullptr;
-
-    jbyteArray array = env->NewByteArray(static_cast<jsize>(size));
-    if (!array) return nullptr;
-    env->SetByteArrayRegion(array, 0, static_cast<jsize>(size), reinterpret_cast<const jbyte*>(buffer.data()));
-    return array;
+    jbyteArray result = env->NewByteArray(static_cast<jsize>(data.size()));
+    if (!result) return nullptr;
+    env->SetByteArrayRegion(result, 0, static_cast<jsize>(data.size()), reinterpret_cast<const jbyte*>(data.data()));
+    return result;
 }
 
 JNIEXPORT jboolean JNICALL
 Java_com_swordfish_libretrodroid_LibretroDroid_raDeserializeProgress(JNIEnv* env, jclass, jbyteArray data) {
-    using namespace libretrodroid;
+    auto& achievements = libretrodroid::LibretroDroid::getInstance().getAchievements();
 
-    auto& achievements = LibretroDroid::getInstance().getAchievements();
-
-    // Nulo = save antigo, sem progresso de conquistas: o rcheevos reinicializa o progresso.
-    if (data == nullptr) {
-        return achievements.deserializeProgress(nullptr) == RC_OK;
+    if (!data) {
+        return achievements.deserializeProgress(nullptr, 0) ? JNI_TRUE : JNI_FALSE;
     }
 
-    const jsize length = env->GetArrayLength(data);
-    if (length <= 0) return achievements.deserializeProgress(nullptr) == RC_OK;
+    const jsize size = env->GetArrayLength(data);
+    if (size <= 0) {
+        return achievements.deserializeProgress(nullptr, 0) ? JNI_TRUE : JNI_FALSE;
+    }
 
-    std::vector<uint8_t> buffer(static_cast<size_t>(length));
-    env->GetByteArrayRegion(data, 0, length, reinterpret_cast<jbyte*>(buffer.data()));
-    return achievements.deserializeProgress(buffer.data()) == RC_OK;
+    std::vector<uint8_t> buffer(static_cast<size_t>(size));
+    env->GetByteArrayRegion(data, 0, size, reinterpret_cast<jbyte*>(buffer.data()));
+    return achievements.deserializeProgress(buffer.data(), buffer.size()) ? JNI_TRUE : JNI_FALSE;
 }
 
 JNIEXPORT void JNICALL
-Java_com_swordfish_libretrodroid_LibretroDroid_raResetProgress(JNIEnv* env, jclass) {
-    using namespace libretrodroid;
-    LibretroDroid::getInstance().getAchievements().reset();
+Java_com_swordfish_libretrodroid_LibretroDroid_raReset(JNIEnv*, jclass) {
+    libretrodroid::LibretroDroid::getInstance().getAchievements().reset();
 }
 
 JNIEXPORT void JNICALL
-Java_com_swordfish_libretrodroid_LibretroDroid_raIdle(JNIEnv* env, jclass) {
-    using namespace libretrodroid;
-    LibretroDroid::getInstance().getAchievements().idle();
+Java_com_swordfish_libretrodroid_LibretroDroid_raIdle(JNIEnv*, jclass) {
+    libretrodroid::LibretroDroid::getInstance().getAchievements().idle();
 }
 
 JNIEXPORT jboolean JNICALL
-Java_com_swordfish_libretrodroid_LibretroDroid_raCanPause(JNIEnv* env, jclass) {
-    using namespace libretrodroid;
-    return LibretroDroid::getInstance().getAchievements().canPause();
+Java_com_swordfish_libretrodroid_LibretroDroid_raCanPause(JNIEnv*, jclass) {
+    return libretrodroid::LibretroDroid::getInstance().getAchievements().canPause() ? JNI_TRUE : JNI_FALSE;
 }
 
 } // extern "C"

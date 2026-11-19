@@ -39,10 +39,6 @@ public class LibretroDroid {
     public static final int SHADER_UPSCALE_CUT3 = 6;
     public static final int SHADER_CUSTOM = 100;
 
-    public static final int SENSOR_ACCELEROMETER = 1;
-    public static final int SENSOR_GYROSCOPE = 2;
-    public static final int SENSOR_ILLUMINANCE = 4;
-
     public static final String SHADER_UPSCALE_CUT_PARAM_USE_DYNAMIC_BLEND = "USE_DYNAMIC_BLEND";
     public static final String SHADER_UPSCALE_CUT_PARAM_BLEND_MIN_CONTRAST_EDGE = "BLEND_MIN_CONTRAST_EDGE";
     public static final String SHADER_UPSCALE_CUT_PARAM_BLEND_MAX_CONTRAST_EDGE = "BLEND_MAX_CONTRAST_EDGE";
@@ -59,10 +55,10 @@ public class LibretroDroid {
     public static final String SHADER_UPSCALE_CUT2_PARAM_BLEND_MIN_SHARPNESS = "BLEND_MIN_SHARPNESS";
     public static final String SHADER_UPSCALE_CUT2_PARAM_BLEND_MAX_SHARPNESS = "BLEND_MAX_SHARPNESS";
     public static final String SHADER_UPSCALE_CUT2_PARAM_STATIC_BLEND_SHARPNESS = "STATIC_BLEND_SHARPNESS";
-    public static final String SHADER_UPSCALE_CUT2_PARAM_EDGE_USE_FAST_LUMA = "EDGE_USE_FAST_LUMA";
     public static final String SHADER_UPSCALE_CUT2_PARAM_SOFT_EDGES_SHARPENING = "SOFT_EDGES_SHARPENING";
     public static final String SHADER_UPSCALE_CUT2_PARAM_SOFT_EDGES_SHARPENING_AMOUNT = "SOFT_EDGES_SHARPENING_AMOUNT";
     public static final String SHADER_UPSCALE_CUT2_PARAM_HARD_EDGES_SEARCH_MAX_ERROR = "HARD_EDGES_SEARCH_MAX_ERROR";
+    public static final String SHADER_UPSCALE_CUT2_PARAM_HARD_EDGES_SEARCH_MAX_DISTANCE = "HARD_EDGES_SEARCH_MAX_DISTANCE";
 
     public static final String SHADER_UPSCALE_CUT3_PARAM_USE_DYNAMIC_BLEND = "USE_DYNAMIC_BLEND";
     public static final String SHADER_UPSCALE_CUT3_PARAM_BLEND_MIN_CONTRAST_EDGE = "BLEND_MIN_CONTRAST_EDGE";
@@ -70,7 +66,6 @@ public class LibretroDroid {
     public static final String SHADER_UPSCALE_CUT3_PARAM_BLEND_MIN_SHARPNESS = "BLEND_MIN_SHARPNESS";
     public static final String SHADER_UPSCALE_CUT3_PARAM_BLEND_MAX_SHARPNESS = "BLEND_MAX_SHARPNESS";
     public static final String SHADER_UPSCALE_CUT3_PARAM_STATIC_BLEND_SHARPNESS = "STATIC_BLEND_SHARPNESS";
-    public static final String SHADER_UPSCALE_CUT3_PARAM_EDGE_USE_FAST_LUMA = "EDGE_USE_FAST_LUMA";
     public static final String SHADER_UPSCALE_CUT3_PARAM_SOFT_EDGES_SHARPENING = "SOFT_EDGES_SHARPENING";
     public static final String SHADER_UPSCALE_CUT3_PARAM_SOFT_EDGES_SHARPENING_AMOUNT = "SOFT_EDGES_SHARPENING_AMOUNT";
     public static final String SHADER_UPSCALE_CUT3_PARAM_HARD_EDGES_SEARCH_MAX_ERROR = "HARD_EDGES_SEARCH_MAX_ERROR";
@@ -234,6 +229,21 @@ public class LibretroDroid {
     public static native String raGetAchievementListJson();
     public static native String raGetSummaryJson();
     public static native boolean raIsGameLoaded();
+
+    /** Progresso das conquistas, para gravar junto ao estado rápido do emulador. */
+    public static native byte[] raSerializeProgress();
+
+    /** Restaura o progresso das conquistas de um estado salvo; nulo reinicia o progresso. */
+    public static native boolean raDeserializeProgress(byte[] progress);
+
+    /** Reinicia o progresso das conquistas (o usuário reiniciou o jogo). */
+    public static native void raReset();
+
+    /** Processa eventos pendentes enquanto o jogo está pausado. */
+    public static native void raIdle();
+
+    /** O hardcore permite pausar agora? Evita pausas seguidas para burlar condições de conquista. */
+    public static native boolean raCanPause();
 
     /**
      * Run native achievement condition tests.

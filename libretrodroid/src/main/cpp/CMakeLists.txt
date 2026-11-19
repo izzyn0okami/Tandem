@@ -170,9 +170,9 @@ add_library(libretrodroid SHARED
         rewindbuffer.cpp
         achievements.h
         achievements.cpp
+        achievements_extra.cpp
         achievements_test.h
         achievements_test.cpp
-        achievements_extra.cpp
         ${LIBRETRO_COMMON}
         ${RCHEEVOS_SOURCES}
         ${SOUNDTOUCH_SOURCES}

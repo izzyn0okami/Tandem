@@ -22,6 +22,8 @@
 #include <map>
 #include <mutex>
 #include <cstdint>
+#include <cstddef>
+#include <vector>
 
 #include <jni.h>
 #include <rc_client.h>
@@ -79,23 +81,20 @@ public:
     /** [desbloqueadas, total] do jogo atual. */
     std::string getSummaryJson();
 
-    /** Tamanho do progresso das conquistas, para gravar junto ao estado do emulador. */
-    uint32_t progressSize() const;
+    /** Serializa o progresso das conquistas, para gravar junto ao estado rápido do emulador. */
+    std::vector<uint8_t> serializeProgress();
 
-    /** Salva o progresso das conquistas em [buffer] (deve ter progressSize() bytes). */
-    int serializeProgress(uint8_t* buffer);
+    /** Restaura o progresso das conquistas de um estado salvo; dados nulos reiniciam o progresso. */
+ bool deserializeProgress(const uint8_t* data, size_t size);
 
-    /** Restaura o progresso; nulo reinicializa (saves antigos, sem progresso guardado). */
-    int deserializeProgress(const uint8_t* buffer);
-
-    /** Reinicia o progresso das conquistas (ex.: o usuário resetou o jogo). */
+    /** Reinicia o progresso das conquistas (o usuário reiniciou o jogo). */
     void reset();
 
-    /** Enquanto o emulador está pausado, chamar pelo menos uma vez por segundo. */
+    /** Processa eventos pendentes enquanto o jogo está pausado (no lugar de do_frame). */
     void idle();
 
-    /** Pode pausar agora? No hardcore, o rcheevos exige alguns quadros entre pausas. */
-    bool canPause() const;
+    /** O hardcore permite pausar agora? Evita pausas seguidas para burlar condições de conquista. */
+    bool canPause();
 
 private:
     static uint32_t peekMemory(uint32_t address, uint8_t* buffer, uint32_t numBytes, rc_client_t* client);
