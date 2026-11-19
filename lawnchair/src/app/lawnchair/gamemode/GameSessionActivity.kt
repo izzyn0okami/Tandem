@@ -186,7 +186,8 @@ class GameSessionActivity : ComponentActivity() {
                 },
                 onState = { entries, hardcore ->
                     raEntries = entries
-                    raHardcore = hardcore && entries.isNotEmpty()
+                    // Hardcore is a session rule, not a property of whether this game has achievements.
+                    raHardcore = hardcore
                 },
                 onStatus = { status, unlocked, total ->
                     when (status) {
@@ -252,7 +253,6 @@ class GameSessionActivity : ComponentActivity() {
                                     onSave = { saveQuickState() },
                                     onLoad = { loadQuickState() },
                                     onReset = {
-                                        RaProgress.reset()
                                         view.reset()
                                         setMenu(false)
                                     },
@@ -354,7 +354,7 @@ class GameSessionActivity : ComponentActivity() {
     private fun setMenu(open: Boolean) {
         if (open == menuOpen) return
         // Hardcore: evita pausas seguidas que poderiam burlar condições de conquista.
-        if (open && raHardcore && !RaProgress.canPause()) {
+        if (open && raHardcore && !(retroView?.canPauseAchievements() ?: false)) {
             Toast.makeText(this, "Aguarde alguns instantes antes de pausar novamente", Toast.LENGTH_SHORT).show()
             return
         }
@@ -378,7 +378,7 @@ class GameSessionActivity : ComponentActivity() {
         raIdleJob?.cancel()
         raIdleJob = lifecycleScope.launch {
             while (isActive) {
-                RaProgress.idle()
+                retroView?.idleAchievements()
                 delay(1_000)
             }
         }
@@ -402,8 +402,7 @@ class GameSessionActivity : ComponentActivity() {
         val view = retroView ?: return
         val store = saveStore ?: return
         val saved = runCatching {
-            val emuState = view.serializeState() ?: return@runCatching false
-            val raProgress = RaProgress.serialize()
+            val (emuState, raProgress) = view.serializeStateWithAchievements()
             val payload = if (raProgress != null) {
                 val header = "TNDM".toByteArray(Charsets.US_ASCII)
                 val len = raProgress.size
@@ -444,11 +443,7 @@ class GameSessionActivity : ComponentActivity() {
             raProgress = payload.copyOfRange(8, 8 + len)
             emuState = payload.copyOfRange(8 + len, payload.size)
         }
-        val loaded = runCatching { view.unserializeState(emuState) }.getOrDefault(false)
-        if (loaded) {
-            // Save antigo (sem progresso de conquistas): reinicia o progresso, como manda o guia oficial.
-            RaProgress.deserialize(raProgress)
-        }
+        val loaded = runCatching { view.unserializeStateWithAchievements(emuState, raProgress) }.getOrDefault(false)
         toast(if (loaded) R.string.game_session_state_loaded else R.string.game_session_state_load_failed)
         setMenu(false)
     }
