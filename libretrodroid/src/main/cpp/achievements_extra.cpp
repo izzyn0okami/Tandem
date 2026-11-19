@@ -32,6 +32,22 @@ Java_com_swordfish_libretrodroid_LibretroDroid_raGetGameId(JNIEnv*, jclass) {
     return static_cast<jlong>(libretrodroid::LibretroDroid::getInstance().getAchievements().getGameId());
 }
 
+JNIEXPORT jstring JNICALL
+Java_com_swordfish_libretrodroid_LibretroDroid_raGetUserAgentClause(JNIEnv* env, jclass) {
+    const auto clause = libretrodroid::LibretroDroid::getInstance().getAchievements().getUserAgentClause();
+    return env->NewStringUTF(clause.c_str());
+}
+
+JNIEXPORT jboolean JNICALL
+Java_com_swordfish_libretrodroid_LibretroDroid_raIsProcessingRequired(JNIEnv*, jclass) {
+    return libretrodroid::LibretroDroid::getInstance().getAchievements().isProcessingRequired() ? JNI_TRUE : JNI_FALSE;
+}
+
+JNIEXPORT void JNICALL
+Java_com_swordfish_libretrodroid_LibretroDroid_raSetHardcoreEnabled(JNIEnv*, jclass, jboolean enabled) {
+    libretrodroid::LibretroDroid::getInstance().getAchievements().setHardcoreEnabled(enabled == JNI_TRUE);
+}
+
 JNIEXPORT jbyteArray JNICALL
 Java_com_swordfish_libretrodroid_LibretroDroid_raSerializeProgress(JNIEnv* env, jclass) {
     const auto data = libretrodroid::LibretroDroid::getInstance().getAchievements().serializeProgress();
