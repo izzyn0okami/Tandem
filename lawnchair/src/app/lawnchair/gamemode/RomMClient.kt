@@ -7,6 +7,8 @@ import java.io.File
 import java.io.IOException
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
+import okhttp3.Call
+import okhttp3.EventListener
 import okhttp3.HttpUrl
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
@@ -112,6 +114,27 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
         .connectTimeout(30, TimeUnit.SECONDS)
         .readTimeout(60, TimeUnit.SECONDS)
         .writeTimeout(60, TimeUnit.SECONDS)
+        // Diagnóstico passivo: registra apenas HTTP não-2xx e falhas de rede/timeout.
+        .eventListenerFactory {
+            object : EventListener() {
+                override fun responseHeadersEnd(call: Call, response: Response) {
+                    if (!response.isSuccessful) {
+                        GameLog.log(
+                            "romm-http",
+                            "HTTP ${response.code}: ${call.request().method} ${call.request().url.encodedPath}",
+                        )
+                    }
+                }
+
+                override fun callFailed(call: Call, ioe: IOException) {
+                    GameLog.error(
+                        "romm-http",
+                        "falha de rede: ${call.request().method} ${call.request().url.encodedPath}",
+                        ioe,
+                    )
+                }
+            }
+        }
         .build()
 
     /** Listar a biblioteca inteira e baixar jogos grandes podem ficar parados por bastante tempo. */
