@@ -504,6 +504,42 @@ class GLRetroView(
         LibretroDroid.raCanPause()
     }
 
+    /** Keep every rc_client operation on the same GL thread that advances its frames. */
+    fun startAchievements(callbacks: RaCallbacks, hardcore: Boolean) = runOnGLThread {
+        LibretroDroid.raCreate()
+        LibretroDroid.raSetCallbacks(callbacks)
+        LibretroDroid.raSetHardcoreEnabled(hardcore)
+    }
+
+    /** Queue asynchronous RA work without blocking an IO thread while the GL surface is paused. */
+    fun beginAchievementsLogin(user: String, token: String) {
+        queueEvent {
+            if (!isDestroyed) LibretroDroid.raBeginLoginWithToken(user, token)
+        }
+    }
+
+    fun beginAchievementsGame(hash: String, consoleId: Int) = runOnGLThread {
+        LibretroDroid.raBeginLoadGame(hash, consoleId)
+    }
+
+    fun deliverAchievementsResponse(requestId: Int, status: Int, body: String, networkError: Boolean) {
+        queueEvent {
+            if (!isDestroyed) {
+                LibretroDroid.raDeliverServerResponse(requestId, status, body, networkError)
+            }
+        }
+    }
+
+    fun stopAchievements() = runOnGLThread {
+        LibretroDroid.raUnloadGame()
+        LibretroDroid.raSetCallbacks(null)
+        LibretroDroid.raDestroy()
+    }
+
+    fun getAchievementsJson(): String = runOnGLThread {
+        LibretroDroid.raGetAchievementListJson()
+    }
+
     fun setBackgroundFrame(bitmap: Bitmap) = runOnGLThread {
         val width = bitmap.width
         val height = bitmap.height
