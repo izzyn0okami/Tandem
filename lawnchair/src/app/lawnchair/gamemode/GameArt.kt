@@ -20,6 +20,11 @@ object GameArt {
         override fun sizeOf(key: String, value: ImageBitmap) = value.width * value.height * 4
     }
 
+    /** Métricas do cache já limitado em bytes. */
+    fun cacheEntryCount(): Int = memory.snapshot().size
+
+    fun cacheBytes(): Int = memory.size()
+
     /** Depois de uma falha de rede, não tenta baixar capas por um tempo (evita esperas por capa). */
     @Volatile
     private var offlineUntilMs = 0L
