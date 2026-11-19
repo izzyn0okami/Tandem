@@ -229,6 +229,7 @@ public class LibretroDroid {
     public static native void raCreate();
     public static native void raDestroy();
     public static native void raSetHardcoreEnabled(boolean enabled);
+    public static native boolean isCoreSettingAllowed(String key, String value);
     public static native void raBeginLoginWithToken(String user, String token);
     public static native void raBeginLoadGame(String hash, int consoleId);
     public static native void raUnloadGame();
