@@ -248,7 +248,8 @@ class GameSessionActivity : ComponentActivity() {
                                 PauseMenu(
                                     title = File(romPath).nameWithoutExtension,
                                     subtitle = progress,
-                                    canLoad = store.hasState() && !statesBlocked,
+                                    canSave = !raHardcore,
+                                    canLoad = store.hasState() && !raHardcore,
                                     hasAchievements = raEntries.isNotEmpty(),
                                     onAchievements = { raListOpen = true },
                                     onCoreOptions = { openCoreOptions() },
@@ -609,6 +610,7 @@ class GameSessionActivity : ComponentActivity() {
 private fun PauseMenu(
     title: String,
     subtitle: String?,
+    canSave: Boolean,
     canLoad: Boolean,
     hasAchievements: Boolean,
     onAchievements: () -> Unit,
@@ -648,7 +650,7 @@ private fun PauseMenu(
                 Text(text = subtitle, color = GameColors.success, fontSize = 14.sp, modifier = Modifier.padding(bottom = 14.dp))
             }
             GameButton(stringResource(R.string.game_session_resume), onResume, primary = true, modifier = Modifier.focusRequester(firstItem))
-            GameButton(stringResource(R.string.game_session_save_state), onSave)
+            GameButton(stringResource(R.string.game_session_save_state), onSave, enabled = canSave)
             GameButton(stringResource(R.string.game_session_load_state), onLoad, enabled = canLoad)
             GameButton(stringResource(R.string.game_session_reset), onReset)
             if (hasAchievements) GameButton(stringResource(R.string.game_session_achievements), onAchievements)
