@@ -176,35 +176,49 @@ class GameSessionActivity : ComponentActivity() {
 
         val platform = platformObject
         if (platform?.raConsoleId != null && RaSettings.isLoggedIn(this)) {
-            val session = RaSession(
-                context = applicationContext,
-                view = view,
-                platform = platform,
-                romPath = loadPath,
-                cacheKeyPath = romPath,
-                scope = lifecycleScope,
-                hardcore = RaSettings.hardcore(this),
-                onUnlock = {
-                    raUnlockQueue.add(it)
-                    if (GameModeSettings.isSoundEnabled(this)) NavSound.unlock()
-                },
-                onState = { entries, hardcore ->
-                    raEntries = entries
-                    // Hardcore is a session rule, not a property of whether this game has achievements.
-                    raHardcore = hardcore
-                },
-                onStatus = { status, unlocked, total ->
-                    when (status) {
-                        RaGameStatus.UNSUPPORTED -> toast(R.string.game_ra_status_unsupported)
-                        RaGameStatus.NO_ACHIEVEMENTS -> toast(R.string.game_ra_status_none)
-                        RaGameStatus.TRACKING -> toast(getString(R.string.game_ra_status_progress, unlocked, total))
-                    }
-                },
-                onOverlayEvent = { event -> handleRaOverlayEvent(event) },
-            )
-            raSession = session
             lifecycleScope.launch {
+                // O nome do núcleo e suas opções só ficam disponíveis depois que o primeiro frame
+                // inicializa o core. Verifique opções salvas antes de ativar Hardcore.
                 view.getGLRetroEvents().first { it is GLRetroView.GLRetroEvents.FrameRendered }
+                val hasDisallowedSetting = RaSettings.hardcore(this@GameSessionActivity) &&
+                    view.getVariables().any { variable ->
+                        val key = variable.key
+                        val value = variable.value
+                        key != null && value != null && !view.isAchievementsCoreSettingAllowed(key, value)
+                    }
+                val sessionHardcore = RaSettings.hardcore(this@GameSessionActivity) && !hasDisallowedSetting
+                if (hasDisallowedSetting) {
+                    raHardcore = false
+                    toast("Hardcore desativado: o núcleo está usando uma opção incompatível.")
+                    GameLog.log("conquistas", "Hardcore desativado: há opções do núcleo não permitidas")
+                }
+                val session = RaSession(
+                    context = applicationContext,
+                    view = view,
+                    platform = platform,
+                    romPath = loadPath,
+                    cacheKeyPath = romPath,
+                    scope = lifecycleScope,
+                    hardcore = sessionHardcore,
+                    onUnlock = {
+                        raUnlockQueue.add(it)
+                        if (GameModeSettings.isSoundEnabled(this@GameSessionActivity)) NavSound.unlock()
+                    },
+                    onState = { entries, hardcore ->
+                        raEntries = entries
+                        // Hardcore é uma regra da sessão, não depende de haver conquistas listadas.
+                        raHardcore = hardcore
+                    },
+                    onStatus = { status, unlocked, total ->
+                        when (status) {
+                            RaGameStatus.UNSUPPORTED -> toast(R.string.game_ra_status_unsupported)
+                            RaGameStatus.NO_ACHIEVEMENTS -> toast(R.string.game_ra_status_none)
+                            RaGameStatus.TRACKING -> toast(getString(R.string.game_ra_status_progress, unlocked, total))
+                        }
+                    },
+                    onOverlayEvent = { event -> handleRaOverlayEvent(event) },
+                )
+                raSession = session
                 session.start()
             }
         }
