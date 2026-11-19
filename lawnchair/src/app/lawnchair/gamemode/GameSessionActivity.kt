@@ -226,7 +226,7 @@ class GameSessionActivity : ComponentActivity() {
                             onRestored()
                         } else {
                             view.restoreAchievementsProgressAsync(savedRaProgress) { restored ->
-                                if (!restored) {
+                                if (restored == false) {
                                     progressUser?.let(store::deleteRaProgress)
                                     GameLog.log("conquistas", "progresso local incompatível; arquivo descartado")
                                 }
