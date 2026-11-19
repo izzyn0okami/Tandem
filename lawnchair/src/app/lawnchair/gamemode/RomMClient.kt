@@ -323,6 +323,20 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
         val flat = File(serverName).extension.lowercase() in allowed &&
             !item.optBoolean("has_multiple_files", false) &&
             !item.optBoolean("has_nested_single_file", false)
+        if (platform.discBased && File(serverName).extension.lowercase() in setOf("cue", "gdi")) {
+            val files = item.optJSONArray("files")
+            val fileSummary = (0 until (files?.length() ?: 0)).take(12).map { index ->
+                val file = files!!.getJSONObject(index)
+                "${file.optLong("id", -1L)}:${file.optString("file_name")}"
+            }
+            GameLog.log(
+                "romm",
+                "metadados de disco: rom=${item.optLong("id", -1L)}; fs_name=$serverName; " +
+                    "has_multiple_files=${item.optBoolean("has_multiple_files", false)}; " +
+                    "has_nested_single_file=${item.optBoolean("has_nested_single_file", false)}; " +
+                    "files=${files?.length() ?: 0}; amostra=$fileSummary",
+            )
+        }
         var fileName = serverName
         var fileId: Long? = null
         var folder = false
@@ -415,6 +429,14 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
                         "bytes=${response.body.contentLength()}; caminho=${response.request.url.encodedPath}",
                 )
                 if (!response.isSuccessful) {
+                    val errorBody = runCatching { response.peekBody(2048).string() }.getOrDefault("")
+                    val safeError = errorBody
+                        .replace(Regex("(?i)(token|authorization|password)(\\s*[:=]\\s*)[^\\",\\s}]+"), "$1$2[redacted]")
+                        .take(240)
+                    GameLog.log(
+                        "romm",
+                        "detalhe HTTP: status=${response.code}; corpo=${safeError.ifBlank { "<vazio>" }}",
+                    )
                     throw IOException("Servidor respondeu ${response.code} ao baixar $description")
                 }
                 consume(response)
