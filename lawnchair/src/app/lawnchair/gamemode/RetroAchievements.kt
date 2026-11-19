@@ -244,7 +244,7 @@ class RaSession(
         scope.launch(Dispatchers.IO) {
             val hash = runCatching { LibretroDroid.computeRomHash(romPath, consoleId) }.getOrNull()
             if (hash == null || !active) {
-                withContext(Dispatchers.Main) { onStatus(RaGameStatus.UNSUPPORTED, 0, 0) }
+                if (active) withContext(Dispatchers.Main) { disableHardcoreForUnsupportedSession() }
                 return@launch
             }
             pendingHash = hash
@@ -289,7 +289,7 @@ class RaSession(
         if (!active) return
         if (!success) {
             GameLog.log("conquistas", "não consegui entrar na conta RetroAchievements: $errorMessage")
-            scope.launch(Dispatchers.Main) { onStatus(RaGameStatus.UNSUPPORTED, 0, 0) }
+            disableHardcoreForUnsupportedSession()
             return
         }
         val hash = pendingHash ?: return
@@ -317,7 +317,7 @@ class RaSession(
         }
         if (!success) {
             GameLog.log("conquistas", "jogo não reconhecido pelo RetroAchievements: $errorMessage")
-            scope.launch(Dispatchers.Main) { onStatus(RaGameStatus.UNSUPPORTED, 0, 0) }
+            disableHardcoreForUnsupportedSession()
             return
         }
         publish(reportStatus = true)
@@ -337,6 +337,21 @@ class RaSession(
     override fun onServerError(api: String, message: String) {
         if (!active) return
         GameLog.log("conquistas", "RetroAchievements ($api): $message")
+    }
+
+    /**
+     * Hardcore must not remain active when authentication or game identification fails.
+     * The setting itself is preserved for the next supported session.
+     */
+    private fun disableHardcoreForUnsupportedSession() {
+        hardcoreEnabled = false
+        view.disableAchievementsHardcore()
+        scope.launch(Dispatchers.Main) {
+            if (active) {
+                onState(emptyList(), false)
+                onStatus(RaGameStatus.UNSUPPORTED, 0, 0)
+            }
+        }
     }
 
     override fun onReset() {
