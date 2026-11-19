@@ -54,8 +54,10 @@ import com.swordfish.libretrodroid.Variable
 import java.io.Closeable
 import java.io.File
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -69,6 +71,9 @@ class GameSessionActivity : ComponentActivity() {
     private var retroView: GLRetroView? = null
     private var saveStore: SaveStore? = null
     private var menuOpen by mutableStateOf(false)
+
+    /** Loop que processa eventos pendentes das conquistas enquanto o jogo está pausado. */
+    private var raIdleJob: Job? = null
 
     /** Camada de avisos e menu por cima do jogo: com o menu fechado, o toque passa direto para o jogo (DS, 3DS). */
     private fun passThrough(content: View): View = object : FrameLayout(this) {
@@ -247,6 +252,7 @@ class GameSessionActivity : ComponentActivity() {
                                     onSave = { saveQuickState() },
                                     onLoad = { loadQuickState() },
                                     onReset = {
+                                        RaProgress.reset()
                                         view.reset()
                                         setMenu(false)
                                     },
@@ -346,12 +352,41 @@ class GameSessionActivity : ComponentActivity() {
     }
 
     private fun setMenu(open: Boolean) {
+        if (open == menuOpen) return
+        // Hardcore: evita pausas seguidas que poderiam burlar condições de conquista.
+        if (open && raHardcore && !RaProgress.canPause()) {
+            Toast.makeText(this, "Aguarde alguns instantes antes de pausar novamente", Toast.LENGTH_SHORT).show()
+            return
+        }
         menuOpen = open
         if (!open) {
             optionsOpen = false
             raListOpen = false
         }
-        if (open) retroView?.pauseEmulation() else retroView?.resumeEmulation()
+        if (open) {
+            retroView?.pauseEmulation()
+            startRaIdleLoop()
+        } else {
+            stopRaIdleLoop()
+            retroView?.resumeEmulation()
+        }
+    }
+
+    /** Enquanto pausado, o rc_client precisa de idle (no lugar de do_frame) para manter a fila viva. */
+    private fun startRaIdleLoop() {
+        if (raSession == null) return
+        raIdleJob?.cancel()
+        raIdleJob = lifecycleScope.launch {
+            while (isActive) {
+                RaProgress.idle()
+                delay(1_000)
+            }
+        }
+    }
+
+    private fun stopRaIdleLoop() {
+        raIdleJob?.cancel()
+        raIdleJob = null
     }
 
     private fun persistSram() {
@@ -366,15 +401,47 @@ class GameSessionActivity : ComponentActivity() {
     private fun saveQuickState() {
         val view = retroView ?: return
         val store = saveStore ?: return
-        val saved = runCatching { store.writeState(view.serializeState()) }.isSuccess
+        val saved = runCatching {
+            val emuState = view.serializeState() ?: return@runCatching false
+            val raProgress = RaProgress.serialize()
+            val payload = if (raProgress != null) {
+                val header = "TNDM".toByteArray(Charsets.US_ASCII)
+                val len = raProgress.size
+                header + byteArrayOf(
+                    (len shr 24).toByte(),
+                    (len shr 16).toByte(),
+                    (len shr 8).toByte(),
+                    len.toByte(),
+                ) + raProgress + emuState
+            } else {
+                emuState
+            }
+            store.writeState(payload)
+            true
+        }.getOrDefault(false)
         toast(if (saved) R.string.game_session_state_saved else R.string.game_session_state_save_failed)
         setMenu(false)
     }
 
     private fun loadQuickState() {
         val view = retroView ?: return
-        val bytes = saveStore?.readState() ?: return
-        val loaded = runCatching { view.unserializeState(bytes) }.getOrDefault(false)
+        val payload = saveStore?.readState() ?: return
+        var emuState = payload
+        var raProgress: ByteArray? = null
+        val marker = "TNDM".toByteArray(Charsets.US_ASCII)
+        if (payload.size >= 8 && payload.copyOfRange(0, 4).contentEquals(marker)) {
+            val len = ((payload[4].toInt() and 0xFF) shl 24) or
+                ((payload[5].toInt() and 0xFF) shl 16) or
+                ((payload[6].toInt() and 0xFF) shl 8) or
+                (payload[7].toInt() and 0xFF)
+            if (len >= 0 && payload.size >= 8 + len) {
+                raProgress = payload.copyOfRange(8, 8 + len)
+                emuState = payload.copyOfRange(8 + len, payload.size)
+            }
+        }
+        // Save antigo (sem progresso de conquistas): reinicia o progresso, como manda o guia oficial.
+        RaProgress.deserialize(raProgress)
+        val loaded = runCatching { view.unserializeState(emuState) }.getOrDefault(false)
         toast(if (loaded) R.string.game_session_state_loaded else R.string.game_session_state_load_failed)
         setMenu(false)
     }
@@ -394,6 +461,7 @@ class GameSessionActivity : ComponentActivity() {
     }
 
     override fun onDestroy() {
+        stopRaIdleLoop()
         raSession?.stop()
         coreLog?.close()
         if (isFinishing) SessionDiagnostics.sessionEnded(this, "encerrado normalmente")
