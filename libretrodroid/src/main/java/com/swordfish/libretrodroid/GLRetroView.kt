@@ -512,9 +512,9 @@ class GLRetroView(
     }
 
     /** Queue asynchronous RA work without blocking an IO thread while the GL surface is paused. */
-    fun beginAchievementsLogin(user: String, token: String) {
+    fun beginAchievementsLogin(user: String, token: String, shouldStart: () -> Boolean) {
         queueEvent {
-            if (!isDestroyed) LibretroDroid.raBeginLoginWithToken(user, token)
+            if (!isDestroyed && shouldStart()) LibretroDroid.raBeginLoginWithToken(user, token)
         }
     }
 
@@ -522,9 +522,15 @@ class GLRetroView(
         LibretroDroid.raBeginLoadGame(hash, consoleId)
     }
 
-    fun deliverAchievementsResponse(requestId: Int, status: Int, body: String, networkError: Boolean) {
+    fun deliverAchievementsResponse(
+        requestId: Int,
+        status: Int,
+        body: String,
+        networkError: Boolean,
+        shouldDeliver: () -> Boolean,
+    ) {
         queueEvent {
-            if (!isDestroyed) {
+            if (!isDestroyed && shouldDeliver()) {
                 LibretroDroid.raDeliverServerResponse(requestId, status, body, networkError)
             }
         }
