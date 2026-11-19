@@ -187,6 +187,10 @@ class GameSessionActivity : ComponentActivity() {
                         key != null && value != null && !view.isAchievementsCoreSettingAllowed(key, value)
                     }
                 val sessionHardcore = RaSettings.hardcore(this@GameSessionActivity) && !hasDisallowedSetting
+                val progressUser = RaSettings.user(this@GameSessionActivity)
+                val savedRaProgress = progressUser?.let { user ->
+                    withContext(Dispatchers.IO) { store.readRaProgress(user) }
+                }
                 if (hasDisallowedSetting) {
                     raHardcore = false
                     toast("Hardcore desativado: o núcleo está usando uma opção incompatível.")
@@ -217,6 +221,12 @@ class GameSessionActivity : ComponentActivity() {
                         }
                     },
                     onOverlayEvent = { event -> handleRaOverlayEvent(event) },
+                    onGameLoaded = {
+                        if (savedRaProgress != null && !view.restoreAchievementsProgress(savedRaProgress)) {
+                            progressUser?.let(store::deleteRaProgress)
+                            GameLog.log("conquistas", "progresso local incompatível; arquivo descartado")
+                        }
+                    },
                 )
                 raSession = session
                 session.start()
@@ -415,6 +425,13 @@ class GameSessionActivity : ComponentActivity() {
         runCatching {
             val bytes = view.serializeSRAM()
             if (bytes.isNotEmpty()) store.writeSram(bytes)
+        }
+        val user = RaSettings.user(this) ?: return
+        if (raSession != null) {
+            runCatching {
+                val progress = view.serializeAchievementsProgress()
+                if (!progress.isNullOrEmpty()) store.writeRaProgress(user, progress)
+            }.onFailure { GameLog.error("conquistas", "falha ao salvar progresso local", it) }
         }
     }
 
