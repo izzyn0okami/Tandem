@@ -575,9 +575,15 @@ class GLRetroView(
         LibretroDroid.raSerializeProgress()
     }
 
-    /** Restore progress only after rc_client has successfully loaded the matching game. */
-    fun restoreAchievementsProgress(progress: ByteArray): Boolean = runOnGLThread {
-        LibretroDroid.raDeserializeProgress(progress)
+    /**
+     * Restore progress after the current rc_client load callback has returned. Calling
+     * rc_client_deserialize_progress from inside its own load callback risks reentrancy.
+     */
+    fun restoreAchievementsProgressAsync(progress: ByteArray, onComplete: (Boolean) -> Unit) {
+        queueEvent {
+            val restored = !isDestroyed && LibretroDroid.raDeserializeProgress(progress)
+            onComplete(restored)
+        }
     }
 
     fun getAchievementsGameId(): Long = runOnGLThread {
