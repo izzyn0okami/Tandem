@@ -19,6 +19,8 @@ object NavSound {
 
     private val unlockTrack: AudioTrack? by lazy { build(listOf(880.0 to 110, 1_175.0 to 110, 1_568.0 to 220)) }
 
+    private val masteryTrack: AudioTrack? by lazy { build(listOf(784.0 to 110, 988.0 to 110, 1_175.0 to 110, 1_568.0 to 320)) }
+
     /** Cada nota é (frequência em Hz, duração em ms), com decaimento suave. */
     private fun build(notes: List<Pair<Double, Int>>): AudioTrack? = runCatching {
         val pcm = notes.flatMap { (frequency, ms) ->
@@ -63,4 +65,8 @@ object NavSound {
     /** Jingle de três notas para conquista desbloqueada. */
     @Synchronized
     fun unlock() = play(unlockTrack)
+
+    /** Jingle maior, para o aviso de "Mastered"/"Completed" (todas as conquistas do jogo obtidas). */
+    @Synchronized
+    fun mastery() = play(masteryTrack)
 }

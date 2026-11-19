@@ -27,6 +27,9 @@ namespace libretrodroid {
 static Core* g_core = nullptr;
 static JavaVM* g_jvm = nullptr;
 
+// Declarado aqui (definido mais abaixo) porque o bloco de callbacks logo a seguir já precisa dele.
+static std::string jsonEscape(const char* raw);
+
 // Nomes/assinaturas do lado Kotlin (ver RaCallbacks.java). Resolvidos uma vez e guardados aqui
 // porque todo o resto do código nativo chama de dentro de Achievements, sempre a partir de uma
 // entrada JNI (então sempre temos um JNIEnv* válido da própria chamada, nunca precisamos anexar
@@ -39,6 +42,19 @@ jmethodID g_onLoadGameResult = nullptr;
 jmethodID g_onAchievementTriggered = nullptr;
 jmethodID g_onServerError = nullptr;
 jmethodID g_onReset = nullptr;
+// Indicadores e avisos extras, no padrão de overlay da própria RetroAchievements
+// (https://github.com/RetroAchievements/rcheevos/wiki/rc_client-integration): desafio ativo,
+// indicador de progresso, placares (leaderboards) e o aviso de "Mastered"/"Completed".
+jmethodID g_onChallengeIndicatorShow = nullptr;
+jmethodID g_onChallengeIndicatorHide = nullptr;
+jmethodID g_onProgressIndicatorShow = nullptr;
+jmethodID g_onProgressIndicatorHide = nullptr;
+jmethodID g_onLeaderboardStarted = nullptr;
+jmethodID g_onLeaderboardFailed = nullptr;
+jmethodID g_onLeaderboardSubmitted = nullptr;
+jmethodID g_onLeaderboardTrackerUpdate = nullptr;
+jmethodID g_onLeaderboardTrackerHide = nullptr;
+jmethodID g_onGameCompleted = nullptr;
 
 void resolveCallbackMethods(JNIEnv* env, jobject callbacks) {
     if (g_callbacksClass) return;
@@ -55,6 +71,38 @@ void resolveCallbackMethods(JNIEnv* env, jobject callbacks) {
     g_onAchievementTriggered = env->GetMethodID(g_callbacksClass, "onAchievementTriggered", "(I)V");
     g_onServerError = env->GetMethodID(g_callbacksClass, "onServerError", "(Ljava/lang/String;Ljava/lang/String;)V");
     g_onReset = env->GetMethodID(g_callbacksClass, "onReset", "()V");
+    g_onChallengeIndicatorShow = env->GetMethodID(g_callbacksClass, "onChallengeIndicatorShow", "(ILjava/lang/String;)V");
+    g_onChallengeIndicatorHide = env->GetMethodID(g_callbacksClass, "onChallengeIndicatorHide", "(I)V");
+    g_onProgressIndicatorShow = env->GetMethodID(
+        g_callbacksClass, "onProgressIndicatorShow",
+        "(ILjava/lang/String;Ljava/lang/String;Ljava/lang/String;F)V"
+    );
+    g_onProgressIndicatorHide = env->GetMethodID(g_callbacksClass, "onProgressIndicatorHide", "()V");
+    g_onLeaderboardStarted = env->GetMethodID(g_callbacksClass, "onLeaderboardStarted", "(ILjava/lang/String;Ljava/lang/String;)V");
+    g_onLeaderboardFailed = env->GetMethodID(g_callbacksClass, "onLeaderboardFailed", "(ILjava/lang/String;)V");
+    g_onLeaderboardSubmitted = env->GetMethodID(g_callbacksClass, "onLeaderboardSubmitted", "(ILjava/lang/String;Ljava/lang/String;)V");
+    g_onLeaderboardTrackerUpdate = env->GetMethodID(g_callbacksClass, "onLeaderboardTrackerUpdate", "(ILjava/lang/String;)V");
+    g_onLeaderboardTrackerHide = env->GetMethodID(g_callbacksClass, "onLeaderboardTrackerHide", "(I)V");
+    g_onGameCompleted = env->GetMethodID(g_callbacksClass, "onGameCompleted", "(Ljava/lang/String;)V");
+}
+
+// Monta o aviso de "Mastered"/"Completed" (jogo todo ou só um subconjunto/DLC): usa sempre a arte
+// do jogo principal, já que a rc_client não expõe uma URL de ícone própria para subconjuntos.
+std::string buildGameCompletedJson(rc_client_t* client, const rc_client_subset_t* subset) {
+    const rc_client_game_t* game = rc_client_get_game_info(client);
+    char urlBuffer[192] = {0};
+    if (game) rc_client_game_get_image_url(game, urlBuffer, sizeof(urlBuffer));
+    bool hardcore = rc_client_get_hardcore_enabled(client) != 0;
+    const char* title = subset ? subset->title : (game ? game->title : "");
+
+    std::ostringstream json;
+    json << "{"
+         << "\"title\":\"" << jsonEscape(title) << "\","
+         << "\"badgeUrl\":\"" << jsonEscape(urlBuffer) << "\","
+         << "\"hardcore\":" << (hardcore ? "true" : "false") << ","
+         << "\"subset\":" << (subset ? "true" : "false")
+         << "}";
+    return json.str();
 }
 }
 
@@ -206,8 +254,95 @@ void Achievements::handleEvent(JNIEnv* env, const rc_client_event_t* event) {
         case RC_CLIENT_EVENT_RECONNECTED:
             LOGI("RetroAchievements: conexão de volta, desbloqueios pendentes reenviados");
             break;
+
+        // --- Indicadores e avisos extras, padrão RetroAchievements (rc_client-integration) -------
+
+        case RC_CLIENT_EVENT_ACHIEVEMENT_CHALLENGE_INDICATOR_SHOW:
+            if (event->achievement && g_onChallengeIndicatorShow) {
+                jstring badge = env->NewStringUTF(event->achievement->badge_name);
+                env->CallVoidMethod(callbacksRef, g_onChallengeIndicatorShow, static_cast<jint>(event->achievement->id), badge);
+                env->DeleteLocalRef(badge);
+            }
+            break;
+        case RC_CLIENT_EVENT_ACHIEVEMENT_CHALLENGE_INDICATOR_HIDE:
+            if (event->achievement && g_onChallengeIndicatorHide) {
+                env->CallVoidMethod(callbacksRef, g_onChallengeIndicatorHide, static_cast<jint>(event->achievement->id));
+            }
+            break;
+        case RC_CLIENT_EVENT_ACHIEVEMENT_PROGRESS_INDICATOR_SHOW:
+        case RC_CLIENT_EVENT_ACHIEVEMENT_PROGRESS_INDICATOR_UPDATE:
+            if (event->achievement && g_onProgressIndicatorShow) {
+                jstring title = env->NewStringUTF(event->achievement->title ? event->achievement->title : "");
+                jstring badge = env->NewStringUTF(event->achievement->badge_name);
+                jstring progress = env->NewStringUTF(event->achievement->measured_progress);
+                env->CallVoidMethod(
+                    callbacksRef, g_onProgressIndicatorShow,
+                    static_cast<jint>(event->achievement->id), title, badge, progress,
+                    static_cast<jfloat>(event->achievement->measured_percent)
+                );
+                env->DeleteLocalRef(title);
+                env->DeleteLocalRef(badge);
+                env->DeleteLocalRef(progress);
+            }
+            break;
+        case RC_CLIENT_EVENT_ACHIEVEMENT_PROGRESS_INDICATOR_HIDE:
+            if (g_onProgressIndicatorHide) env->CallVoidMethod(callbacksRef, g_onProgressIndicatorHide);
+            break;
+        case RC_CLIENT_EVENT_LEADERBOARD_STARTED:
+            if (event->leaderboard && g_onLeaderboardStarted) {
+                jstring title = env->NewStringUTF(event->leaderboard->title ? event->leaderboard->title : "");
+                jstring description = env->NewStringUTF(event->leaderboard->description ? event->leaderboard->description : "");
+                env->CallVoidMethod(callbacksRef, g_onLeaderboardStarted, static_cast<jint>(event->leaderboard->id), title, description);
+                env->DeleteLocalRef(title);
+                env->DeleteLocalRef(description);
+            }
+            break;
+        case RC_CLIENT_EVENT_LEADERBOARD_FAILED:
+            if (event->leaderboard && g_onLeaderboardFailed) {
+                jstring title = env->NewStringUTF(event->leaderboard->title ? event->leaderboard->title : "");
+                env->CallVoidMethod(callbacksRef, g_onLeaderboardFailed, static_cast<jint>(event->leaderboard->id), title);
+                env->DeleteLocalRef(title);
+            }
+            break;
+        case RC_CLIENT_EVENT_LEADERBOARD_SUBMITTED:
+            if (event->leaderboard && g_onLeaderboardSubmitted) {
+                jstring title = env->NewStringUTF(event->leaderboard->title ? event->leaderboard->title : "");
+                jstring score = env->NewStringUTF(event->leaderboard->tracker_value ? event->leaderboard->tracker_value : "");
+                env->CallVoidMethod(callbacksRef, g_onLeaderboardSubmitted, static_cast<jint>(event->leaderboard->id), title, score);
+                env->DeleteLocalRef(title);
+                env->DeleteLocalRef(score);
+            }
+            break;
+        case RC_CLIENT_EVENT_LEADERBOARD_TRACKER_SHOW:
+        case RC_CLIENT_EVENT_LEADERBOARD_TRACKER_UPDATE:
+            if (event->leaderboard_tracker && g_onLeaderboardTrackerUpdate) {
+                jstring display = env->NewStringUTF(event->leaderboard_tracker->display);
+                env->CallVoidMethod(callbacksRef, g_onLeaderboardTrackerUpdate, static_cast<jint>(event->leaderboard_tracker->id), display);
+                env->DeleteLocalRef(display);
+            }
+            break;
+        case RC_CLIENT_EVENT_LEADERBOARD_TRACKER_HIDE:
+            if (event->leaderboard_tracker && g_onLeaderboardTrackerHide) {
+                env->CallVoidMethod(callbacksRef, g_onLeaderboardTrackerHide, static_cast<jint>(event->leaderboard_tracker->id));
+            }
+            break;
         case RC_CLIENT_EVENT_GAME_COMPLETED:
             LOGI("RetroAchievements: todas as conquistas do jogo foram obtidas");
+            if (g_onGameCompleted) {
+                std::string json = buildGameCompletedJson(client, nullptr);
+                jstring jJson = env->NewStringUTF(json.c_str());
+                env->CallVoidMethod(callbacksRef, g_onGameCompleted, jJson);
+                env->DeleteLocalRef(jJson);
+            }
+            break;
+        case RC_CLIENT_EVENT_SUBSET_COMPLETED:
+            LOGI("RetroAchievements: todas as conquistas de um subconjunto (DLC) foram obtidas");
+            if (event->subset && g_onGameCompleted) {
+                std::string json = buildGameCompletedJson(client, event->subset);
+                jstring jJson = env->NewStringUTF(json.c_str());
+                env->CallVoidMethod(callbacksRef, g_onGameCompleted, jJson);
+                env->DeleteLocalRef(jJson);
+            }
             break;
         default:
             break;

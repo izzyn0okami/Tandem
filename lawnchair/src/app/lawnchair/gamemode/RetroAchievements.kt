@@ -2,6 +2,7 @@ package app.lawnchair.gamemode
 
 import android.content.Context
 import androidx.core.content.edit
+import com.android.launcher3.R
 import com.swordfish.libretrodroid.GLRetroView
 import com.swordfish.libretrodroid.LibretroDroid
 import com.swordfish.libretrodroid.RaCallbacks
@@ -66,6 +67,33 @@ data class RaAchievement(val id: Long, val title: String, val description: Strin
 
 /** Uma conquista do jogo e se o usuário já a tem (no modo em que está jogando). */
 data class RaEntry(val achievement: RaAchievement, val unlocked: Boolean)
+
+// --- Indicadores e avisos extras, padrão de overlay da própria RetroAchievements -----------------
+// (ver https://github.com/RetroAchievements/rcheevos/wiki/rc_client-integration)
+
+/** Ícone de "desafio ativo": pequena versão do ícone desbloqueado, uma por conquista com desafio em andamento. */
+data class RaChallengeIndicator(val id: Long, val badge: String)
+
+/** Indicador de progresso (ícone trancado + texto, ex.: "7/10"); só um visível por vez. */
+data class RaProgressIndicator(val title: String, val badge: String, val progress: String, val percent: Float)
+
+/** Valor ao vivo de um placar sendo acompanhado (ex.: um cronômetro). */
+data class RaLeaderboardTracker(val id: Long, val display: String)
+
+/** Aviso de "Mastered" (hardcore) ou "Completed" (normal), do jogo todo ou de um subconjunto/DLC. */
+data class RaMastery(val title: String, val badgeUrl: String, val hardcore: Boolean, val subset: Boolean)
+
+/** Um evento de overlay do rc_client, já traduzido para algo que a tela de jogo sabe desenhar. */
+sealed interface RaOverlayEvent {
+    data class ChallengeShow(val indicator: RaChallengeIndicator) : RaOverlayEvent
+    data class ChallengeHide(val id: Long) : RaOverlayEvent
+    data class Progress(val indicator: RaProgressIndicator) : RaOverlayEvent
+    data object ProgressHide : RaOverlayEvent
+    data class LeaderboardMessage(val text: String) : RaOverlayEvent
+    data class Tracker(val tracker: RaLeaderboardTracker) : RaOverlayEvent
+    data class TrackerHide(val id: Long) : RaOverlayEvent
+    data class Mastery(val info: RaMastery) : RaOverlayEvent
+}
 
 /** Conquistas que o usuário já tem: no modo normal e no hardcore. */
 data class RaUnlocks(val softcore: Set<Long>, val hardcore: Set<Long>)
@@ -188,6 +216,7 @@ class RaSession(
     private val onUnlock: (RaAchievement) -> Unit,
     private val onState: (entries: List<RaEntry>, hardcore: Boolean) -> Unit,
     private val onStatus: (status: RaGameStatus, unlocked: Int, total: Int) -> Unit = { _, _, _ -> },
+    private val onOverlayEvent: (RaOverlayEvent) -> Unit = {},
 ) : RaCallbacks {
 
     private val http = OkHttpClient()
@@ -288,6 +317,60 @@ class RaSession(
         // O hardcore só é escolhido antes de começar a jogar, então isso não deve acontecer hoje;
         // deixado pronto (e registrado) para quando/se o app permitir trocar de modo com o jogo aberto.
         GameLog.log("conquistas", "RetroAchievements pediu reinício do jogo (mudança de modo hardcore)")
+    }
+
+    // --- Indicadores e avisos extras, padrão de overlay da RetroAchievements --------------------
+
+    override fun onChallengeIndicatorShow(achievementId: Int, badge: String) {
+        emitOverlay(RaOverlayEvent.ChallengeShow(RaChallengeIndicator(achievementId.toLong(), badge)))
+    }
+
+    override fun onChallengeIndicatorHide(achievementId: Int) {
+        emitOverlay(RaOverlayEvent.ChallengeHide(achievementId.toLong()))
+    }
+
+    override fun onProgressIndicatorShow(_achievementId: Int, title: String, badge: String, measuredProgress: String, measuredPercent: Float) {
+        emitOverlay(RaOverlayEvent.Progress(RaProgressIndicator(title, badge, measuredProgress, measuredPercent)))
+    }
+
+    override fun onProgressIndicatorHide() {
+        emitOverlay(RaOverlayEvent.ProgressHide)
+    }
+
+    override fun onLeaderboardStarted(_leaderboardId: Int, title: String, _description: String) {
+        emitOverlay(RaOverlayEvent.LeaderboardMessage(context.getString(R.string.game_ra_leaderboard_started, title)))
+    }
+
+    override fun onLeaderboardFailed(_leaderboardId: Int, title: String) {
+        emitOverlay(RaOverlayEvent.LeaderboardMessage(context.getString(R.string.game_ra_leaderboard_failed, title)))
+    }
+
+    override fun onLeaderboardSubmitted(_leaderboardId: Int, title: String, score: String) {
+        emitOverlay(RaOverlayEvent.LeaderboardMessage(context.getString(R.string.game_ra_leaderboard_submitted, score, title)))
+    }
+
+    override fun onLeaderboardTrackerUpdate(trackerId: Int, display: String) {
+        emitOverlay(RaOverlayEvent.Tracker(RaLeaderboardTracker(trackerId.toLong(), display)))
+    }
+
+    override fun onLeaderboardTrackerHide(trackerId: Int) {
+        emitOverlay(RaOverlayEvent.TrackerHide(trackerId.toLong()))
+    }
+
+    override fun onGameCompleted(json: String) {
+        val obj = runCatching { JSONObject(json) }.getOrNull() ?: return
+        val mastery = RaMastery(
+            title = obj.optString("title"),
+            badgeUrl = obj.optString("badgeUrl"),
+            hardcore = obj.optBoolean("hardcore"),
+            subset = obj.optBoolean("subset"),
+        )
+        emitOverlay(RaOverlayEvent.Mastery(mastery))
+    }
+
+    private fun emitOverlay(event: RaOverlayEvent) {
+        if (!active) return
+        scope.launch(Dispatchers.Main) { onOverlayEvent(event) }
     }
 
     private fun publish(reportStatus: Boolean) {

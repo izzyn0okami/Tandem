@@ -28,6 +28,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -87,6 +88,13 @@ class GameSessionActivity : ComponentActivity() {
     private var raEntries by mutableStateOf<List<RaEntry>>(emptyList())
     private var raHardcore by mutableStateOf(false)
     private var raListOpen by mutableStateOf(false)
+
+    // Indicadores e avisos extras do overlay de conquistas (padrão RetroAchievements; ver RaBadge.kt).
+    private val raChallengeIndicators = mutableStateMapOf<Long, RaChallengeIndicator>()
+    private var raProgressIndicator by mutableStateOf<RaProgressIndicator?>(null)
+    private val raLeaderboardTrackers = mutableStateMapOf<Long, RaLeaderboardTracker>()
+    private val raLeaderboardMessageQueue = mutableStateListOf<String>()
+    private val raMasteryQueue = mutableStateListOf<RaMastery>()
     private var optionsOpen by mutableStateOf(false)
     private var coreOptions by mutableStateOf<List<CoreOption>>(emptyList())
     private var coreLog: Closeable? = null
@@ -182,6 +190,7 @@ class GameSessionActivity : ComponentActivity() {
                         RaGameStatus.TRACKING -> toast(getString(R.string.game_ra_status_progress, unlocked, total))
                     }
                 },
+                onOverlayEvent = { event -> handleRaOverlayEvent(event) },
             )
             raSession = session
             lifecycleScope.launch {
@@ -200,6 +209,24 @@ class GameSessionActivity : ComponentActivity() {
                                     if (raUnlockQueue.firstOrNull()?.id == unlocked.id) {
                                         raUnlockQueue.removeAt(0)
                                     }
+                                }
+                            }
+                            // Indicadores e avisos extras do padrão RetroAchievements (ver RaBadge.kt).
+                            ChallengeIndicatorsRow(raChallengeIndicators.values.toList())
+                            raProgressIndicator?.let { ProgressIndicatorBadge(it) }
+                            LeaderboardTrackersColumn(raLeaderboardTrackers.values.toList())
+                            raLeaderboardMessageQueue.firstOrNull()?.let { message ->
+                                LeaderboardMessageToast(message) {
+                                    if (raLeaderboardMessageQueue.firstOrNull() == message) raLeaderboardMessageQueue.removeAt(0)
+                                }
+                            }
+                            raMasteryQueue.firstOrNull()?.let { mastery ->
+                                MasteryOverlay(
+                                    mastery = mastery,
+                                    playtimeLabel = formatPlaytime(PlayHistory.get(this@GameSessionActivity, romPath).playtimeMs),
+                                    userName = RaSettings.user(this@GameSessionActivity).orEmpty(),
+                                ) {
+                                    if (raMasteryQueue.firstOrNull() == mastery) raMasteryQueue.removeAt(0)
                                 }
                             }
                             if (menuOpen) {
@@ -284,6 +311,31 @@ class GameSessionActivity : ComponentActivity() {
                 }
             }
         }
+    }
+
+    /** Traduz um evento de overlay do rc_client (ver RetroAchievements.kt) no estado que a tela desenha. */
+    private fun handleRaOverlayEvent(event: RaOverlayEvent) {
+        when (event) {
+            is RaOverlayEvent.ChallengeShow -> raChallengeIndicators[event.indicator.id] = event.indicator
+            is RaOverlayEvent.ChallengeHide -> raChallengeIndicators.remove(event.id)
+            is RaOverlayEvent.Progress -> raProgressIndicator = event.indicator
+            RaOverlayEvent.ProgressHide -> raProgressIndicator = null
+            is RaOverlayEvent.LeaderboardMessage -> raLeaderboardMessageQueue.add(event.text)
+            is RaOverlayEvent.Tracker -> raLeaderboardTrackers[event.tracker.id] = event.tracker
+            is RaOverlayEvent.TrackerHide -> raLeaderboardTrackers.remove(event.id)
+            is RaOverlayEvent.Mastery -> {
+                raMasteryQueue.add(event.info)
+                if (GameModeSettings.isSoundEnabled(this)) NavSound.mastery()
+            }
+        }
+    }
+
+    /** "1h30min" ou "12 min" — usado só na legenda do aviso de Mastered/Completed. */
+    private fun formatPlaytime(ms: Long): String {
+        val totalMinutes = ms / 60_000
+        val hours = totalMinutes / 60
+        val minutes = totalMinutes % 60
+        return if (hours > 0) getString(R.string.game_ra_playtime_hm, hours, minutes) else getString(R.string.game_ra_playtime_m, minutes)
     }
 
     private fun setMenu(open: Boolean) {

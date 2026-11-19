@@ -207,6 +207,16 @@
     <string name="game_ra_hardcore">Modo hardcore</string>
     <string name="game_ra_hardcore_note">No hardcore as conquistas valem mais no site, mas não dá para carregar estados salvos nos jogos compatíveis (salvar continua liberado). Vale a partir da próxima partida.</string>
     <string name="game_ra_progress">Conquistas: %1$d de %2$d</string>
+    <string name="game_ra_leaderboard_started">Placar iniciado: %1$s</string>
+    <string name="game_ra_leaderboard_failed">Placar não validado: %1$s</string>
+    <string name="game_ra_leaderboard_submitted">Enviado %1$s para %2$s</string>
+    <string name="game_ra_mastered">Mastered</string>
+    <string name="game_ra_completed">Completed</string>
+    <string name="game_ra_subset_mastered">Mastered (conteúdo extra)</string>
+    <string name="game_ra_subset_completed">Completed (conteúdo extra)</string>
+    <string name="game_ra_mastery_subtitle">%1$s · %2$s de jogo</string>
+    <string name="game_ra_playtime_hm">%1$dh%2$02dmin</string>
+    <string name="game_ra_playtime_m">%1$d min</string>
     <string name="game_romm_howto_device">Digite o endereço do servidor e toque em Conectar. O app mostra um código: abra o RomM no navegador (já logado na sua conta) e aprove o aparelho. Esta tela continua sozinha.</string>
     <string name="game_romm_pair_code">Código: %1$s</string>
     <string name="game_romm_pair_steps">Confirme que o código no RomM é o mesmo acima e toque em aprovar.</string>
