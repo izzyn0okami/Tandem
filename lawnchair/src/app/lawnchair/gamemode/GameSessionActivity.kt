@@ -221,10 +221,17 @@ class GameSessionActivity : ComponentActivity() {
                         }
                     },
                     onOverlayEvent = { event -> handleRaOverlayEvent(event) },
-                    onGameLoaded = {
-                        if (savedRaProgress != null && !view.restoreAchievementsProgress(savedRaProgress)) {
-                            progressUser?.let(store::deleteRaProgress)
-                            GameLog.log("conquistas", "progresso local incompatível; arquivo descartado")
+                    onGameLoaded = { onRestored ->
+                        if (savedRaProgress == null) {
+                            onRestored()
+                        } else {
+                            view.restoreAchievementsProgressAsync(savedRaProgress) { restored ->
+                                if (!restored) {
+                                    progressUser?.let(store::deleteRaProgress)
+                                    GameLog.log("conquistas", "progresso local incompatível; arquivo descartado")
+                                }
+                                onRestored()
+                            }
                         }
                     },
                 )
