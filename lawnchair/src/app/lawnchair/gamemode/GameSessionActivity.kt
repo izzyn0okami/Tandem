@@ -462,6 +462,7 @@ class GameSessionActivity : ComponentActivity() {
 
     override fun onResume() {
         super.onResume()
+        if (!menuOpen) stopRaIdleLoop()
         resumedAtMs = SystemClock.elapsedRealtime()
         lostWatcher.start()
     }
@@ -469,6 +470,9 @@ class GameSessionActivity : ComponentActivity() {
     override fun onDestroy() {
         stopRaIdleLoop()
         raSession?.stop()
+        // Esta Activity não herda de LibretroActivity; portanto precisa liberar explicitamente
+        // os recursos nativos enquanto o GL thread ainda está ativo.
+        retroView?.destroyNative()
         coreLog?.close()
         if (isFinishing) SessionDiagnostics.sessionEnded(this, "encerrado normalmente")
         super.onDestroy()
@@ -529,6 +533,8 @@ class GameSessionActivity : ComponentActivity() {
         resumedAtMs = 0L
         lostWatcher.stop()
         super.onPause()
+        // O rc_client precisa continuar recebendo idle enquanto o app está em segundo plano.
+        startRaIdleLoop()
     }
 
     override fun dispatchKeyEvent(event: KeyEvent): Boolean {
