@@ -434,14 +434,21 @@ class GameSessionActivity : ComponentActivity() {
                 ((payload[5].toInt() and 0xFF) shl 16) or
                 ((payload[6].toInt() and 0xFF) shl 8) or
                 (payload[7].toInt() and 0xFF)
-            if (len >= 0 && payload.size >= 8 + len) {
-                raProgress = payload.copyOfRange(8, 8 + len)
-                emuState = payload.copyOfRange(8 + len, payload.size)
+            val emuSize = payload.size - 8 - len
+            if (len < 0 || emuSize <= 0) {
+                // Cabeçalho corrompido ou pacote truncado: não entrega o conteúdo ao núcleo.
+                toast(R.string.game_session_state_load_failed)
+                setMenu(false)
+                return
             }
+            raProgress = payload.copyOfRange(8, 8 + len)
+            emuState = payload.copyOfRange(8 + len, payload.size)
         }
-        // Save antigo (sem progresso de conquistas): reinicia o progresso, como manda o guia oficial.
-        RaProgress.deserialize(raProgress)
         val loaded = runCatching { view.unserializeState(emuState) }.getOrDefault(false)
+        if (loaded) {
+            // Save antigo (sem progresso de conquistas): reinicia o progresso, como manda o guia oficial.
+            RaProgress.deserialize(raProgress)
+        }
         toast(if (loaded) R.string.game_session_state_loaded else R.string.game_session_state_load_failed)
         setMenu(false)
     }
