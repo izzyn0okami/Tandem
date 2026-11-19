@@ -403,6 +403,7 @@ class GameSessionActivity : ComponentActivity() {
         val store = saveStore ?: return
         val saved = runCatching {
             val (emuState, raProgress) = view.serializeStateWithAchievements()
+            if (emuState == null) return@runCatching false
             val payload = if (raProgress != null) {
                 val header = "TNDM".toByteArray(Charsets.US_ASCII)
                 val len = raProgress.size
