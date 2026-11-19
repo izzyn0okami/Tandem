@@ -539,8 +539,10 @@ class GLRetroView(
         }
     }
 
-    fun beginAchievementsGame(hash: String, consoleId: Int) = runOnGLThread {
-        LibretroDroid.raBeginLoadGame(hash, consoleId)
+    fun beginAchievementsGame(hash: String, consoleId: Int) {
+        queueEvent {
+            if (!isDestroyed) LibretroDroid.raBeginLoadGame(hash, consoleId)
+        }
     }
 
     fun deliverAchievementsResponse(
