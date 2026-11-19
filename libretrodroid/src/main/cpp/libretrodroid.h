@@ -117,7 +117,7 @@ public:
     void reset();
 
     void loadGameFromPath(const std::string &gamePath);
-    void loadGameFromBytes(const int8_t *data, size_t size);
+    void loadGameFromBytes(char *data, size_t size);
     void loadGameFromVirtualFiles(std::vector<VFSFile> virtualFiles);
 
     void onKeyEvent(unsigned int port, int action, int keyCode);
@@ -289,6 +289,9 @@ private:
     float splitPrimaryAspect = 0.0F;
     float secondaryCrop[4] = { 0.0F, 0.0F, 0.0F, 0.0F };
     float secondaryAspect = 0.0F;
+
+    // Keep frontend-provided content alive until retro_deinit() has returned.
+    std::unique_ptr<char[]> gameContent;
 
     std::unique_ptr<Core> core;
     std::unique_ptr<Audio> audio;
