@@ -485,7 +485,7 @@ class GLRetroView(
      * Snapshot the emulator and RetroAchievements runtime on the same GL thread/frame boundary.
      * Keeping these operations together prevents a frame from advancing between the two snapshots.
      */
-    fun serializeStateWithAchievements(): Pair<ByteArray, ByteArray?> = runOnGLThread {
+    fun serializeStateWithAchievements(): Pair<ByteArray?, ByteArray?> = runOnGLThread {
         LibretroDroid.serializeState() to LibretroDroid.raSerializeProgress()
     }
 
