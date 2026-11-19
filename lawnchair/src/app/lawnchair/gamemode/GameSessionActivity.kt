@@ -317,12 +317,19 @@ class GameSessionActivity : ComponentActivity() {
     private fun handleRaOverlayEvent(event: RaOverlayEvent) {
         when (event) {
             is RaOverlayEvent.ChallengeShow -> raChallengeIndicators[event.indicator.id] = event.indicator
+
             is RaOverlayEvent.ChallengeHide -> raChallengeIndicators.remove(event.id)
+
             is RaOverlayEvent.Progress -> raProgressIndicator = event.indicator
+
             RaOverlayEvent.ProgressHide -> raProgressIndicator = null
+
             is RaOverlayEvent.LeaderboardMessage -> raLeaderboardMessageQueue.add(event.text)
+
             is RaOverlayEvent.Tracker -> raLeaderboardTrackers[event.tracker.id] = event.tracker
+
             is RaOverlayEvent.TrackerHide -> raLeaderboardTrackers.remove(event.id)
+
             is RaOverlayEvent.Mastery -> {
                 raMasteryQueue.add(event.info)
                 if (GameModeSettings.isSoundEnabled(this)) NavSound.mastery()
