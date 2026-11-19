@@ -144,6 +144,8 @@ class GameSessionActivity : ComponentActivity() {
         // Calculado uma vez, sem depender de rede: o menu de pausa usa isso para travar "Carregar estado"
         // desde o primeiro frame, sem esperar a sessão do RetroAchievements (que é assíncrona) confirmar.
         val statesBlocked = platformObject != null && RaSettings.blocksStates(this, platformObject)
+        // Reflete o modo escolhido desde o início, antes do login/identificação assíncronos do rc_client.
+        raHardcore = statesBlocked
         if (platformObject?.raConsoleId != null && RaSettings.isLoggedIn(this)) {
             toast(if (statesBlocked) R.string.game_ra_hardcore_label else R.string.game_ra_softcore_label)
         }
