@@ -290,6 +290,10 @@ class RaSession(
 
     override fun onLoadGameResult(success: Boolean, errorMessage: String?) {
         if (!active) return
+        if (success) {
+            val gameId = view.getAchievementsGameId()
+            if (gameId > 0) RaSettings.setCachedGameId(context, romPath, gameId)
+        }
         if (!success) {
             GameLog.log("conquistas", "jogo não reconhecido pelo RetroAchievements: $errorMessage")
             scope.launch(Dispatchers.Main) { onStatus(RaGameStatus.UNSUPPORTED, 0, 0) }
