@@ -339,9 +339,10 @@ class RaSession(
 
     override fun onReset() {
         if (!active) return
-        // O hardcore só é escolhido antes de começar a jogar, então isso não deve acontecer hoje;
-        // deixado pronto (e registrado) para quando/se o app permitir trocar de modo com o jogo aberto.
-        GameLog.log("conquistas", "RetroAchievements pediu reinício do jogo (mudança de modo hardcore)")
+        // O rc_client fica suspenso até receber rc_client_reset. Enfileirar o reset evita
+        // reentrância enquanto ainda estamos dentro do callback nativo do rcheevos.
+        view.resetAfterAchievementsModeChange()
+        GameLog.log("conquistas", "RetroAchievements solicitou reinício do núcleo após mudança de modo")
     }
 
     // --- Indicadores e avisos extras, padrão de overlay da RetroAchievements --------------------
