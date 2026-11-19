@@ -579,14 +579,14 @@ JNIEXPORT void JNICALL Java_com_swordfish_libretrodroid_LibretroDroid_loadGameFr
 ) {
     try {
         size_t size = env->GetArrayLength(gameFileBytes);
-        auto* data = new int8_t[size];
+        auto data = std::make_unique<char[]>(size);
         env->GetByteArrayRegion(
             gameFileBytes,
             0,
             size,
-            reinterpret_cast<int8_t*>(data)
+            reinterpret_cast<jbyte*>(data.get())
         );
-        LibretroDroid::getInstance().loadGameFromBytes(data, size);
+        LibretroDroid::getInstance().loadGameFromBytes(data.release(), size);
     } catch (std::exception &exception) {
         LOGE("Error in loadGameFromBytes: %s", exception.what());
         JavaUtils::throwRetroException(env, ERROR_LOAD_GAME);
