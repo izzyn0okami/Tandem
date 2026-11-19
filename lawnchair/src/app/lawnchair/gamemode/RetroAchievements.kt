@@ -304,7 +304,7 @@ class RaSession(
             if (gameId > 0) RaSettings.setCachedGameId(context, cacheKeyPath, gameId)
             if (!view.isAchievementsProcessingRequired()) {
                 // Jogos sem conquistas, placares ou Rich Presence não devem manter Hardcore ativo.
-                if (hardcoreEnabled) view.setAchievementsHardcoreEnabled(false)
+                if (hardcoreEnabled) view.disableAchievementsHardcore()
                 hardcoreEnabled = false
                 scope.launch(Dispatchers.Main) {
                     if (active) {
