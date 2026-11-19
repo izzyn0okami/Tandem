@@ -215,8 +215,9 @@ void Achievements::deliverServerResponse(JNIEnv* env, int32_t requestId, int htt
     }
 
     rc_api_server_response_t response = {};
-    response.body = body.c_str();
-    response.body_length = body.size();
+    // rcheevos distinguishes a transport failure (NULL body) from an HTTP response with an empty body.
+    response.body = networkError ? nullptr : body.c_str();
+    response.body_length = networkError ? 0 : body.size();
     response.http_status_code = networkError ? RC_API_SERVER_RESPONSE_RETRYABLE_CLIENT_ERROR : httpStatus;
 
     pending.callback(&response, pending.callbackData);
