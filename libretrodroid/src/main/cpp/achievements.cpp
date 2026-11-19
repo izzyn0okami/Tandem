@@ -500,13 +500,15 @@ std::string Achievements::getSummaryJson() {
     return json.str();
 }
 
-uint32_t Achievements::progressSize() const {
+size_t Achievements::progressSize() const {
     return client ? rc_client_progress_size(client) : 0;
 }
 
 int Achievements::serializeProgress(uint8_t* buffer) {
     if (!client || !buffer) return RC_INVALID_STATE;
-    return rc_client_serialize_progress(client, buffer);
+    const size_t size = rc_client_progress_size(client);
+    if (size == 0) return RC_INVALID_STATE;
+    return rc_client_serialize_progress_sized(client, buffer, size);
 }
 
 int Achievements::deserializeProgress(const uint8_t* buffer) {
