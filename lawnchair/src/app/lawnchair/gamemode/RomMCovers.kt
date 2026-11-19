@@ -11,16 +11,20 @@ import java.io.File
 object RomMCovers {
 
     private const val TARGET_WIDTH = 240
-    private val memory = LruCache<Long, ImageBitmap>(120)
+    private const val TARGET_HEIGHT = 360
+    private const val CACHE_BYTES = 12 * 1024 * 1024
+
+    // Limite em bytes, não em quantidade: capas com proporções diferentes têm custos diferentes.
+    private val memory = object : LruCache<Long, ImageBitmap>(CACHE_BYTES) {
+        override fun sizeOf(key: Long, value: ImageBitmap): Int = value.width * value.height * 4
+    }
 
     fun cached(id: Long): ImageBitmap? = memory.get(id)
 
     /** Métricas aproximadas do cache; não altera sua política de retenção. */
     fun cacheEntryCount(): Int = memory.snapshot().size
 
-    fun estimatedMemoryBytes(): Long = memory.snapshot().values.sumOf {
-        it.width.toLong() * it.height.toLong() * 4L
-    }
+    fun estimatedMemoryBytes(): Long = memory.size().toLong()
 
     /** Onde a capa fica guardada no aparelho (dentro da pasta de imagens escolhida). */
     fun coverFile(context: Context, id: Long): File = File(File(GameFolders.dir(context, FolderKind.Assets), "covers"), "$id.img")
@@ -38,7 +42,9 @@ object RomMCovers {
         val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
         BitmapFactory.decodeFile(file.absolutePath, bounds)
         var sample = 1
-        while (bounds.outWidth / (sample * 2) >= TARGET_WIDTH) sample *= 2
+        while (bounds.outWidth / sample > TARGET_WIDTH || bounds.outHeight / sample > TARGET_HEIGHT) {
+            sample *= 2
+        }
         val bitmap = BitmapFactory.decodeFile(file.absolutePath, BitmapFactory.Options().apply { inSampleSize = sample })
         if (bitmap == null) {
             // Arquivo corrompido (ex.: download interrompido): apaga para baixar de novo na próxima vez.
