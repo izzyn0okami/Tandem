@@ -757,6 +757,7 @@ void LibretroDroid::step() {
                 video->bindHWContext();
             }
             core->retro_run();
+            achievements.doFrame();
             if (video && video->isHWAccelerated()) {
                 video->bindMainContext();
             }
@@ -781,6 +782,7 @@ void LibretroDroid::step() {
 
         for (size_t i = 0; i < frames; i++) {
             core->retro_run();
+            achievements.doFrame();
 
             if (input) {
                 input->flushPendingReleases();
@@ -800,8 +802,6 @@ void LibretroDroid::step() {
             video->bindMainContext();
         }
     }
-
-    achievements.doFrame();
 
     // The second display is drawn before the game's own frame, never after: changing the draw
     // surface between the emulator's draw and the swap that presents it loses that frame on
