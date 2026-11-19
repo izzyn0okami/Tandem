@@ -4,6 +4,12 @@
 #include "libretrodroid.h"
 
 namespace libretrodroid {
+uint32_t Achievements::getGameId() const {
+    if (!client) return 0;
+    const rc_client_game_t* game = rc_client_get_game_info(client);
+    return game ? game->id : 0;
+}
+
 std::vector<uint8_t> Achievements::serializeProgress() {
     if (!client) return {};
     const uint32_t size = progressSize();
@@ -21,6 +27,11 @@ bool Achievements::deserializeProgress(const uint8_t* data, size_t size) {
 }
 
 extern "C" {
+JNIEXPORT jlong JNICALL
+Java_com_swordfish_libretrodroid_LibretroDroid_raGetGameId(JNIEnv*, jclass) {
+    return static_cast<jlong>(libretrodroid::LibretroDroid::getInstance().getAchievements().getGameId());
+}
+
 JNIEXPORT jbyteArray JNICALL
 Java_com_swordfish_libretrodroid_LibretroDroid_raSerializeProgress(JNIEnv* env, jclass) {
     const auto data = libretrodroid::LibretroDroid::getInstance().getAchievements().serializeProgress();
