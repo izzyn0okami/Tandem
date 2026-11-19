@@ -33,7 +33,7 @@ public:
     void deliverServerResponse(JNIEnv* env, int32_t requestId, int httpStatus, const std::string& body, bool networkError);
     std::string getAchievementListJson();
     std::string getSummaryJson();
-    uint32_t progressSize() const;
+    size_t progressSize() const;
     int serializeProgress(uint8_t* buffer);
     int deserializeProgress(const uint8_t* buffer);
     std::vector<uint8_t> serializeProgress();
