@@ -539,8 +539,9 @@ class GameSessionActivity : ComponentActivity() {
         resumedAtMs = 0L
         lostWatcher.stop()
         super.onPause()
-        // O rc_client precisa continuar recebendo idle enquanto o app está em segundo plano.
-        startRaIdleLoop()
+        // GLSurfaceView suspende o GL thread junto com a Activity. O idle do rc_client é
+        // retomado em onResume; respostas de rede ficam enfileiradas até o GL thread voltar.
+        stopRaIdleLoop()
     }
 
     override fun dispatchKeyEvent(event: KeyEvent): Boolean {
