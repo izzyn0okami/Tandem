@@ -133,7 +133,23 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
     /** Testa se o servidor responde; devolve nulo se está tudo bem ou o motivo da falha em palavras. */
     fun checkServer(): String? = try {
         http.newCall(request(base.resolve("api/heartbeat")!!).build()).execute().use { response ->
-            if (response.isSuccessful) null else "o servidor respondeu ${response.code}"
+            if (!response.isSuccessful) {
+                "o servidor respondeu ${response.code}"
+            } else {
+                val body = response.body.string()
+                val heartbeat = runCatching { JSONObject(body) }.getOrNull()
+                val versionFields = heartbeat?.keys()?.asSequence()
+                    ?.filter { it.contains("version", ignoreCase = true) }
+                    ?.map { key -> "$key=${heartbeat.optString(key)}" }
+                    ?.toList()
+                    .orEmpty()
+                GameLog.log(
+                    "romm",
+                    "heartbeat: HTTP ${response.code}; " +
+                        (versionFields.takeIf { it.isNotEmpty() }?.joinToString() ?: "versão não identificada"),
+                )
+                null
+            }
         }
     } catch (e: IOException) {
         e.message?.let { "${e.javaClass.simpleName}: $it" } ?: e.javaClass.simpleName
