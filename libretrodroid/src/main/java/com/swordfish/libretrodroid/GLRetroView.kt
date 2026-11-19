@@ -579,9 +579,10 @@ class GLRetroView(
      * Restore progress after the current rc_client load callback has returned. Calling
      * rc_client_deserialize_progress from inside its own load callback risks reentrancy.
      */
-    fun restoreAchievementsProgressAsync(progress: ByteArray, onComplete: (Boolean) -> Unit) {
+    fun restoreAchievementsProgressAsync(progress: ByteArray, onComplete: (Boolean?) -> Unit) {
         queueEvent {
-            val restored = !isDestroyed && LibretroDroid.raDeserializeProgress(progress)
+            // null means the GL surface was destroyed before the queued restore could run.
+            val restored = if (isDestroyed) null else LibretroDroid.raDeserializeProgress(progress)
             onComplete(restored)
         }
     }
