@@ -30,6 +30,7 @@ object GameLog {
 
     fun init(context: Context) {
         dir = context.applicationContext.filesDir
+        MemoryDiagnostics.install(context)
     }
 
     @Synchronized
