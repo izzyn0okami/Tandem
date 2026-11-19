@@ -43,11 +43,6 @@ Java_com_swordfish_libretrodroid_LibretroDroid_raIsProcessingRequired(JNIEnv*, j
     return libretrodroid::LibretroDroid::getInstance().getAchievements().isProcessingRequired() ? JNI_TRUE : JNI_FALSE;
 }
 
-JNIEXPORT void JNICALL
-Java_com_swordfish_libretrodroid_LibretroDroid_raSetHardcoreEnabled(JNIEnv*, jclass, jboolean enabled) {
-    libretrodroid::LibretroDroid::getInstance().getAchievements().setHardcoreEnabled(enabled == JNI_TRUE);
-}
-
 JNIEXPORT jbyteArray JNICALL
 Java_com_swordfish_libretrodroid_LibretroDroid_raSerializeProgress(JNIEnv* env, jclass) {
     const auto data = libretrodroid::LibretroDroid::getInstance().getAchievements().serializeProgress();
