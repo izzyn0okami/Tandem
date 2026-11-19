@@ -220,6 +220,7 @@ class RaSession(
     private val onState: (entries: List<RaEntry>, hardcore: Boolean) -> Unit,
     private val onStatus: (status: RaGameStatus, unlocked: Int, total: Int) -> Unit = { _, _, _ -> },
     private val onOverlayEvent: (RaOverlayEvent) -> Unit = {},
+    private val onGameLoaded: () -> Unit = {},
 ) : RaCallbacks {
 
     private val http = OkHttpClient()
@@ -314,6 +315,8 @@ class RaSession(
                 }
                 return
             }
+            // Restaura o progresso persistido antes de publicar o estado inicial da lista.
+            onGameLoaded()
         }
         if (!success) {
             GameLog.log("conquistas", "jogo não reconhecido pelo RetroAchievements: $errorMessage")
