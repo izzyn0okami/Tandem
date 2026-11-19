@@ -2,6 +2,7 @@ package app.lawnchair.gamemode
 
 import android.content.Context
 import java.io.File
+import java.security.MessageDigest
 
 /**
  * Saves por jogo, na pasta de saves escolhida (padrão: dentro do app) em `<núcleo>/<jogo>/` com `sram.srm`
@@ -21,6 +22,21 @@ class SaveStore(
 
     val sramFile = File(dir, "sram.srm")
     val stateFile = File(dir, "state1.state")
+
+    private fun raProgressFile(user: String): File {
+        val digest = MessageDigest.getInstance("SHA-256").digest(user.toByteArray(Charsets.UTF_8))
+        val accountKey = digest.take(12).joinToString("") { "%02x".format(it) }
+        return File(dir, "ra-progress-$accountKey.bin")
+    }
+
+    /** Progresso interno do rc_client, separado dos estados de emulação (inclusive em Hardcore). */
+    fun readRaProgress(user: String): ByteArray? = raProgressFile(user).takeIf { it.isFile && it.length() > 0 }?.readBytes()
+
+    fun writeRaProgress(user: String, bytes: ByteArray) = write(raProgressFile(user), bytes)
+
+    fun deleteRaProgress(user: String) {
+        raProgressFile(user).delete()
+    }
 
     /** Cópias de segurança de saves substituídos durante a sincronização. */
     val backupDir = File(dir, "backups")
