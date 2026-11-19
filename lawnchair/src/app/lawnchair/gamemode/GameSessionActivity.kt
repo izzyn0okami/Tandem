@@ -514,7 +514,12 @@ class GameSessionActivity : ComponentActivity() {
     }
 
     private fun changeCoreOption(option: CoreOption, value: String) {
-        retroView?.updateVariables(Variable(key = option.key, value = value))
+        val view = retroView ?: return
+        if (raHardcore && !view.isAchievementsCoreSettingAllowed(option.key, value)) {
+            Toast.makeText(this, "Esta opção não é permitida no modo Hardcore.", Toast.LENGTH_SHORT).show()
+            return
+        }
+        view.updateVariables(Variable(key = option.key, value = value))
         CoreRegistry.saveOption(this, coreIdForOptions, option.key, value)
         coreOptions = coreOptions.map { if (it.key == option.key) it.copy(current = value) else it }
         GameLog.log("núcleos", "$coreIdForOptions: ${option.key} = $value")
