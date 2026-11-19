@@ -42,7 +42,7 @@ object RaSettings {
     }
 
     /** Modo hardcore: sem carregar estados salvos; as conquistas valem em dobro no site. */
-    fun hardcore(context: Context): Boolean = prefs(context).getBoolean("hardcore", false)
+    fun hardcore(context: Context): Boolean = prefs(context).getBoolean("hardcore", true)
 
     fun setHardcore(context: Context, enabled: Boolean) {
         prefs(context).edit { putBoolean("hardcore", enabled) }
