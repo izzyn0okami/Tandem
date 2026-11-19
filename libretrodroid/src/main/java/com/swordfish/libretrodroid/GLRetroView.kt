@@ -588,6 +588,16 @@ class GLRetroView(
         LibretroDroid.raSetHardcoreEnabled(enabled)
     }
 
+    /** Disable Hardcore safely even when called from an rc_client callback. */
+    fun disableAchievementsHardcore() {
+        achievementsHardcoreEnabled = false
+        queueEvent {
+            if (!isDestroyed) {
+                LibretroDroid.raSetHardcoreEnabled(false)
+            }
+        }
+    }
+
     fun setBackgroundFrame(bitmap: Bitmap) = runOnGLThread {
         val width = bitmap.width
         val height = bitmap.height
