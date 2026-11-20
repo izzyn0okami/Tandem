@@ -94,6 +94,8 @@ class GameSessionActivity : ComponentActivity() {
     private val raNoticeQueue = mutableStateListOf<String>()
     private var raEntries by mutableStateOf<List<RaEntry>>(emptyList())
     private var raHardcore by mutableStateOf(false)
+    private var raSyncPending by mutableStateOf(false)
+    private var raRichPresence by mutableStateOf("")
     private var raListOpen by mutableStateOf(false)
 
     // Indicadores e avisos extras do overlay de conquistas (padrão RetroAchievements; ver RaBadge.kt).
@@ -221,6 +223,8 @@ class GameSessionActivity : ComponentActivity() {
                         }
                     },
                     onOverlayEvent = { event -> handleRaOverlayEvent(event) },
+                    onConnectionState = { connected -> raSyncPending = !connected },
+                    onRichPresence = { message -> raRichPresence = message },
                     onGameLoaded = { onRestored ->
                         // Só tenta restaurar quando existe progresso salvo. Sem arquivo, libera
                         // imediatamente a publicação do estado inicial da sessão.
@@ -273,6 +277,8 @@ class GameSessionActivity : ComponentActivity() {
                             ChallengeIndicatorsRow(raChallengeIndicators.values.toList())
                             raProgressIndicator?.let { ProgressIndicatorBadge(it) }
                             LeaderboardTrackersColumn(raLeaderboardTrackers.values.toList())
+                            RichPresenceOverlay(raRichPresence)
+                            RaSyncIndicator(raSyncPending)
                             if (menuOpen) {
                                 val progress = if (raEntries.isEmpty()) {
                                     null
