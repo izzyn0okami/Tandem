@@ -23,6 +23,7 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -47,6 +48,9 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.android.launcher3.R
@@ -95,13 +99,13 @@ internal fun LibraryScreen(
 
     // Tema musical do jogo em destaque (experimental, desligado por padrão): trocar de destaque
     // para e sair da Biblioteca sempre encerra o que estiver tocando.
-    val themeMusicEnabled = GameModeSettings.isThemeMusicEnabled(context)
+    val themeMusicEnabled = GameModeSettings.isSoundbitesEnabled(context)
     var themePlaying by remember { mutableStateOf(false) }
     var previousHeroPath by remember { mutableStateOf(hero?.path) }
     LaunchedEffect(hero?.path) {
         val previousPath = previousHeroPath
         if (previousPath != null && previousPath != hero?.path) {
-            GameLog.log("tema musical", "jogo em destaque alterado; interrompendo tema anterior")
+            GameLog.log("iiDB", "jogo em destaque alterado; interrompendo soundbite anterior")
             GameThemeMusic.stop("jogo em destaque alterado")
             themePlaying = false
         }
@@ -111,7 +115,7 @@ internal fun LibraryScreen(
     }
     DisposableEffect(Unit) {
         onDispose {
-            GameLog.log("tema musical", "Biblioteca encerrada; interrompendo tema")
+            GameLog.log("iiDB", "Biblioteca encerrada; interrompendo soundbite")
             GameThemeMusic.stop("saída da Biblioteca")
         }
     }
@@ -123,7 +127,7 @@ internal fun LibraryScreen(
         } else {
             themePlaying = true
             scope.launch(Dispatchers.IO) {
-                GameThemeMusic.play(context, game.path, game.title, game.platform.name)
+                GameThemeMusic.play(context, game.path, game.title, game.platform.name) { withContext(Dispatchers.Main) { themePlaying = false } }
                 withContext(Dispatchers.Main) { themePlaying = GameThemeMusic.isPlaying(game.path) }
             }
         }
@@ -606,8 +610,13 @@ internal fun SettingsScreen(
     var themeMusic by remember { mutableStateOf(GameModeSettings.isThemeMusicEnabled(context)) }
     val toggleThemeMusic = {
         themeMusic = !themeMusic
-        GameModeSettings.setThemeMusicEnabled(context, themeMusic)
+        GameModeSettings.setSoundbitesEnabled(context, themeMusic)
     }
+    var apiKeyInput by remember { mutableStateOf("") }
+    var apiKeyConfigured by remember { mutableStateOf(IidbKeyStore.get(context) != null) }
+    var iidbStatus by remember { mutableStateOf("") }
+    var checkingIidb by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
     var scraper by remember { mutableStateOf(GameModeSettings.isScraperEnabled(context)) }
     val toggleScraper = {
         scraper = !scraper
@@ -645,6 +654,73 @@ internal fun SettingsScreen(
         GameButton(stringResource(R.string.game_server_open), onOpenServer)
         GameButton(stringResource(R.string.game_sgdb_open), onOpenScraper)
         SettingsSwitchRow(label = stringResource(R.string.game_mode_scraper), checked = scraper, onToggle = toggleScraper)
+
+        SettingsSection("iiDB — soundbites")
+        Text(
+            text = if (apiKeyConfigured) "Chave da iiDB configurada e protegida pelo Android Keystore." else "Informe sua chave pessoal da iiDB. Ela não será incluída no APK nem enviada aos servidores de assets.",
+            color = GameColors.textDim,
+            fontSize = 12.sp,
+        )
+        OutlinedTextField(
+            value = apiKeyInput,
+            onValueChange = { apiKeyInput = it },
+            modifier = Modifier.fillMaxWidth(),
+            label = { Text("Chave de API iiDB") },
+            singleLine = true,
+            visualTransformation = PasswordVisualTransformation(),
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+        )
+        GameButton(
+            label = if (checkingIidb) "Validando chave…" else "Validar e salvar chave",
+            onClick = {
+                if (apiKeyInput.isBlank() || checkingIidb) {
+                    iidbStatus = "Informe uma chave válida."
+                } else {
+                    checkingIidb = true
+                    iidbStatus = "Verificando acesso à iiDB…"
+                    val candidate = apiKeyInput
+                    scope.launch {
+                        val result = withContext(Dispatchers.IO) { IidbSoundbites.checkAccess(candidate) }
+                        if (result == IidbSoundbites.AccessResult.VALID) {
+                            withContext(Dispatchers.IO) { IidbKeyStore.save(context, candidate) }
+                            apiKeyConfigured = true
+                            apiKeyInput = ""
+                            iidbStatus = "Chave validada e salva com segurança."
+                        } else {
+                            iidbStatus = when (result) {
+                                IidbSoundbites.AccessResult.INVALID_KEY -> "A iiDB rejeitou a chave. Confira e tente novamente."
+                                IidbSoundbites.AccessResult.DENIED -> "A chave não tem permissão para acessar a API."
+                                else -> "Não foi possível validar. Verifique a conexão e tente novamente."
+                            }
+                        }
+                        checkingIidb = false
+                    }
+                }
+            },
+            primary = true,
+            enabled = !checkingIidb,
+        )
+        if (apiKeyConfigured) {
+            GameButton(
+                label = "Remover chave da iiDB",
+                onClick = {
+                    IidbKeyStore.clear(context)
+                    apiKeyConfigured = false
+                    apiKeyInput = ""
+                    iidbStatus = "Chave removida."
+                    GameThemeMusic.stop("chave removida")
+                },
+                danger = true,
+            )
+        }
+        if (iidbStatus.isNotBlank()) {
+            Text(text = iidbStatus, color = GameColors.textDim, fontSize = 12.sp)
+        }
+        Text(
+            text = "Os soundbites são clips curtos fornecidos pela iiDB. São baixados sob demanda para o cache local, não são distribuídos pelo Tandem e não repetem em loop.",
+            color = GameColors.textDim,
+            fontSize = 12.sp,
+        )
 
         SettingsSection(stringResource(R.string.game_mode_section_interface))
         SettingsSwitchRow(label = stringResource(R.string.game_mode_auto_enter), checked = autoEnter, onToggle = toggleAuto)
