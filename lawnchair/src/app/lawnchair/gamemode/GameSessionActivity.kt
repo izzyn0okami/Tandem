@@ -248,31 +248,29 @@ class GameSessionActivity : ComponentActivity() {
                 ComposeView(this).apply {
                     setContent {
                         LawnchairTheme {
-                            raUnlockQueue.firstOrNull()?.let { unlocked ->
-                                AchievementOverlay(unlocked, hardcore = raHardcore) {
-                                    if (raUnlockQueue.firstOrNull()?.id == unlocked.id) {
-                                        raUnlockQueue.removeAt(0)
-                                    }
+                            // Avisos temporários são serializados para nunca se sobreporem na tela.
+                            val unlocked = raUnlockQueue.firstOrNull()
+                            val mastery = raMasteryQueue.firstOrNull()
+                            val notice = raNoticeQueue.firstOrNull()
+                            when {
+                                unlocked != null -> AchievementOverlay(unlocked, hardcore = raHardcore) {
+                                    if (raUnlockQueue.firstOrNull()?.id == unlocked.id) raUnlockQueue.removeAt(0)
                                 }
-                            }
-                            // Indicadores e avisos extras do padrão RetroAchievements (ver RaBadge.kt).
-                            ChallengeIndicatorsRow(raChallengeIndicators.values.toList())
-                            raProgressIndicator?.let { ProgressIndicatorBadge(it) }
-                            LeaderboardTrackersColumn(raLeaderboardTrackers.values.toList())
-                            raNoticeQueue.firstOrNull()?.let { message ->
-                                GameMessageOverlay(message) {
-                                    if (raNoticeQueue.firstOrNull() == message) raNoticeQueue.removeAt(0)
-                                }
-                            }
-                            raMasteryQueue.firstOrNull()?.let { mastery ->
-                                MasteryOverlay(
+                                mastery != null -> MasteryOverlay(
                                     mastery = mastery,
                                     playtimeLabel = formatPlaytime(PlayHistory.get(this@GameSessionActivity, romPath).playtimeMs),
                                     userName = RaSettings.user(this@GameSessionActivity).orEmpty(),
                                 ) {
                                     if (raMasteryQueue.firstOrNull() == mastery) raMasteryQueue.removeAt(0)
                                 }
+                                notice != null -> GameMessageOverlay(notice) {
+                                    if (raNoticeQueue.firstOrNull() == notice) raNoticeQueue.removeAt(0)
+                                }
                             }
+                            // Indicadores persistentes seguem as posições e regras recomendadas pelo RA.
+                            ChallengeIndicatorsRow(raChallengeIndicators.values.toList())
+                            raProgressIndicator?.let { ProgressIndicatorBadge(it) }
+                            LeaderboardTrackersColumn(raLeaderboardTrackers.values.toList())
                             if (menuOpen) {
                                 val progress = if (raEntries.isEmpty()) {
                                     null
