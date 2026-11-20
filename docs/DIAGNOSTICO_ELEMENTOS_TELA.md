@@ -51,3 +51,29 @@ Identificar, com evidências, qual componente está produzindo a descrição ou 
 ## Critério para encerrar
 
 A investigação será considerada concluída quando houver evidência que identifique o pacote/componente responsável e um teste reproduzível que confirme a origem. A correção deverá ser direcionada somente ao componente identificado.
+
+## Extensão do log do Tandem — metadados de tela e sobreposições
+
+**Implementação inicial:** commit `1940189eada82068ba07e318b36721a85d520ba8`.
+
+O exportador do `GameLog` agora acrescenta um retrato dos seguintes indicadores no momento da exportação:
+
+- Se o próprio Tandem tem permissão para desenhar sobre outros aplicativos.
+- Componentes/serviços de acessibilidade habilitados no Android.
+- Componentes/serviços ouvintes de notificações habilitados no Android.
+
+Esses dados são metadados de configuração do sistema. O diagnóstico não captura pixels, não lê o texto de outras janelas e não tenta enumerar conteúdo privado.
+
+### Limitação técnica importante
+
+O Android não disponibiliza uma API pública geral que permita a um aplicativo comum listar todas as janelas e sobreposições atualmente exibidas por outros processos. A presença de um serviço na lista de acessibilidade ou de ouvintes de notificação também não prova que ele esteja ativo naquele instante nem que tenha gerado a notificação observada.
+
+Portanto, esta primeira etapa ajuda a identificar candidatos e permissões, mas não atribui automaticamente a origem. Para correlacionar o evento, o relatório ainda deve ser combinado com o horário exato, o emissor da notificação e, se possível, um trecho de logcat do mesmo intervalo.
+
+### Como exportar
+
+Abra a área de diagnóstico/logs do Modo Jogo e use a ação existente de exportação do registro. O arquivo `tandem-log.txt` incluirá a seção **Diagnóstico de tela/sobreposições** no cabeçalho, além dos eventos já registrados.
+
+### Próxima etapa de investigação
+
+Depois de receber o arquivo exportado, conferir os componentes habilitados e cruzá-los com o emissor da notificação e os eventos do sistema. Só então decidir se é necessário instrumentar um componente específico ou solicitar uma coleta adicional controlada pelo usuário.
