@@ -256,6 +256,7 @@ class GameSessionActivity : ComponentActivity() {
                                 unlocked != null -> AchievementOverlay(unlocked, hardcore = raHardcore) {
                                     if (raUnlockQueue.firstOrNull()?.id == unlocked.id) raUnlockQueue.removeAt(0)
                                 }
+
                                 mastery != null -> MasteryOverlay(
                                     mastery = mastery,
                                     playtimeLabel = formatPlaytime(PlayHistory.get(this@GameSessionActivity, romPath).playtimeMs),
@@ -263,6 +264,7 @@ class GameSessionActivity : ComponentActivity() {
                                 ) {
                                     if (raMasteryQueue.firstOrNull() == mastery) raMasteryQueue.removeAt(0)
                                 }
+
                                 notice != null -> GameMessageOverlay(notice) {
                                     if (raNoticeQueue.firstOrNull() == notice) raNoticeQueue.removeAt(0)
                                 }
