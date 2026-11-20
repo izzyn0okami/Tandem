@@ -150,6 +150,7 @@ internal object IidbSoundbites {
             val match = payload.optJSONObject("match") ?: return@use null
             when (match.optString("status")) {
                 "matched" -> match.optJSONObject("parent")?.optInt("id")?.takeIf { it > 0 }
+
                 "needs_choice" -> {
                     val candidates = payload.optJSONArray("candidates")
                     val names = (0 until (candidates?.length() ?: 0))
@@ -162,10 +163,12 @@ internal object IidbSoundbites {
                     )
                     null
                 }
+
                 "not_found" -> {
                     GameLog.log("iiDB", "nenhum jogo correspondente na iiDB para \"$title\"")
                     null
                 }
+
                 else -> {
                     GameLog.log("iiDB", "resposta de correspondência inesperada para \"$title\"")
                     null
