@@ -1,5 +1,7 @@
 package app.lawnchair.gamemode
 
+import android.content.Intent
+import android.net.Uri
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -607,7 +609,7 @@ internal fun SettingsScreen(
         sound = !sound
         GameModeSettings.setSoundEnabled(context, sound)
     }
-    var themeMusic by remember { mutableStateOf(GameModeSettings.isThemeMusicEnabled(context)) }
+    var themeMusic by remember { mutableStateOf(GameModeSettings.isSoundbitesEnabled(context)) }
     val toggleThemeMusic = {
         themeMusic = !themeMusic
         GameModeSettings.setSoundbitesEnabled(context, themeMusic)
@@ -682,10 +684,14 @@ internal fun SettingsScreen(
                     scope.launch {
                         val result = withContext(Dispatchers.IO) { IidbSoundbites.checkAccess(candidate) }
                         if (result == IidbSoundbites.AccessResult.VALID) {
-                            withContext(Dispatchers.IO) { IidbKeyStore.save(context, candidate) }
-                            apiKeyConfigured = true
-                            apiKeyInput = ""
-                            iidbStatus = "Chave validada e salva com segurança."
+                            val saved = runCatching { withContext(Dispatchers.IO) { IidbKeyStore.save(context, candidate) } }.isSuccess
+                            if (saved) {
+                                apiKeyConfigured = true
+                                apiKeyInput = ""
+                                iidbStatus = "Chave validada e salva com segurança."
+                            } else {
+                                iidbStatus = "A chave foi validada, mas não pôde ser protegida neste aparelho."
+                            }
                         } else {
                             iidbStatus = when (result) {
                                 IidbSoundbites.AccessResult.INVALID_KEY -> "A iiDB rejeitou a chave. Confira e tente novamente."
@@ -720,6 +726,10 @@ internal fun SettingsScreen(
             text = "Os soundbites são clips curtos fornecidos pela iiDB. São baixados sob demanda para o cache local, não são distribuídos pelo Tandem e não repetem em loop.",
             color = GameColors.textDim,
             fontSize = 12.sp,
+        )
+        GameButton(
+            label = "Sobre a iiDB / iiSU",
+            onClick = { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://iisu.network/wiki/iidb-developers"))) },
         )
 
         SettingsSection(stringResource(R.string.game_mode_section_interface))
