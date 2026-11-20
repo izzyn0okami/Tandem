@@ -599,6 +599,10 @@ class GLRetroView(
         LibretroDroid.raGetUserAgentClause()
     }
 
+    fun getAchievementsRichPresence(): String = runOnGLThread {
+        LibretroDroid.raGetRichPresenceMessage()
+    }
+
     fun isAchievementsProcessingRequired(): Boolean = runOnGLThread {
         LibretroDroid.raIsProcessingRequired()
     }
