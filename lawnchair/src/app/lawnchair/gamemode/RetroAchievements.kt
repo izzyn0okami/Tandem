@@ -374,6 +374,7 @@ class RaSession(
     override fun onServerError(api: String, message: String) {
         if (!active) return
         GameLog.log("conquistas", "RetroAchievements ($api): $message")
+        emitOverlay(RaOverlayEvent.LeaderboardMessage("Falha no RetroAchievements ($api): $message"))
     }
 
     /**
