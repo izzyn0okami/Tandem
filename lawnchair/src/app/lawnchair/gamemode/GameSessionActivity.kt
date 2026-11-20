@@ -91,7 +91,7 @@ class GameSessionActivity : ComponentActivity() {
     private var raSession: RaSession? = null
     private var nativeDestroyed = false
     private val raUnlockQueue = mutableStateListOf<RaAchievement>()
-    private val raStatusMessageQueue = mutableStateListOf<String>()
+    private val raNoticeQueue = mutableStateListOf<String>()
     private var raEntries by mutableStateOf<List<RaEntry>>(emptyList())
     private var raHardcore by mutableStateOf(false)
     private var raListOpen by mutableStateOf(false)
@@ -100,7 +100,6 @@ class GameSessionActivity : ComponentActivity() {
     private val raChallengeIndicators = mutableStateMapOf<Long, RaChallengeIndicator>()
     private var raProgressIndicator by mutableStateOf<RaProgressIndicator?>(null)
     private val raLeaderboardTrackers = mutableStateMapOf<Long, RaLeaderboardTracker>()
-    private val raLeaderboardMessageQueue = mutableStateListOf<String>()
     private val raMasteryQueue = mutableStateListOf<RaMastery>()
     private var optionsOpen by mutableStateOf(false)
     private var coreOptions by mutableStateOf<List<CoreOption>>(emptyList())
@@ -149,7 +148,7 @@ class GameSessionActivity : ComponentActivity() {
         // Reflete o modo escolhido desde o início, antes do login/identificação assíncronos do rc_client.
         raHardcore = statesBlocked
         if (platformObject?.raConsoleId != null && RaSettings.isLoggedIn(this)) {
-            toast(if (statesBlocked) R.string.game_ra_hardcore_label else R.string.game_ra_softcore_label)
+            raNoticeQueue.add(getString(if (statesBlocked) R.string.game_ra_hardcore_label else R.string.game_ra_softcore_label))
         }
         // Núcleos como N64 e DS não abrem .zip: extrai antes (os saves continuam com o nome do .zip).
         val loadPath = RomUnzipper.prepare(this, romPath, platformObject).absolutePath
@@ -194,7 +193,7 @@ class GameSessionActivity : ComponentActivity() {
                 }
                 if (hasDisallowedSetting) {
                     raHardcore = false
-                    toast("Hardcore desativado: o núcleo está usando uma opção incompatível.")
+                    raNoticeQueue.add("Hardcore desativado: o núcleo está usando uma opção incompatível.")
                     GameLog.log("conquistas", "Hardcore desativado: há opções do núcleo não permitidas")
                 }
                 val session = RaSession(
@@ -216,9 +215,9 @@ class GameSessionActivity : ComponentActivity() {
                     },
                     onStatus = { status, unlocked, total ->
                         when (status) {
-                            RaGameStatus.UNSUPPORTED -> raStatusMessageQueue.add(getString(R.string.game_ra_status_unsupported))
-                            RaGameStatus.NO_ACHIEVEMENTS -> raStatusMessageQueue.add(getString(R.string.game_ra_status_none))
-                            RaGameStatus.TRACKING -> raStatusMessageQueue.add(getString(R.string.game_ra_status_progress, unlocked, total))
+                            RaGameStatus.UNSUPPORTED -> raNoticeQueue.add(getString(R.string.game_ra_status_unsupported))
+                            RaGameStatus.NO_ACHIEVEMENTS -> raNoticeQueue.add(getString(R.string.game_ra_status_none))
+                            RaGameStatus.TRACKING -> raNoticeQueue.add(getString(R.string.game_ra_status_progress, unlocked, total))
                         }
                     },
                     onOverlayEvent = { event -> handleRaOverlayEvent(event) },
@@ -260,14 +259,9 @@ class GameSessionActivity : ComponentActivity() {
                             ChallengeIndicatorsRow(raChallengeIndicators.values.toList())
                             raProgressIndicator?.let { ProgressIndicatorBadge(it) }
                             LeaderboardTrackersColumn(raLeaderboardTrackers.values.toList())
-                            raStatusMessageQueue.firstOrNull()?.let { message ->
+                            raNoticeQueue.firstOrNull()?.let { message ->
                                 GameMessageOverlay(message) {
-                                    if (raStatusMessageQueue.firstOrNull() == message) raStatusMessageQueue.removeAt(0)
-                                }
-                            }
-                            raLeaderboardMessageQueue.firstOrNull()?.let { message ->
-                                GameMessageOverlay(message) {
-                                    if (raLeaderboardMessageQueue.firstOrNull() == message) raLeaderboardMessageQueue.removeAt(0)
+                                    if (raNoticeQueue.firstOrNull() == message) raNoticeQueue.removeAt(0)
                                 }
                             }
                             raMasteryQueue.firstOrNull()?.let { mastery ->
@@ -375,7 +369,7 @@ class GameSessionActivity : ComponentActivity() {
 
             RaOverlayEvent.ProgressHide -> raProgressIndicator = null
 
-            is RaOverlayEvent.LeaderboardMessage -> raLeaderboardMessageQueue.add(event.text)
+            is RaOverlayEvent.LeaderboardMessage -> raNoticeQueue.add(event.text)
 
             is RaOverlayEvent.Tracker -> raLeaderboardTrackers[event.tracker.id] = event.tracker
 
@@ -400,7 +394,7 @@ class GameSessionActivity : ComponentActivity() {
         if (open == menuOpen) return
         // Hardcore: evita pausas seguidas que poderiam burlar condições de conquista.
         if (open && raHardcore && !(retroView?.canPauseAchievements() ?: false)) {
-            Toast.makeText(this, "Aguarde alguns instantes antes de pausar novamente", Toast.LENGTH_SHORT).show()
+            raNoticeQueue.add("Aguarde alguns instantes antes de pausar novamente")
             return
         }
         menuOpen = open
@@ -570,7 +564,7 @@ class GameSessionActivity : ComponentActivity() {
     private fun changeCoreOption(option: CoreOption, value: String) {
         val view = retroView ?: return
         if (raHardcore && !view.isAchievementsCoreSettingAllowed(option.key, value)) {
-            Toast.makeText(this, "Esta opção não é permitida no modo Hardcore.", Toast.LENGTH_SHORT).show()
+            raNoticeQueue.add("Esta opção não é permitida no modo Hardcore.")
             return
         }
         view.updateVariables(Variable(key = option.key, value = value))
