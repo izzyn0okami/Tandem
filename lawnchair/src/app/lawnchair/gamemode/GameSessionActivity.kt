@@ -220,6 +220,7 @@ class GameSessionActivity : ComponentActivity() {
                             RaGameStatus.UNSUPPORTED -> raNoticeQueue.add(getString(R.string.game_ra_status_unsupported))
                             RaGameStatus.NO_ACHIEVEMENTS -> raNoticeQueue.add(getString(R.string.game_ra_status_none))
                             RaGameStatus.TRACKING -> raNoticeQueue.add(getString(R.string.game_ra_status_progress, unlocked, total))
+                            RaGameStatus.FEATURES_ONLY -> raNoticeQueue.add(getString(R.string.game_ra_status_features_only))
                         }
                     },
                     onOverlayEvent = { event -> handleRaOverlayEvent(event) },
