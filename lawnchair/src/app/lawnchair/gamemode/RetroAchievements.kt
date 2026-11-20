@@ -268,6 +268,11 @@ class RaSession(
     @Volatile private var active = false
     private var richPresenceJob: Job? = null
     private var lastRichPresence: String? = null
+    private var loginRetryJob: Job? = null
+    private var loginRetryAttempt = 0
+
+    @Volatile private var loginUser: String? = null
+    @Volatile private var loginToken: String? = null
 
     /** Chamar só depois que o jogo já está rodando (o motor precisa do mapa de memória do núcleo). */
     fun start() {
@@ -276,6 +281,8 @@ class RaSession(
         val consoleId = platform.raConsoleId ?: return
 
         active = true
+        loginUser = user
+        loginToken = token
         // A sessão ainda não confirmou contato com o servidor. Comece como pendente;
         // o login bem-sucedido confirma a conexão inicial (inclusive após retry offline).
         onConnectionState(false)
@@ -300,6 +307,10 @@ class RaSession(
         active = false
         richPresenceJob?.cancel()
         richPresenceJob = null
+        loginRetryJob?.cancel()
+        loginRetryJob = null
+        loginUser = null
+        loginToken = null
         onRichPresence("")
         onConnectionState(true)
         runCatching { view.stopAchievements() }
@@ -335,14 +346,56 @@ class RaSession(
         if (!active) return
         if (!success) {
             GameLog.log("conquistas", "não consegui entrar na conta RetroAchievements: $errorMessage")
-            disableHardcoreForUnsupportedSession()
+            if (isTransientLoginFailure(errorMessage)) {
+                scheduleLoginRetry()
+            } else {
+                loginRetryJob?.cancel()
+                loginRetryJob = null
+                disableHardcoreForUnsupportedSession()
+            }
             return
         }
+        loginRetryJob?.cancel()
+        loginRetryJob = null
+        loginRetryAttempt = 0
         // Só remove o indicador de pendência depois de o servidor confirmar o login.
         onConnectionState(true)
         val hash = pendingHash ?: return
         val consoleId = pendingConsoleId ?: return
         view.beginAchievementsGame(hash, consoleId)
+    }
+
+    /**
+     * Login é uma operação iniciada pelo cliente: o rc_client pode devolver o erro de rede
+     * imediatamente, sem repetir a autenticação. Repetimos apenas erros de transporte; respostas
+     * explícitas de autenticação inválida continuam sendo tratadas como falha definitiva.
+     */
+    private fun isTransientLoginFailure(errorMessage: String?): Boolean {
+        val message = errorMessage?.trim()?.lowercase().orEmpty()
+        return message.contains("no response") ||
+            message.contains("timeout") ||
+            message.contains("timed out") ||
+            message.contains("network") ||
+            message.contains("connection")
+    }
+
+    private fun scheduleLoginRetry() {
+        if (!active || loginRetryJob?.isActive == true) return
+        loginRetryAttempt += 1
+        val exponent = (loginRetryAttempt - 1).coerceAtMost(3)
+        val retryDelay = minOf(5_000L * (1L shl exponent), 30_000L)
+        GameLog.log(
+            "conquistas",
+            "login temporariamente indisponível; nova tentativa em " + (retryDelay / 1_000) + "s",
+        )
+        loginRetryJob = scope.launch(Dispatchers.IO) {
+            delay(retryDelay)
+            if (!active) return@launch
+            val user = loginUser ?: return@launch
+            val token = loginToken ?: return@launch
+            GameLog.log("conquistas", "tentando novamente o login no RetroAchievements")
+            view.beginAchievementsLogin(user, token) { active }
+        }
     }
 
     override fun onLoadGameResult(success: Boolean, errorMessage: String?) {
