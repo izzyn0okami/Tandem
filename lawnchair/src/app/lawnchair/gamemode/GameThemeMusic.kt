@@ -45,10 +45,10 @@ object GameThemeMusic {
             if (currentKey == key) currentKey = null
             return false
         }
-        return withContext(Dispatchers.IO) { prepareAndPlay(context, key, file) }
+        return withContext(Dispatchers.IO) { prepareAndPlay(context, key, file, onEnded) }
     }
 
-    private fun prepareAndPlay(context: Context, key: String, file: File): Boolean {
+    private fun prepareAndPlay(context: Context, key: String, file: File, onEnded: () -> Unit): Boolean {
         if (currentKey != key || !file.isFile) return false
         val manager = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
         val attributes = AudioAttributes.Builder()
