@@ -119,7 +119,7 @@ std::string buildLeaderboardScoreboardJson(const rc_client_leaderboard_scoreboar
          << "\"newRank\":" << scoreboard->new_rank << ","
          << "\"numEntries\":" << scoreboard->num_entries << ","
          << "\"topEntries\":[";
-    for (uint32_t i = 0; i < scoreboard->num_top_entries; ++i) {
+    for (uint32_t i = 0; scoreboard->top_entries && i < scoreboard->num_top_entries; ++i) {
         if (i > 0) json << ",";
         const auto& entry = scoreboard->top_entries[i];
         json << "{"
