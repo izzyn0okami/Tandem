@@ -80,13 +80,12 @@ object GameLog {
 
     /** Metadados de serviços do sistema que podem produzir/observar sobreposições. Não lê pixels nem conteúdo de outros apps. */
     private fun screenOverlaySnapshot(context: Context): String = buildString {
-        fun enabledComponents(key: String): List<String> =
-            Settings.Secure.getString(context.contentResolver, key)
-                .orEmpty()
-                .split(':')
-                .filter { it.isNotBlank() }
-                .map { it.trim() }
-                .sorted()
+        fun enabledComponents(key: String): List<String> = Settings.Secure.getString(context.contentResolver, key)
+            .orEmpty()
+            .split(':')
+            .filter { it.isNotBlank() }
+            .map { it.trim() }
+            .sorted()
 
         val accessibility = enabledComponents(Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES)
         val notificationListeners = enabledComponents(Settings.Secure.ENABLED_NOTIFICATION_LISTENERS)
