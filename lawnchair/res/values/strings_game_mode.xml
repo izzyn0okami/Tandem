@@ -231,4 +231,14 @@
     <string name="game_local_network_info">O Android bloqueia o acesso a aparelhos da sua rede (como o servidor RomM em casa) sem uma permissão. Toque em Permitir e aceite.</string>
     <string name="game_local_network_allow">Permitir rede local</string>
     <string name="game_local_network_settings">Abrir ajustes do app</string>
+    <string name="game_ra_web_key">Web API Key (diferente do token de login)</string>
+    <string name="game_ra_web_key_note">Opcional. Necessária apenas para mostrar a prévia de conquistas sem iniciar uma sessão de jogo. Gere sua chave nas configurações da conta no site RetroAchievements. Ela será protegida pelo Android Keystore.</string>
+    <string name="game_ra_web_key_save">Validar e salvar chave</string>
+    <string name="game_ra_web_key_checking">Validando chave…</string>
+    <string name="game_ra_web_key_saved">Chave validada e protegida neste aparelho.</string>
+    <string name="game_ra_web_key_failed">Não foi possível validar a chave. Confira e tente novamente.</string>
+    <string name="game_ra_web_key_configured">Web API Key configurada.</string>
+    <string name="game_ra_web_key_remove">Remover Web API Key</string>
+    <string name="game_ra_web_key_removed">Web API Key removida.</string>
+    <string name="game_ra_preview_need_web_key">Configure a Web API Key nas configurações de Conquistas para ver seu progresso sem iniciar uma sessão.</string>
 </resources>
