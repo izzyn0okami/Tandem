@@ -151,7 +151,7 @@ enum class RaGameStatus {
     /** A ROM não bate com nenhum hash conhecido (pode ser uma versão diferente, tradução ou hack), ou não deu pra entrar na conta. */
     UNSUPPORTED,
 
-    /** O jogo é reconhecido, mas ninguém cadastrou conquistas para ele ainda. */
+    /** O jogo foi reconhecido, mas não possui conquistas, leaderboards nem Rich Presence. */
     NO_ACHIEVEMENTS,
 
     /** Jogo reconhecido e com conquistas sendo acompanhadas nesta partida. */
