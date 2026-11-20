@@ -99,12 +99,15 @@ internal fun LibraryScreen(
     var themePlaying by remember { mutableStateOf(false) }
     var previousHeroPath by remember { mutableStateOf(hero?.path) }
     LaunchedEffect(hero?.path) {
-        if (previousHeroPath != hero?.path) {
+        val previousPath = previousHeroPath
+        if (previousPath != null && previousPath != hero?.path) {
             GameLog.log("tema musical", "jogo em destaque alterado; interrompendo tema anterior")
             GameThemeMusic.stop("jogo em destaque alterado")
             themePlaying = false
-            previousHeroPath = hero?.path
         }
+        // A primeira carga da biblioteca (null -> primeiro jogo) não é uma troca de destaque.
+        // Não interrompa uma busca iniciada enquanto a lista ainda estava sendo carregada.
+        previousHeroPath = hero?.path
     }
     DisposableEffect(Unit) {
         onDispose {
