@@ -634,6 +634,11 @@ internal fun SettingsScreen(
     var checkingIidb by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
     var scraper by remember { mutableStateOf(GameModeSettings.isScraperEnabled(context)) }
+    var raRichPresenceVisible by remember { mutableStateOf(GameModeSettings.isRaRichPresenceVisible(context)) }
+    val toggleRaRichPresence = {
+        raRichPresenceVisible = !raRichPresenceVisible
+        GameModeSettings.setRaRichPresenceVisible(context, raRichPresenceVisible)
+    }
     val toggleScraper = {
         scraper = !scraper
         GameModeSettings.setScraperEnabled(context, scraper)
@@ -670,6 +675,12 @@ internal fun SettingsScreen(
         GameButton(stringResource(R.string.game_server_open), onOpenServer)
         GameButton(stringResource(R.string.game_sgdb_open), onOpenScraper)
         SettingsSwitchRow(label = stringResource(R.string.game_mode_scraper), checked = scraper, onToggle = toggleScraper)
+        SettingsSwitchRow(label = "Exibir Rich Presence durante o jogo", checked = raRichPresenceVisible, onToggle = toggleRaRichPresence)
+        Text(
+            text = "Quando desativado, somente a sobreposição visual é ocultada. O RetroAchievements continua atualizando o estado da partida em segundo plano.",
+            color = GameColors.textDim,
+            fontSize = 12.sp,
+        )
 
         SettingsSection("iiDB — soundbites")
         Text(
