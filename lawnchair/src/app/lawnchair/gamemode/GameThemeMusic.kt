@@ -24,32 +24,57 @@ object GameThemeMusic {
     @Volatile
     private var currentKey: String? = null
 
+    @Volatile
+    private var playbackRequestId = 0L
+
     private var audioManager: AudioManager? = null
     private var focusRequest: AudioFocusRequest? = null
     private var onPlaybackEnded: (() -> Unit)? = null
 
+    private data class AudioFocusState(
+        val manager: AudioManager?,
+        val request: AudioFocusRequest?,
+    )
+
     suspend fun play(context: Context, key: String, title: String, platform: String, onEnded: () -> Unit = {}): Boolean {
-        if (currentKey == key && player?.isPlaying == true) return true
-        stop("nova solicitação de soundbite")
-        currentKey = key
+        val requestId: Long
+        val previous: MediaPlayer?
+        val previousFocus: AudioFocusState
+        synchronized(lock) {
+            if (currentKey == key && player?.isPlaying == true) return true
+            playbackRequestId += 1
+            requestId = playbackRequestId
+            currentKey = key
+            previous = player
+            player = null
+            onPlaybackEnded = null
+            previousFocus = takeAudioFocusLocked()
+        }
+        releasePrevious(previous, previousFocus, "nova solicitação de soundbite")
 
         val apiKey = IidbKeyStore.get(context)
         if (apiKey.isNullOrBlank()) {
             GameLog.log("iiDB", "reprodução indisponível: API key não configurada")
-            if (currentKey == key) currentKey = null
+            clearRequest(requestId)
             return false
         }
 
         val file = IidbSoundbites.findSoundbite(context, apiKey, title, platform)
-        if (file == null || currentKey != key) {
-            if (currentKey == key) currentKey = null
+        if (file == null || playbackRequestId != requestId) {
+            clearRequest(requestId)
             return false
         }
-        return withContext(Dispatchers.IO) { prepareAndPlay(context, key, file, onEnded) }
+        return withContext(Dispatchers.IO) { prepareAndPlay(context, key, requestId, file, onEnded) }
     }
 
-    private fun prepareAndPlay(context: Context, key: String, file: File, onEnded: () -> Unit): Boolean {
-        if (currentKey != key || !file.isFile) return false
+    private fun prepareAndPlay(
+        context: Context,
+        key: String,
+        requestId: Long,
+        file: File,
+        onEnded: () -> Unit,
+    ): Boolean {
+        if (playbackRequestId != requestId || currentKey != key || !file.isFile) return false
         val manager = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
         val attributes = AudioAttributes.Builder()
             .setUsage(AudioAttributes.USAGE_MEDIA)
@@ -58,13 +83,15 @@ object GameThemeMusic {
         val request = AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN_TRANSIENT_MAY_DUCK)
             .setAudioAttributes(attributes)
             .setOnAudioFocusChangeListener { change ->
-                if (change == AudioManager.AUDIOFOCUS_LOSS || change == AudioManager.AUDIOFOCUS_LOSS_TRANSIENT) stop("perda de foco de áudio")
+                if (change == AudioManager.AUDIOFOCUS_LOSS || change == AudioManager.AUDIOFOCUS_LOSS_TRANSIENT) {
+                    stopIfCurrent(requestId, "perda de foco de áudio")
+                }
             }
             .setWillPauseWhenDucked(false)
             .build()
         if (manager.requestAudioFocus(request) != AudioManager.AUDIOFOCUS_REQUEST_GRANTED) {
             GameLog.log("iiDB", "reprodução cancelada: foco de áudio não concedido")
-            if (currentKey == key) currentKey = null
+            clearRequest(requestId)
             return false
         }
 
@@ -76,92 +103,128 @@ object GameThemeMusic {
             created.setDataSource(file.absolutePath)
             created.isLooping = false
             created.setOnCompletionListener { completed ->
-                releasePlayer(completed, "soundbite concluído")
+                releasePlayer(completed, requestId, "soundbite concluído")
             }
             created.setOnErrorListener { failed, what, extra ->
                 GameLog.log("iiDB", "erro do player local; what=$what; extra=$extra")
-                releasePlayer(failed, "erro de reprodução")
+                releasePlayer(failed, requestId, "erro de reprodução")
                 true
             }
             created.prepare()
-            if (currentKey != key) {
+            val accepted = synchronized(lock) {
+                if (playbackRequestId != requestId || currentKey != key || player != null) {
+                    false
+                } else {
+                    player = created
+                    audioManager = manager
+                    focusRequest = request
+                    onPlaybackEnded = onEnded
+                    created.start()
+                    true
+                }
+            }
+            if (!accepted) {
                 created.release()
                 manager.abandonAudioFocusRequest(request)
                 return false
             }
-            synchronized(lock) {
-                player = created
-                audioManager = manager
-                focusRequest = request
-                onPlaybackEnded = onEnded
-            }
-            created.start()
             GameLog.log("iiDB", "soundbite iniciado; arquivo em cache; jogo=$key")
             true
         } catch (error: Exception) {
             GameLog.error("iiDB", "falha ao preparar soundbite local", error)
-            media?.let { failed ->
-                synchronized(lock) {
-                    if (player === failed) {
-                        player = null
-                        onPlaybackEnded = null
-                        audioManager = null
-                        focusRequest = null
-                    }
+            val focusToAbandon = synchronized(lock) {
+                if (media != null && player === media) {
+                    player = null
+                    onPlaybackEnded = null
+                    takeAudioFocusLocked()
+                } else {
+                    AudioFocusState(null, null)
                 }
-                runCatching { failed.release() }
             }
-            manager.abandonAudioFocusRequest(request)
-            if (currentKey == key) currentKey = null
+            media?.let { runCatching { it.release() } }
+            if (focusToAbandon.request == null) {
+                manager.abandonAudioFocusRequest(request)
+            } else {
+                abandonAudioFocus(focusToAbandon)
+            }
+            clearRequest(requestId)
             false
         }
     }
 
-    private fun releasePlayer(target: MediaPlayer, reason: String) {
+    private fun releasePlayer(target: MediaPlayer, requestId: Long, reason: String) {
         val releaseState = synchronized(lock) {
-            if (player === target) {
+            if (player === target && playbackRequestId == requestId) {
                 player = null
-                true to onPlaybackEnded.also { onPlaybackEnded = null }
+                currentKey = null
+                val callback = onPlaybackEnded.also { onPlaybackEnded = null }
+                Triple(true, callback, takeAudioFocusLocked())
             } else {
-                false to null
+                Triple(false, null, AudioFocusState(null, null))
             }
         }
         runCatching { target.release() }
         if (!releaseState.first) return
-        abandonFocus()
-        currentKey = null
+        abandonAudioFocus(releaseState.third)
         GameLog.log("iiDB", reason)
         releaseState.second?.let { Handler(Looper.getMainLooper()).post { it() } }
     }
 
-    private fun abandonFocus() {
-        val manager: AudioManager?
-        val request: AudioFocusRequest?
-        synchronized(lock) {
-            manager = audioManager
-            request = focusRequest
-            audioManager = null
-            focusRequest = null
-        }
-        if (manager != null && request != null) {
-            runCatching { manager.abandonAudioFocusRequest(request) }
+    private fun takeAudioFocusLocked(): AudioFocusState {
+        val state = AudioFocusState(audioManager, focusRequest)
+        audioManager = null
+        focusRequest = null
+        return state
+    }
+
+    private fun abandonAudioFocus(state: AudioFocusState) {
+        if (state.manager != null && state.request != null) {
+            runCatching { state.manager.abandonAudioFocusRequest(state.request) }
         }
     }
 
-    fun stop(reason: String = "solicitação de parada") {
-        currentKey = null
-        val old = synchronized(lock) {
-            val previous = player
-            player = null
-            onPlaybackEnded = null
-            previous
-        }
-        old?.let {
+    private fun releasePrevious(previous: MediaPlayer?, focus: AudioFocusState, reason: String) {
+        previous?.let {
             runCatching { if (it.isPlaying) it.stop() }
             runCatching { it.release() }
         }
-        abandonFocus()
-        if (old != null) GameLog.log("iiDB", "soundbite interrompido; motivo=$reason")
+        abandonAudioFocus(focus)
+        if (previous != null) GameLog.log("iiDB", "soundbite interrompido; motivo=$reason")
+    }
+
+    private fun clearRequest(requestId: Long) {
+        synchronized(lock) {
+            if (playbackRequestId == requestId) currentKey = null
+        }
+    }
+
+    private fun stopIfCurrent(requestId: Long, reason: String) {
+        val old: MediaPlayer?
+        val focus: AudioFocusState
+        synchronized(lock) {
+            if (playbackRequestId != requestId) return
+            playbackRequestId += 1
+            currentKey = null
+            old = player
+            player = null
+            onPlaybackEnded = null
+            focus = takeAudioFocusLocked()
+        }
+        releasePrevious(old, focus, reason)
+    }
+
+    fun stop(reason: String = "solicitação de parada") {
+        val old: MediaPlayer?
+        val focus: AudioFocusState
+        synchronized(lock) {
+            playbackRequestId += 1
+            currentKey = null
+            old = player
+            player = null
+            onPlaybackEnded = null
+            focus = takeAudioFocusLocked()
+        }
+        releasePrevious(old, focus, reason)
     }
 
     fun isPlaying(key: String): Boolean = currentKey == key && player?.isPlaying == true
