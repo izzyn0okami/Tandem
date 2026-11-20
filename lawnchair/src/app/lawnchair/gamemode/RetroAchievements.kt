@@ -436,8 +436,35 @@ class RaSession(
         emitOverlay(RaOverlayEvent.LeaderboardMessage(context.getString(R.string.game_ra_leaderboard_failed, title)))
     }
 
-    override fun onLeaderboardSubmitted(_leaderboardId: Int, title: String, score: String) {
-        emitOverlay(RaOverlayEvent.LeaderboardMessage(context.getString(R.string.game_ra_leaderboard_submitted, score, title)))
+    // A confirmação visual é exibida no evento SCOREBOARD, quando a classificação do servidor chega.
+    // Assim evitamos duas notificações para o mesmo envio.
+    override fun onLeaderboardSubmitted(_leaderboardId: Int, _title: String, _score: String) = Unit
+
+    override fun onLeaderboardScoreboard(_leaderboardId: Int, title: String, json: String) {
+        val obj = runCatching { JSONObject(json) }.getOrNull() ?: return
+        val submitted = obj.optString("submittedScore")
+        val best = obj.optString("bestScore")
+        val rank = obj.optInt("newRank")
+        val total = obj.optInt("numEntries")
+        val lines = buildList {
+            add(title)
+            if (submitted.isNotBlank()) add("Enviado: $submitted")
+            if (rank > 0) add("Posição: #$rank de $total")
+            if (best.isNotBlank()) add("Melhor: $best")
+            val topEntries = obj.optJSONArray("topEntries")
+            if (topEntries != null) {
+                for (index in 0 until minOf(topEntries.length(), 2)) {
+                    val entry = topEntries.optJSONObject(index) ?: continue
+                    val username = entry.optString("username")
+                    val entryScore = entry.optString("score")
+                    val entryRank = entry.optInt("rank")
+                    if (username.isNotBlank() && entryScore.isNotBlank()) {
+                        add("#$entryRank $username — $entryScore")
+                    }
+                }
+            }
+        }
+        emitOverlay(RaOverlayEvent.LeaderboardMessage(lines.joinToString("\n")))
     }
 
     override fun onLeaderboardTrackerUpdate(trackerId: Int, display: String) {
