@@ -239,6 +239,7 @@ public class LibretroDroid {
     public static native boolean raIsGameLoaded();
     public static native long raGetGameId();
     public static native String raGetUserAgentClause();
+    public static native String raGetRichPresenceMessage();
     public static native boolean raIsProcessingRequired();
 
     /** Progresso das conquistas, para gravar junto ao estado rápido do emulador. */
