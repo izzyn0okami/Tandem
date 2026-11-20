@@ -54,6 +54,7 @@ jmethodID g_onProgressIndicatorHide = nullptr;
 jmethodID g_onLeaderboardStarted = nullptr;
 jmethodID g_onLeaderboardFailed = nullptr;
 jmethodID g_onLeaderboardSubmitted = nullptr;
+jmethodID g_onLeaderboardScoreboard = nullptr;
 jmethodID g_onLeaderboardTrackerUpdate = nullptr;
 jmethodID g_onLeaderboardTrackerHide = nullptr;
 jmethodID g_onGameCompleted = nullptr;
@@ -85,6 +86,7 @@ void resolveCallbackMethods(JNIEnv* env, jobject callbacks) {
     g_onLeaderboardStarted = env->GetMethodID(g_callbacksClass, "onLeaderboardStarted", "(ILjava/lang/String;Ljava/lang/String;)V");
     g_onLeaderboardFailed = env->GetMethodID(g_callbacksClass, "onLeaderboardFailed", "(ILjava/lang/String;)V");
     g_onLeaderboardSubmitted = env->GetMethodID(g_callbacksClass, "onLeaderboardSubmitted", "(ILjava/lang/String;Ljava/lang/String;)V");
+    g_onLeaderboardScoreboard = env->GetMethodID(g_callbacksClass, "onLeaderboardScoreboard", "(ILjava/lang/String;Ljava/lang/String;)V");
     g_onLeaderboardTrackerUpdate = env->GetMethodID(g_callbacksClass, "onLeaderboardTrackerUpdate", "(ILjava/lang/String;)V");
     g_onLeaderboardTrackerHide = env->GetMethodID(g_callbacksClass, "onLeaderboardTrackerHide", "(I)V");
     g_onGameCompleted = env->GetMethodID(g_callbacksClass, "onGameCompleted", "(Ljava/lang/String;)V");
@@ -106,6 +108,27 @@ std::string buildGameCompletedJson(rc_client_t* client, const rc_client_subset_t
          << "\"hardcore\":" << (hardcore ? "true" : "false") << ","
          << "\"subset\":" << (subset ? "true" : "false")
          << "}";
+    return json.str();
+}
+
+std::string buildLeaderboardScoreboardJson(const rc_client_leaderboard_scoreboard_t* scoreboard) {
+    std::ostringstream json;
+    json << "{"
+         << "\"submittedScore\":\"" << jsonEscape(scoreboard->submitted_score) << "\","
+         << "\"bestScore\":\"" << jsonEscape(scoreboard->best_score) << "\","
+         << "\"newRank\":" << scoreboard->new_rank << ","
+         << "\"numEntries\":" << scoreboard->num_entries << ","
+         << "\"topEntries\":[";
+    for (uint32_t i = 0; i < scoreboard->num_top_entries; ++i) {
+        if (i > 0) json << ",";
+        const auto& entry = scoreboard->top_entries[i];
+        json << "{"
+             << "\"username\":\"" << jsonEscape(entry.username) << "\","
+             << "\"rank\":" << entry.rank << ","
+             << "\"score\":\"" << jsonEscape(entry.score) << "\""
+             << "}";
+    }
+    json << "]}";
     return json.str();
 }
 }
@@ -317,6 +340,19 @@ void Achievements::handleEvent(JNIEnv* env, const rc_client_event_t* event) {
                 env->CallVoidMethod(callbacksRef, g_onLeaderboardSubmitted, static_cast<jint>(event->leaderboard->id), title, score);
                 env->DeleteLocalRef(title);
                 env->DeleteLocalRef(score);
+            }
+            break;
+        case RC_CLIENT_EVENT_LEADERBOARD_SCOREBOARD:
+            if (event->leaderboard && event->leaderboard_scoreboard && g_onLeaderboardScoreboard) {
+                jstring title = env->NewStringUTF(event->leaderboard->title ? event->leaderboard->title : "");
+                std::string json = buildLeaderboardScoreboardJson(event->leaderboard_scoreboard);
+                jstring payload = env->NewStringUTF(json.c_str());
+                env->CallVoidMethod(
+                    callbacksRef, g_onLeaderboardScoreboard,
+                    static_cast<jint>(event->leaderboard->id), title, payload
+                );
+                env->DeleteLocalRef(title);
+                env->DeleteLocalRef(payload);
             }
             break;
         case RC_CLIENT_EVENT_LEADERBOARD_TRACKER_SHOW:
