@@ -41,6 +41,8 @@ jmethodID g_onLoginResult = nullptr;
 jmethodID g_onLoadGameResult = nullptr;
 jmethodID g_onAchievementTriggered = nullptr;
 jmethodID g_onServerError = nullptr;
+jmethodID g_onDisconnected = nullptr;
+jmethodID g_onReconnected = nullptr;
 jmethodID g_onReset = nullptr;
 // Indicadores e avisos extras, no padrão de overlay da própria RetroAchievements
 // (https://github.com/RetroAchievements/rcheevos/wiki/rc_client-integration): desafio ativo,
@@ -70,6 +72,8 @@ void resolveCallbackMethods(JNIEnv* env, jobject callbacks) {
     g_onLoadGameResult = env->GetMethodID(g_callbacksClass, "onLoadGameResult", "(ZLjava/lang/String;)V");
     g_onAchievementTriggered = env->GetMethodID(g_callbacksClass, "onAchievementTriggered", "(I)V");
     g_onServerError = env->GetMethodID(g_callbacksClass, "onServerError", "(Ljava/lang/String;Ljava/lang/String;)V");
+    g_onDisconnected = env->GetMethodID(g_callbacksClass, "onDisconnected", "()V");
+    g_onReconnected = env->GetMethodID(g_callbacksClass, "onReconnected", "()V");
     g_onReset = env->GetMethodID(g_callbacksClass, "onReset", "()V");
     g_onChallengeIndicatorShow = env->GetMethodID(g_callbacksClass, "onChallengeIndicatorShow", "(ILjava/lang/String;)V");
     g_onChallengeIndicatorHide = env->GetMethodID(g_callbacksClass, "onChallengeIndicatorHide", "(I)V");
@@ -250,9 +254,11 @@ void Achievements::handleEvent(JNIEnv* env, const rc_client_event_t* event) {
             break;
         case RC_CLIENT_EVENT_DISCONNECTED:
             LOGW("RetroAchievements: sem conexão, desbloqueios pendentes serão reenviados");
+            if (g_onDisconnected) env->CallVoidMethod(callbacksRef, g_onDisconnected);
             break;
         case RC_CLIENT_EVENT_RECONNECTED:
             LOGI("RetroAchievements: conexão de volta, desbloqueios pendentes reenviados");
+            if (g_onReconnected) env->CallVoidMethod(callbacksRef, g_onReconnected);
             break;
 
         // --- Indicadores e avisos extras, padrão RetroAchievements (rc_client-integration) -------
