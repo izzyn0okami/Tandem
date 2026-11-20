@@ -127,7 +127,7 @@ internal fun LibraryScreen(
         } else {
             themePlaying = true
             scope.launch(Dispatchers.IO) {
-                GameThemeMusic.play(context, game.path, game.title, game.platform.name) { withContext(Dispatchers.Main) { themePlaying = false } }
+                GameThemeMusic.play(context, game.path, game.title, game.platform.name) { themePlaying = false }
                 withContext(Dispatchers.Main) { themePlaying = GameThemeMusic.isPlaying(game.path) }
             }
         }
