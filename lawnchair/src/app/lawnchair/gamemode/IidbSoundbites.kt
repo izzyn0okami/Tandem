@@ -146,9 +146,31 @@ internal object IidbSoundbites {
             .build()
         return client.newCall(request).execute().use { response ->
             if (!response.isSuccessful) return@use null
-            val match = JSONObject(response.body?.string().orEmpty()).optJSONObject("match") ?: return@use null
-            if (match.optString("status") != "matched") return@use null
-            match.optJSONObject("parent")?.optInt("id")?.takeIf { it > 0 }
+            val payload = JSONObject(response.body?.string().orEmpty())
+            val match = payload.optJSONObject("match") ?: return@use null
+            when (match.optString("status")) {
+                "matched" -> match.optJSONObject("parent")?.optInt("id")?.takeIf { it > 0 }
+                "needs_choice" -> {
+                    val candidates = payload.optJSONArray("candidates")
+                    val names = (0 until (candidates?.length() ?: 0))
+                        .mapNotNull { candidates?.optJSONObject(it)?.optString("name")?.takeIf(String::isNotBlank) }
+                    GameLog.log(
+                        "iiDB",
+                        "correspondência ambígua para \"$title\"; escolha necessária; " +
+                            "candidatos=${payload.optInt("candidate_count", names.size)}; " +
+                            "opções=${names.joinToString(" | ")}",
+                    )
+                    null
+                }
+                "not_found" -> {
+                    GameLog.log("iiDB", "nenhum jogo correspondente na iiDB para \"$title\"")
+                    null
+                }
+                else -> {
+                    GameLog.log("iiDB", "resposta de correspondência inesperada para \"$title\"")
+                    null
+                }
+            }
         }
     }
 
