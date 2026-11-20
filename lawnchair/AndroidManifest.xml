@@ -59,8 +59,7 @@
         tools:node="remove" />
 
     <application
-        android:usesCleartextTraffic="true"
-        android:extractNativeLibs="true">
+        android:usesCleartextTraffic="true">
         <meta-data
             android:name="preloaded_fonts"
             android:resource="@array/preloaded_fonts" />
