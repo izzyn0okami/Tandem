@@ -4,6 +4,7 @@ import android.content.Context
 import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyProperties
 import android.util.Base64
+import java.io.File
 import java.security.KeyStore
 import javax.crypto.Cipher
 import javax.crypto.KeyGenerator
@@ -12,24 +13,27 @@ import javax.crypto.spec.GCMParameterSpec
 
 /**
  * Stores the user's iiDB credential encrypted with an AES key protected by Android Keystore.
- * Only ciphertext and the random GCM IV are persisted in SharedPreferences.
+ * Ciphertext is kept in noBackupFilesDir so Android backup cannot restore it without its key.
  */
 internal object IidbKeyStore {
-    private const val PREFS = "iidb_credentials"
-    private const val KEY_IV = "api_key_iv"
-    private const val KEY_CIPHERTEXT = "api_key_ciphertext"
     private const val KEY_ALIAS = "tandem_iidb_api_key_v1"
     private const val TRANSFORMATION = "AES/GCM/NoPadding"
+    private const val FILE_NAME = "iidb-api-key.enc"
 
     @Synchronized
     fun get(context: Context): String? {
-        val prefs = context.applicationContext.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-        val iv = prefs.getString(KEY_IV, null) ?: return null
-        val encrypted = prefs.getString(KEY_CIPHERTEXT, null) ?: return null
+        val file = credentialFile(context)
+        if (!file.isFile) return null
         return runCatching {
+            val parts = file.readLines()
+            require(parts.size == 2)
             val cipher = Cipher.getInstance(TRANSFORMATION)
-            cipher.init(Cipher.DECRYPT_MODE, getOrCreateKey(), GCMParameterSpec(128, Base64.decode(iv, Base64.NO_WRAP)))
-            String(cipher.doFinal(Base64.decode(encrypted, Base64.NO_WRAP)), Charsets.UTF_8)
+            cipher.init(
+                Cipher.DECRYPT_MODE,
+                getOrCreateKey(),
+                GCMParameterSpec(128, Base64.decode(parts[0], Base64.NO_WRAP)),
+            )
+            String(cipher.doFinal(Base64.decode(parts[1], Base64.NO_WRAP)), Charsets.UTF_8)
         }.getOrNull()
     }
 
@@ -39,19 +43,25 @@ internal object IidbKeyStore {
         val cipher = Cipher.getInstance(TRANSFORMATION)
         cipher.init(Cipher.ENCRYPT_MODE, getOrCreateKey())
         val encrypted = cipher.doFinal(apiKey.trim().toByteArray(Charsets.UTF_8))
-        context.applicationContext.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
-            .putString(KEY_IV, Base64.encodeToString(cipher.iv, Base64.NO_WRAP))
-            .putString(KEY_CIPHERTEXT, Base64.encodeToString(encrypted, Base64.NO_WRAP))
-            .apply()
+        val file = credentialFile(context)
+        val temporary = File(file.parentFile, file.name + ".tmp")
+        temporary.writeText(
+            Base64.encodeToString(cipher.iv, Base64.NO_WRAP) + "\n" +
+                Base64.encodeToString(encrypted, Base64.NO_WRAP),
+        )
+        if (!temporary.renameTo(file)) {
+            temporary.copyTo(file, overwrite = true)
+            temporary.delete()
+        }
     }
 
     @Synchronized
     fun clear(context: Context) {
-        context.applicationContext.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
-            .remove(KEY_IV)
-            .remove(KEY_CIPHERTEXT)
-            .apply()
+        credentialFile(context).delete()
     }
+
+    private fun credentialFile(context: Context): File =
+        File(context.applicationContext.noBackupFilesDir, FILE_NAME)
 
     private fun getOrCreateKey(): SecretKey {
         val keyStore = KeyStore.getInstance("AndroidKeyStore").apply { load(null) }
