@@ -203,7 +203,8 @@
     <string name="game_ra_hardcore_label">Hardcore</string>
     <string name="game_ra_softcore_label">Normal (sem hardcore)</string>
     <string name="game_ra_status_unsupported">ROM não reconhecida (pode ser outra versão, tradução ou hack)</string>
-    <string name="game_ra_status_none">Este jogo ainda não tem conquistas cadastradas</string>
+    <string name="game_ra_status_none">Este jogo não tem funcionalidades RetroAchievements cadastradas</string>
+    <string name="game_ra_status_features_only">Este jogo tem Rich Presence e/ou placares, mas não possui conquistas cadastradas</string>
     <string name="game_ra_status_progress">%1$d de %2$d conquistas acompanhadas</string>
     <string name="game_ra_hardcore">Modo hardcore</string>
     <string name="game_ra_hardcore_note">No hardcore as conquistas valem mais no site, mas não dá para carregar estados salvos nos jogos compatíveis (salvar continua liberado). Vale a partir da próxima partida.</string>
