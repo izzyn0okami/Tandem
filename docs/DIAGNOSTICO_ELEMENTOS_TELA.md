@@ -107,3 +107,15 @@ A evidência do código permite identificar o mecanismo como **Rich Presence do 
 A confirmação final no aparelho pode ser feita observando se o texto descrito muda aproximadamente em tempo real e desaparece ao encerrar a sessão do jogo. Não há justificativa técnica, com as evidências atuais, para remover outros serviços de acessibilidade, ouvintes de notificação ou componentes do Android.
 
 Nenhuma alteração funcional foi necessária para esta identificação; este registro documenta o resultado da auditoria.
+
+
+## Controle de visibilidade do Rich Presence
+
+**Implementação:** controle persistente nas configurações do Modo Jogo, seção Online.
+
+- A opção **Exibir Rich Presence durante o jogo** fica ativada por padrão, preservando o comportamento anterior.
+- Ao desativá-la, o Tandem oculta somente `RichPresenceOverlay`; a consulta periódica ao `rc_client` e a atualização de `raRichPresence` continuam ativas.
+- A preferência é salva em `SharedPreferences` e reaplicada ao iniciar cada sessão.
+- Avisos de conquistas, indicadores de progresso, placares e sincronização não são afetados.
+
+A alteração não adiciona um parser próprio nem altera o ciclo de vida da sessão RetroAchievements.
