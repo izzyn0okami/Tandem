@@ -4,6 +4,13 @@
 #include "libretrodroid.h"
 
 namespace libretrodroid {
+std::string Achievements::getRichPresenceMessage() const {
+    if (!client || !rc_client_is_game_loaded(client) || !rc_client_has_rich_presence(client)) return {};
+    char buffer[1024] = {};
+    const size_t length = rc_client_get_rich_presence_message(client, buffer, sizeof(buffer));
+    return std::string(buffer, length);
+}
+
 uint32_t Achievements::getGameId() const {
     if (!client) return 0;
     const rc_client_game_t* game = rc_client_get_game_info(client);
@@ -30,6 +37,12 @@ extern "C" {
 JNIEXPORT jlong JNICALL
 Java_com_swordfish_libretrodroid_LibretroDroid_raGetGameId(JNIEnv*, jclass) {
     return static_cast<jlong>(libretrodroid::LibretroDroid::getInstance().getAchievements().getGameId());
+}
+
+JNIEXPORT jstring JNICALL
+Java_com_swordfish_libretrodroid_LibretroDroid_raGetRichPresenceMessage(JNIEnv* env, jclass) {
+    const auto message = libretrodroid::LibretroDroid::getInstance().getAchievements().getRichPresenceMessage();
+    return env->NewStringUTF(message.c_str());
 }
 
 JNIEXPORT jstring JNICALL
