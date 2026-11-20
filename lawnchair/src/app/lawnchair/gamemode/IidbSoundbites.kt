@@ -109,7 +109,14 @@ internal object IidbSoundbites {
                     else -> "audio"
                 }
                 val destination = File(cache, "$assetId-${sha256(revision).take(12)}.$extension")
-                if (destination.isFile && destination.length() > 0L) return@withContext destination
+                if (destination.isFile && destination.length() > 0L) {
+                    prefs.edit()
+                        .putString("asset_$stableKey", destination.name)
+                        .putLong("asset_checked_$stableKey", System.currentTimeMillis())
+                        .apply()
+                    destination.setLastModified(System.currentTimeMillis())
+                    return@withContext destination
+                }
                 if (download(url, mime.ifBlank { "audio/*" }, destination)) {
                     prefs.edit()
                         .putString("asset_$stableKey", destination.name)
