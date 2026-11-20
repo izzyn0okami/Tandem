@@ -276,7 +276,9 @@ class RaSession(
         val consoleId = platform.raConsoleId ?: return
 
         active = true
-        onConnectionState(true)
+        // A sessão ainda não confirmou contato com o servidor. Comece como pendente;
+        // o login bem-sucedido confirma a conexão inicial (inclusive após retry offline).
+        onConnectionState(false)
         view.startAchievements(this, hardcoreEnabled)
         val rcheevosClause = view.getAchievementsUserAgentClause()
         if (rcheevosClause.isNotBlank()) userAgent = "Tandem/1.0.0 (Android ${Build.VERSION.RELEASE}) $rcheevosClause"
@@ -336,6 +338,8 @@ class RaSession(
             disableHardcoreForUnsupportedSession()
             return
         }
+        // Só remove o indicador de pendência depois de o servidor confirmar o login.
+        onConnectionState(true)
         val hash = pendingHash ?: return
         val consoleId = pendingConsoleId ?: return
         view.beginAchievementsGame(hash, consoleId)
