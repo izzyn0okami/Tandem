@@ -318,6 +318,49 @@ internal fun LeaderboardTrackersColumn(trackers: List<RaLeaderboardTracker>) {
     }
 }
 
+/** Rich Presence atual do jogo, calculado pelo motor oficial rc_client. */
+@Composable
+internal fun RichPresenceOverlay(message: String) {
+    if (message.isBlank()) return
+    Box(
+        modifier = Modifier.fillMaxSize().padding(horizontal = 18.dp, vertical = 58.dp),
+        contentAlignment = Alignment.BottomCenter,
+    ) {
+        Text(
+            text = message,
+            color = GameColors.text,
+            fontSize = 12.sp,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier
+                .shadow(8.dp, RoundedCornerShape(8.dp))
+                .background(GameColors.panel.copy(alpha = 0.94f), RoundedCornerShape(8.dp))
+                .padding(horizontal = 12.dp, vertical = 7.dp),
+        )
+    }
+}
+
+/** Indicador persistente: só desaparece quando o rc_client confirma a sincronização da fila. */
+@Composable
+internal fun RaSyncIndicator(pending: Boolean) {
+    if (!pending) return
+    Box(
+        modifier = Modifier.fillMaxSize().padding(top = 18.dp, start = 18.dp, end = 18.dp),
+        contentAlignment = Alignment.TopEnd,
+    ) {
+        Text(
+            text = "RA · SINCRONIZAÇÃO PENDENTE",
+            color = GameColors.text,
+            fontSize = 9.sp,
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier
+                .shadow(8.dp, RoundedCornerShape(7.dp))
+                .background(GameColors.panel.copy(alpha = 0.96f), RoundedCornerShape(7.dp))
+                .padding(horizontal = 9.dp, vertical = 6.dp),
+        )
+    }
+}
+
 /** Aviso rápido de placar (iniciado, não validado ou enviado): a RetroAchievements usa só uma mensagem simples. */
 @Composable
 internal fun GameMessageOverlay(message: String, onDismiss: () -> Unit) {
