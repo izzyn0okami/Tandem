@@ -155,3 +155,5 @@ Inspeção dos fluxos em `RetroAchievements.kt`, `GameSessionActivity.kt`, `Game
 **Resultado:** nenhuma regressão relacionada ao controle de visibilidade foi identificada na revisão direcionada. Os testes no aparelho e a CI #312 foram aprovados.
 
 **Limite da validação:** a revisão de código não substitui testes específicos de todos os tipos de conquista, placar e cenários de reconexão de rede.
+
+A PR #3 permanece aberta e em Draft. Nenhum merge foi realizado.
