@@ -46,7 +46,7 @@
     <string name="game_overlay_close">Fechar</string>
     <string name="game_overlay_open_settings">Menu global (fora do Tandem)</string>
     <string name="game_overlay_settings_note">Ativa o mesmo atalho do menu de pausa (Select + Start) dentro de outros apps: emuladores externos e jogos Android. Precisa ser ligado nos Ajustes de Acessibilidade do Android, uma vez só.</string>
-    <string name="game_theme_music_toggle">Soundbite manual na Biblioteca (iiDB)</string>
+    <string name="game_theme_music_toggle">Ativar Soundbites da iiDB</string>
     <string name="game_theme_music_auto_details">Tocar automaticamente ao abrir os detalhes</string>
     <string name="game_theme_music_note">O botão na Biblioteca permite iniciar o trecho manualmente. Se a reprodução automática estiver ativada, o trecho começa ao abrir os detalhes de um jogo. O áudio é baixado sob demanda, fica apenas no cache local e não se repete.</string>
     <string name="game_theme_play">▶ Tocar tema (experimental)</string>
