@@ -137,6 +137,9 @@ internal fun AchievementsScreen() {
                 modifier = Modifier.width(220.dp),
                 onClick = {
                     RaSettings.clear(context)
+                    webApiKeyConfigured = false
+                    webApiKeyInput = ""
+                    webApiKeyMessage = ""
                     user = null
                 },
             )
