@@ -40,7 +40,7 @@ object GameThemeMusic {
             return false
         }
 
-        val file = IidbSoundbites.findSoundbite(context, apiKey, key, title, platform)
+        val file = IidbSoundbites.findSoundbite(context, apiKey, title, platform)
         if (file == null || currentKey != key) {
             if (currentKey == key) currentKey = null
             return false
@@ -58,7 +58,7 @@ object GameThemeMusic {
         val request = AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN_TRANSIENT_MAY_DUCK)
             .setAudioAttributes(attributes)
             .setOnAudioFocusChangeListener { change ->
-                if (change <= AudioManager.AUDIOFOCUS_LOSS_TRANSIENT) stop("perda de foco de áudio")
+                if (change == AudioManager.AUDIOFOCUS_LOSS || change == AudioManager.AUDIOFOCUS_LOSS_TRANSIENT) stop("perda de foco de áudio")
             }
             .setWillPauseWhenDucked(false)
             .build()
@@ -118,7 +118,7 @@ object GameThemeMusic {
         abandonFocus()
         currentKey = null
         GameLog.log("iiDB", reason)
-        callback?.let { Handler(Looper.getMainLooper()).post(it) }
+        callback?.let { Handler(Looper.getMainLooper()).post { it() } }
     }
 
     private fun abandonFocus() {
