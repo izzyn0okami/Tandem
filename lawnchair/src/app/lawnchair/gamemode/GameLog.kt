@@ -78,6 +78,29 @@ object GameLog {
         .joinToString { it.name.removeSuffix("_libretro_android.so") }
         .ifEmpty { "nenhum" }
 
+    /** Metadados de serviços do sistema que podem produzir/observar sobreposições. Não lê pixels nem conteúdo de outros apps. */
+    private fun screenOverlaySnapshot(context: Context): String = buildString {
+        fun enabledComponents(key: String): List<String> =
+            Settings.Secure.getString(context.contentResolver, key)
+                .orEmpty()
+                .split(':')
+                .filter { it.isNotBlank() }
+                .map { it.trim() }
+                .sorted()
+
+        val accessibility = enabledComponents(Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES)
+        val notificationListeners = enabledComponents(Settings.Secure.ENABLED_NOTIFICATION_LISTENERS)
+        appendLine("Diagnóstico de tela/sobreposições (metadados; sem captura de imagem ou texto):")
+        appendLine("Tandem pode desenhar sobre outros apps: ${Settings.canDrawOverlays(context)}")
+        appendLine("Serviços de acessibilidade habilitados (${accessibility.size}):")
+        accessibility.forEach { appendLine("  - $it") }
+        appendLine("Ouvintes de notificação habilitados (${notificationListeners.size}):")
+        notificationListeners.forEach { appendLine("  - $it") }
+        appendLine("Limitação: Android não oferece API pública geral para enumerar todas as janelas/overlays ativos de outros processos.")
+        appendLine("A lista acima identifica serviços habilitados, não prova que estejam exibindo uma sobreposição neste instante.")
+        appendLine("----")
+    }
+
     /** Texto completo para exportar: cabeçalho do aparelho + registro. */
     @Synchronized
     fun export(context: Context): String {
@@ -99,6 +122,7 @@ object GameLog {
             appendLine("Núcleos instalados: ${installedCores(context)}")
             appendLine("Espaço livre: ${context.filesDir.usableSpace / (1024 * 1024)} MB")
             appendLine("----")
+            append(screenOverlaySnapshot(appContext))
         }
         return header + (runCatching { file.readText() }.getOrDefault("(registro vazio)\n"))
     }
