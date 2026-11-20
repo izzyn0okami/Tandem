@@ -27,18 +27,29 @@ object RaSettings {
 
     fun user(context: Context): String? = prefs(context).getString("user", null)
 
-    fun token(context: Context): String? = prefs(context).getString("token", null)
+    fun token(context: Context): String? {
+        RaTokenKeyStore.get(context)?.let { return it }
+        // Migra tokens de versões anteriores, que eram guardados em SharedPreferences sem criptografia.
+        val legacy = prefs(context).getString("token", null) ?: return null
+        return runCatching {
+            RaTokenKeyStore.save(context, legacy)
+            prefs(context).edit { remove("token") }
+            legacy
+        }.getOrNull()
+    }
 
     fun isLoggedIn(context: Context): Boolean = user(context) != null && token(context) != null
 
     fun save(context: Context, user: String, token: String) {
+        RaTokenKeyStore.save(context, token)
         prefs(context).edit {
             putString("user", user)
-            putString("token", token)
+            remove("token")
         }
     }
 
     fun clear(context: Context) {
+        RaTokenKeyStore.clear(context)
         prefs(context).edit { clear() }
     }
 
