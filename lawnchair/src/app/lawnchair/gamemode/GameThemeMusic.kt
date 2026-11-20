@@ -2,26 +2,19 @@ package app.lawnchair.gamemode
 
 import android.content.Context
 import android.media.AudioAttributes
+import android.media.AudioFocusRequest
+import android.media.AudioManager
 import android.media.MediaPlayer
-import com.yausername.youtubedl_android.YoutubeDL
-import com.yausername.youtubedl_android.YoutubeDLRequest
+import java.io.File
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 /**
- * Tema musical do jogo em destaque (recurso experimental, desligado por padrão em Configurações):
- * procura um vídeo no YouTube com o tema/trilha do jogo em destaque e toca só o áudio dele, em
- * repetição, enquanto o botão na tela principal estiver ligado. Não baixa nem salva nada no
- * aparelho — só usa o yt-dlp (empacotado pro Android) pra achar o endereço de áudio direto.
- *
- * Chame [play] sempre fora da thread principal (ela faz chamadas de rede e de processo que podem
- * demorar vários segundos); a tela já cuida disso rodando num `Dispatchers.IO`. [stop] pode ser
- * chamado de qualquer thread, inclusive a principal — nunca espera uma busca em andamento.
+ * Plays a short iiDB soundbite for the selected game.
+ * The asset is cached locally; no audio is bundled with the APK and playback never loops.
  */
 object GameThemeMusic {
-
     private val lock = Any()
-
-    @Volatile
-    private var initOutcome: Boolean? = null
 
     @Volatile
     private var player: MediaPlayer? = null
@@ -29,123 +22,112 @@ object GameThemeMusic {
     @Volatile
     private var currentKey: String? = null
 
-    private fun ensureInitialized(context: Context): Boolean {
-        initOutcome?.let {
-            GameLog.log("tema musical", "inicialização yt-dlp já resolvida: ${if (it) "sucesso" else "falha em tentativa anterior"}")
-            return it
+    private var audioManager: AudioManager? = null
+    private var focusRequest: AudioFocusRequest? = null
+
+    suspend fun play(context: Context, key: String, title: String, platform: String): Boolean {
+        if (currentKey == key && player?.isPlaying == true) return true
+        stop("nova solicitação de soundbite")
+        currentKey = key
+
+        val apiKey = IidbKeyStore.get(context)
+        if (apiKey.isNullOrBlank()) {
+            GameLog.log("iiDB", "reprodução indisponível: API key não configurada")
+            if (currentKey == key) currentKey = null
+            return false
         }
-        synchronized(lock) {
-            initOutcome?.let { return it }
-            GameLog.log("tema musical", "inicializando yt-dlp")
-            val outcome = try {
-                YoutubeDL.init(context.applicationContext)
-                GameLog.log("tema musical", "yt-dlp inicializado com sucesso")
-                true
-            } catch (e: Exception) {
-                GameLog.error("tema musical", "falha ao inicializar yt-dlp", e)
-                false
-            }
-            initOutcome = outcome
-            return outcome
+
+        val file = IidbSoundbites.findSoundbite(context, apiKey, key, title, platform)
+        if (file == null || currentKey != key) {
+            if (currentKey == key) currentKey = null
+            return false
         }
+        return withContext(Dispatchers.IO) { prepareAndPlay(context, key, file) }
     }
 
-    /** Busca e toca o tema de [title]; não faz nada se o mesmo jogo ([key]) já estiver tocando. */
-    fun play(context: Context, key: String, title: String, platform: String) {
-        GameLog.log("tema musical", "solicitação recebida; jogo=\"$title\"; plataforma=\"$platform\"; ativado=${GameModeSettings.isThemeMusicEnabled(context)}")
-        if (currentKey == key && player != null) {
-            GameLog.log("tema musical", "ignorado: este jogo já possui um player ativo")
-            return
-        }
-        stop("nova solicitação de reprodução")
-        currentKey = key
-        if (!ensureInitialized(context)) {
-            GameLog.log("tema musical", "busca cancelada: yt-dlp não inicializou")
+    private fun prepareAndPlay(context: Context, key: String, file: File): Boolean {
+        if (currentKey != key || !file.isFile) return false
+        val manager = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
+        val attributes = AudioAttributes.Builder()
+            .setUsage(AudioAttributes.USAGE_MEDIA)
+            .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
+            .build()
+        val request = AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN_TRANSIENT_MAY_DUCK)
+            .setAudioAttributes(attributes)
+            .setOnAudioFocusChangeListener { change ->
+                if (change <= AudioManager.AUDIOFOCUS_LOSS_TRANSIENT) stop("perda de foco de áudio")
+            }
+            .setWillPauseWhenDucked(false)
+            .build()
+        if (manager.requestAudioFocus(request) != AudioManager.AUDIOFOCUS_REQUEST_GRANTED) {
+            GameLog.log("iiDB", "reprodução cancelada: foco de áudio não concedido")
             if (currentKey == key) currentKey = null
-            return
-        }
-        val url = try {
-            GameLog.log("tema musical", "iniciando pesquisa no YouTube")
-            val request = YoutubeDLRequest("ytsearch1:$title $platform theme song soundtrack")
-            request.addOption("-f", "bestaudio/best")
-            val result = YoutubeDL.getInfo(request)
-            GameLog.log("tema musical", "pesquisa concluída; resultado=${if (result.url.isNullOrBlank()) "sem URL" else "URL de áudio recebida"}")
-            result.url
-        } catch (e: Exception) {
-            GameLog.error("tema musical", "falha na pesquisa do tema de $title", e)
-            null
-        }
-        if (url.isNullOrBlank() || currentKey != key) {
-            GameLog.log("tema musical", "reprodução não iniciada; urlVazia=${url.isNullOrBlank()}; solicitaçãoAindaAtual=${currentKey == key}")
-            if (currentKey == key) currentKey = null
-            return
+            return false
         }
 
         var media: MediaPlayer? = null
-        try {
-            val createdMedia = MediaPlayer()
-            media = createdMedia
-            createdMedia.setAudioAttributes(
-                AudioAttributes.Builder()
-                    .setUsage(AudioAttributes.USAGE_MEDIA)
-                    .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
-                    .build(),
-            )
-            createdMedia.setOnPreparedListener { preparedPlayer ->
-                if (currentKey != key) {
-                    GameLog.log("tema musical", "preparação concluída, mas solicitação já foi cancelada; player descartado")
-                    synchronized(lock) { if (player === preparedPlayer) player = null }
-                    runCatching { preparedPlayer.release() }
-                    return@setOnPreparedListener
-                }
-                runCatching {
-                    preparedPlayer.start()
-                    GameLog.log("tema musical", "MediaPlayer preparado e reprodução iniciada")
-                }.onFailure { error ->
-                    GameLog.error("tema musical", "falha ao iniciar áudio preparado", error)
-                    synchronized(lock) {
-                        if (player === preparedPlayer) player = null
-                    }
-                    runCatching { preparedPlayer.release() }
-                    if (currentKey == key) currentKey = null
-                }
+        return try {
+            val created = MediaPlayer()
+            media = created
+            created.setAudioAttributes(attributes)
+            created.setDataSource(file.absolutePath)
+            created.isLooping = false
+            created.setOnCompletionListener { completed ->
+                releasePlayer(completed, "soundbite concluído")
             }
-            createdMedia.setOnErrorListener { mp, what, extra ->
-                GameLog.log("tema musical", "erro assíncrono do MediaPlayer; what=$what; extra=$extra")
-                synchronized(lock) {
-                    if (player === mp) player = null
-                }
-                runCatching { mp.release() }
-                if (currentKey == key) currentKey = null
+            created.setOnErrorListener { failed, what, extra ->
+                GameLog.log("iiDB", "erro do player local; what=$what; extra=$extra")
+                releasePlayer(failed, "erro de reprodução")
                 true
             }
-            createdMedia.setDataSource(url)
-            createdMedia.isLooping = true
+            created.prepare()
+            if (currentKey != key) {
+                created.release()
+                manager.abandonAudioFocusRequest(request)
+                return false
+            }
             synchronized(lock) {
-                if (currentKey == key) {
-                    player = createdMedia
-                } else {
-                    createdMedia.release()
-                    GameLog.log("tema musical", "player descartado: jogo mudou antes da preparação")
-                    return
-                }
+                player = created
+                audioManager = manager
+                focusRequest = request
             }
-            GameLog.log("tema musical", "fonte de áudio configurada; iniciando preparação assíncrona")
-            createdMedia.prepareAsync()
-        } catch (e: Exception) {
-            GameLog.error("tema musical", "falha ao configurar/preparar áudio de $title", e)
-            media?.let { failedPlayer ->
-                synchronized(lock) { if (player === failedPlayer) player = null }
-                runCatching { failedPlayer.release() }
-            }
+            created.start()
+            GameLog.log("iiDB", "soundbite iniciado; arquivo em cache; jogo=$key")
+            true
+        } catch (error: Exception) {
+            GameLog.error("iiDB", "falha ao preparar soundbite local", error)
+            media?.let { runCatching { it.release() } }
+            manager.abandonAudioFocusRequest(request)
             if (currentKey == key) currentKey = null
+            false
         }
     }
 
-    /** Para e libera o player atual, se houver; seguro de chamar de qualquer thread. */
+    private fun releasePlayer(target: MediaPlayer, reason: String) {
+        synchronized(lock) {
+            if (player === target) player = null
+        }
+        runCatching { target.release() }
+        abandonFocus()
+        currentKey = null
+        GameLog.log("iiDB", reason)
+    }
+
+    private fun abandonFocus() {
+        val manager: AudioManager?
+        val request: AudioFocusRequest?
+        synchronized(lock) {
+            manager = audioManager
+            request = focusRequest
+            audioManager = null
+            focusRequest = null
+        }
+        if (manager != null && request != null) {
+            runCatching { manager.abandonAudioFocusRequest(request) }
+        }
+    }
+
     fun stop(reason: String = "solicitação de parada") {
-        val hadPlayer = player != null
-        val hadRequest = currentKey != null
         currentKey = null
         val old = synchronized(lock) {
             val previous = player
@@ -153,13 +135,12 @@ object GameThemeMusic {
             previous
         }
         old?.let {
-            runCatching { it.stop() }
+            runCatching { if (it.isPlaying) it.stop() }
             runCatching { it.release() }
         }
-        if (hadPlayer || hadRequest) {
-            GameLog.log("tema musical", "reprodução/busca interrompida; motivo=$reason; playerLiberado=$hadPlayer")
-        }
+        abandonFocus()
+        if (old != null) GameLog.log("iiDB", "soundbite interrompido; motivo=$reason")
     }
 
-    fun isPlaying(key: String) = currentKey == key && player != null
+    fun isPlaying(key: String): Boolean = currentKey == key && player?.isPlaying == true
 }
