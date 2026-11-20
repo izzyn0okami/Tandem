@@ -295,6 +295,11 @@ class GameSessionActivity : ComponentActivity() {
                                     canSave = true,
                                     canLoad = store.hasState() && !raHardcore,
                                     hasAchievements = raEntries.isNotEmpty(),
+                                    raRichPresenceVisible = raRichPresenceVisible,
+                                    onToggleRichPresence = {
+                                        raRichPresenceVisible = !raRichPresenceVisible
+                                        GameModeSettings.setRaRichPresenceVisible(this@GameSessionActivity, raRichPresenceVisible)
+                                    },
                                     onAchievements = { raListOpen = true },
                                     onCoreOptions = { openCoreOptions() },
                                     onResume = { setMenu(false) },
@@ -683,6 +688,8 @@ private fun PauseMenu(
     canSave: Boolean,
     canLoad: Boolean,
     hasAchievements: Boolean,
+    raRichPresenceVisible: Boolean,
+    onToggleRichPresence: () -> Unit,
     onAchievements: () -> Unit,
     onCoreOptions: () -> Unit,
     onResume: () -> Unit,
@@ -719,6 +726,10 @@ private fun PauseMenu(
             if (subtitle != null) {
                 Text(text = subtitle, color = GameColors.success, fontSize = 14.sp, modifier = Modifier.padding(bottom = 14.dp))
             }
+            GameButton(
+                if (raRichPresenceVisible) "Ocultar descrição da partida" else "Exibir descrição da partida",
+                onToggleRichPresence,
+            )
             GameButton(stringResource(R.string.game_session_resume), onResume, primary = true, modifier = Modifier.focusRequester(firstItem))
             GameButton(stringResource(R.string.game_session_save_state), onSave, enabled = canSave)
             GameButton(stringResource(R.string.game_session_load_state), onLoad, enabled = canLoad)
