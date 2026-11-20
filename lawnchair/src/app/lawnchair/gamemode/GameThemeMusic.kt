@@ -5,6 +5,8 @@ import android.media.AudioAttributes
 import android.media.AudioFocusRequest
 import android.media.AudioManager
 import android.media.MediaPlayer
+import android.os.Handler
+import android.os.Looper
 import java.io.File
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -24,8 +26,9 @@ object GameThemeMusic {
 
     private var audioManager: AudioManager? = null
     private var focusRequest: AudioFocusRequest? = null
+    private var onPlaybackEnded: (() -> Unit)? = null
 
-    suspend fun play(context: Context, key: String, title: String, platform: String): Boolean {
+    suspend fun play(context: Context, key: String, title: String, platform: String, onEnded: () -> Unit = {}): Boolean {
         if (currentKey == key && player?.isPlaying == true) return true
         stop("nova solicitação de soundbite")
         currentKey = key
@@ -90,6 +93,7 @@ object GameThemeMusic {
                 player = created
                 audioManager = manager
                 focusRequest = request
+                onPlaybackEnded = onEnded
             }
             created.start()
             GameLog.log("iiDB", "soundbite iniciado; arquivo em cache; jogo=$key")
@@ -104,13 +108,17 @@ object GameThemeMusic {
     }
 
     private fun releasePlayer(target: MediaPlayer, reason: String) {
-        synchronized(lock) {
-            if (player === target) player = null
+        val callback = synchronized(lock) {
+            if (player === target) {
+                player = null
+                onPlaybackEnded.also { onPlaybackEnded = null }
+            } else null
         }
         runCatching { target.release() }
         abandonFocus()
         currentKey = null
         GameLog.log("iiDB", reason)
+        callback?.let { Handler(Looper.getMainLooper()).post(it) }
     }
 
     private fun abandonFocus() {
@@ -132,6 +140,7 @@ object GameThemeMusic {
         val old = synchronized(lock) {
             val previous = player
             player = null
+            onPlaybackEnded = null
             previous
         }
         old?.let {
