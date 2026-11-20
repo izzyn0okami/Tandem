@@ -116,6 +116,7 @@ Nenhuma alteração funcional foi necessária para esta identificação; este re
 - A opção **Exibir Rich Presence durante o jogo** fica ativada por padrão, preservando o comportamento anterior.
 - Ao desativá-la, o Tandem oculta somente `RichPresenceOverlay`; a consulta periódica ao `rc_client` e a atualização de `raRichPresence` continuam ativas.
 - A preferência é salva em `SharedPreferences` e reaplicada ao iniciar cada sessão.
+- Durante a partida, o menu de pausa também permite ocultar ou reexibir a descrição imediatamente, sem reiniciar o jogo; a alteração atualiza e persiste a mesma preferência.
 - Avisos de conquistas, indicadores de progresso, placares e sincronização não são afetados.
 
 A alteração não adiciona um parser próprio nem altera o ciclo de vida da sessão RetroAchievements.
