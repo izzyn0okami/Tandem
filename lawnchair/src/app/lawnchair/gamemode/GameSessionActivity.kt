@@ -91,6 +91,7 @@ class GameSessionActivity : ComponentActivity() {
     private var raSession: RaSession? = null
     private var nativeDestroyed = false
     private val raUnlockQueue = mutableStateListOf<RaAchievement>()
+    private val raStatusMessageQueue = mutableStateListOf<String>()
     private var raEntries by mutableStateOf<List<RaEntry>>(emptyList())
     private var raHardcore by mutableStateOf(false)
     private var raListOpen by mutableStateOf(false)
@@ -215,9 +216,9 @@ class GameSessionActivity : ComponentActivity() {
                     },
                     onStatus = { status, unlocked, total ->
                         when (status) {
-                            RaGameStatus.UNSUPPORTED -> toast(R.string.game_ra_status_unsupported)
-                            RaGameStatus.NO_ACHIEVEMENTS -> toast(R.string.game_ra_status_none)
-                            RaGameStatus.TRACKING -> toast(getString(R.string.game_ra_status_progress, unlocked, total))
+                            RaGameStatus.UNSUPPORTED -> raStatusMessageQueue.add(getString(R.string.game_ra_status_unsupported))
+                            RaGameStatus.NO_ACHIEVEMENTS -> raStatusMessageQueue.add(getString(R.string.game_ra_status_none))
+                            RaGameStatus.TRACKING -> raStatusMessageQueue.add(getString(R.string.game_ra_status_progress, unlocked, total))
                         }
                     },
                     onOverlayEvent = { event -> handleRaOverlayEvent(event) },
@@ -259,8 +260,13 @@ class GameSessionActivity : ComponentActivity() {
                             ChallengeIndicatorsRow(raChallengeIndicators.values.toList())
                             raProgressIndicator?.let { ProgressIndicatorBadge(it) }
                             LeaderboardTrackersColumn(raLeaderboardTrackers.values.toList())
+                            raStatusMessageQueue.firstOrNull()?.let { message ->
+                                GameMessageOverlay(message) {
+                                    if (raStatusMessageQueue.firstOrNull() == message) raStatusMessageQueue.removeAt(0)
+                                }
+                            }
                             raLeaderboardMessageQueue.firstOrNull()?.let { message ->
-                                LeaderboardMessageToast(message) {
+                                GameMessageOverlay(message) {
                                     if (raLeaderboardMessageQueue.firstOrNull() == message) raLeaderboardMessageQueue.removeAt(0)
                                 }
                             }
