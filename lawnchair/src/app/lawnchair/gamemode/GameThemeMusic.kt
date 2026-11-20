@@ -57,7 +57,7 @@ object GameThemeMusic {
             GameLog.log("tema musical", "ignorado: este jogo já possui um player ativo")
             return
         }
-        stop()
+        stop("nova solicitação de reprodução")
         currentKey = key
         if (!ensureInitialized(context)) {
             GameLog.log("tema musical", "busca cancelada: yt-dlp não inicializou")
@@ -92,6 +92,12 @@ object GameThemeMusic {
                     .build(),
             )
             createdMedia.setOnPreparedListener { preparedPlayer ->
+                if (currentKey != key) {
+                    GameLog.log("tema musical", "preparação concluída, mas solicitação já foi cancelada; player descartado")
+                    synchronized(lock) { if (player === preparedPlayer) player = null }
+                    runCatching { preparedPlayer.release() }
+                    return@setOnPreparedListener
+                }
                 runCatching {
                     preparedPlayer.start()
                     GameLog.log("tema musical", "MediaPlayer preparado e reprodução iniciada")
@@ -137,8 +143,9 @@ object GameThemeMusic {
     }
 
     /** Para e libera o player atual, se houver; seguro de chamar de qualquer thread. */
-    fun stop() {
+    fun stop(reason: String = "solicitação de parada") {
         val hadPlayer = player != null
+        val hadRequest = currentKey != null
         currentKey = null
         val old = synchronized(lock) {
             val previous = player
@@ -149,7 +156,9 @@ object GameThemeMusic {
             runCatching { it.stop() }
             runCatching { it.release() }
         }
-        if (hadPlayer) GameLog.log("tema musical", "player interrompido e liberado")
+        if (hadPlayer || hadRequest) {
+            GameLog.log("tema musical", "reprodução/busca interrompida; motivo=$reason; playerLiberado=$hadPlayer")
+        }
     }
 
     fun isPlaying(key: String) = currentKey == key && player != null
