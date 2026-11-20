@@ -11,6 +11,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -131,10 +132,11 @@ internal fun AchievementOverlay(achievement: RaAchievement, hardcore: Boolean, o
         currentOnDismiss()
     }
 
-    Box(
-        modifier = Modifier.fillMaxSize().padding(top = 22.dp, end = 22.dp),
-        contentAlignment = Alignment.TopEnd,
-    ) {
+    BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+        Box(
+            modifier = Modifier.fillMaxSize().padding(top = 18.dp, end = 18.dp, start = 18.dp),
+            contentAlignment = Alignment.TopEnd,
+        ) {
         AnimatedVisibility(
             visible = visible,
             enter = fadeIn() + slideInVertically(initialOffsetY = { -it / 2 }),
@@ -142,17 +144,17 @@ internal fun AchievementOverlay(achievement: RaAchievement, hardcore: Boolean, o
         ) {
             Row(
                 modifier = Modifier
-                    .widthIn(max = 400.dp)
+                    .widthIn(max = minOf(440.dp, maxWidth * 0.52f))
                     .shadow(18.dp, RoundedCornerShape(14.dp))
                     .background(GameColors.panel, RoundedCornerShape(14.dp))
-                    .padding(14.dp),
+                    .padding(12.dp),
                 horizontalArrangement = Arrangement.spacedBy(13.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Box(
                     modifier = Modifier
                         .width(4.dp)
-                        .height(66.dp)
+                        .height(64.dp)
                         .clip(RoundedCornerShape(4.dp))
                         .background(GameColors.accent),
                 )
@@ -161,12 +163,12 @@ internal fun AchievementOverlay(achievement: RaAchievement, hardcore: Boolean, o
                         bitmap = icon!!,
                         contentDescription = null,
                         contentScale = ContentScale.Crop,
-                        modifier = Modifier.size(58.dp).clip(RoundedCornerShape(9.dp)),
+                        modifier = Modifier.size(56.dp).clip(RoundedCornerShape(9.dp)),
                     )
                 } else {
                     Box(
                         modifier = Modifier
-                            .size(58.dp)
+                            .size(56.dp)
                             .clip(RoundedCornerShape(9.dp))
                             .background(GameColors.surfaceHigh),
                         contentAlignment = Alignment.Center,
@@ -208,6 +210,7 @@ internal fun AchievementOverlay(achievement: RaAchievement, hardcore: Boolean, o
                     )
                 }
             }
+        }
         }
     }
 }
@@ -326,17 +329,35 @@ internal fun GameMessageOverlay(message: String, onDismiss: () -> Unit) {
         delay(220)
         currentOnDismiss()
     }
-    Box(modifier = Modifier.fillMaxSize().padding(top = 22.dp), contentAlignment = Alignment.TopCenter) {
-        AnimatedVisibility(visible = visible, enter = fadeIn(), exit = fadeOut()) {
-            Text(
-                text = message,
-                color = GameColors.text,
-                fontSize = 13.sp,
-                modifier = Modifier
-                    .shadow(10.dp, RoundedCornerShape(10.dp))
-                    .background(GameColors.panel, RoundedCornerShape(10.dp))
-                    .padding(horizontal = 14.dp, vertical = 8.dp),
-            )
+    BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+        Box(
+            modifier = Modifier.fillMaxSize().padding(top = 18.dp, start = 18.dp, end = 18.dp),
+            contentAlignment = Alignment.TopCenter,
+        ) {
+            AnimatedVisibility(visible = visible, enter = fadeIn(), exit = fadeOut()) {
+                Column(
+                    modifier = Modifier
+                        .widthIn(max = minOf(420.dp, maxWidth * 0.52f))
+                        .shadow(10.dp, RoundedCornerShape(10.dp))
+                        .background(GameColors.panel, RoundedCornerShape(10.dp))
+                        .padding(horizontal = 14.dp, vertical = 10.dp),
+                    verticalArrangement = Arrangement.spacedBy(3.dp),
+                ) {
+                    Text(
+                        text = "RETROACHIEVEMENTS",
+                        color = GameColors.accent,
+                        fontSize = 9.sp,
+                        fontWeight = FontWeight.Bold,
+                    )
+                    Text(
+                        text = message,
+                        color = GameColors.text,
+                        fontSize = 13.sp,
+                        maxLines = 3,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+            }
         }
     }
 }
