@@ -13,8 +13,18 @@ object GameModeSettings {
     private const val KEY_AUTO_ENTER = "auto_enter_on_controller"
     private const val KEY_SCRAPER = "scraper_thumbnails"
     private const val KEY_SOUND = "navigation_sound"
+    private const val KEY_RA_RICH_PRESENCE = "ra_rich_presence_visible"
     private const val KEY_SOUNDBITES = "theme_music_enabled"
     private const val KEY_SOUNDBITES_AUTO_DETAILS = "soundbites_auto_details"
+
+    /** Exibição do Rich Presence do RetroAchievements durante a sessão; ativada por padrão. */
+    fun isRaRichPresenceVisible(context: Context): Boolean = context.getSharedPreferences(FILE, Context.MODE_PRIVATE).getBoolean(KEY_RA_RICH_PRESENCE, true)
+
+    fun setRaRichPresenceVisible(context: Context, visible: Boolean) {
+        context.getSharedPreferences(FILE, Context.MODE_PRIVATE).edit {
+            putBoolean(KEY_RA_RICH_PRESENCE, visible)
+        }
+    }
 
     /** Som de clique ao mover o foco com o controle (usa o som do sistema; some se "sons de toque" estiver desligado). */
     fun isSoundEnabled(context: Context): Boolean = context.getSharedPreferences(FILE, Context.MODE_PRIVATE).getBoolean(KEY_SOUND, true)
