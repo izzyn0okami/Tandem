@@ -133,6 +133,7 @@ internal fun AchievementOverlay(achievement: RaAchievement, hardcore: Boolean, o
     }
 
     BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+        val availableWidth = maxWidth
         Box(
             modifier = Modifier.fillMaxSize().padding(top = 18.dp, end = 18.dp, start = 18.dp),
             contentAlignment = Alignment.TopEnd,
@@ -144,7 +145,7 @@ internal fun AchievementOverlay(achievement: RaAchievement, hardcore: Boolean, o
         ) {
             Row(
                 modifier = Modifier
-                    .widthIn(max = minOf(440.dp, maxWidth * 0.52f))
+                    .widthIn(max = minOf(440.dp, availableWidth * 0.52f))
                     .shadow(18.dp, RoundedCornerShape(14.dp))
                     .background(GameColors.panel, RoundedCornerShape(14.dp))
                     .padding(12.dp),
@@ -394,7 +395,7 @@ internal fun MasteryOverlay(mastery: RaMastery, playtimeLabel: String, userName:
         ) {
             Row(
                 modifier = Modifier
-                    .widthIn(max = minOf(460.dp, maxWidth * 0.54f))
+                    .widthIn(max = minOf(460.dp, availableWidth * 0.54f))
                     .shadow(20.dp, RoundedCornerShape(16.dp))
                     .background(GameColors.panel, RoundedCornerShape(16.dp))
                     .padding(14.dp),
@@ -448,3 +449,4 @@ internal fun MasteryOverlay(mastery: RaMastery, playtimeLabel: String, userName:
         }
         }
     }
+}
