@@ -272,6 +272,7 @@ class RaSession(
     private var loginRetryAttempt = 0
 
     @Volatile private var loginUser: String? = null
+
     @Volatile private var loginToken: String? = null
 
     /** Chamar só depois que o jogo já está rodando (o motor precisa do mapa de memória do núcleo). */
