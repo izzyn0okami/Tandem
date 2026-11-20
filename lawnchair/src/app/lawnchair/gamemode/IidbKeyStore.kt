@@ -60,8 +60,7 @@ internal object IidbKeyStore {
         credentialFile(context).delete()
     }
 
-    private fun credentialFile(context: Context): File =
-        File(context.applicationContext.noBackupFilesDir, FILE_NAME)
+    private fun credentialFile(context: Context): File = File(context.applicationContext.noBackupFilesDir, FILE_NAME)
 
     private fun getOrCreateKey(): SecretKey {
         val keyStore = KeyStore.getInstance("AndroidKeyStore").apply { load(null) }
