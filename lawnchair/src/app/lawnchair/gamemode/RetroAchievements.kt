@@ -640,15 +640,7 @@ class RaPreviewClient {
             .filter { !it.title.contains("Unknown Emulator", ignoreCase = true) }
     }
 
-    /** Inicia a sessão de jogo e devolve as conquistas que o usuário já tem. */
-    fun startSession(user: String, token: String, gameId: Long, hardcore: Boolean): RaUnlocks {
-        val json = call("r" to "startsession", "u" to user, "t" to token, "g" to gameId.toString(), "h" to if (hardcore) "1" else "0")
-        fun ids(key: String): Set<Long> {
-            val array = json.optJSONArray(key) ?: return emptySet()
-            return (0 until array.length()).map { array.getJSONObject(it).getLong("ID") }.toSet()
-        }
-        return RaUnlocks(softcore = ids("Unlocks"), hardcore = ids("HardcoreUnlocks"))
-    }
+
 }
 
 /**
