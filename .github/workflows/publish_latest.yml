@@ -1,0 +1,100 @@
+name: Publish Tandem latest
+
+on:
+  workflow_dispatch:
+    inputs:
+      source_branch:
+        description: Branch de desenvolvimento que fornecerá o APK
+        required: true
+        type: string
+        default: game-mode-m2-dev
+
+permissions:
+  contents: write
+
+concurrency:
+  group: tandem-latest-publish
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate source branch
+        env:
+          SOURCE_BRANCH: ${{ inputs.source_branch }}
+        run: |
+          if [[ ! "$SOURCE_BRANCH" =~ ^[A-Za-z0-9._/-]+-dev$ ]]; then
+            echo "::error::A branch de origem deve terminar em -dev."
+            exit 1
+          fi
+          if [[ "$SOURCE_BRANCH" == */../* || "$SOURCE_BRANCH" == ../* || "$SOURCE_BRANCH" == *"/.." ]]; then
+            echo "::error::Nome de branch inválido."
+            exit 1
+          fi
+
+      - name: Checkout selected branch
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.source_branch }}
+          submodules: recursive
+          fetch-depth: 0
+
+      - uses: actions/setup-java@v6
+        with:
+          distribution: 'zulu'
+          java-version: 21
+
+      - uses: gradle/actions/setup-gradle@v6
+        with:
+          cache-encryption-key: Da25KUVSE5jbGds2zXmfXw==
+
+      - name: Configure Tandem signing
+        run: |
+          if [ -z "${{ secrets.TANDEM_KEYSTORE }}" ]; then
+            echo "::error::TANDEM_KEYSTORE não está configurado."
+            exit 1
+          fi
+          echo storePassword='${{ secrets.TANDEM_KEYSTORE_PASSWORD }}' >> keystore.properties
+          echo keyAlias='${{ secrets.TANDEM_KEY_ALIAS }}' >> keystore.properties
+          echo keyPassword='${{ secrets.TANDEM_KEY_PASSWORD }}' >> keystore.properties
+          echo storeFile='${{ github.workspace }}/key.jks' >> keystore.properties
+          echo "${{ secrets.TANDEM_KEYSTORE }}" | base64 --decode > "${{ github.workspace }}/key.jks"
+
+      - name: Check formatting
+        run: ./gradlew spotlessCheck
+
+      - name: Build debug APK
+        run: ./gradlew assembleLawnWithQuickstepGithubDebug
+
+      - name: Prepare publication
+        id: prepare
+        run: |
+          APK="$(find build/outputs/apk -type f -name '*.apk' -print -quit)"
+          if [ -z "$APK" ]; then
+            echo "::error::O APK não foi encontrado."
+            exit 1
+          fi
+          mkdir -p out
+          cp "$APK" out/Tandem.apk
+          echo "source_sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+          echo "source_branch=$(git branch --show-current)" >> "$GITHUB_OUTPUT"
+
+      - name: Publish fixed download
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SOURCE_SHA: ${{ steps.prepare.outputs.source_sha }}
+          SOURCE_BRANCH: ${{ inputs.source_branch }}
+          RUN_NUMBER: ${{ github.run_number }}
+        run: |
+          TITLE="Tandem (publicação manual #${RUN_NUMBER})"
+          NOTES="APK do Tandem compilado a partir da branch ${SOURCE_BRANCH}. Commit: ${SOURCE_SHA}. O arquivo pode ser instalado sobre a versão anterior."
+
+          if gh release view tandem-latest >/dev/null 2>&1; then
+            gh release upload tandem-latest out/Tandem.apk --clobber
+            gh release edit tandem-latest --title "$TITLE" --notes "$NOTES"
+          else
+            gh release create tandem-latest out/Tandem.apk --prerelease --target "$SOURCE_SHA" --title "$TITLE" --notes "$NOTES"
+          fi
+
+          gh api --method PATCH "repos/${GITHUB_REPOSITORY}/git/refs/tags/tandem-latest" -f sha="$SOURCE_SHA" -F force=true
