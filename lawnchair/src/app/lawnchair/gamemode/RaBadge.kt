@@ -138,80 +138,80 @@ internal fun AchievementOverlay(achievement: RaAchievement, hardcore: Boolean, o
             modifier = Modifier.fillMaxSize().padding(top = 18.dp, end = 18.dp, start = 18.dp),
             contentAlignment = Alignment.TopEnd,
         ) {
-        AnimatedVisibility(
-            visible = visible,
-            enter = fadeIn() + slideInVertically(initialOffsetY = { -it / 2 }),
-            exit = fadeOut() + slideOutVertically(targetOffsetY = { -it / 3 }),
-        ) {
-            Row(
-                modifier = Modifier
-                    .widthIn(max = minOf(440.dp, availableWidth * 0.52f))
-                    .shadow(18.dp, RoundedCornerShape(14.dp))
-                    .background(GameColors.panel, RoundedCornerShape(14.dp))
-                    .padding(12.dp),
-                horizontalArrangement = Arrangement.spacedBy(13.dp),
-                verticalAlignment = Alignment.CenterVertically,
+            AnimatedVisibility(
+                visible = visible,
+                enter = fadeIn() + slideInVertically(initialOffsetY = { -it / 2 }),
+                exit = fadeOut() + slideOutVertically(targetOffsetY = { -it / 3 }),
             ) {
-                Box(
+                Row(
                     modifier = Modifier
-                        .width(4.dp)
-                        .height(64.dp)
-                        .clip(RoundedCornerShape(4.dp))
-                        .background(GameColors.accent),
-                )
-                if (icon != null) {
-                    Image(
-                        bitmap = icon!!,
-                        contentDescription = null,
-                        contentScale = ContentScale.Crop,
-                        modifier = Modifier.size(56.dp).clip(RoundedCornerShape(9.dp)),
-                    )
-                } else {
+                        .widthIn(max = minOf(440.dp, availableWidth * 0.52f))
+                        .shadow(18.dp, RoundedCornerShape(14.dp))
+                        .background(GameColors.panel, RoundedCornerShape(14.dp))
+                        .padding(12.dp),
+                    horizontalArrangement = Arrangement.spacedBy(13.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
                     Box(
                         modifier = Modifier
-                            .size(56.dp)
-                            .clip(RoundedCornerShape(9.dp))
-                            .background(GameColors.surfaceHigh),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Text("★", color = GameColors.accent, fontSize = 28.sp)
+                            .width(4.dp)
+                            .height(64.dp)
+                            .clip(RoundedCornerShape(4.dp))
+                            .background(GameColors.accent),
+                    )
+                    if (icon != null) {
+                        Image(
+                            bitmap = icon!!,
+                            contentDescription = null,
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier.size(56.dp).clip(RoundedCornerShape(9.dp)),
+                        )
+                    } else {
+                        Box(
+                            modifier = Modifier
+                                .size(56.dp)
+                                .clip(RoundedCornerShape(9.dp))
+                                .background(GameColors.surfaceHigh),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Text("★", color = GameColors.accent, fontSize = 28.sp)
+                        }
                     }
-                }
-                Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
-                    Text(
-                        text = stringResource(R.string.game_ra_unlocked_title, achievement.points),
-                        color = GameColors.accent,
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Bold,
-                    )
-                    Text(
-                        text = achievement.title,
-                        color = GameColors.text,
-                        fontSize = 15.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                    if (achievement.description.isNotBlank()) {
+                    Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
                         Text(
-                            text = achievement.description,
-                            color = GameColors.textDim,
-                            fontSize = 12.sp,
-                            maxLines = 2,
+                            text = stringResource(R.string.game_ra_unlocked_title, achievement.points),
+                            color = GameColors.accent,
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                        )
+                        Text(
+                            text = achievement.title,
+                            color = GameColors.text,
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
                         )
+                        if (achievement.description.isNotBlank()) {
+                            Text(
+                                text = achievement.description,
+                                color = GameColors.textDim,
+                                fontSize = 12.sp,
+                                maxLines = 2,
+                                overflow = TextOverflow.Ellipsis,
+                            )
+                        }
+                        Text(
+                            text = stringResource(
+                                if (hardcore) R.string.game_ra_hardcore_label else R.string.game_ra_softcore_label,
+                            ).uppercase(),
+                            color = if (hardcore) GameColors.success else GameColors.textDim,
+                            fontSize = 9.sp,
+                            fontWeight = FontWeight.Bold,
+                        )
                     }
-                    Text(
-                        text = stringResource(
-                            if (hardcore) R.string.game_ra_hardcore_label else R.string.game_ra_softcore_label,
-                        ).uppercase(),
-                        color = if (hardcore) GameColors.success else GameColors.textDim,
-                        fontSize = 9.sp,
-                        fontWeight = FontWeight.Bold,
-                    )
                 }
             }
-        }
         }
     }
 }
@@ -331,122 +331,124 @@ internal fun GameMessageOverlay(message: String, onDismiss: () -> Unit) {
         currentOnDismiss()
     }
     BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+        val availableWidth = maxWidth
         Box(
             modifier = Modifier.fillMaxSize().padding(top = 18.dp, start = 18.dp, end = 18.dp),
             contentAlignment = Alignment.TopCenter,
         ) {
-            AnimatedVisibility(visible = visible, enter = fadeIn(), exit = fadeOut()) {
-                Column(
-                    modifier = Modifier
-                        .widthIn(max = minOf(420.dp, maxWidth * 0.52f))
-                        .shadow(10.dp, RoundedCornerShape(10.dp))
-                        .background(GameColors.panel, RoundedCornerShape(10.dp))
-                        .padding(horizontal = 14.dp, vertical = 10.dp),
-                    verticalArrangement = Arrangement.spacedBy(3.dp),
-                ) {
-                    Text(
-                        text = "RETROACHIEVEMENTS",
-                        color = GameColors.accent,
-                        fontSize = 9.sp,
-                        fontWeight = FontWeight.Bold,
-                    )
-                    Text(
-                        text = message,
-                        color = GameColors.text,
-                        fontSize = 13.sp,
-                        maxLines = 3,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                }
-            }
-        }
-    }
-}
-
-/**
- * Aviso de "Mastered" (zerou no hardcore) ou "Completed" (zerou no normal) — os dois nomes oficiais
- * que a própria RetroAchievements usa (aparecem assim no perfil do site também). Ícone do jogo,
- * título e o nome do jogador + tempo jogado, com a paleta do Tandem.
- */
-@Composable
-internal fun MasteryOverlay(mastery: RaMastery, playtimeLabel: String, userName: String, onDismiss: () -> Unit) {
-    val context = LocalContext.current
-    val icon by produceState<ImageBitmap?>(null, mastery.badgeUrl) {
-        value = withContext(Dispatchers.IO) { RaBadges.loadUrl(context, mastery.badgeUrl) }
-    }
-    var visible by remember(mastery) { mutableStateOf(false) }
-    val currentOnDismiss by rememberUpdatedState(onDismiss)
-    LaunchedEffect(mastery) {
-        visible = true
-        delay(6_500)
-        visible = false
-        delay(260)
-        currentOnDismiss()
-    }
-    BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
-        Box(
-            modifier = Modifier.fillMaxSize().padding(top = 18.dp, start = 18.dp, end = 18.dp),
-            contentAlignment = Alignment.TopCenter,
-        ) {
-        AnimatedVisibility(
-            visible = visible,
-            enter = fadeIn() + slideInVertically(initialOffsetY = { -it / 2 }),
-            exit = fadeOut() + slideOutVertically(targetOffsetY = { -it / 3 }),
-        ) {
-            Row(
-                modifier = Modifier
-                    .widthIn(max = minOf(460.dp, availableWidth * 0.54f))
-                    .shadow(20.dp, RoundedCornerShape(16.dp))
-                    .background(GameColors.panel, RoundedCornerShape(16.dp))
-                    .padding(14.dp),
-                horizontalArrangement = Arrangement.spacedBy(14.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                if (icon != null) {
-                    Image(
-                        bitmap = icon!!,
-                        contentDescription = null,
-                        contentScale = ContentScale.Crop,
-                        modifier = Modifier.size(64.dp).clip(RoundedCornerShape(10.dp)),
-                    )
-                } else {
-                    Box(
-                        modifier = Modifier.size(64.dp).clip(RoundedCornerShape(10.dp)).background(GameColors.surfaceHigh),
-                        contentAlignment = Alignment.Center,
+                AnimatedVisibility(visible = visible, enter = fadeIn(), exit = fadeOut()) {
+                    Column(
+                        modifier = Modifier
+                            .widthIn(max = minOf(420.dp, availableWidth * 0.52f))
+                            .shadow(10.dp, RoundedCornerShape(10.dp))
+                            .background(GameColors.panel, RoundedCornerShape(10.dp))
+                            .padding(horizontal = 14.dp, vertical = 10.dp),
+                        verticalArrangement = Arrangement.spacedBy(3.dp),
                     ) {
-                        Text("🏆", fontSize = 26.sp)
+                        Text(
+                            text = "RETROACHIEVEMENTS",
+                            color = GameColors.accent,
+                            fontSize = 9.sp,
+                            fontWeight = FontWeight.Bold,
+                        )
+                        Text(
+                            text = message,
+                            color = GameColors.text,
+                            fontSize = 13.sp,
+                            maxLines = 3,
+                            overflow = TextOverflow.Ellipsis,
+                        )
                     }
                 }
-                Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
-                    Text(
-                        text = stringResource(
-                            when {
-                                mastery.subset && mastery.hardcore -> R.string.game_ra_subset_mastered
-                                mastery.subset -> R.string.game_ra_subset_completed
-                                mastery.hardcore -> R.string.game_ra_mastered
-                                else -> R.string.game_ra_completed
-                            },
-                        ).uppercase(),
-                        color = if (mastery.hardcore) GameColors.success else GameColors.accent,
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Bold,
-                    )
-                    Text(
-                        text = mastery.title,
-                        color = GameColors.text,
-                        fontSize = 17.sp,
-                        fontWeight = FontWeight.Bold,
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                    Text(
-                        text = stringResource(R.string.game_ra_mastery_subtitle, userName, playtimeLabel),
-                        color = GameColors.textDim,
-                        fontSize = 12.sp,
-                    )
-                }
             }
         }
+    }
+    
+    /**
+     * Aviso de "Mastered" (zerou no hardcore) ou "Completed" (zerou no normal) — os dois nomes oficiais
+     * que a própria RetroAchievements usa (aparecem assim no perfil do site também). Ícone do jogo,
+     * título e o nome do jogador + tempo jogado, com a paleta do Tandem.
+     */
+    @Composable
+    internal fun MasteryOverlay(mastery: RaMastery, playtimeLabel: String, userName: String, onDismiss: () -> Unit) {
+        val context = LocalContext.current
+        val icon by produceState<ImageBitmap?>(null, mastery.badgeUrl) {
+            value = withContext(Dispatchers.IO) { RaBadges.loadUrl(context, mastery.badgeUrl) }
+        }
+        var visible by remember(mastery) { mutableStateOf(false) }
+        val currentOnDismiss by rememberUpdatedState(onDismiss)
+        LaunchedEffect(mastery) {
+            visible = true
+            delay(6_500)
+            visible = false
+            delay(260)
+            currentOnDismiss()
+        }
+        BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+            val availableWidth = maxWidth
+            Box(
+                modifier = Modifier.fillMaxSize().padding(top = 18.dp, start = 18.dp, end = 18.dp),
+                contentAlignment = Alignment.TopCenter,
+            ) {
+                AnimatedVisibility(
+                visible = visible,
+                enter = fadeIn() + slideInVertically(initialOffsetY = { -it / 2 }),
+                exit = fadeOut() + slideOutVertically(targetOffsetY = { -it / 3 }),
+            ) {
+                Row(
+                    modifier = Modifier
+                        .widthIn(max = minOf(460.dp, availableWidth * 0.54f))
+                        .shadow(20.dp, RoundedCornerShape(16.dp))
+                        .background(GameColors.panel, RoundedCornerShape(16.dp))
+                        .padding(14.dp),
+                    horizontalArrangement = Arrangement.spacedBy(14.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    if (icon != null) {
+                        Image(
+                            bitmap = icon!!,
+                            contentDescription = null,
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier.size(64.dp).clip(RoundedCornerShape(10.dp)),
+                        )
+                    } else {
+                        Box(
+                            modifier = Modifier.size(64.dp).clip(RoundedCornerShape(10.dp)).background(GameColors.surfaceHigh),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Text("🏆", fontSize = 26.sp)
+                        }
+                    }
+                    Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                        Text(
+                            text = stringResource(
+                                when {
+                                    mastery.subset && mastery.hardcore -> R.string.game_ra_subset_mastered
+                                    mastery.subset -> R.string.game_ra_subset_completed
+                                    mastery.hardcore -> R.string.game_ra_mastered
+                                    else -> R.string.game_ra_completed
+                                },
+                            ).uppercase(),
+                            color = if (mastery.hardcore) GameColors.success else GameColors.accent,
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                        )
+                        Text(
+                            text = mastery.title,
+                            color = GameColors.text,
+                            fontSize = 17.sp,
+                            fontWeight = FontWeight.Bold,
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                        Text(
+                            text = stringResource(R.string.game_ra_mastery_subtitle, userName, playtimeLabel),
+                            color = GameColors.textDim,
+                            fontSize = 12.sp,
+                        )
+                    }
+                }
+            }
         }
     }
 }
