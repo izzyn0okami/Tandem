@@ -756,12 +756,6 @@ internal fun SettingsScreen(
             color = GameColors.textDim,
             fontSize = 12.sp,
         )
-        GameButton(stringResource(R.string.game_overlay_open_settings), rememberAccessibilitySettingsOpener())
-        Text(
-            text = stringResource(R.string.game_overlay_settings_note),
-            color = GameColors.textDim,
-            fontSize = 12.sp,
-        )
 
         SettingsSection(stringResource(R.string.game_mode_section_other))
         GameButton(stringResource(R.string.game_log_export), rememberLogExporter())
