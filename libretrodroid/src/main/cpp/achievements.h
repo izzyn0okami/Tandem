@@ -29,6 +29,7 @@ public:
     bool isGameLoaded() const;
     uint32_t getGameId() const;
     std::string getUserAgentClause() const;
+    std::string getRichPresenceMessage() const;
     bool isProcessingRequired() const;
     void deliverServerResponse(JNIEnv* env, int32_t requestId, int httpStatus, const std::string& body, bool networkError);
     std::string getAchievementListJson();
