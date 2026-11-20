@@ -4,7 +4,6 @@ import android.content.Context
 import android.media.AudioAttributes
 import android.media.MediaPlayer
 import com.yausername.youtubedl_android.YoutubeDL
-import com.yausername.youtubedl_android.YoutubeDLException
 import com.yausername.youtubedl_android.YoutubeDLRequest
 
 /**
@@ -82,24 +81,25 @@ object GameThemeMusic {
             return
         }
 
+        var media: MediaPlayer? = null
         try {
-            val media = MediaPlayer()
+            media = MediaPlayer()
             media.setAudioAttributes(
                 AudioAttributes.Builder()
                     .setUsage(AudioAttributes.USAGE_MEDIA)
                     .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
                     .build(),
             )
-            media.setOnPreparedListener {
+            media.setOnPreparedListener { preparedPlayer ->
                 runCatching {
-                    it.start()
+                    preparedPlayer.start()
                     GameLog.log("tema musical", "MediaPlayer preparado e reprodução iniciada")
                 }.onFailure { error ->
                     GameLog.error("tema musical", "falha ao iniciar áudio preparado", error)
                     synchronized(lock) {
-                        if (player === it) player = null
+                        if (player === preparedPlayer) player = null
                     }
-                    runCatching { it.release() }
+                    runCatching { preparedPlayer.release() }
                     if (currentKey == key) currentKey = null
                 }
             }
@@ -127,6 +127,10 @@ object GameThemeMusic {
             media.prepareAsync()
         } catch (e: Exception) {
             GameLog.error("tema musical", "falha ao configurar/preparar áudio de $title", e)
+            media?.let { failedPlayer ->
+                synchronized(lock) { if (player === failedPlayer) player = null }
+                runCatching { failedPlayer.release() }
+            }
             if (currentKey == key) currentKey = null
         }
     }
