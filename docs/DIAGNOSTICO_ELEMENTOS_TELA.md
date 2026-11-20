@@ -156,3 +156,19 @@ Inspeção dos fluxos em `RetroAchievements.kt`, `GameSessionActivity.kt`, `Game
 
 **Limite da validação:** a revisão de código não substitui testes específicos de todos os tipos de conquista, placar e cenários de reconexão de rede.
 
+## Validação do controle de visibilidade do Rich Presence
+
+**Data:** 2026-11-20  
+**PR:** #3 — `feat/game-mode-m2-engine`  
+**Commit validado pela CI:** `c9bcc4381957d67cfcb16d4b7e4b5e1aaacd204c`
+
+- **CI #312:** concluída com sucesso. O job `check-style` executou `./gradlew spotlessCheck` e passou.
+- **Compilação:** o job `build-debug-apk (assembleLawnWithQuickstepGithubDebug)` passou e publicou o artefato `assembleLawnWithQuickstepGithubDebug`.
+- **Teste em aparelho:** o usuário confirmou que os testes no telefone foram bem-sucedidos, incluindo ocultar e reexibir o Rich Presence pelo menu de pausa sem reiniciar o jogo.
+- **Persistência:** a preferência é lida ao iniciar `GameSessionActivity` e gravada tanto nas configurações quanto ao alternar pelo menu de pausa.
+- **Independência da sessão:** a consulta periódica a `view.getAchievementsRichPresence()` continua ativa enquanto a sessão RetroAchievements está ativa; a preferência controla apenas a composição visual de `RichPresenceOverlay`.
+- **Conquistas e sincronização:** os callbacks de conquistas, indicadores, placares e estado de conexão continuam ligados à sessão `RaSession`, sem depender da visibilidade do Rich Presence.
+
+**Resultado da revisão focada:** não foi identificada regressão no fluxo de Rich Presence, na atualização dos eventos de conquistas ou no indicador de conexão/sincronização nos trechos examinados. A confirmação funcional no aparelho foi relatada pelo usuário; não foi executada novamente por esta revisão.
+
+A PR #3 permanece aberta e em Draft. Nenhum merge foi realizado.
