@@ -185,7 +185,7 @@ uint32_t Achievements::peekMemory(uint32_t address, uint8_t* buffer, uint32_t nu
     if (!g_core) return 0;
     void* memPtr = g_core->retro_get_memory_data(RETRO_MEMORY_SYSTEM_RAM);
     size_t memSize = g_core->retro_get_memory_size(RETRO_MEMORY_SYSTEM_RAM);
-    if (!memPtr || address + numBytes > memSize) return 0;
+    if (!memPtr || address > memSize || numBytes > memSize - address) return 0;
 
     memcpy(buffer, static_cast<uint8_t*>(memPtr) + address, numBytes);
     return numBytes;
