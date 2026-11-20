@@ -13,7 +13,7 @@ object GameModeSettings {
     private const val KEY_AUTO_ENTER = "auto_enter_on_controller"
     private const val KEY_SCRAPER = "scraper_thumbnails"
     private const val KEY_SOUND = "navigation_sound"
-    private const val KEY_THEME_MUSIC = "theme_music_enabled"
+    private const val KEY_SOUNDBITES = "theme_music_enabled"
 
     /** Som de clique ao mover o foco com o controle (usa o som do sistema; some se "sons de toque" estiver desligado). */
     fun isSoundEnabled(context: Context): Boolean = context.getSharedPreferences(FILE, Context.MODE_PRIVATE).getBoolean(KEY_SOUND, true)
@@ -51,13 +51,13 @@ object GameModeSettings {
         }
     }
 
-    /** Tema musical do jogo em destaque (experimental, via busca no YouTube): desligado por padrão. */
-    fun isThemeMusicEnabled(context: Context): Boolean = context.getSharedPreferences(FILE, Context.MODE_PRIVATE).getBoolean(KEY_THEME_MUSIC, false)
+    /** Soundbites curtos da iiDB para o jogo em destaque; desligado por padrão. */
+    fun isSoundbitesEnabled(context: Context): Boolean = context.getSharedPreferences(FILE, Context.MODE_PRIVATE).getBoolean(KEY_SOUNDBITES, false)
 
-    fun setThemeMusicEnabled(context: Context, enabled: Boolean) {
+    fun setSoundbitesEnabled(context: Context, enabled: Boolean) {
         context.getSharedPreferences(FILE, Context.MODE_PRIVATE).edit {
-            putBoolean(KEY_THEME_MUSIC, enabled)
+            putBoolean(KEY_SOUNDBITES, enabled)
         }
-        if (!enabled) GameThemeMusic.stop()
+        if (!enabled) GameThemeMusic.stop("recurso desativado")
     }
 }
