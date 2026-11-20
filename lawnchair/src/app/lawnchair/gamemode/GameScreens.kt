@@ -531,7 +531,13 @@ private fun AchievementSummaryRow(platform: GamePlatform, hasLocal: Boolean, ent
             )
 
             entries == null -> Text(
-                text = stringResource(R.string.game_ra_preview_unknown),
+                text = stringResource(
+                    if (RaSettings.webApiKey(context) == null) {
+                        R.string.game_ra_preview_need_web_key
+                    } else {
+                        R.string.game_ra_preview_unknown
+                    },
+                ),
                 color = GameColors.textDim,
                 fontSize = 13.sp,
             )
