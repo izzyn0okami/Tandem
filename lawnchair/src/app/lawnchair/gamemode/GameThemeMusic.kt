@@ -108,17 +108,20 @@ object GameThemeMusic {
     }
 
     private fun releasePlayer(target: MediaPlayer, reason: String) {
-        val callback = synchronized(lock) {
+        val releaseState = synchronized(lock) {
             if (player === target) {
                 player = null
-                onPlaybackEnded.also { onPlaybackEnded = null }
-            } else null
+                true to onPlaybackEnded.also { onPlaybackEnded = null }
+            } else {
+                false to null
+            }
         }
         runCatching { target.release() }
+        if (!releaseState.first) return
         abandonFocus()
         currentKey = null
         GameLog.log("iiDB", reason)
-        callback?.let { Handler(Looper.getMainLooper()).post { it() } }
+        releaseState.second?.let { Handler(Looper.getMainLooper()).post { it() } }
     }
 
     private fun abandonFocus() {
