@@ -120,3 +120,39 @@ Nenhuma alteração funcional foi necessária para esta identificação; este re
 - Avisos de conquistas, indicadores de progresso, placares e sincronização não são afetados.
 
 A alteração não adiciona um parser próprio nem altera o ciclo de vida da sessão RetroAchievements.
+
+## Validação final — controle de visibilidade do Rich Presence
+
+**Data:** 2026-11-20  
+**PR:** #3 — `feat/game-mode-m2-engine`  
+**Commit de código validado pela CI:** `c9bcc4381957d67cfcb16d4b7e4b5e1aaacd204c`
+
+### CI #312
+
+A execução [CI #312](https://github.com/izzyn0okami/Tandem/actions/runs/44830859924) foi concluída com sucesso:
+
+- `spotlessCheck`: aprovado.
+- `assembleLawnWithQuickstepGithubDebug`: compilação aprovada.
+- `final-status`: aprovado.
+- Artefato APK gerado e disponível.
+
+### Teste em aparelho
+
+O usuário confirmou que os testes no telefone foram bem-sucedidos. O escopo de validação informado foi a alternância do Rich Presence pelo menu de pausa, ocultando e reexibindo a descrição durante a partida sem reiniciar o jogo.
+
+### Revisão de regressão
+
+Inspeção dos fluxos em `RetroAchievements.kt`, `GameSessionActivity.kt`, `GameModeSettings.kt`, `GameScreens.kt` e `RaBadge.kt`:
+
+- A preferência é carregada ao criar a sessão e persistida em `SharedPreferences`.
+- O menu de pausa atualiza o estado visual e grava a nova preferência.
+- `startRichPresenceUpdates()` continua consultando `rc_client` a cada dois segundos, sem depender da visibilidade.
+- O controle afeta somente a chamada visual de `RichPresenceOverlay`.
+- Desbloqueios e avisos de conquistas continuam usando seus fluxos próprios.
+- Indicadores de desafio e progresso, placares, avisos de conexão e `RaSyncIndicator` não são condicionados pela preferência de Rich Presence.
+- O encerramento da sessão continua chamando `RaSession.stop()` e destruindo o motor nativo.
+
+**Resultado:** nenhuma regressão relacionada ao controle de visibilidade foi identificada na revisão direcionada. Os testes no aparelho e a CI #312 foram aprovados.
+
+**Limite da validação:** a revisão de código não substitui testes específicos de todos os tipos de conquista, placar e cenários de reconexão de rede.
+
