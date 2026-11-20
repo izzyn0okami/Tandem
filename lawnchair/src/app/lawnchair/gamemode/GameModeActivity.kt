@@ -170,8 +170,8 @@ private fun GameModeRoot(refreshKey: Int, onExit: () -> Unit) {
         onDispose { GameThemeMusic.stop("modo jogos encerrado") }
     }
     LaunchedEffect(tab, detailKey) {
-        if (detailKey == null && tab != GameTab.Library) {
-            GameThemeMusic.stop("saída da Biblioteca")
+        if (detailKey == null) {
+            GameThemeMusic.stop(if (tab == GameTab.Library) "saída dos detalhes do jogo" else "saída da Biblioteca")
         }
     }
 
@@ -321,10 +321,14 @@ private fun GameModeRoot(refreshKey: Int, onExit: () -> Unit) {
                     }
                 },
                 label = "gameScreen",
-            ) {
+            ) { targetScreen ->
+                val targetDetail = targetScreen.key
+                    .takeIf { it.startsWith("detail:") }
+                    ?.removePrefix("detail:")
+                    ?.let { key -> entries.firstOrNull { it.key == key } }
                 when {
-                    current != null -> GameDetailScreen(
-                        entry = current,
+                    targetDetail != null -> GameDetailScreen(
+                        entry = targetDetail,
                         progress = remote.progress,
                         busy = busy,
                         onPlay = { play(it) },
@@ -333,7 +337,7 @@ private fun GameModeRoot(refreshKey: Int, onExit: () -> Unit) {
                         onBack = { detailKey = null },
                     )
 
-                    tab == GameTab.Library -> LibraryScreen(
+                    targetScreen.key == "tab:Library" -> LibraryScreen(
                         games = games,
                         entries = entries,
                         androidGames = androidGames,
@@ -353,19 +357,19 @@ private fun GameModeRoot(refreshKey: Int, onExit: () -> Unit) {
                         },
                     )
 
-                    tab == GameTab.Settings && showBios -> BiosScreen(rootPath = rootPath)
+                    targetScreen.key == "bios" -> BiosScreen(rootPath = rootPath)
 
-                    tab == GameTab.Settings && showEmulators -> EmulatorsScreen()
+                    targetScreen.key == "emulators" -> EmulatorsScreen()
 
-                    tab == GameTab.Settings && showFolders -> FoldersScreen()
+                    targetScreen.key == "folders" -> FoldersScreen()
 
-                    tab == GameTab.Settings && showCores -> CoresScreen()
+                    targetScreen.key == "cores" -> CoresScreen()
 
-                    tab == GameTab.Settings && showScraper -> ScraperScreen()
+                    targetScreen.key == "scraper" -> ScraperScreen()
 
-                    tab == GameTab.Settings && showServer -> ServerScreen(remote)
+                    targetScreen.key == "server" -> ServerScreen(remote)
 
-                    tab == GameTab.Settings -> SettingsScreen(
+                    targetScreen.key == "tab:Settings" -> SettingsScreen(
                         rootPath = rootPath,
                         needsAccess = needsAccess,
                         busy = busy,
