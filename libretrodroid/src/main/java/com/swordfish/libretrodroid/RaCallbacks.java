@@ -78,6 +78,9 @@ public interface RaCallbacks {
     /** Uma tentativa de placar foi enviada ao site. */
     void onLeaderboardSubmitted(int leaderboardId, String title, String score);
 
+    /** O servidor retornou a classificação e os melhores resultados após o envio. JSON: submittedScore, bestScore, newRank, numEntries, topEntries. */
+    void onLeaderboardScoreboard(int leaderboardId, String title, String json);
+
     /** Valor ao vivo de um placar sendo acompanhado (ex.: um cronômetro); chamado também a cada atualização. */
     void onLeaderboardTrackerUpdate(int trackerId, String display);
 
