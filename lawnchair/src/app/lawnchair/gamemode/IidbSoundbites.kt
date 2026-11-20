@@ -64,6 +64,14 @@ internal object IidbSoundbites {
             val cache = File(appContext.cacheDir, "iidb-soundbites").apply { mkdirs() }
             val prefs = appContext.getSharedPreferences("iidb_game_cache", Context.MODE_PRIVATE)
             val stableKey = sha256("$platform|$title")
+            val cachedAssetName = prefs.getString("asset_$stableKey", null)
+            val cachedAt = prefs.getLong("asset_checked_$stableKey", 0L)
+            if (System.currentTimeMillis() - cachedAt < 7L * 24 * 60 * 60 * 1000) {
+                cachedAssetName?.let { File(cache, it).takeIf(File::isFile) }?.let {
+                    it.setLastModified(System.currentTimeMillis())
+                    return@withContext it
+                }
+            }
             val parentId = prefs.getInt("parent_$stableKey", 0).takeIf { it > 0 }
                 ?: resolveParent(apiKey, title)?.also {
                     prefs.edit().putInt("parent_$stableKey", it).apply()
@@ -82,7 +90,7 @@ internal object IidbSoundbites {
                 val asset = soundbites.optJSONObject(index) ?: continue
                 val url = asset.optString("url").takeIf { it.isNotBlank() } ?: continue
                 val mime = asset.optString("mime_type").lowercase()
-                if (!mime.startsWith("audio/")) continue
+                if (mime.isNotBlank() && !mime.startsWith("audio/")) continue
                 val duration = asset.optLong("duration_ms", 0L)
                 if (duration > MAX_DURATION_MS) continue
                 val size = asset.optLong("file_size_bytes", 0L)
@@ -102,7 +110,11 @@ internal object IidbSoundbites {
                 }
                 val destination = File(cache, "$assetId-${sha256(revision).take(12)}.$extension")
                 if (destination.isFile && destination.length() > 0L) return@withContext destination
-                if (download(url, mime, destination)) {
+                if (download(url, mime.ifBlank { "audio/*" }, destination)) {
+                    prefs.edit()
+                        .putString("asset_$stableKey", destination.name)
+                        .putLong("asset_checked_$stableKey", System.currentTimeMillis())
+                        .apply()
                     trimCache(cache, destination)
                     return@withContext destination
                 }
