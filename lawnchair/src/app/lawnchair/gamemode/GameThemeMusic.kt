@@ -83,14 +83,15 @@ object GameThemeMusic {
 
         var media: MediaPlayer? = null
         try {
-            media = MediaPlayer()
-            media.setAudioAttributes(
+            val createdMedia = MediaPlayer()
+            media = createdMedia
+            createdMedia.setAudioAttributes(
                 AudioAttributes.Builder()
                     .setUsage(AudioAttributes.USAGE_MEDIA)
                     .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
                     .build(),
             )
-            media.setOnPreparedListener { preparedPlayer ->
+            createdMedia.setOnPreparedListener { preparedPlayer ->
                 runCatching {
                     preparedPlayer.start()
                     GameLog.log("tema musical", "MediaPlayer preparado e reprodução iniciada")
@@ -103,7 +104,7 @@ object GameThemeMusic {
                     if (currentKey == key) currentKey = null
                 }
             }
-            media.setOnErrorListener { mp, what, extra ->
+            createdMedia.setOnErrorListener { mp, what, extra ->
                 GameLog.log("tema musical", "erro assíncrono do MediaPlayer; what=$what; extra=$extra")
                 synchronized(lock) {
                     if (player === mp) player = null
@@ -112,19 +113,19 @@ object GameThemeMusic {
                 if (currentKey == key) currentKey = null
                 true
             }
-            media.setDataSource(url)
-            media.isLooping = true
+            createdMedia.setDataSource(url)
+            createdMedia.isLooping = true
             synchronized(lock) {
                 if (currentKey == key) {
-                    player = media
+                    player = createdMedia
                 } else {
-                    media.release()
+                    createdMedia.release()
                     GameLog.log("tema musical", "player descartado: jogo mudou antes da preparação")
                     return
                 }
             }
             GameLog.log("tema musical", "fonte de áudio configurada; iniciando preparação assíncrona")
-            media.prepareAsync()
+            createdMedia.prepareAsync()
         } catch (e: Exception) {
             GameLog.error("tema musical", "falha ao configurar/preparar áudio de $title", e)
             media?.let { failedPlayer ->
