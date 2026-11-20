@@ -316,7 +316,7 @@ internal fun LeaderboardTrackersColumn(trackers: List<RaLeaderboardTracker>) {
 
 /** Aviso rápido de placar (iniciado, não validado ou enviado): a RetroAchievements usa só uma mensagem simples. */
 @Composable
-internal fun LeaderboardMessageToast(message: String, onDismiss: () -> Unit) {
+internal fun GameMessageOverlay(message: String, onDismiss: () -> Unit) {
     var visible by remember(message) { mutableStateOf(false) }
     val currentOnDismiss by rememberUpdatedState(onDismiss)
     LaunchedEffect(message) {
