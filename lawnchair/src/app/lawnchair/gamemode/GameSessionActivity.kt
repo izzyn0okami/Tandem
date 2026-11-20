@@ -283,7 +283,7 @@ class GameSessionActivity : ComponentActivity() {
                                 PauseMenu(
                                     title = File(romPath).nameWithoutExtension,
                                     subtitle = progress,
-                                    canSave = !raHardcore,
+                                    canSave = true,
                                     canLoad = store.hasState() && !raHardcore,
                                     hasAchievements = raEntries.isNotEmpty(),
                                     onAchievements = { raListOpen = true },
@@ -471,6 +471,11 @@ class GameSessionActivity : ComponentActivity() {
     }
 
     private fun loadQuickState() {
+        // Defesa adicional: nenhum caminho de chamada pode carregar estados durante o Hardcore.
+        if (raHardcore) {
+            toast(R.string.game_session_state_load_failed)
+            return
+        }
         val view = retroView ?: return
         val payload = saveStore?.readState() ?: return
         var emuState = payload
