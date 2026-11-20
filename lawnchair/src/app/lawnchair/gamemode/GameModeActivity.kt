@@ -191,6 +191,7 @@ private fun GameModeRoot(refreshKey: Int, onExit: () -> Unit) {
     }
 
     suspend fun startGame(coreId: String, romPath: String, title: String, loadState: Boolean, platform: GamePlatform?) {
+        GameThemeMusic.stop("início de jogo")
         GameLog.log("jogo", "abrir: $title (plataforma=${platform?.slug ?: "?"}, núcleo=$coreId)")
         if (platform != null && platform.launch != LaunchMode.LIBRETRO) {
             status = context.getString(R.string.game_external_opening, title)
