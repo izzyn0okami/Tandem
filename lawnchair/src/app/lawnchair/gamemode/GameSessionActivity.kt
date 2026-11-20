@@ -96,6 +96,7 @@ class GameSessionActivity : ComponentActivity() {
     private var raHardcore by mutableStateOf(false)
     private var raSyncPending by mutableStateOf(false)
     private var raRichPresence by mutableStateOf("")
+    private var raRichPresenceVisible by mutableStateOf(true)
     private var raListOpen by mutableStateOf(false)
 
     // Indicadores e avisos extras do overlay de conquistas (padrão RetroAchievements; ver RaBadge.kt).
@@ -110,6 +111,7 @@ class GameSessionActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        raRichPresenceVisible = GameModeSettings.isRaRichPresenceVisible(this)
 
         // O Context da Activity só é válido após super.onCreate().
         // Inicializar aqui evita a NPE ao construir a Activity antes do attach.
@@ -278,7 +280,7 @@ class GameSessionActivity : ComponentActivity() {
                             ChallengeIndicatorsRow(raChallengeIndicators.values.toList())
                             raProgressIndicator?.let { ProgressIndicatorBadge(it) }
                             LeaderboardTrackersColumn(raLeaderboardTrackers.values.toList())
-                            RichPresenceOverlay(raRichPresence)
+                            if (raRichPresenceVisible) RichPresenceOverlay(raRichPresence)
                             RaSyncIndicator(raSyncPending)
                             if (menuOpen) {
                                 val progress = if (raEntries.isEmpty()) {
