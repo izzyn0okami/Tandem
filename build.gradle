@@ -177,6 +177,10 @@ android {
         resValues true
     }
 
+    packagingOptions {
+        jniLibs.useLegacyPackaging = true
+    }
+
     packagingOptions.resources.excludes += [
         "**/*.proto",
         "**/*.bin",
