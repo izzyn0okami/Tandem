@@ -32,6 +32,7 @@ import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -164,6 +165,15 @@ private fun GameModeRoot(refreshKey: Int, onExit: () -> Unit) {
     }
     val detail = entries.firstOrNull { it.key == detailKey }
     val networkRequest = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {}
+
+    DisposableEffect(Unit) {
+        onDispose { GameThemeMusic.stop("modo jogos encerrado") }
+    }
+    LaunchedEffect(tab, detailKey) {
+        if (detailKey == null && tab != GameTab.Library) {
+            GameThemeMusic.stop("saída da Biblioteca")
+        }
+    }
 
     LaunchedEffect(remote.connected, remote.tick, refreshKey) { remote.refresh() }
     LaunchedEffect(remote.connected) {
