@@ -14,6 +14,7 @@ object GameModeSettings {
     private const val KEY_SCRAPER = "scraper_thumbnails"
     private const val KEY_SOUND = "navigation_sound"
     private const val KEY_SOUNDBITES = "theme_music_enabled"
+    private const val KEY_SOUNDBITES_AUTO_DETAILS = "soundbites_auto_details"
 
     /** Som de clique ao mover o foco com o controle (usa o som do sistema; some se "sons de toque" estiver desligado). */
     fun isSoundEnabled(context: Context): Boolean = context.getSharedPreferences(FILE, Context.MODE_PRIVATE).getBoolean(KEY_SOUND, true)
@@ -59,5 +60,15 @@ object GameModeSettings {
             putBoolean(KEY_SOUNDBITES, enabled)
         }
         if (!enabled) GameThemeMusic.stop("recurso desativado")
+    }
+
+    /** Inicia o soundbite ao abrir os detalhes de um jogo; desligado por padrão. */
+    fun isSoundbitesAutoDetailsEnabled(context: Context): Boolean =
+        context.getSharedPreferences(FILE, Context.MODE_PRIVATE).getBoolean(KEY_SOUNDBITES_AUTO_DETAILS, false)
+
+    fun setSoundbitesAutoDetailsEnabled(context: Context, enabled: Boolean) {
+        context.getSharedPreferences(FILE, Context.MODE_PRIVATE).edit {
+            putBoolean(KEY_SOUNDBITES_AUTO_DETAILS, enabled)
+        }
     }
 }
