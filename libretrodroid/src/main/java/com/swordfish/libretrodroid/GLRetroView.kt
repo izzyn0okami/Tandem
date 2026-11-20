@@ -500,8 +500,12 @@ class GLRetroView(
      * Keeping these operations together prevents a frame from advancing between the two snapshots.
      */
     fun serializeStateWithAchievements(): Pair<ByteArray?, ByteArray?> = runOnGLThread {
-        if (achievementsHardcoreEnabled) return@runOnGLThread null to null
-        LibretroDroid.serializeState() to LibretroDroid.raSerializeProgress()
+        // RetroAchievements permite criar estados no Hardcore para depuração, mas não carregá-los.
+        // Não inclua o snapshot do rc_client nesse caso: ao abrir o estado em Casual, o progresso
+        // atual da sessão não deve ser substituído por um snapshot obtido durante o Hardcore.
+        val state = LibretroDroid.serializeState()
+        val progress = if (achievementsHardcoreEnabled) null else LibretroDroid.raSerializeProgress()
+        state to progress
     }
 
     /** Restore the emulator and achievement runtime in order on the GL thread. */
