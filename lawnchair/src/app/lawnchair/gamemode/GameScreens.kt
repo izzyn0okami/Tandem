@@ -410,6 +410,14 @@ internal fun GameDetailScreen(
         value = withContext(Dispatchers.IO) { GameArt.heroArt(context, "${entry.platform.slug}|${entry.title}", entry.title) }
     }
     LaunchedEffect(entry.key) { runCatching { firstFocus.requestFocus() } }
+    LaunchedEffect(entry.key, GameModeSettings.isSoundbitesEnabled(context), GameModeSettings.isSoundbitesAutoDetailsEnabled(context)) {
+        if (local != null && GameModeSettings.isSoundbitesEnabled(context) && GameModeSettings.isSoundbitesAutoDetailsEnabled(context)) {
+            GameThemeMusic.play(context, local.path, entry.title, entry.platform.name)
+        }
+    }
+    DisposableEffect(entry.key) {
+        onDispose { GameThemeMusic.stop("saída dos detalhes do jogo") }
+    }
 
     Box(modifier = Modifier.fillMaxSize()) {
         // Arte grande de fundo: do SteamGridDB quando tiver, senão a própria capa ampliada, com um
@@ -617,6 +625,11 @@ internal fun SettingsScreen(
             GameThemeMusic.stop("recurso desativado nas configurações")
         }
     }
+    var autoThemeMusicOnDetails by remember { mutableStateOf(GameModeSettings.isSoundbitesAutoDetailsEnabled(context)) }
+    val toggleAutoThemeMusicOnDetails = {
+        autoThemeMusicOnDetails = !autoThemeMusicOnDetails
+        GameModeSettings.setSoundbitesAutoDetailsEnabled(context, autoThemeMusicOnDetails)
+    }
     var apiKeyInput by remember { mutableStateOf("") }
     var apiKeyConfigured by remember { mutableStateOf(IidbKeyStore.get(context) != null) }
     var iidbStatus by remember { mutableStateOf("") }
@@ -739,6 +752,7 @@ internal fun SettingsScreen(
         SettingsSwitchRow(label = stringResource(R.string.game_mode_auto_enter), checked = autoEnter, onToggle = toggleAuto)
         SettingsSwitchRow(label = stringResource(R.string.game_mode_sound), checked = sound, onToggle = toggleSound)
         SettingsSwitchRow(label = stringResource(R.string.game_theme_music_toggle), checked = themeMusic, onToggle = toggleThemeMusic)
+        SettingsSwitchRow(label = stringResource(R.string.game_theme_music_auto_details), checked = autoThemeMusicOnDetails, onToggle = toggleAutoThemeMusicOnDetails)
         Text(
             text = stringResource(R.string.game_theme_music_note),
             color = GameColors.textDim,
