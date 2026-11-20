@@ -115,12 +115,6 @@ internal fun LibraryScreen(
         // Não interrompa uma busca iniciada enquanto a lista ainda estava sendo carregada.
         previousHeroPath = hero?.path
     }
-    DisposableEffect(Unit) {
-        onDispose {
-            GameLog.log("iiDB", "Biblioteca encerrada; interrompendo soundbite")
-            GameThemeMusic.stop("saída da Biblioteca")
-        }
-    }
     val onToggleTheme: () -> Unit = toggle@{
         val game = hero ?: return@toggle
         if (themePlaying) {
@@ -411,8 +405,9 @@ internal fun GameDetailScreen(
     }
     LaunchedEffect(entry.key) { runCatching { firstFocus.requestFocus() } }
     LaunchedEffect(entry.key, GameModeSettings.isSoundbitesEnabled(context), GameModeSettings.isSoundbitesAutoDetailsEnabled(context)) {
-        if (local != null && GameModeSettings.isSoundbitesEnabled(context) && GameModeSettings.isSoundbitesAutoDetailsEnabled(context)) {
-            GameThemeMusic.play(context, local.path, entry.title, entry.platform.name)
+        if (GameModeSettings.isSoundbitesEnabled(context) && GameModeSettings.isSoundbitesAutoDetailsEnabled(context)) {
+            GameLog.log("iiDB", "reprodução automática ao abrir detalhes: ${entry.title}")
+            GameThemeMusic.play(context, entry.key, entry.title, entry.platform.name)
         }
     }
     DisposableEffect(entry.key) {
