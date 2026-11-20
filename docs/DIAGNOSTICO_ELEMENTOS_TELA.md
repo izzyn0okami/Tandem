@@ -77,3 +77,33 @@ Abra a área de diagnóstico/logs do Modo Jogo e use a ação existente de expor
 ### Próxima etapa de investigação
 
 Depois de receber o arquivo exportado, conferir os componentes habilitados e cruzá-los com o emissor da notificação e os eventos do sistema. Só então decidir se é necessário instrumentar um componente específico ou solicitar uma coleta adicional controlada pelo usuário.
+
+## Resultado da inspeção do código — Rich Presence identificado
+
+**Data:** 2026-11-20  
+**Branch examinada:** `feat/game-mode-m2-engine`  
+**Commit examinado:** `e11cd4acc4d97983e650bf532c220e8768f16b42`
+
+O relato foi esclarecido: a descrição aparece como uma sobreposição flutuante dentro do jogo, no mesmo estilo visual dos avisos de Hardcore Mode e de conquistas desbloqueadas, e o texto acompanha a tela de título, comandos, power-ups e morte do personagem.
+
+A inspeção do código identificou uma correspondência direta com o Rich Presence do RetroAchievements:
+
+1. Em `RetroAchievements.kt`, quando `onLoadGameResult(success = true)` confirma que o jogo foi carregado e que o processamento de recursos é necessário, `startRichPresenceUpdates()` é iniciado.
+2. Essa rotina consulta `view.getAchievementsRichPresence()` em intervalo de 2 segundos. A consulta é feita no motor oficial `rc_client`; o Tandem não implementa um parser próprio de Rich Presence.
+3. Quando a mensagem muda, o callback `onRichPresence` atualiza o estado `raRichPresence` em `GameSessionActivity.kt`.
+4. A função Compose `RichPresenceOverlay`, em `RaBadge.kt`, apresenta o texto de forma persistente na parte inferior central da tela. Ao encerrar a sessão, `RaSession.stop()` limpa a mensagem.
+
+### Separação entre os avisos
+
+- **Rich Presence:** descrição dinâmica do estado atual do jogo; é o candidato que corresponde ao relato de título, comandos, power-ups e morte.
+- **Conquista desbloqueada:** evento `onAchievementTriggered` chama `onUnlock`, que alimenta `AchievementOverlay`; é um aviso temporário separado.
+- **Hardcore/Softcore e estado inicial das conquistas:** mensagens da `raNoticeQueue`, exibidas por `GameMessageOverlay`. O status `TRACKING` recebe a quantidade desbloqueada e o total.
+- **Indicador de sincronização:** `RaSyncIndicator`, independente do Rich Presence.
+
+### Conclusão e validação restante
+
+A evidência do código permite identificar o mecanismo como **Rich Presence do RetroAchievements apresentado pelo Tandem**, e não como leitura visual por acessibilidade. A descrição detalhada é calculada pelo `rc_client` a partir dos dados de memória do jogo e dos scripts de Rich Presence associados ao título.
+
+A confirmação final no aparelho pode ser feita observando se o texto descrito muda aproximadamente em tempo real e desaparece ao encerrar a sessão do jogo. Não há justificativa técnica, com as evidências atuais, para remover outros serviços de acessibilidade, ouvintes de notificação ou componentes do Android.
+
+Nenhuma alteração funcional foi necessária para esta identificação; este registro documenta o resultado da auditoria.
