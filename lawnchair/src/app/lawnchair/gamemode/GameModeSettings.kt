@@ -63,8 +63,7 @@ object GameModeSettings {
     }
 
     /** Inicia o soundbite ao abrir os detalhes de um jogo; desligado por padrão. */
-    fun isSoundbitesAutoDetailsEnabled(context: Context): Boolean =
-        context.getSharedPreferences(FILE, Context.MODE_PRIVATE).getBoolean(KEY_SOUNDBITES_AUTO_DETAILS, false)
+    fun isSoundbitesAutoDetailsEnabled(context: Context): Boolean = context.getSharedPreferences(FILE, Context.MODE_PRIVATE).getBoolean(KEY_SOUNDBITES_AUTO_DETAILS, false)
 
     fun setSoundbitesAutoDetailsEnabled(context: Context, enabled: Boolean) {
         context.getSharedPreferences(FILE, Context.MODE_PRIVATE).edit {
