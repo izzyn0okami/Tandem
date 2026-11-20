@@ -100,7 +100,17 @@ object GameThemeMusic {
             true
         } catch (error: Exception) {
             GameLog.error("iiDB", "falha ao preparar soundbite local", error)
-            media?.let { runCatching { it.release() } }
+            media?.let { failed ->
+                synchronized(lock) {
+                    if (player === failed) {
+                        player = null
+                        onPlaybackEnded = null
+                        audioManager = null
+                        focusRequest = null
+                    }
+                }
+                runCatching { failed.release() }
+            }
             manager.abandonAudioFocusRequest(request)
             if (currentKey == key) currentKey = null
             false
