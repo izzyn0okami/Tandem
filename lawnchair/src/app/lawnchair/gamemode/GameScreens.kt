@@ -408,6 +408,8 @@ internal fun GameDetailScreen(
         if (GameModeSettings.isSoundbitesEnabled(context) && GameModeSettings.isSoundbitesAutoDetailsEnabled(context)) {
             GameLog.log("iiDB", "reprodução automática ao abrir detalhes: ${entry.title}")
             GameThemeMusic.play(context, entry.key, entry.title, entry.platform.name)
+        } else {
+            GameThemeMusic.stop("detalhes abertos sem reprodução automática")
         }
     }
     DisposableEffect(entry.key) {
