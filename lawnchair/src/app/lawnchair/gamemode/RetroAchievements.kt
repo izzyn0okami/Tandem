@@ -119,9 +119,6 @@ sealed interface RaOverlayEvent {
     data class Mastery(val info: RaMastery) : RaOverlayEvent
 }
 
-/** Conquistas que o usuário já tem: no modo normal e no hardcore. */
-data class RaUnlocks(val softcore: Set<Long>, val hardcore: Set<Long>)
-
 /**
  * Bloqueante: lista de conquistas e o que já foi ganho, para mostrar na tela de detalhes sem o jogo
  * estar aberto. Só funciona depois que o jogo foi aberto pelo menos uma vez (é quando o id do jogo no
@@ -135,17 +132,11 @@ data class RaUnlocks(val softcore: Set<Long>, val hardcore: Set<Long>)
  */
 fun loadAchievementPreview(context: Context, romPath: String): List<RaEntry>? {
     val user = RaSettings.user(context) ?: return null
-    val token = RaSettings.token(context) ?: return null
+    val webApiKey = RaSettings.webApiKey(context) ?: return null
     val gameId = RaSettings.cachedGameId(context, romPath) ?: return null
     return try {
-        val client = RaPreviewClient()
-        val all = client.achievements(user, token, gameId)
-        if (all.isEmpty()) return emptyList()
-        // Só consulta (startsession também marca "jogando agora", mas é inofensivo e é a forma já usada pela API clássica).
-        val unlocks = client.startSession(user, token, gameId, hardcore = false)
-        val unlocked = unlocks.softcore + unlocks.hardcore
-        all.map { RaEntry(it, unlocked = it.id in unlocked) }
-    } catch (e: IOException) {
+        RaPreviewClient().achievementProgress(user, webApiKey, gameId)
+    } catch (e: Exception) {
         GameLog.error("conquistas", "não consegui carregar a prévia de conquistas", e)
         null
     }
@@ -186,6 +177,14 @@ class RaPreviewClient {
         }
     }
 
+    private fun getApi(url: okhttp3.HttpUrl): JSONObject {
+        val request = Request.Builder().url(url).header("User-Agent", userAgent).get().build()
+        http.newCall(request).execute().use { response ->
+            if (!response.isSuccessful) throw IOException("RetroAchievements respondeu ${response.code}")
+            return JSONObject(response.body?.string().orEmpty())
+        }
+    }
+
     /** Entra com usuário e senha e devolve o token (a senha não é guardada). */
     fun login(user: String, password: String): Pair<String, String> {
         val json = call("r" to "login2", "u" to user.trim(), "p" to password)
@@ -195,42 +194,50 @@ class RaPreviewClient {
         return json.getString("User") to json.getString("Token")
     }
 
-    fun achievements(user: String, token: String, gameId: Long): List<RaAchievement> {
-        val json = call("r" to "patch", "u" to user, "t" to token, "g" to gameId.toString())
-        val list = json.optJSONObject("PatchData")?.optJSONArray("Achievements") ?: return emptyList()
-        return (0 until list.length()).map { list.getJSONObject(it) }
-            // Flags 3 = conquistas oficiais (5 são não oficiais).
-            .filter { it.optInt("Flags", 3) == 3 }
-            .map {
-                RaAchievement(
-                    id = it.getLong("ID"),
-                    title = it.optString("Title"),
-                    description = it.optString("Description"),
-                    points = it.optInt("Points", 0),
-                    badge = it.optString("BadgeName"),
-                )
-            }
-            .filter { !it.title.contains("Unknown Emulator", ignoreCase = true) }
+    /** Confirma a Web API Key consultando o perfil da conta já conectada. */
+    fun validateWebApiKey(user: String, webApiKey: String) {
+        val url = requireNotNull("https://retroachievements.org/API/API_GetUserProfile.php".toHttpUrlOrNull())
+            .newBuilder()
+            .addQueryParameter("u", user)
+            .addQueryParameter("y", webApiKey.trim())
+            .build()
+        val profile = getApi(url)
+        if (profile.optString("User").isBlank() || !profile.optString("User").equals(user, ignoreCase = true)) {
+            throw IOException("A API não confirmou o usuário. Verifique a chave e tente novamente.")
+        }
     }
 
-    /** Inicia a sessão de jogo e devolve as conquistas que o usuário já tem. */
-    fun startSession(user: String, token: String, gameId: Long, hardcore: Boolean): RaUnlocks {
-        val json = call("r" to "startsession", "u" to user, "t" to token, "g" to gameId.toString(), "h" to if (hardcore) "1" else "0")
-        fun ids(key: String): Set<Long> {
-            val array = json.optJSONArray(key) ?: return emptySet()
-            return (0 until array.length()).map { array.getJSONObject(it).getLong("ID") }.toSet()
+    /** Lista conquistas e desbloqueios sem chamar startsession nem alterar o estado de jogo atual. */
+    fun achievementProgress(user: String, webApiKey: String, gameId: Long): List<RaEntry> {
+        val url = requireNotNull("https://retroachievements.org/API/API_GetGameInfoAndUserProgress.php".toHttpUrlOrNull())
+            .newBuilder()
+            .addQueryParameter("u", user)
+            .addQueryParameter("g", gameId.toString())
+            .addQueryParameter("y", webApiKey.trim())
+            .build()
+        val json = getApi(url)
+        val achievements = json.optJSONObject("Achievements") ?: return emptyList()
+        val entries = mutableListOf<Pair<Int, RaEntry>>()
+        val keys = achievements.keys()
+        while (keys.hasNext()) {
+            val item = achievements.optJSONObject(keys.next()) ?: continue
+            val title = item.optString("Title")
+            if (title.isBlank() || title.contains("Unknown Emulator", ignoreCase = true)) continue
+            val achievement = RaAchievement(
+                id = item.optLong("ID"),
+                title = title,
+                description = item.optString("Description"),
+                points = item.optInt("Points", 0),
+                badge = item.optString("BadgeName"),
+            )
+            val unlocked = item.optString("DateEarned").isNotBlank() ||
+                item.optString("DateEarnedHardcore").isNotBlank()
+            entries += item.optInt("DisplayOrder") to RaEntry(achievement, unlocked)
         }
-        return RaUnlocks(softcore = ids("Unlocks"), hardcore = ids("HardcoreUnlocks"))
+        return entries.sortedBy { it.first }.map { it.second }
     }
 }
 
-/**
- * Conquistas durante uma partida (normal ou hardcore), usando o motor oficial da RetroAchievements
- * (rc_client, do lado nativo): login, identificar/carregar o jogo pelo hash, modo hardcore e o envio
- * dos desbloqueios ao site (com fila de novas tentativas automática se a internet cair) são todos
- * cuidados por ele. Este objeto só faz a ponte: executa as chamadas HTTP que o rc_client pede (com o
- * OkHttp do app) e repassa os eventos (conquista desbloqueada, etc.) para a UI.
- */
 class RaSession(
     private val context: Context,
     private val view: GLRetroView,
