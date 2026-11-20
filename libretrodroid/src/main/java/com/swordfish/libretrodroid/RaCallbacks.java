@@ -45,6 +45,12 @@ public interface RaCallbacks {
     /** Uma chamada ao servidor falhou de forma definitiva (não vai ser tentada de novo). */
     void onServerError(String api, String message);
 
+    /** O servidor ficou indisponível; há atualizações pendentes de sincronização. */
+    void onDisconnected();
+
+    /** A conexão voltou e as atualizações pendentes foram sincronizadas. */
+    void onReconnected();
+
     /** O modo hardcore mudou com o jogo já carregado: o núcleo precisa ser reiniciado. */
     void onReset();
 
