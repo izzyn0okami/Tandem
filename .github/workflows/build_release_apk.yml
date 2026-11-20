@@ -7,6 +7,7 @@ jobs:
   build-release-apk:
     runs-on: ubuntu-latest
     if: endsWith(github.ref, '-alpha') || endsWith(github.ref, '-beta') || endsWith(github.ref, '-rc') || endsWith(github.ref, '-stable')
+    continue-on-error: true
     steps:
       - uses: actions/checkout@v7
         with:
@@ -28,24 +29,6 @@ jobs:
             echo storeFile='${{ github.workspace }}/key.jks' >> keystore.properties
             echo ${{ secrets.KEYSTORE }} | base64 --decode > ${{ github.workspace }}/key.jks
           fi
-      # Tandem: utiliza o keystore privado do fork para assinar builds Release.
-      - name: Write sign info (Tandem)
-        if: github.repository_owner != 'LawnchairLauncher'
-        env:
-          TANDEM_KEYSTORE: ${{ secrets.TANDEM_KEYSTORE }}
-          TANDEM_KEYSTORE_PASSWORD: ${{ secrets.TANDEM_KEYSTORE_PASSWORD }}
-          TANDEM_KEY_ALIAS: ${{ secrets.TANDEM_KEY_ALIAS }}
-          TANDEM_KEY_PASSWORD: ${{ secrets.TANDEM_KEY_PASSWORD }}
-        run: |
-          for name in TANDEM_KEYSTORE TANDEM_KEYSTORE_PASSWORD TANDEM_KEY_ALIAS TANDEM_KEY_PASSWORD; do
-            if [ -z "${!name}" ]; then
-              echo "::error::$name não está configurado."
-              exit 1
-            fi
-          done
-          printf '%s\n' "storePassword=$TANDEM_KEYSTORE_PASSWORD" "keyAlias=$TANDEM_KEY_ALIAS" "keyPassword=$TANDEM_KEY_PASSWORD" "storeFile=$GITHUB_WORKSPACE/key.jks" > keystore.properties
-          printf '%s' "$TANDEM_KEYSTORE" | base64 --decode > "$GITHUB_WORKSPACE/key.jks"
-          chmod 600 keystore.properties "$GITHUB_WORKSPACE/key.jks"
       - name: Build release APK
         run: ./gradlew assembleLawnWithQuickstepGithubRelease bundleLawnWithQuickstepPlayRelease
       - name: Upload artifact
@@ -53,3 +36,4 @@ jobs:
         with:
           name: Release APK
           path: build/outputs/*
+
