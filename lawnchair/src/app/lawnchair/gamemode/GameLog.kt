@@ -94,6 +94,7 @@ object GameLog {
             appendLine("Relógio UTC atual: ${utcStamp.format(Date())}")
             appendLine("Relógio monotônico desde boot: ${SystemClock.elapsedRealtimeNanos() / 1_000_000} ms")
             appendLine("Servidor RomM: ${RomMSettings.url(context) ?: "não conectado"}")
+            appendLine("iiDB configurada: ${IidbKeyStore.get(appContext) != null}; soundbites ativados: ${GameModeSettings.isSoundbitesEnabled(appContext)}")
             appendLine("Rede local permitida: ${localNetworkGranted(context)}")
             appendLine("Núcleos instalados: ${installedCores(context)}")
             appendLine("Espaço livre: ${context.filesDir.usableSpace / (1024 * 1024)} MB")
