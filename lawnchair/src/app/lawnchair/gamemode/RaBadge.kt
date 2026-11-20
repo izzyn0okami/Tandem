@@ -336,61 +336,61 @@ internal fun GameMessageOverlay(message: String, onDismiss: () -> Unit) {
             modifier = Modifier.fillMaxSize().padding(top = 18.dp, start = 18.dp, end = 18.dp),
             contentAlignment = Alignment.TopCenter,
         ) {
-                AnimatedVisibility(visible = visible, enter = fadeIn(), exit = fadeOut()) {
-                    Column(
-                        modifier = Modifier
-                            .widthIn(max = minOf(420.dp, availableWidth * 0.52f))
-                            .shadow(10.dp, RoundedCornerShape(10.dp))
-                            .background(GameColors.panel, RoundedCornerShape(10.dp))
-                            .padding(horizontal = 14.dp, vertical = 10.dp),
-                        verticalArrangement = Arrangement.spacedBy(3.dp),
-                    ) {
-                        Text(
-                            text = "RETROACHIEVEMENTS",
-                            color = GameColors.accent,
-                            fontSize = 9.sp,
-                            fontWeight = FontWeight.Bold,
-                        )
-                        Text(
-                            text = message,
-                            color = GameColors.text,
-                            fontSize = 13.sp,
-                            maxLines = 3,
-                            overflow = TextOverflow.Ellipsis,
-                        )
-                    }
+            AnimatedVisibility(visible = visible, enter = fadeIn(), exit = fadeOut()) {
+                Column(
+                    modifier = Modifier
+                        .widthIn(max = minOf(420.dp, availableWidth * 0.52f))
+                        .shadow(10.dp, RoundedCornerShape(10.dp))
+                        .background(GameColors.panel, RoundedCornerShape(10.dp))
+                        .padding(horizontal = 14.dp, vertical = 10.dp),
+                    verticalArrangement = Arrangement.spacedBy(3.dp),
+                ) {
+                    Text(
+                        text = "RETROACHIEVEMENTS",
+                        color = GameColors.accent,
+                        fontSize = 9.sp,
+                        fontWeight = FontWeight.Bold,
+                    )
+                    Text(
+                        text = message,
+                        color = GameColors.text,
+                        fontSize = 13.sp,
+                        maxLines = 3,
+                        overflow = TextOverflow.Ellipsis,
+                    )
                 }
             }
         }
     }
-    
-    /**
-     * Aviso de "Mastered" (zerou no hardcore) ou "Completed" (zerou no normal) — os dois nomes oficiais
-     * que a própria RetroAchievements usa (aparecem assim no perfil do site também). Ícone do jogo,
-     * título e o nome do jogador + tempo jogado, com a paleta do Tandem.
-     */
-    @Composable
-    internal fun MasteryOverlay(mastery: RaMastery, playtimeLabel: String, userName: String, onDismiss: () -> Unit) {
-        val context = LocalContext.current
-        val icon by produceState<ImageBitmap?>(null, mastery.badgeUrl) {
-            value = withContext(Dispatchers.IO) { RaBadges.loadUrl(context, mastery.badgeUrl) }
-        }
-        var visible by remember(mastery) { mutableStateOf(false) }
-        val currentOnDismiss by rememberUpdatedState(onDismiss)
-        LaunchedEffect(mastery) {
-            visible = true
-            delay(6_500)
-            visible = false
-            delay(260)
-            currentOnDismiss()
-        }
-        BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
-            val availableWidth = maxWidth
-            Box(
-                modifier = Modifier.fillMaxSize().padding(top = 18.dp, start = 18.dp, end = 18.dp),
-                contentAlignment = Alignment.TopCenter,
-            ) {
-                AnimatedVisibility(
+}
+
+/**
+ * Aviso de "Mastered" (zerou no hardcore) ou "Completed" (zerou no normal) — os dois nomes oficiais
+ * que a própria RetroAchievements usa (aparecem assim no perfil do site também). Ícone do jogo,
+ * título e o nome do jogador + tempo jogado, com a paleta do Tandem.
+ */
+@Composable
+internal fun MasteryOverlay(mastery: RaMastery, playtimeLabel: String, userName: String, onDismiss: () -> Unit) {
+    val context = LocalContext.current
+    val icon by produceState<ImageBitmap?>(null, mastery.badgeUrl) {
+        value = withContext(Dispatchers.IO) { RaBadges.loadUrl(context, mastery.badgeUrl) }
+    }
+    var visible by remember(mastery) { mutableStateOf(false) }
+    val currentOnDismiss by rememberUpdatedState(onDismiss)
+    LaunchedEffect(mastery) {
+        visible = true
+        delay(6_500)
+        visible = false
+        delay(260)
+        currentOnDismiss()
+    }
+    BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+        val availableWidth = maxWidth
+        Box(
+            modifier = Modifier.fillMaxSize().padding(top = 18.dp, start = 18.dp, end = 18.dp),
+            contentAlignment = Alignment.TopCenter,
+        ) {
+            AnimatedVisibility(
                 visible = visible,
                 enter = fadeIn() + slideInVertically(initialOffsetY = { -it / 2 }),
                 exit = fadeOut() + slideOutVertically(targetOffsetY = { -it / 3 }),
