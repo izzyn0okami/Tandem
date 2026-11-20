@@ -1,0 +1,48 @@
+name: Format RetroAchievements
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: write
+
+jobs:
+  format:
+    if: github.ref == 'refs/heads/feat/game-mode-m2-engine'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout PR branch
+        uses: actions/checkout@v7
+        with:
+          ref: feat/game-mode-m2-engine
+          submodules: recursive
+          fetch-depth: 0
+
+      - name: Set up Java
+        uses: actions/setup-java@v6
+        with:
+          distribution: zulu
+          java-version: 21
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v6
+
+      - name: Apply project formatter
+        run: ./gradlew spotlessApply
+
+      - name: Commit only RetroAchievements.kt
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          FILE="lawnchair/src/app/lawnchair/gamemode/RetroAchievements.kt"
+          git add -- "$FILE"
+          if git diff --cached --quiet; then
+            echo "RetroAchievements.kt já está formatado; nenhuma alteração necessária."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "style: format RetroAchievements integration"
+          git push origin HEAD:feat/game-mode-m2-engine
+          gh workflow run ci.yml --ref feat/game-mode-m2-engine
