@@ -156,6 +156,9 @@ enum class RaGameStatus {
 
     /** Jogo reconhecido e com conquistas sendo acompanhadas nesta partida. */
     TRACKING,
+
+    /** Jogo reconhecido com Rich Presence e/ou leaderboards, mas sem conquistas listadas. */
+    FEATURES_ONLY,
 }
 
 /**
@@ -603,7 +606,10 @@ class RaSession(
             if (reportStatus) {
                 val unlockedCount = entries.count { it.unlocked }
                 onStatus(
-                    if (entries.isEmpty()) RaGameStatus.NO_ACHIEVEMENTS else RaGameStatus.TRACKING,
+                    when {
+                        entries.isNotEmpty() -> RaGameStatus.TRACKING
+                        else -> RaGameStatus.FEATURES_ONLY
+                    },
                     unlockedCount,
                     entries.size,
                 )
