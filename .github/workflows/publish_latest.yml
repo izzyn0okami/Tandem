@@ -51,15 +51,13 @@ jobs:
 
       - name: Configure Tandem signing
         run: |
-          if [ -z "${{ secrets.TANDEM_KEYSTORE }}" ]; then
-            echo "::error::TANDEM_KEYSTORE não está configurado."
-            exit 1
+          if [ ! -z "${{ secrets.TANDEM_KEYSTORE }}" ]; then
+            echo storePassword='${{ secrets.TANDEM_KEYSTORE_PASSWORD }}' >> keystore.properties
+            echo keyAlias='${{ secrets.TANDEM_KEY_ALIAS }}' >> keystore.properties
+            echo keyPassword='${{ secrets.TANDEM_KEY_PASSWORD }}' >> keystore.properties
+            echo storeFile='${{ github.workspace }}/key.jks' >> keystore.properties
+            echo "${{ secrets.TANDEM_KEYSTORE }}" | base64 --decode > "${{ github.workspace }}/key.jks"
           fi
-          echo storePassword='${{ secrets.TANDEM_KEYSTORE_PASSWORD }}' >> keystore.properties
-          echo keyAlias='${{ secrets.TANDEM_KEY_ALIAS }}' >> keystore.properties
-          echo keyPassword='${{ secrets.TANDEM_KEY_PASSWORD }}' >> keystore.properties
-          echo storeFile='${{ github.workspace }}/key.jks' >> keystore.properties
-          echo "${{ secrets.TANDEM_KEYSTORE }}" | base64 --decode > "${{ github.workspace }}/key.jks"
 
       - name: Check formatting
         run: ./gradlew spotlessCheck
@@ -78,7 +76,6 @@ jobs:
           mkdir -p out
           cp "$APK" out/Tandem.apk
           echo "source_sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
-          echo "source_branch=$(git branch --show-current)" >> "$GITHUB_OUTPUT"
 
       - name: Publish fixed download
         env:
