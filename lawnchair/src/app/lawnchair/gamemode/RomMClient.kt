@@ -320,7 +320,13 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
         }
         val serverName = item.optString("fs_name").ifEmpty { return null }
         val allowed = platform.extensions + if (platform.discBased) emptySet() else GamePlatforms.genericExtensions
-        val flat = File(serverName).extension.lowercase() in allowed &&
+        val serverExtension = File(serverName).extension.lowercase()
+        // CUE/M3U/GDI são arquivos de índice: mesmo quando o RomM marca a ROM como
+        // arquivo único, os dados (BIN/IMG/subdiscos) podem estar ao lado. Trate-os
+        // como pasta para baixar o conjunto completo pelo endpoint /content da ROM.
+        val discReference = platform.discBased && serverExtension in setOf("cue", "m3u", "gdi")
+        val flat = serverExtension in allowed &&
+            !discReference &&
             !item.optBoolean("has_multiple_files", false) &&
             !item.optBoolean("has_nested_single_file", false)
         if (platform.discBased && File(serverName).extension.lowercase() in setOf("cue", "gdi")) {
