@@ -382,7 +382,11 @@ internal fun MasteryOverlay(mastery: RaMastery, playtimeLabel: String, userName:
         delay(260)
         currentOnDismiss()
     }
-    Box(modifier = Modifier.fillMaxSize().padding(top = 22.dp), contentAlignment = Alignment.TopCenter) {
+    BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+        Box(
+            modifier = Modifier.fillMaxSize().padding(top = 18.dp, start = 18.dp, end = 18.dp),
+            contentAlignment = Alignment.TopCenter,
+        ) {
         AnimatedVisibility(
             visible = visible,
             enter = fadeIn() + slideInVertically(initialOffsetY = { -it / 2 }),
@@ -390,10 +394,10 @@ internal fun MasteryOverlay(mastery: RaMastery, playtimeLabel: String, userName:
         ) {
             Row(
                 modifier = Modifier
-                    .widthIn(max = 440.dp)
+                    .widthIn(max = minOf(460.dp, maxWidth * 0.54f))
                     .shadow(20.dp, RoundedCornerShape(16.dp))
                     .background(GameColors.panel, RoundedCornerShape(16.dp))
-                    .padding(16.dp),
+                    .padding(14.dp),
                 horizontalArrangement = Arrangement.spacedBy(14.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
@@ -442,5 +446,5 @@ internal fun MasteryOverlay(mastery: RaMastery, playtimeLabel: String, userName:
                 }
             }
         }
+        }
     }
-}
