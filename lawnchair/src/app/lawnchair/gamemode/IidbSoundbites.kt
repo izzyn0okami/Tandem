@@ -1,17 +1,17 @@
 package app.lawnchair.gamemode
 
 import android.content.Context
+import java.io.File
+import java.security.MessageDigest
+import java.util.concurrent.TimeUnit
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONObject
-import java.io.File
-import java.security.MessageDigest
-import java.util.concurrent.TimeUnit
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 
 /** Minimal iiDB client. API keys are sent only to the documented API host, never to asset URLs. */
 internal object IidbSoundbites {
@@ -67,7 +67,7 @@ internal object IidbSoundbites {
             val cachedAssetName = prefs.getString("asset_$stableKey", null)
             val cachedAt = prefs.getLong("asset_checked_$stableKey", 0L)
             if (System.currentTimeMillis() - cachedAt < 7L * 24 * 60 * 60 * 1000) {
-                cachedAssetName?.let { File(cache, it).takeIf(File::isFile) }?.let {
+                cachedAssetName?.let { File(cache, it).takeIf { file -> file.isFile } }?.let {
                     it.setLastModified(System.currentTimeMillis())
                     return@withContext it
                 }
