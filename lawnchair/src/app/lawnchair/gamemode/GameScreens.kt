@@ -613,6 +613,9 @@ internal fun SettingsScreen(
     val toggleThemeMusic = {
         themeMusic = !themeMusic
         GameModeSettings.setSoundbitesEnabled(context, themeMusic)
+        if (!themeMusic) {
+            GameThemeMusic.stop("recurso desativado nas configurações")
+        }
     }
     var apiKeyInput by remember { mutableStateOf("") }
     var apiKeyConfigured by remember { mutableStateOf(IidbKeyStore.get(context) != null) }
