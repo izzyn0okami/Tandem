@@ -325,7 +325,7 @@ internal fun GameMessageOverlay(message: String, onDismiss: () -> Unit) {
     val currentOnDismiss by rememberUpdatedState(onDismiss)
     LaunchedEffect(message) {
         visible = true
-        delay(3_000)
+        delay(4_500)
         visible = false
         delay(220)
         currentOnDismiss()
@@ -339,7 +339,7 @@ internal fun GameMessageOverlay(message: String, onDismiss: () -> Unit) {
             AnimatedVisibility(visible = visible, enter = fadeIn(), exit = fadeOut()) {
                 Column(
                     modifier = Modifier
-                        .widthIn(max = minOf(420.dp, availableWidth * 0.52f))
+                        .widthIn(max = minOf(420.dp, availableWidth * 0.62f))
                         .shadow(10.dp, RoundedCornerShape(10.dp))
                         .background(GameColors.panel, RoundedCornerShape(10.dp))
                         .padding(horizontal = 14.dp, vertical = 10.dp),
@@ -355,7 +355,7 @@ internal fun GameMessageOverlay(message: String, onDismiss: () -> Unit) {
                         text = message,
                         color = GameColors.text,
                         fontSize = 13.sp,
-                        maxLines = 3,
+                        maxLines = 6,
                         overflow = TextOverflow.Ellipsis,
                     )
                 }
