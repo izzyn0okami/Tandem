@@ -56,6 +56,7 @@ object GameLog {
                 file.writeText(file.readText().takeLast(MAX_BYTES / 2))
             }
             val now = Date()
+            localStamp.timeZone = TimeZone.getDefault()
             val local = localStamp.format(now)
             val utc = utcStamp.format(now)
             val elapsed = SystemClock.elapsedRealtimeNanos() / 1_000_000
@@ -83,6 +84,7 @@ object GameLog {
         val appContext = context.applicationContext
         val file = File(appContext.filesDir, FILE)
         val packageInfo = runCatching { appContext.packageManager.getPackageInfo(appContext.packageName, 0) }.getOrNull()
+        localStamp.timeZone = TimeZone.getDefault()
         val header = buildString {
             appendLine("Tandem – registro do modo jogo")
             appendLine("Aparelho: ${Build.MANUFACTURER} ${Build.MODEL}, Android ${Build.VERSION.RELEASE} (API ${Build.VERSION.SDK_INT})")
