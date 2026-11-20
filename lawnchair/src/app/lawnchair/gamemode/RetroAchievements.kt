@@ -377,6 +377,16 @@ class RaSession(
         emitOverlay(RaOverlayEvent.LeaderboardMessage("Falha no RetroAchievements ($api): $message"))
     }
 
+    override fun onDisconnected() {
+        if (!active) return
+        emitOverlay(RaOverlayEvent.LeaderboardMessage("Sem conexão com o RetroAchievements. As atualizações ficarão pendentes."))
+    }
+
+    override fun onReconnected() {
+        if (!active) return
+        emitOverlay(RaOverlayEvent.LeaderboardMessage("Conexão restabelecida. Atualizações sincronizadas."))
+    }
+
     /**
      * Hardcore must not remain active when authentication or game identification fails.
      * The setting itself is preserved for the next supported session.
