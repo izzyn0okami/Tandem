@@ -30,7 +30,6 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -412,10 +411,6 @@ internal fun GameDetailScreen(
             GameThemeMusic.stop("detalhes abertos sem reprodução automática")
         }
     }
-    DisposableEffect(entry.key) {
-        onDispose { GameThemeMusic.stop("saída dos detalhes do jogo") }
-    }
-
     Box(modifier = Modifier.fillMaxSize()) {
         // Arte grande de fundo: do SteamGridDB quando tiver, senão a própria capa ampliada, com um
         // gradiente escuro por cima pra manter o texto legível (estilo tela de detalhes do SteamOS).
