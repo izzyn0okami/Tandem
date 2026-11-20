@@ -51,13 +51,15 @@ jobs:
 
       - name: Configure Tandem signing
         run: |
-          if [ ! -z "${{ secrets.TANDEM_KEYSTORE }}" ]; then
-            echo storePassword='${{ secrets.TANDEM_KEYSTORE_PASSWORD }}' >> keystore.properties
-            echo keyAlias='${{ secrets.TANDEM_KEY_ALIAS }}' >> keystore.properties
-            echo keyPassword='${{ secrets.TANDEM_KEY_PASSWORD }}' >> keystore.properties
-            echo storeFile='${{ github.workspace }}/key.jks' >> keystore.properties
-            echo "${{ secrets.TANDEM_KEYSTORE }}" | base64 --decode > "${{ github.workspace }}/key.jks"
+          if [ -z "${{ secrets.TANDEM_KEYSTORE }}" ]; then
+            echo "::error::TANDEM_KEYSTORE não está configurado; a publicação foi cancelada para evitar um APK incompatível com atualizações."
+            exit 1
           fi
+          echo storePassword='${{ secrets.TANDEM_KEYSTORE_PASSWORD }}' >> keystore.properties
+          echo keyAlias='${{ secrets.TANDEM_KEY_ALIAS }}' >> keystore.properties
+          echo keyPassword='${{ secrets.TANDEM_KEY_PASSWORD }}' >> keystore.properties
+          echo storeFile='${{ github.workspace }}/key.jks' >> keystore.properties
+          echo "${{ secrets.TANDEM_KEYSTORE }}" | base64 --decode > "${{ github.workspace }}/key.jks"
 
       - name: Check formatting
         run: ./gradlew spotlessCheck
