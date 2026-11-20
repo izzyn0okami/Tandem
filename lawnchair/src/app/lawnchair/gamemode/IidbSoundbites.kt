@@ -27,6 +27,7 @@ internal object IidbSoundbites {
         .followRedirects(false)
         .followSslRedirects(false)
         .build()
+    private val assetClient = client.newBuilder().followRedirects(true).followSslRedirects(true).build()
 
     enum class AccessResult { VALID, INVALID_KEY, DENIED, NETWORK_ERROR }
 
@@ -55,7 +56,6 @@ internal object IidbSoundbites {
     suspend fun findSoundbite(
         context: Context,
         apiKey: String,
-        gameKey: String,
         title: String,
         platform: String,
     ): File? = withContext(Dispatchers.IO) {
@@ -90,7 +90,17 @@ internal object IidbSoundbites {
                 val assetId = asset.optLong("id", -1L)
                 if (assetId <= 0L) continue
                 val revision = asset.optString("revision")
-                val destination = File(cache, "$assetId-${sha256(revision).take(12)}.audio")
+                val extension = when (mime.substringBefore(";")) {
+                    "audio/mpeg" -> "mp3"
+                    "audio/ogg" -> "ogg"
+                    "audio/wav", "audio/x-wav" -> "wav"
+                    "audio/mp4" -> "m4a"
+                    "audio/aac" -> "aac"
+                    "audio/flac" -> "flac"
+                    "audio/opus" -> "opus"
+                    else -> "audio"
+                }
+                val destination = File(cache, "$assetId-${sha256(revision).take(12)}.$extension")
                 if (destination.isFile && destination.length() > 0L) return@withContext destination
                 if (download(url, mime, destination)) return@withContext destination
             }
@@ -109,6 +119,7 @@ internal object IidbSoundbites {
             .url(API_BASE.toHttpUrl().newBuilder().addPathSegments("resolve").build())
             .header("X-API-Key", apiKey.trim())
             .header("Accept", "application/json")
+            .header("Cache-Control", "no-store")
             .post(body)
             .build()
         return client.newCall(request).execute().use { response ->
@@ -139,7 +150,7 @@ internal object IidbSoundbites {
             return false
         }
         val request = Request.Builder().url(parsed).header("Accept", mime).get().build()
-        return client.newCall(request).execute().use { response ->
+        return assetClient.newCall(request).execute().use { response ->
             if (!response.isSuccessful) return@use false
             val body = response.body ?: return@use false
             val responseMime = body.contentType()?.type
