@@ -102,7 +102,10 @@ internal object IidbSoundbites {
                 }
                 val destination = File(cache, "$assetId-${sha256(revision).take(12)}.$extension")
                 if (destination.isFile && destination.length() > 0L) return@withContext destination
-                if (download(url, mime, destination)) return@withContext destination
+                if (download(url, mime, destination)) {
+                    trimCache(cache, destination)
+                    return@withContext destination
+                }
             }
             GameLog.log("iiDB", "soundbite indisponível para $title ($platform)")
             null
@@ -113,7 +116,7 @@ internal object IidbSoundbites {
     }
 
     private fun resolveParent(apiKey: String, title: String): Int? {
-        val body = JSONObject().put("title", title).toString()
+        val body = JSONObject().put("title", title).put("title_match", "exact").toString()
             .toRequestBody("application/json; charset=utf-8".toMediaType())
         val request = Request.Builder()
             .url(API_BASE.toHttpUrl().newBuilder().addPathSegments("resolve").build())
@@ -154,7 +157,7 @@ internal object IidbSoundbites {
             if (!response.isSuccessful) return@use false
             val body = response.body ?: return@use false
             val responseMime = body.contentType()?.type
-            if (responseMime != "audio" || body.contentLength() > MAX_ASSET_BYTES) return@use false
+            if ((responseMime != null && responseMime != "audio" && !(responseMime == "application" && body.contentType()?.subtype == "octet-stream")) || body.contentLength() > MAX_ASSET_BYTES) return@use false
             val temporary = File(destination.parentFile, destination.name + ".part")
             try {
                 body.byteStream().use { input ->
@@ -180,6 +183,16 @@ internal object IidbSoundbites {
                 temporary.delete()
                 throw error
             }
+        }
+    }
+
+    private fun trimCache(cache: File, keep: File) {
+        val files = cache.listFiles()?.filter { it.isFile && it != keep }.orEmpty().sortedBy { it.lastModified() }
+        var total = cache.listFiles()?.filter { it.isFile }?.sumOf { it.length() } ?: 0L
+        for (file in files) {
+            if (total <= 64L * 1024 * 1024) break
+            total -= file.length()
+            file.delete()
         }
     }
 
