@@ -192,7 +192,10 @@ internal object IidbSoundbites {
                         }
                     }
                 }
-                if (temporary.length() == 0L) return@use false
+                if (temporary.length() == 0L) {
+                    temporary.delete()
+                    return@use false
+                }
                 if (!temporary.renameTo(destination)) {
                     temporary.copyTo(destination, overwrite = true)
                     temporary.delete()
