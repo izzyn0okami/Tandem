@@ -11,6 +11,8 @@ import java.io.IOException
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import okhttp3.FormBody
@@ -252,6 +254,8 @@ class RaSession(
     private val onState: (entries: List<RaEntry>, hardcore: Boolean) -> Unit,
     private val onStatus: (status: RaGameStatus, unlocked: Int, total: Int) -> Unit = { _, _, _ -> },
     private val onOverlayEvent: (RaOverlayEvent) -> Unit = {},
+    private val onConnectionState: (connected: Boolean) -> Unit = {},
+    private val onRichPresence: (message: String) -> Unit = {},
     private val onGameLoaded: (onRestored: () -> Unit) -> Unit = { it() },
 ) : RaCallbacks {
 
@@ -262,6 +266,8 @@ class RaSession(
     private var achievementsById = emptyMap<Long, RaAchievement>()
 
     @Volatile private var active = false
+    private var richPresenceJob: Job? = null
+    private var lastRichPresence: String? = null
 
     /** Chamar só depois que o jogo já está rodando (o motor precisa do mapa de memória do núcleo). */
     fun start() {
@@ -270,6 +276,7 @@ class RaSession(
         val consoleId = platform.raConsoleId ?: return
 
         active = true
+        onConnectionState(true)
         view.startAchievements(this, hardcoreEnabled)
         val rcheevosClause = view.getAchievementsUserAgentClause()
         if (rcheevosClause.isNotBlank()) userAgent = "Tandem/1.0.0 (Android ${Build.VERSION.RELEASE}) $rcheevosClause"
@@ -289,6 +296,10 @@ class RaSession(
     fun stop() {
         if (!active) return
         active = false
+        richPresenceJob?.cancel()
+        richPresenceJob = null
+        onRichPresence("")
+        onConnectionState(true)
         runCatching { view.stopAchievements() }
             .onFailure { GameLog.error("conquistas", "falha ao encerrar a sessão RetroAchievements", it) }
     }
@@ -349,7 +360,10 @@ class RaSession(
             }
             // A restauração é enfileirada depois deste callback nativo para evitar reentrância no rc_client.
             onGameLoaded {
-                if (active) publish(reportStatus = true)
+                if (active) {
+                    publish(reportStatus = true)
+                    startRichPresenceUpdates()
+                }
             }
             return
         }
@@ -379,11 +393,13 @@ class RaSession(
 
     override fun onDisconnected() {
         if (!active) return
+        scope.launch(Dispatchers.Main) { if (active) onConnectionState(false) }
         emitOverlay(RaOverlayEvent.LeaderboardMessage("Sem conexão com o RetroAchievements. As atualizações ficarão pendentes."))
     }
 
     override fun onReconnected() {
         if (!active) return
+        scope.launch(Dispatchers.Main) { if (active) onConnectionState(true) }
         emitOverlay(RaOverlayEvent.LeaderboardMessage("Conexão restabelecida. Atualizações sincronizadas."))
     }
 
@@ -484,6 +500,23 @@ class RaSession(
             subset = obj.optBoolean("subset"),
         )
         emitOverlay(RaOverlayEvent.Mastery(mastery))
+    }
+
+    /** Consulta o texto calculado pelo rc_client sem implementar o parser de Rich Presence em paralelo. */
+    private fun startRichPresenceUpdates() {
+        richPresenceJob?.cancel()
+        richPresenceJob = scope.launch {
+            while (active) {
+                val message = runCatching {
+                    withContext(Dispatchers.Default) { view.getAchievementsRichPresence() }
+                }.getOrDefault("")
+                if (active && message != lastRichPresence) {
+                    lastRichPresence = message
+                    onRichPresence(message)
+                }
+                delay(2_000)
+            }
+        }
     }
 
     private fun emitOverlay(event: RaOverlayEvent) {
