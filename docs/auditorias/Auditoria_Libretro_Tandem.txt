@@ -1009,3 +1009,22 @@ Data: 2026-11-21
 - A correção de formatação Spotless foi aplicada sem alterar a lógica.
 - Pendência funcional: testar no aparelho downloads normais com espaço suficiente e confirmar que um download é recusado antes da transferência quando o espaço é insuficiente.
 - Retomada automática de downloads permanece fora do escopo até confirmar suporte HTTP Range nos endpoints RomM.
+
+
+ATUALIZAÇÃO — CI PÓS-MERGE DA PR #20 E CI DA ATUALIZAÇÃO DO LOG
+Data: 2026-11-21
+
+- CI pós-merge #394: https://github.com/izzyn0okami/Tandem/actions/runs/44963402140
+- Commit de merge: 3b5c00626f46811e4ce0b88f386484d30c762225.
+- check-style / spotlessCheck: sucesso.
+- build-debug-apk / assembleLawnWithQuickstepGithubDebug: sucesso.
+- Upload artifact: sucesso.
+- final-status: sucesso.
+- tandem-release: sucesso; publicação do canal tandem-latest concluída.
+- CI #395, disparada pela atualização deste documento: https://github.com/izzyn0okami/Tandem/actions/runs/44963411303.
+- Commit da atualização do log: 385795351dc90f2c7062144abaf97c62faed3285.
+- CI #395: conclusão global success. O resultado confirma estilo, compilação e fluxo de publicação após a atualização documental.
+- Crowdin Upload #102 foi ignorado pelas condições do workflow; isso não representa falha da CI principal.
+- Não há PRs abertas no repositório no momento desta consulta.
+- Testes funcionais de armazenamento no telefone permanecem deliberadamente adiados a pedido do usuário. Não marcar como validados downloads normais nem bloqueio por falta de espaço.
+- Próxima etapa: continuar a auditoria técnica sem repetir a verificação de espaço já integrada; manter os testes funcionais de armazenamento pendentes até o usuário desejar retomá-los.
