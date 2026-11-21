@@ -151,7 +151,14 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
     private fun request(url: HttpUrl): Request.Builder {
         val builder = Request.Builder().url(url)
         // O token só vai para o próprio servidor, nunca para endereços de fora.
-        if (token != null && url.host == base.host) builder.header("Authorization", "Bearer $token")
+        if (
+            token != null &&
+                url.scheme == base.scheme &&
+                url.host == base.host &&
+                url.port == base.port
+        ) {
+            builder.header("Authorization", "Bearer $token")
+        }
         return builder
     }
 
@@ -711,15 +718,45 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
     }
 
     fun downloadFirmware(firmware: RemoteFirmware, target: File) {
-        val url = base.resolve("api/firmware/${firmware.id}/content/")!!.newBuilder().addPathSegment(firmware.fileName).build()
+        val url = base.resolve("api/firmware/${firmware.id}/content/")!!
+            .newBuilder()
+            .addPathSegment(firmware.fileName)
+            .build()
+        downloadToFile(url, target, "firmware=${firmware.id}, arquivo=${firmware.fileName}")
+    }
+
+    private fun downloadToFile(url: HttpUrl, target: File, description: String) {
         target.parentFile?.mkdirs()
         val temp = File(target.parentFile, "${target.name}.part")
-        longHttp.newCall(request(url).build()).execute().use { response ->
-            if (!response.isSuccessful) throw IOException("Servidor respondeu ${response.code}")
-            temp.outputStream().use { response.body.byteStream().copyTo(it) }
+        temp.delete()
+        try {
+            longHttp.newCall(request(url).build()).execute().use { response ->
+                if (!response.isSuccessful) {
+                    throw RomMHttpException(response.code, "Servidor respondeu ${response.code} ao baixar $description")
+                }
+                val expectedBytes = response.body.contentLength()
+                var total = 0L
+                response.body.byteStream().use { input ->
+                    temp.outputStream().use { output ->
+                        val buffer = ByteArray(64 * 1024)
+                        while (true) {
+                            val read = input.read(buffer)
+                            if (read < 0) break
+                            output.write(buffer, 0, read)
+                            total += read
+                        }
+                    }
+                }
+                check(expectedBytes < 0L || total == expectedBytes) {
+                    "Download incompleto de $description: recebidos $total de $expectedBytes bytes"
+                }
+            }
+            target.delete()
+            check(temp.renameTo(target)) { "Não consegui gravar ${target.name}" }
+        } catch (error: Exception) {
+            temp.delete()
+            throw error
         }
-        target.delete()
-        check(temp.renameTo(target)) { "Não consegui gravar ${target.name}" }
     }
 
     private fun isZip(file: File): Boolean = file.inputStream().use {
@@ -734,7 +771,14 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
             var entry = input.nextEntry
             while (entry != null && (entry.isDirectory || File(entry.name).name != target.name)) entry = input.nextEntry
             checkNotNull(entry) { "O pacote do servidor não contém ${target.name}" }
-            out.outputStream().use { input.copyTo(it) }
+            out.outputStream().use { output ->
+                val buffer = ByteArray(64 * 1024)
+                while (true) {
+                    val read = input.read(buffer)
+                    if (read < 0) break
+                    output.write(buffer, 0, read)
+                }
+            }
         }
         zip.delete()
         check(out.renameTo(zip)) { "Não consegui extrair ${target.name}" }
@@ -799,10 +843,7 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
 
     fun downloadRemoteFile(kind: RemoteFileKind, id: Long, target: File) {
         val url = base.resolve("api/${kind.path}/$id/content")!!
-        http.newCall(request(url).build()).execute().use { response ->
-            if (!response.isSuccessful) throw IOException("Servidor respondeu ${response.code}")
-            target.outputStream().use { response.body.byteStream().copyTo(it) }
-        }
+        downloadToFile(url, target, "${kind.path}=$id")
     }
 
     /** Envia o arquivo: atualiza o existente ([existingId]) ou cria um novo; devolve o registro no servidor. */
