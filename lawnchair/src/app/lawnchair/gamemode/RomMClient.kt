@@ -154,9 +154,9 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
         // O token só vai para o próprio servidor, nunca para endereços de fora.
         if (
             token != null &&
-                url.scheme == base.scheme &&
-                url.host == base.host &&
-                url.port == base.port
+            url.scheme == base.scheme &&
+            url.host == base.host &&
+            url.port == base.port
         ) {
             builder.header("Authorization", "Bearer $token")
         }
