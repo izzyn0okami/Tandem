@@ -20,7 +20,6 @@ import okhttp3.RequestBody.Companion.toRequestBody
 import okhttp3.Response
 import org.json.JSONObject
 
-/** Jogo que existe no servidor RomM (ainda não necessariamente baixado). */
 class RomMHttpException(val statusCode: Int, message: String) : IOException(message)
 
 /** ROM disponível no servidor RomM. */
