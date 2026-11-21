@@ -14,8 +14,7 @@ object BiosManager {
     fun systemDir(context: Context): File = GameFolders.dir(context, FolderKind.Bios)
 
     /** Plataformas que usam algum BIOS. */
-    fun platformsWithBios(): List<GamePlatform> =
-        GamePlatforms.all.filter { it.bios.isNotEmpty() || it.biosGroups.isNotEmpty() }
+    fun platformsWithBios(): List<GamePlatform> = GamePlatforms.all.filter { it.bios.isNotEmpty() || it.biosGroups.isNotEmpty() }
 
     /** O nome pode trazer uma subpasta (ex.: "dc/dc_boot.bin"); o arquivo escolhido só precisa ter o mesmo nome final. */
     private fun BiosFile.fileOnly(): String = File(name).name.lowercase()
