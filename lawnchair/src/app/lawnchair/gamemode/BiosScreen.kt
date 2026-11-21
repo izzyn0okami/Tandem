@@ -157,7 +157,7 @@ internal fun BiosScreen(rootPath: String) {
                         fontSize = 14.sp,
                         fontWeight = FontWeight.SemiBold,
                     )
-                    platform.bios.forEach { file ->
+                    (platform.bios + platform.biosGroups.flatten()).distinctBy { it.name.lowercase() }.forEach { file ->
                         val present = remember(tick) { BiosManager.has(context, file) }
                         Text(
                             text = (if (present) "✓ " else "✗ ") + "${file.name}  —  ${file.label}",
