@@ -20,7 +20,7 @@
         <bitmap android:src="@mipmap/ic_launcher_home_background" />
     </background>
     <foreground>
-        <bitmap android:src="@mipmap/ic_launcher_home_foreground"/>
+        <bitmap android:src="@drawable/ic_launcher_tandem_foreground"/>
     </foreground>
-    <monochrome android:drawable="@drawable/ic_launcher_home_monochrome"/>
+    <monochrome android:drawable="@drawable/ic_launcher_tandem_monochrome"/>
 </adaptive-icon>
