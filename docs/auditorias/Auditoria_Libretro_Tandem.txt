@@ -572,4 +572,31 @@ VALIDAÇÃO / PENDÊNCIAS
 - Testes no telefone após CI: CHD individual; pacote BIN+CUE com múltiplas entradas; conjunto multidisco agrupado pelo RomM; conferir se a M3U gerada referencia os CUE corretos.
 - Não mesclar sem autorização explícita do usuário.
 
+CONCLUSÃO — PR #15 / CORREÇÃO DE EXTRAÇÃO PSX MULTIARQUIVO
+Data: 2026-11-21
+
+- PR #15: https://github.com/izzyn0okami/Tandem/pull/15
+- Título: Fix extraction of multi-file PSX games.
+- Estado: FECHADA E MESCLADA após autorização explícita do usuário.
+- Método: merge normal (não squash).
+- Commit de código na branch: a21bd0a8c4fe62a6985c9ec68540f6c7d53f0a61.
+- Head da PR: c77e51b1f20da3e62bfff9467b5173d8578ae10e.
+- Merge commit: 872d99a13ad5599fe228a459b96c2c619dea23e0.
+- CI pré-merge #359: https://github.com/izzyn0okami/Tandem/actions/runs/44950672962 — completed / success, associada ao head da PR.
+- Alterações integradas em RomMClient.kt: extração de cada entrada ZIP com buffer limitado ao fim da entrada atual; inclusão da extensão BIN na descoberta de imagens de disco para M3U.
+- A lógica de download CHD individual e a regra de agrupamento baseada exclusivamente nos vínculos fornecidos pelo RomM foram preservadas.
+- A atualização deste TXT foi incluída na própria PR e, portanto, entrou no merge.
+- CI de push pós-merge e publicação tandem-latest: NÃO CONFIRMADAS nesta consulta. A consulta de execuções associadas ao merge commit não retornou uma execução; isso não invalida a CI pré-merge #359, mas também não permite afirmar que a release foi atualizada.
+- Testes funcionais no telefone: PENDENTES. Não marcar como concluído com base apenas na CI.
+
+PRÓXIMOS TESTES NO TELEFONE
+1. CHD individual: confirmar que continua baixando e iniciando normalmente.
+2. Pacote ZIP BIN+CUE: confirmar que todos os arquivos são extraídos, e não apenas o primeiro.
+3. Multidisco agrupado como uma única ROM pelo RomM: confirmar extração completa e abertura pela M3U.
+4. Conferir se a M3U gerada referencia os CUE corretos e se os arquivos BIN associados estão presentes.
+5. Não combinar registros independentes que o RomM cadastrou separadamente.
+
+PENDÊNCIA DE PUBLICAÇÃO
+- Verificar o workflow pós-merge e a Release tandem-latest antes de orientar instalação/atualização pelo canal permanente.
+
 FIM DO DOCUMENTO
