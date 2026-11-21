@@ -271,7 +271,7 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
     private var skippedMulti = 0
     private var skippedExtension = 0
 
-    /** Todos os jogos do servidor cuja plataforma o motor sabe jogar e que são um arquivo só. */
+    /** Lista ROMs compatíveis, respeitando o agrupamento e os arquivos associados pelo RomM. */
     fun listGames(): List<RemoteGame> {
         serverTotal = 0
         skippedPlatforms.clear()
@@ -518,7 +518,7 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
         check(temp.renameTo(target)) { "Não consegui gravar ${target.name}" }
     }
 
-    /** Baixa a pasta do jogo (o servidor entrega um zip) e extrai tudo; cria a lista .m3u se faltar. */
+    /** Baixa o ZIP completo de uma ROM multi-arquivo, valida e extrai o conteúdo e a M3U. */
     private fun downloadFolder(game: RemoteGame, target: File, onProgress: (Long) -> Unit) {
         val dir = checkNotNull(target.parentFile)
         val parent = checkNotNull(dir.parentFile)
@@ -867,7 +867,7 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
                 .build()
             request(url).post(body)
         }
-        http.newCall(builder.build()).execute().use { response ->
+        longHttp.newCall(builder.build()).execute().use { response ->
             if (!response.isSuccessful) {
                 throw RomMHttpException(response.code, "Servidor respondeu ${response.code}")
             }
