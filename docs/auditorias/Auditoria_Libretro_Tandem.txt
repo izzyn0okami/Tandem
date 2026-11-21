@@ -911,3 +911,15 @@ Data: 2026-11-21
 - Commit da correção: b7750f35ee4e16f90c89bec4da92129b7bded0ee.
 - Nova CI necessária para validar estilo e compilação no commit atualizado. O APK da CI #383 não deve ser tratado como versão aprovada, pois a verificação obrigatória de estilo falhou.
 - PR #19 permanece aberta e não mesclada; testes no aparelho continuam pendentes.
+
+
+ATUALIZAÇÃO — PR #19 INTEGRADA COM CI APROVADA
+Data: 2026-11-21
+
+- PR #19 (Fix required BIOS groups for Intellivision) foi mesclada por merge normal, conforme autorização do usuário.
+- Commit de merge: efbc9c4c33c338679cbf4ea179c8f5925fc7ba1c.
+- CI #384 (run 44960841497), no head 86fd77be240e968c2f5612e1bf0ebf3a1be5987f: check-style passou; build-debug-apk / assembleLawnWithQuickstepGithubDebug passou; upload artifact passou; final-status passou.
+- O APK aprovado foi produzido no mesmo head da PR após a terceira correção Spotless. Os resultados das CIs anteriores não foram usados como aprovação.
+- A correção AND/OR de BIOS está integrada em game-mode-m2-dev. Intellivision exige exec.bin E grom.bin; cada grupo permite alternativas OR; todos os grupos são exigidos AND. Compatibilidade com listas bios antigas e kits preservada.
+- Pendências funcionais no aparelho: confirmar Intellivision não pronto quando faltar qualquer um dos dois arquivos e pronto somente com ambos; confirmar que Sega CD, PlayStation e Saturn continuam aceitando ao menos uma alternativa regional válida.
+- Testes no aparelho ainda não foram reportados; não marcar como concluídos até confirmação do usuário.
