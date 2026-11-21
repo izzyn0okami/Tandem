@@ -99,12 +99,26 @@ jobs:
             exit 1
           fi
           certificate_sha256() {
-            "$APKSIGNER" verify --print-certs "$1" | awk -F': ' '/Signer #1 certificate SHA-256 digest:/ { print $2; exit }' | tr -d ':' | tr '[:upper:]' '[:lower:]'
+            local apk="$1"
+            local verify_output
+            if ! verify_output="$("$APKSIGNER" verify --print-certs "$apk" 2>&1)"; then
+              echo "::error::apksigner não conseguiu validar: $apk"
+              printf '%s\\n' "$verify_output"
+              return 1
+            fi
+            local digest
+            digest="$(printf '%s\\n' "$verify_output" | awk -F': ' 'tolower($1) ~ /certificate sha-256 digest/ { print $NF; exit }' | tr -d '[:space:]:' | tr '[:upper:]' '[:lower:]')"
+            if ! [[ "$digest" =~ ^[0-9a-f]{64}$ ]]; then
+              echo "::error::Não foi possível interpretar o SHA-256 do certificado em: $apk"
+              printf '%s\\n' "$verify_output"
+              return 1
+            fi
+            printf '%s' "$digest"
           }
           PR_CERT="$(certificate_sha256 "$APK_PATH")"
           LATEST_CERT="$(certificate_sha256 "$RUNNER_TEMP/Tandem-latest.apk")"
           if [ -z "$PR_CERT" ] || [ -z "$LATEST_CERT" ]; then
-            echo "::error::Não foi possível extrair a impressão digital do certificado."
+            echo "::error::A comparação foi interrompida porque um dos certificados não pôde ser lido."
             exit 1
           fi
           echo "Certificado PR #6: $PR_CERT"
