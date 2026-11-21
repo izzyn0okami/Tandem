@@ -923,3 +923,23 @@ Data: 2026-11-21
 - A correção AND/OR de BIOS está integrada em game-mode-m2-dev. Intellivision exige exec.bin E grom.bin; cada grupo permite alternativas OR; todos os grupos são exigidos AND. Compatibilidade com listas bios antigas e kits preservada.
 - Pendências funcionais no aparelho: confirmar Intellivision não pronto quando faltar qualquer um dos dois arquivos e pronto somente com ambos; confirmar que Sega CD, PlayStation e Saturn continuam aceitando ao menos uma alternativa regional válida.
 - Testes no aparelho ainda não foram reportados; não marcar como concluídos até confirmação do usuário.
+
+
+VALIDAÇÃO FUNCIONAL — BIOS/REGIÕES E ENTREGA PELO SERVIDOR
+Data: 2026-11-21
+
+- O usuário confirmou que as BIOS são reconhecidas corretamente, incluindo a identificação/regra regional.
+- O usuário confirmou que o servidor consegue fornecer as BIOS corretas para cada sistema.
+- Considerar concluídos, no fluxo funcional geral, o reconhecimento das BIOS, o tratamento regional e a entrega pelo servidor.
+- Esta confirmação é evidência de funcionamento real relatada pelo usuário; não atribuir testes individuais a todos os sistemas ou núcleos, nem afirmar validação criptográfica de hashes quando isso não foi informado.
+- A confirmação geral não substitui o teste específico da regra AND do Intellivision introduzida na PR #19: confirmar que a plataforma só fica pronta com exec.bin E grom.bin. Esse teste específico permanece pendente até confirmação explícita.
+- Permanecem fora desta confirmação as auditorias de integridade por hash/tamanho e a completude dos kits de BIOS, caso sejam necessárias para os núcleos utilizados.
+
+ATUALIZAÇÃO — CI PÓS-MERGE DA PR #19
+Data: 2026-11-21
+
+- Execução: https://github.com/izzyn0okami/Tandem/actions/runs/44961450399
+- Commit de merge: efbc9c4c33c338679cbf4ea179c8f5925fc7ba1c.
+- check-style: concluído com sucesso; ./gradlew spotlessCheck passou.
+- build-debug-apk: ainda em execução na última consulta; Build APK e Upload artifact ainda não concluídos.
+- Resultado global da CI pós-merge: PENDENTE até a conclusão do build e do status final.
