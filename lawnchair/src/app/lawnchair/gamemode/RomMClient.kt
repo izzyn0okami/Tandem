@@ -1,6 +1,7 @@
 package app.lawnchair.gamemode
 
 import android.content.Context
+import android.os.StatFs
 import android.os.SystemClock
 import androidx.core.content.edit
 import java.io.File
@@ -478,6 +479,32 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
         }
     }
 
+    /** Evita iniciar transferências que não cabem no armazenamento disponível. */
+    private fun requireAvailableSpace(directory: File, requiredBytes: Long, description: String) {
+        if (requiredBytes <= 0L) return
+        val reserveBytes = maxOf(MINIMUM_FREE_SPACE_BYTES, requiredBytes / 20L)
+        val neededBytes = if (Long.MAX_VALUE - requiredBytes < reserveBytes) Long.MAX_VALUE else requiredBytes + reserveBytes
+        val availableBytes = StatFs(directory.absolutePath).availableBytes
+        GameLog.log("romm", "espaço para download: $description; disponível=$availableBytes; necessário=$neededBytes")
+        if (availableBytes < neededBytes) {
+            throw IOException(
+                "Espaço insuficiente para baixar $description: " +
+                    "necessários aproximadamente ${neededBytes / (1024 * 1024)} MB, " +
+                    "disponíveis ${availableBytes / (1024 * 1024)} MB.",
+            )
+        }
+    }
+
+    private fun estimatedBytes(vararg values: Long): Long = values.fold(0L) { total, value ->
+        if (value <= 0L) {
+            total
+        } else if (Long.MAX_VALUE - total < value) {
+            Long.MAX_VALUE
+        } else {
+            total + value
+        }
+    }
+
     /** Baixa para um arquivo temporário e só renomeia no fim; [onProgress] recebe bytes baixados. */
     fun download(game: RemoteGame, target: File, onProgress: (Long) -> Unit) {
         if (game.folder) {
@@ -500,6 +527,10 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
         val description = "rom=${game.id}, título=${game.title}, arquivo=${game.serverName}, fileId=${game.fileId ?: "-"}"
         withDownloadResponse(url, description) { response ->
             if (!response.isSuccessful) throw IOException("Servidor respondeu ${response.code}")
+            val expectedBytes = response.body.contentLength()
+            val downloadEstimate = expectedBytes.takeIf { it > 0L } ?: game.sizeBytes
+            val extractionEstimate = if (game.fileId != null && downloadEstimate > 0L) downloadEstimate else 0L
+            requireAvailableSpace(checkNotNull(target.parentFile), estimatedBytes(downloadEstimate, extractionEstimate), game.title)
             var total = 0L
             response.body.byteStream().use { input ->
                 temp.outputStream().use { output ->
@@ -542,6 +573,9 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
             withDownloadResponse(url, description) { response ->
                 if (!response.isSuccessful) throw IOException("Servidor respondeu ${response.code}")
                 val expectedBytes = response.body.contentLength()
+                val archiveEstimate = expectedBytes.takeIf { it > 0L } ?: game.sizeBytes
+                val extractionEstimate = game.sizeBytes.takeIf { it > 0L } ?: archiveEstimate
+                requireAvailableSpace(parent, estimatedBytes(archiveEstimate, extractionEstimate), game.title)
                 var total = 0L
                 response.body.byteStream().use { input ->
                     archive.outputStream().use { output ->
@@ -741,6 +775,7 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
                     throw RomMHttpException(response.code, "Servidor respondeu ${response.code} ao baixar $description")
                 }
                 val expectedBytes = response.body.contentLength()
+                requireAvailableSpace(checkNotNull(target.parentFile), expectedBytes, description)
                 var total = 0L
                 response.body.byteStream().use { input ->
                     temp.outputStream().use { output ->
@@ -877,6 +912,7 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
 
     private companion object {
         const val PAGE_SIZE = 100
+        const val MINIMUM_FREE_SPACE_BYTES = 32L * 1024L * 1024L
         const val MAX_COVER_FAILURE_LOGS = 8
         val coverFailuresLogged = AtomicInteger()
         val DEVICE_SCOPES = listOf(
