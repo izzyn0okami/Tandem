@@ -102,6 +102,91 @@ HISTÓRICO DE CI — ATUALIZAÇÕES
 - Resultado global: CI concluída com sucesso.
 - Teste no telefone: ainda pendente; não confundir compilação bem-sucedida com validação funcional.
 
+
+
+AUDITORIA AMPLA E CORREÇÃO DA INTEGRAÇÃO ROMM 5.4.1 — PR EM PREPARAÇÃO
+Data: 2026-11-21
+Fonte de teste: tandem-log.txt enviado pelo usuário via Dropbox.
+Build testado: 16.Dev.(#357), versionCode 1600020457.
+Servidor informado no log: RomM em rede local, versão ainda não identificada pelo heartbeat do cliente.
+
+EVIDÊNCIA DO LOG #357
+- ROM 829 (Castlevania: Symphony of the Night): HTTP 200, application/zip, Content-Length 583.332.462 bytes; a implementação anterior encerrou o processamento em aproximadamente 249 ms e reportou somente 1 arquivo extraído.
+- ROM 20 (mesmo título, outro registro RomM): HTTP 200, application/zip, 589.146.131 bytes; processamento encerrou em aproximadamente 218–252 ms e reportou 1 arquivo.
+- ROM 830 (Castlevania - Symphony of the Night Ultimate): HTTP 200, application/zip, 683.035.703 bytes; processamento encerrou em aproximadamente 266 ms e reportou 1 arquivo.
+- As três tentativas falharam antes de abrir o núcleo, com "Nenhum disco compatível encontrado".
+- Em contraste, Final Fantasy VIII Disc 1 em CHD (ROM 21) foi recebido como arquivo individual de 491.235.152 bytes em aproximadamente 46,4 segundos e o fluxo individual foi concluído.
+- Conclusão: a conexão e o endpoint respondem, e o download de arquivo único funciona. O caminho de ZIP multi-arquivo não consumia/validava o corpo completo da resposta, apesar do Content-Length de centenas de MB. O log não expõe nomes de entradas ZIP; a correção passa a registrar os nomes, tamanhos, contagem e bytes extraídos.
+
+CONTRATO OFICIAL ROMM 5.4.1 CONFERIDO NO CÓDIGO-FONTE
+- GET /api/roms/{id}/content/{file_name}: usa o ID da ROM; entrega arquivo único quando há um arquivo e ZIP quando a ROM contém múltiplos arquivos. O ZIP inclui M3U quando aplicável.
+- O parâmetro file_ids aceita uma lista separada por vírgulas de IDs internos dos arquivos associados àquela ROM.
+- GET /api/roms/{file_id}/files/content/{file_name}: usa o ID interno de RomFile, não o ID da ROM.
+- GET /api/platforms inclui a lista de firmware de cada plataforma; o cliente atual usa esse formato corretamente.
+- Saves e states usam os escopos assets.read/assets.write e os endpoints /api/saves e /api/states; os caminhos de listagem, upload, atualização e conteúdo foram comparados com o código 5.4.1.
+- Fontes oficiais consultadas:
+  https://github.com/rommapp/romm/blob/5.4.1/backend/endpoints/roms/__init__.py
+  https://github.com/rommapp/romm/blob/5.4.1/backend/endpoints/roms/files.py
+  https://github.com/rommapp/romm/blob/5.4.1/backend/endpoints/responses/rom.py
+  https://github.com/rommapp/romm/blob/5.4.1/backend/endpoints/saves.py
+  https://github.com/rommapp/romm/blob/5.4.1/backend/endpoints/states.py
+  https://github.com/rommapp/romm/blob/5.4.1/backend/endpoints/firmware.py
+  https://github.com/rommapp/romm/blob/5.4.1/backend/endpoints/responses/platform.py
+  https://github.com/rommapp/romm/blob/5.4.1/backend/utils/nginx.py
+  https://github.com/evanmiller/mod_zip
+
+CORREÇÕES PREPARADAS NA BRANCH fix/romm-5-4-integration-audit
+1. Download multi-arquivo:
+   - O Tandem agora baixa primeiro o corpo ZIP completo para um arquivo temporário.
+   - Compara bytes recebidos com Content-Length quando o servidor fornece esse valor.
+   - Confere a assinatura ZIP e abre o arquivo pelo diretório central com java.util.zip.ZipFile, em vez de depender da leitura sequencial incompleta observada no fluxo anterior.
+   - Extrai cada entrada, valida caminhos canônicos contra path traversal e registra até 40 nomes/tamanhos de entradas, total de entradas, arquivos e bytes extraídos.
+   - Remove temporários após sucesso ou falha e só substitui a pasta local depois de validar o conteúdo.
+2. Seleção de arquivos RomM:
+   - RemoteGame agora preserva os IDs internos dos arquivos que o próprio RomM associou à ROM.
+   - O cliente envia file_ids no endpoint de conteúdo, limitando o ZIP aos arquivos selecionados dentro daquele registro RomM.
+   - Os IDs são persistidos no cache local para que a lista em cache mantenha a mesma seleção.
+3. Reconhecimento multidisco:
+   - Conjuntos com mais de uma imagem de disco passam a ser reconhecidos mesmo quando são CHD/ISO/CCD/CSO/CDI e não existe CUE/M3U previamente cadastrado.
+   - Não há agrupamento entre ROMs distintas; a associação continua restrita ao mesmo registro/arquivos do RomM.
+   - A lista M3U existente é validada; se ausente ou inválida, é criada/reparada com referências relativas e ordenação natural de números de disco.
+   - A descoberta de imagens considera CUE, GDI, CCD, CHD, ISO, CDI, CSO e PBP, além dos arquivos auxiliares reconhecidos.
+   - Sega CD, Saturn, Dreamcast e 3DO receberam extensões auxiliares adequadas; as extensões de PlayStation já estavam definidas.
+4. Transferências individuais e firmware:
+   - Downloads de firmware e saves/states agora usam arquivo temporário, buffer e validação do tamanho recebido antes de substituir o destino.
+   - A extração ZIP do caminho individual também passou a respeitar o fim da entrada atual.
+   - O token de acesso só é enviado quando esquema, host e porta coincidem com a origem configurada do RomM.
+   - Uploads de saves/states agora transmitem o arquivo do disco em vez de carregar o arquivo inteiro na memória.
+5. Sincronização de saves:
+   - A atualização de um save existente só cria outro registro quando RomM responde HTTP 404.
+   - Erros de rede, autenticação e servidor não geram uma nova cópia/duplicata.
+   - O hash dos arquivos agora é calculado em blocos, sem carregar o save/state inteiro na memória.
+
+VALIDAÇÃO E LIMITES
+- Branch: fix/romm-5-4-integration-audit.
+- Commits de implementação registrados no histórico desta branch; última alteração de código até esta atualização: 64076d65d99ce6e3c406f6ba49526fb82d8b1156.
+- Nenhuma PR foi aberta nesta etapa de auditoria; não havia PR aberta no repositório quando a branch foi criada.
+- CI, compilação e testes automatizados: PENDENTES.
+- Teste no aparelho: PENDENTE. A CI não comprova o download real do ZIP servido por nginx/mod_zip.
+- Não houve merge nem publicação de APK.
+- O usuário mantém a decisão de confiar no agrupamento do RomM e não combinar registros separados por nome, HASH ou numeração de faixa.
+
+TESTES FUNCIONAIS NECESSÁRIOS APÓS CI
+1. Castlevania: Symphony of the Night — ROM 829; conferir que o arquivo ZIP completo é recebido, que todas as entradas são extraídas e que a M3U abre.
+2. Castlevania: Symphony of the Night — ROM 20; confirmar comportamento sem misturar com ROM 829.
+3. Castlevania - Symphony of the Night Ultimate — ROM 830; validar conjunto próprio.
+4. CHD individual (ex.: Final Fantasy VIII): confirmar que continua funcionando.
+5. Multidisco sem M3U/CUE prévio (múltiplos CHD ou ISO na mesma ROM RomM): confirmar M3U gerada e ordem correta.
+6. Saves/states: atualizar registro existente; simular indisponibilidade/erro temporário sem criar duplicata; testar criação quando o servidor realmente responde 404.
+7. Firmware: listar, baixar e validar integridade.
+8. Confirmar que ROMs registradas separadamente pelo RomM continuam separadas na interface e no armazenamento.
+
+PENDÊNCIAS DA AUDITORIA AMPLA
+- Acompanhar CI/Spotless e corrigir qualquer falha antes de pedir validação funcional.
+- A validação de ZIP precisa ocorrer no aparelho e no RomM 5.4.1 real; a implementação ainda não está comprovada em execução.
+- Revisar em etapa posterior o tratamento de retomada/resume de downloads e os limites de espaço livre para arquivos temporários grandes.
+- Não mesclar a PR sem autorização explícita do usuário.
+
 FIM DO DOCUMENTO
 
 AUDITORIA BIOS/FIRMWARE — DESCOBERTAS DE CÓDIGO E DOCUMENTAÇÃO
