@@ -13,7 +13,7 @@ on:
   workflow_dispatch:
     inputs:
       source_branch:
-        description: Branch de desenvolvimento que fornecerá o APK
+        description: Branch de desenvolvimento ou PR que fornecerá o APK
         required: true
         type: string
         default: game-mode-m2-dev
@@ -36,12 +36,8 @@ jobs:
         env:
           SOURCE_BRANCH: ${{ inputs.source_branch }}
         run: |
-          if [[ ! "$SOURCE_BRANCH" =~ ^[A-Za-z0-9._/-]+-dev$ ]]; then
-            echo "::error::A branch manual deve terminar em -dev."
-            exit 1
-          fi
-          if [[ "$SOURCE_BRANCH" == */../* || "$SOURCE_BRANCH" == ../* || "$SOURCE_BRANCH" == *"/.." ]]; then
-            echo "::error::Nome de branch inválido."
+          if [[ ! "$SOURCE_BRANCH" =~ ^[A-Za-z0-9._/-]+$ ]] || [[ "$SOURCE_BRANCH" == *".."* || "$SOURCE_BRANCH" == /* || "$SOURCE_BRANCH" == */ ]]; then
+            echo "::error::Nome de branch manual inválido."
             exit 1
           fi
 
