@@ -375,3 +375,29 @@ ACOMPANHAMENTO PÓS-MERGE — PR #11
 - Workflow Crowdin Upload #77: skipped (não é falha da compilação).
 - Release tandem-latest consultada após o merge: ainda exibe build 343, associada ao commit anterior 78f89a54f89362a1c93b36fae72e3b2b1bae8402; portanto, ainda NÃO contém a correção da PR #11.
 - Não instalar APK até o workflow pós-merge concluir e a Release tandem-latest apontar para o commit/versão novos.
+
+ATUALIZAÇÃO — PR #12 / ROMM 5.4.1
+Data: 2026-11-21
+
+- PR #12: Fix RomM 5.4.1 individual and multi-disc downloads.
+- URL: https://github.com/izzyn0okami/Tandem/pull/12
+- Estado: FECHADA E MESCLADA após autorização explícita do usuário.
+- Método: merge normal (não squash).
+- Merge commit: fef17cc7b4679e992965e0f05be96673fc35c003.
+- CI pré-merge #348: https://github.com/izzyn0okami/Tandem/actions/runs/44941384127 — sucesso.
+- CI pós-merge #349: https://github.com/izzyn0okami/Tandem/actions/runs/44942153155 — completed / success.
+- Jobs aprovados na CI #349: check-style (Spotless), build-debug-apk (assembleLawnWithQuickstepGithubDebug), final-status e tandem-release. Os jobs opcionais crowdin-auto-merge, send-notifications e nightly-release foram ignorados conforme as condições do workflow.
+- Correções: endpoint individual RomM 5.4.1 usa o ID da ROM (game.id), não o ID individual do arquivo; busca recursiva de discos após extração; reutilização de M3U existente quando possível ou geração de M3U com caminhos relativos validados dentro da pasta extraída.
+- Release tandem-latest atualizada automaticamente pelo workflow tandem-release para Tandem (build 349), asset Tandem.apk.
+- URL da release: https://github.com/izzyn0okami/Tandem/releases/tag/tandem-latest
+- URL direta do APK: https://github.com/izzyn0okami/Tandem/releases/download/tandem-latest/Tandem.apk
+- Metadados do APK: 52.034.554 bytes; SHA-256 e91a49ceebd192fcdab87652eadf4dd62b696ee519105e308aaad7c10d6e9d8c.
+- A branch game-mode-m2-dev e o commit da release indicado no corpo da publicação correspondem ao merge commit fef17cc7b4679e992965e0f05be96673fc35c003.
+- Validação funcional no telefone com RomM 5.4.1: PENDENTE. A CI confirma compilação/estilo/publicação, não confirma ainda o download e a abertura dos jogos Metal Slug X e Castlevania: Symphony of the Night.
+- Próximo teste: instalar o APK build 349 e testar download individual de ROM, ZIP multidisco, extração dos discos e abertura pela M3U.
+
+PENDÊNCIAS APÓS A PR #12
+- Confirmar no telefone o download individual de um jogo (incluindo o caso que antes retornava HTTP 404).
+- Confirmar no telefone o download/extração do jogo multidisco e a abertura via playlist M3U.
+- Prosseguir com a auditoria do SaveSync, especialmente o risco de criar duplicatas quando uma atualização remota falha; depois revisar saves/states, firmware, capas, pareamento e autenticação.
+
