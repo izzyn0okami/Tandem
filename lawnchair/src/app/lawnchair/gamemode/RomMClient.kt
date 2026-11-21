@@ -21,6 +21,9 @@ import okhttp3.Response
 import org.json.JSONObject
 
 /** Jogo que existe no servidor RomM (ainda não necessariamente baixado). */
+class RomMHttpException(val statusCode: Int, message: String) : IOException(message)
+
+/** ROM disponível no servidor RomM. */
 data class RemoteGame(
     val id: Long,
     val title: String,
@@ -819,7 +822,9 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
             request(url).post(body)
         }
         http.newCall(builder.build()).execute().use { response ->
-            if (!response.isSuccessful) throw IOException("Servidor respondeu ${response.code}")
+            if (!response.isSuccessful) {
+                throw RomMHttpException(response.code, "Servidor respondeu ${response.code}")
+            }
             return parseRemoteFile(JSONObject(response.body.string()))
         }
     }
