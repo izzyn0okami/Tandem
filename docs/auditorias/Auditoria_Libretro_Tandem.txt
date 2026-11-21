@@ -847,3 +847,67 @@ Data: 2026-11-21
 - O usuário não detalhou nesta confirmação quais IDs de ROM foram testados individualmente; portanto, o registro não atribui validação separada aos casos ROM 19/fileId 18 e ROM 815/fileId 813.
 - A correção anterior de PSX multidisco permanece preservada; esta confirmação não altera o histórico específico dos testes daquela implementação.
 - Próxima ação: continuar a auditoria RomM a partir das pendências ainda abertas neste documento, sem repetir a correção de download individual.
+
+
+AUDITORIA BIOS/FIRMWARE — CORREÇÃO DOS REQUISITOS AND/OR
+Data: 2026-11-21
+
+ACHADO CONFIRMADO NO CÓDIGO
+- A classe GamePlatform documentava que basta um arquivo da lista bios.
+- BiosManager.isReady() usava any { has(...) } para todas as plataformas sem biosKit.
+- Isso tratava a lista inteira como alternativas (OR), inclusive quando o núcleo exige arquivos simultâneos.
+- Intellivision/freeintv está cadastrado com exec.bin e grom.bin obrigatórios, mas a tela podia marcar a plataforma como pronta com apenas um deles.
+- A tela BIOS já exibia ambos os arquivos, mas o estado geral de prontidão não refletia a exigência simultânea.
+- A confirmação documental anterior no log registra os metadados oficiais do núcleo FreeIntv: firmware_count=2 e ambos os arquivos não opcionais; hashes oficiais também já estão registrados na seção de auditoria documental.
+
+CORREÇÃO PREPARADA NA BRANCH fix/bios-required-groups
+- GamePlatform agora aceita biosGroups: cada grupo representa alternativas (OR), e todos os grupos devem ser satisfeitos (AND).
+- A lista antiga bios continua compatível e é tratada como um único grupo de alternativas quando biosGroups não é informado.
+- Intellivision foi definido com dois grupos de um único arquivo: exec.bin E grom.bin.
+- BiosManager.isReady() agora verifica todos os grupos obrigatórios; kits de BIOS continuam usando o fluxo próprio.
+- O catálogo de arquivos reconhecidos para importação manual e download do RomM inclui também os arquivos declarados nos grupos.
+- BiosScreen apresenta os arquivos declarados em bios e biosGroups, sem duplicar nomes.
+- Escopo limitado ao modelo e à indicação de prontidão dos requisitos BIOS; não altera download de ROMs, saves/states, autenticação ou os arquivos de BIOS já existentes.
+
+VALIDAÇÃO / PENDÊNCIAS
+- Branch: fix/bios-required-groups.
+- Commits de implementação: aa9d3632ceae4d8448fefe05e64cc23aebdb80d2, de39f1a7e08c182869bb5d2fff52dea8d19375f4 e de115f191118a06b177fec38da95a3bd7af8f48b.
+- CI de estilo e compilação: pendente.
+- Testes automatizados específicos para o modelo AND/OR: pendentes de verificar cobertura existente.
+- Teste no aparelho: pendente. Intellivision deve aparecer como não pronto quando faltar qualquer um dos dois arquivos e como pronto somente quando ambos estiverem presentes.
+- Verificar que plataformas com BIOS regional alternativa (Sega CD, PlayStation, Saturn) continuam prontas quando ao menos uma alternativa válida estiver presente.
+- Não mesclar sem autorização explícita do usuário.
+
+
+ATUALIZAÇÃO — PR #19 / CORREÇÃO DE ESTILO
+Data: 2026-11-21
+
+- CI #380 (run 44959288534): build-debug-apk passou; check-style falhou exclusivamente no Spotless Kotlin.
+- Arquivo apontado: lawnchair/src/app/lawnchair/gamemode/BiosManager.kt.
+- Causa: quebra de linha na expressão de platformsWithBios() divergente da formatação Spotless exigida.
+- Correção aplicada na branch fix/bios-required-groups: expressão formatada em uma única linha, sem alteração funcional.
+- Commit da correção de estilo: 6ceae27223f3a4ee6ee957df3a149a3ec28e10a8.
+- Nova CI após a correção: pendente; não considerar estilo validado até check-style passar.
+- PR #19 permanece aberta e não mesclada. Testes funcionais no aparelho continuam pendentes.
+
+
+ATUALIZAÇÃO — SEGUNDA FALHA SPOTLESS NA PR #19
+Data: 2026-11-21
+
+- CI #381 (run 44959952361): check-style falhou novamente em BiosManager.kt; a compilação do APK ainda estava em andamento no momento da falha de estilo.
+- O Spotless apontou uma segunda quebra de linha incompatível, agora na expressão requiredBiosGroups().
+- Correção aplicada na mesma branch, mantendo a lógica: expressão colocada em uma única linha conforme o formatador.
+- Commit da segunda correção de estilo: 59d1adcfece50f2f88bb7146346f2ec28411d7c5.
+- Nova CI será necessária para validar estilo e compilação sobre o commit atualizado; resultados anteriores não validam este novo estado.
+- PR #19 continua aberta e não mesclada. Testes no aparelho continuam pendentes.
+
+
+ATUALIZAÇÃO — TERCEIRA FALHA SPOTLESS NA PR #19
+Data: 2026-11-21
+
+- CI #383 (run 44960264977): build-debug-apk / assembleLawnWithQuickstepGithubDebug passou e o artefato foi enviado; check-style falhou em spotlessKotlinCheck, fazendo final-status falhar.
+- O Spotless apontou BiosManager.kt, na função isReady(), exigindo linhas em branco entre os ramos do when. Não houve erro de compilação do APK.
+- Correção aplicada na branch fix/bios-required-groups: adicionadas linhas em branco entre os casos de isReady(), sem alteração funcional.
+- Commit da correção: b7750f35ee4e16f90c89bec4da92129b7bded0ee.
+- Nova CI necessária para validar estilo e compilação no commit atualizado. O APK da CI #383 não deve ser tratado como versão aprovada, pois a verificação obrigatória de estilo falhou.
+- PR #19 permanece aberta e não mesclada; testes no aparelho continuam pendentes.

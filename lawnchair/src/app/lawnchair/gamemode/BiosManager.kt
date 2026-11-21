@@ -14,18 +14,29 @@ object BiosManager {
     fun systemDir(context: Context): File = GameFolders.dir(context, FolderKind.Bios)
 
     /** Plataformas que usam algum BIOS. */
-    fun platformsWithBios(): List<GamePlatform> = GamePlatforms.all.filter { it.bios.isNotEmpty() }
+    fun platformsWithBios(): List<GamePlatform> = GamePlatforms.all.filter { it.bios.isNotEmpty() || it.biosGroups.isNotEmpty() }
 
     /** O nome pode trazer uma subpasta (ex.: "dc/dc_boot.bin"); o arquivo escolhido só precisa ter o mesmo nome final. */
     private fun BiosFile.fileOnly(): String = File(name).name.lowercase()
 
     fun has(context: Context, file: BiosFile): Boolean = File(systemDir(context), file.name).isFile
 
-    /** O jogo pode rodar? (BIOS opcional ou ao menos um dos obrigatórios presente) */
+    /**
+     * Cada grupo representa alternativas entre si; todos os grupos precisam ter pelo menos
+     * um arquivo presente. Sem grupos explícitos, a lista antiga [GamePlatform.bios] continua
+     * sendo tratada como um único grupo de alternativas.
+     */
+    private fun requiredBiosGroups(platform: GamePlatform): List<List<BiosFile>> = platform.biosGroups.ifEmpty { listOf(platform.bios) }
+
+    /** O jogo pode rodar? BIOS opcionais dispensam arquivos; requisitos explícitos usam AND/OR. */
     fun isReady(context: Context, platform: GamePlatform): Boolean = when {
         !platform.biosRequired -> true
+
         platform.biosKit != null -> kitReady(context, platform)
-        else -> platform.bios.any { has(context, it) }
+
+        else -> requiredBiosGroups(platform).let { groups ->
+            groups.isNotEmpty() && groups.all { group -> group.any { has(context, it) } }
+        }
     }
 
     /** Plataformas que precisam de uma pasta de sistema inteira (ex.: blueMSX), em vez de um arquivo só. */
@@ -67,7 +78,10 @@ object BiosManager {
 
     private fun canonical(name: String): BiosFile? {
         val lower = name.lowercase()
-        return platformsWithBios().flatMap { it.bios }.firstOrNull { it.fileOnly() == lower }
+        return platformsWithBios()
+            .flatMap { platform -> platform.bios + platform.biosGroups.flatten() }
+            .distinctBy { it.name.lowercase() }
+            .firstOrNull { it.fileOnly() == lower }
     }
 
     /** Copia o arquivo para a pasta de sistema se o nome for de um BIOS conhecido; devolve o BIOS ou nulo. */

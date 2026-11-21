@@ -15,8 +15,14 @@ data class GamePlatform(
     val zipIsNativeRom: Boolean = false,
     /** Arquivos que acompanham a faixa de dados de um disco e não são jogos independentes. */
     val discCompanionExtensions: Set<String> = emptySet(),
-    /** Arquivos de BIOS que o núcleo usa (basta um deles). */
+    /** Arquivos de BIOS alternativos: basta um deles quando não há grupos explícitos. */
     val bios: List<BiosFile> = emptyList(),
+    /**
+     * Grupos obrigatórios de BIOS: todos os grupos precisam ser satisfeitos, mas basta um arquivo
+     * presente dentro de cada grupo. Ex.: regiões alternativas formam um grupo; arquivos
+     * simultâneos do mesmo núcleo ficam em grupos separados.
+     */
+    val biosGroups: List<List<BiosFile>> = emptyList(),
     /** true = sem BIOS o jogo não roda; false = só melhora a compatibilidade. */
     val biosRequired: Boolean = false,
     /** Dentro do Tandem (núcleo libretro) ou em outro app. */
@@ -290,6 +296,10 @@ object GamePlatforms {
             bios = listOf(
                 BiosFile("exec.bin", "Intellivision (Executive)"),
                 BiosFile("grom.bin", "Intellivision (GROM)"),
+            ),
+            biosGroups = listOf(
+                listOf(BiosFile("exec.bin", "Intellivision (Executive)")),
+                listOf(BiosFile("grom.bin", "Intellivision (GROM)")),
             ),
             biosRequired = true,
         ),
