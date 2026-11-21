@@ -803,3 +803,36 @@ VALIDAÇÃO / PENDÊNCIAS
 - Não considerar a correção comprovada apenas pela compilação; aguardar os testes no aparelho.
 
 FIM DA AUDITORIA DE DOWNLOAD INDIVIDUAL
+
+
+CONCLUSÃO — PR #18 / CORREÇÃO DO DOWNLOAD INDIVIDUAL ROMM 5.4.1
+Data: 2026-11-21
+
+- PR #18: https://github.com/izzyn0okami/Tandem/pull/18
+- Título: Fix RomM individual file download ID.
+- Estado: FECHADA E MESCLADA após autorização explícita do usuário.
+- Método: merge normal (não squash).
+- Branch: fix/romm-single-file-download-id.
+- Head validado: 2563f832807ef465e550a271ca10c6da8ee87f5b.
+- Commit de código da branch: 327f06fdefeb5fb6087522a2677bd760af0f1121.
+- Merge commit na branch game-mode-m2-dev: 1d9e9556343dc4edc2f1b29da173e061dfad6377.
+- CI pré-merge #376: https://github.com/izzyn0okami/Tandem/actions/runs/44957543625 — completed / success.
+- Jobs obrigatórios aprovados: check-style (./gradlew spotlessCheck), build-debug-apk (assembleLawnWithQuickstepGithubDebug; Build APK e Upload artifact) e final-status.
+- Artefato Debug: assembleLawnWithQuickstepGithubDebug, ID 14728421794, 45.658.570 bytes; SHA-256 do ZIP: 1fbfb0793b15dd03cb5d3aef65118402c27319a02a601f9aa407c76459fd28e8; disponível até 2027-02-19.
+- Jobs opcionais send-notifications, crowdin-auto-merge, tandem-release e nightly-release foram ignorados pelas condições do workflow; isso não representa falha.
+- Correção integrada: a rota /api/roms/{id}/files/content/{file_name} recebe o ID da ROM (game.id); game.fileId continua indicando a seleção de arquivo específico, mas não é usado como o segmento {id}.
+- O fluxo ZIP multidisco, file_ids, M3U, saves, states, firmware e autenticação não foi alterado nesta PR.
+- Não foi encontrada execução de workflow associada ao merge commit na consulta realizada. CI pós-merge e publicação tandem-latest, portanto, NÃO estão confirmadas.
+- Teste funcional no telefone permanece PENDENTE. A CI comprova estilo e compilação, não a transferência real do arquivo no servidor RomM 5.4.1.
+
+TESTES FUNCIONAIS PENDENTES APÓS PR #18
+1. Instalar o APK Debug gerado pela CI #376.
+2. Baixar um jogo individual que antes retornava HTTP 404 (ROM 19 / fileId 18) e confirmar download completo, integridade e abertura no núcleo.
+3. Repetir com ROM 815 / fileId 813, se ainda disponível.
+4. Revalidar um jogo PSX multidisco já corrigido, confirmando que ZIP/M3U continua funcionando.
+5. Enviar novo log se qualquer download continuar falhando; não reabrir a correção PSX sem evidência de regressão.
+
+PRÓXIMA ETAPA
+- Aguardar os resultados dos testes funcionais no aparelho antes de iniciar outra correção RomM.
+- A busca de PRs abertas após o merge não encontrou PRs abertas no repositório.
+- Antes de qualquer nova PR, consultar novamente as PRs abertas e este documento.
