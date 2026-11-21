@@ -836,3 +836,14 @@ PRÓXIMA ETAPA
 - Aguardar os resultados dos testes funcionais no aparelho antes de iniciar outra correção RomM.
 - A busca de PRs abertas após o merge não encontrou PRs abertas no repositório.
 - Antes de qualquer nova PR, consultar novamente as PRs abertas e este documento.
+
+
+VALIDAÇÃO FUNCIONAL — PR #18 / CONFIRMAÇÃO DO USUÁRIO
+Data: 2026-11-21
+
+- O usuário confirmou que a correção está funcionando corretamente no aparelho.
+- A correção do download individual RomM 5.4.1 passa a ser considerada funcionalmente validada.
+- A correção integrada na PR #18 permanece concluída; não reabrir este item sem nova evidência de falha ou regressão.
+- O usuário não detalhou nesta confirmação quais IDs de ROM foram testados individualmente; portanto, o registro não atribui validação separada aos casos ROM 19/fileId 18 e ROM 815/fileId 813.
+- A correção anterior de PSX multidisco permanece preservada; esta confirmação não altera o histórico específico dos testes daquela implementação.
+- Próxima ação: continuar a auditoria RomM a partir das pendências ainda abertas neste documento, sem repetir a correção de download individual.
