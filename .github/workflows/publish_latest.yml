@@ -144,24 +144,28 @@ jobs:
           SDK_ROOT="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-}}"
           AAPT="$SDK_ROOT/build-tools/37.0.0/aapt"
           APKSIGNER="$SDK_ROOT/build-tools/37.0.0/apksigner"
-          PACKAGE_INFO="$("$AAPT" dump badging "$APK" | sed -n '1p')"
-          PACKAGE_NAME="$(sed -n "s/^package: name='\\([^']*\\)'.*/\\1/p" <<< "$PACKAGE_INFO")"
-          ACTUAL_CODE="$(sed -n "s/.*versionCode='\\([0-9][0-9]*\\)'.*/\\1/p" <<< "$PACKAGE_INFO")"
-          if [ "$ACTUAL_CODE" != "$VERSION_CODE" ]; then
-            echo "::error::versionCode inesperado: esperado $VERSION_CODE, recebido $ACTUAL_CODE."
+          PACKAGE_INFO="$("$AAPT" dump badging "$APK")"
+          PACKAGE_LINE="$(grep -m1 "^package:" <<< "$PACKAGE_INFO" || true)"
+          PACKAGE_NAME="$(awk -F"'" '{print $2}' <<< "$PACKAGE_LINE")"
+          ACTUAL_CODE="$(sed -n "s/.*versionCode='\\([0-9][0-9]*\\)'.*/\\1/p" <<< "$PACKAGE_LINE")"
+          if [ -z "$PACKAGE_NAME" ]; then
+            echo "::error::Não foi possível identificar o pacote do APK novo. Saída do aapt:"
+            printf '%s\\n' "$PACKAGE_INFO"
             exit 1
           fi
-          if [ "$PACKAGE_NAME" != "app.lawnchair.debug" ]; then
-            echo "::error::Identificador do aplicativo inesperado: $PACKAGE_NAME."
+          if [ "$ACTUAL_CODE" != "$VERSION_CODE" ]; then
+            echo "::error::versionCode inesperado: esperado $VERSION_CODE, recebido $ACTUAL_CODE."
+            printf '%s\\n' "$PACKAGE_LINE"
             exit 1
           fi
           "$APKSIGNER" verify "$APK"
 
           if [ -f "$RUNNER_TEMP/current-latest/Tandem.apk" ]; then
-            OLD_PACKAGE_INFO="$("$AAPT" dump badging "$RUNNER_TEMP/current-latest/Tandem.apk" | sed -n '1p')"
-            OLD_PACKAGE="$(sed -n "s/^package: name='\\([^']*\\)'.*/\\1/p" <<< "$OLD_PACKAGE_INFO")"
-            if [ "$OLD_PACKAGE" != "$PACKAGE_NAME" ]; then
-              echo "::error::O identificador do APK mudou; publicação bloqueada para não criar uma instalação separada."
+            OLD_PACKAGE_INFO="$("$AAPT" dump badging "$RUNNER_TEMP/current-latest/Tandem.apk")"
+            OLD_PACKAGE_LINE="$(grep -m1 "^package:" <<< "$OLD_PACKAGE_INFO" || true)"
+            OLD_PACKAGE="$(awk -F"'" '{print $2}' <<< "$OLD_PACKAGE_LINE")"
+            if [ -z "$OLD_PACKAGE" ] || [ "$OLD_PACKAGE" != "$PACKAGE_NAME" ]; then
+              echo "::error::Identidade do pacote incompatível entre APK novo e tandem-latest. Novo: '$PACKAGE_NAME'; atual: '$OLD_PACKAGE'."
               exit 1
             fi
 
