@@ -371,7 +371,7 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
                 folder = true
                 fileIds = ids
                 fileName = names.firstOrNull { it.endsWith(".m3u", ignoreCase = true) }
-                    ?: "\${File(serverName).nameWithoutExtension}.m3u"
+                    ?: "${File(serverName).nameWithoutExtension}.m3u"
             } else if (platform.multiFileFolder && playable.size > 1) {
                 // Switch e semelhantes: manter jogo base + atualização/DLC na mesma pasta,
                 // mas abrir somente o arquivo principal.
@@ -511,24 +511,24 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
     private fun downloadFolder(game: RemoteGame, target: File, onProgress: (Long) -> Unit) {
         val dir = checkNotNull(target.parentFile)
         val parent = checkNotNull(dir.parentFile)
-        val temp = File(parent, "\${dir.name}.part")
-        val archive = File(parent, "\${dir.name}.zip.part")
+        val temp = File(parent, "${dir.name}.part")
+        val archive = File(parent, "${dir.name}.zip.part")
         temp.deleteRecursively()
         archive.delete()
         temp.mkdirs()
 
-        val urlBuilder = base.resolve("api/roms/\${game.id}/content/")!!
+        val urlBuilder = base.resolve("api/roms/${game.id}/content/")!!
             .newBuilder()
             .addPathSegment(game.serverName)
         if (game.fileIds.isNotEmpty()) {
             urlBuilder.addQueryParameter("file_ids", game.fileIds.joinToString(","))
         }
         val url = urlBuilder.build()
-        val description = "rom=\${game.id}, título=\${game.title}, pasta=\${game.serverName}, " +
-            "fileIds=\${game.fileIds.size}"
+        val description = "rom=${game.id}, título=${game.title}, pasta=${game.serverName}, " +
+            "fileIds=${game.fileIds.size}"
         try {
             withDownloadResponse(url, description) { response ->
-                if (!response.isSuccessful) throw IOException("Servidor respondeu \${response.code}")
+                if (!response.isSuccessful) throw IOException("Servidor respondeu ${response.code}")
                 val expectedBytes = response.body.contentLength()
                 var total = 0L
                 response.body.byteStream().use { input ->
@@ -544,17 +544,17 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
                     }
                 }
                 check(expectedBytes < 0L || total == expectedBytes) {
-                    "Download incompleto de \${game.title}: recebidos $total de $expectedBytes bytes"
+                    "Download incompleto de ${game.title}: recebidos $total de $expectedBytes bytes"
                 }
                 GameLog.log(
                     "romm",
-                    "pacote ZIP recebido: \${game.title}; bytes=$total; contentLength=$expectedBytes; " +
-                        "tipo=\${response.header("Content-Type") ?: "-"}",
+                    "pacote ZIP recebido: ${game.title}; bytes=$total; contentLength=$expectedBytes; " +
+                        "tipo=${response.header("Content-Type") ?: "-"}",
                 )
             }
             check(isZip(archive)) {
-                "O RomM não entregou um ZIP válido para \${game.title} " +
-                    "(assinatura inicial inválida; tamanho=\${archive.length()} bytes)"
+                "O RomM não entregou um ZIP válido para ${game.title} " +
+                    "(assinatura inicial inválida; tamanho=${archive.length()} bytes)"
             }
 
             var archiveEntries = 0
@@ -568,7 +568,7 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
                     val entry = entries.nextElement()
                     archiveEntries++
                     if (entrySamples.size < 40) {
-                        entrySamples += "\${entry.name} (\${entry.size} bytes)"
+                        entrySamples += "${entry.name} (${entry.size} bytes)"
                     }
                     val out = File(temp, entry.name)
                     val canonicalOut = out.canonicalFile
@@ -597,10 +597,10 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
             }
             GameLog.log(
                 "romm",
-                "ZIP extraído: \${game.title}; entradas=$archiveEntries; arquivos=$extractedFiles; " +
-                    "bytesExtraídos=$extractedBytes; amostra=\${entrySamples.joinToString(" | ")}",
+                "ZIP extraído: ${game.title}; entradas=$archiveEntries; arquivos=$extractedFiles; " +
+                    "bytesExtraídos=$extractedBytes; amostra=${entrySamples.joinToString(" | ")}",
             )
-            check(extractedFiles > 0) { "O ZIP de \${game.title} não contém arquivos extraíveis" }
+            check(extractedFiles > 0) { "O ZIP de ${game.title} não contém arquivos extraíveis" }
 
             // O pacote pode trazer tudo dentro de uma pasta única: sobe o conteúdo um nível.
             val onlyChild = temp.listFiles()?.singleOrNull()
@@ -608,7 +608,7 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
             val contentRoot = content.canonicalFile
             val expectedPlaylist = File(content, game.fileName)
             check(expectedPlaylist.canonicalPath.startsWith(contentRoot.path + File.separator)) {
-                "Caminho de arquivo inválido no pacote de \${game.title}"
+                "Caminho de arquivo inválido no pacote de ${game.title}"
             }
 
             if (game.fileName.endsWith(".m3u", ignoreCase = true)) {
@@ -649,9 +649,9 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
                         .distinctBy { it.canonicalPath }
                         .sortedBy { naturalSortKey(it.relativeTo(content).invariantSeparatorsPath) }
                     check(selectedDiscs.isNotEmpty()) {
-                        "Nenhum disco compatível encontrado em \${game.title} " +
+                        "Nenhum disco compatível encontrado em ${game.title} " +
                             "(entradas ZIP=$archiveEntries; arquivos extraídos=$extractedFiles; " +
-                            "amostra=\${entrySamples.joinToString(" | ")})"
+                            "amostra=${entrySamples.joinToString(" | ")})"
                     }
                     expectedPlaylist.parentFile?.mkdirs()
                     val entries = selectedDiscs
@@ -659,24 +659,24 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
                     expectedPlaylist.writeText(entries.joinToString("\n") + "\n")
                     GameLog.log(
                         "romm",
-                        "lista M3U criada/reparada: \${game.title}; discos=\${entries.size}; " +
-                            "caminhos=\${entries.joinToString()}",
+                        "lista M3U criada/reparada: ${game.title}; discos=${entries.size}; " +
+                            "caminhos=${entries.joinToString()}",
                     )
                 } else {
-                    GameLog.log("romm", "M3U do RomM validada: \${game.title}; discos=\${expectedResolution.first.size}")
+                    GameLog.log("romm", "M3U do RomM validada: ${game.title}; discos=${expectedResolution?.first?.size ?: 0}")
                 }
             } else {
                 check(expectedPlaylist.isFile) {
-                    "O ZIP do RomM não contém o arquivo principal \${game.fileName} " +
+                    "O ZIP do RomM não contém o arquivo principal ${game.fileName} " +
                         "(entradas ZIP=$archiveEntries; arquivos extraídos=$extractedFiles)"
                 }
             }
 
             // Só substitui uma pasta já existente depois de validar todo o pacote.
             dir.deleteRecursively()
-            check(content.renameTo(dir)) { "Não consegui gravar \${dir.name}" }
+            check(content.renameTo(dir)) { "Não consegui gravar ${dir.name}" }
             temp.deleteRecursively()
-            GameLog.log("romm", "download multidisco concluído: \${game.title}; pasta=\${dir.name}")
+            GameLog.log("romm", "download multidisco concluído: ${game.title}; pasta=${dir.name}")
         } catch (error: Exception) {
             temp.deleteRecursively()
             throw error
