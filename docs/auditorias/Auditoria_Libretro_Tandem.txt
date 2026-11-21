@@ -745,3 +745,29 @@ VALIDAÇÃO E PENDÊNCIAS
 - Confirmar que ambos continuam abrindo as telas corretas e que o Modo jogo não aparece duplicado.
 - Os vetores Android são adaptações compatíveis; filtros de brilho e gradientes originais são aproximados, enquanto os SVGs originais permanecem preservados.
 - Não mesclar sem autorização explícita do usuário.
+
+
+CONCLUSÃO — PR #17 / IDENTIDADE VISUAL TANDEM E MODO JOGO
+Data: 2026-11-21
+
+- PR #17: https://github.com/izzyn0okami/Tandem/pull/17
+- Estado: FECHADA E MESCLADA após autorização explícita do usuário.
+- Método: merge normal (não squash).
+- Branch: feat/tandem-game-mode-icons.
+- Head validado: 419ad469f30d8c64db1be318790bb2f455d5f9b9.
+- Merge commit na branch game-mode-m2-dev: 89a46904e9c97cf4bb49bd8de4f541cd36130ce3.
+- CI pré-merge #373: https://github.com/izzyn0okami/Tandem/actions/runs/44956548777 — completed / success.
+- Jobs obrigatórios aprovados: check-style (Spotless), build-debug-apk (assembleLawnWithQuickstepGithubDebug) e final-status.
+- Jobs opcionais send-notifications, crowdin-auto-merge, tandem-release e nightly-release foram ignorados pelas condições do workflow; não representam falha.
+- A CI confirmou estilo e compilação do APK Debug. A CI não substitui a conferência visual e funcional no aparelho.
+- Alterações integradas: identidade principal Tandem com recursos vetoriais Android próprios; ícone específico para GameModeActivity; manifesto atualizado para usar o drawable do Modo jogos; log de auditoria atualizado.
+- Os seis SVGs originais permanecem preservados no Dropbox. Os vetores Android são adaptações compatíveis, com aproximação dos efeitos de blur, máscaras e gradientes não suportados integralmente.
+- Escopo preservado: um único applicationId/aplicativo; Modo jogos continua Activity interna; sem alteração em dados, armazenamento ou lógica de navegação.
+
+PENDÊNCIAS DE VALIDAÇÃO NO APARELHO — PR #17
+1. Conferir se o ícone geral do Tandem está correto na tela inicial e nas configurações/launcher.
+2. Conferir se o atalho Modo jogos exibe o ícone próprio na gaveta.
+3. Confirmar que o atalho abre a Activity correta e não cria uma segunda entrada de aplicativo.
+4. Informar se os efeitos visuais aproximados dos SVGs estão aceitáveis.
+
+FIM DA AUDITORIA DA PR #17
