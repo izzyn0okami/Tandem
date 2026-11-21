@@ -320,13 +320,17 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
         }
         val serverName = item.optString("fs_name").ifEmpty { return null }
         val allowed = platform.extensions + if (platform.discBased) emptySet() else GamePlatforms.genericExtensions
+        // Arquivos auxiliares de um disco pertencem ao CUE, mas não devem virar ROMs independentes.
+        val discFiles = allowed + platform.discCompanionExtensions
         val serverExtension = File(serverName).extension.lowercase()
         // CUE/M3U/GDI são arquivos de índice: mesmo quando o RomM marca a ROM como
         // arquivo único, os dados (BIN/IMG/subdiscos) podem estar ao lado. Trate-os
         // como pasta para baixar o conjunto completo pelo endpoint /content da ROM.
         val discReference = platform.discBased && serverExtension in setOf("cue", "m3u", "gdi")
+        val discCompanion = platform.discBased && serverExtension in platform.discCompanionExtensions
         val flat = serverExtension in allowed &&
             !discReference &&
+            !discCompanion &&
             !item.optBoolean("has_multiple_files", false) &&
             !item.optBoolean("has_nested_single_file", false)
         if (platform.discBased && File(serverName).extension.lowercase() in setOf("cue", "gdi")) {
@@ -350,14 +354,14 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
             val files = item.optJSONArray("files")
             val playable = (0 until (files?.length() ?: 0)).map { files!!.getJSONObject(it) }.filter {
                 val name = it.optString("file_name")
-                !name.startsWith(".") && File(name).extension.lowercase() in allowed
+                !name.startsWith(".") && File(name).extension.lowercase() in discFiles
             }
             if (playable.isEmpty()) {
                 skippedExtension++
                 return null
             }
             val referencing = playable.filter { File(it.getString("file_name")).extension.lowercase() in setOf("cue", "m3u", "gdi") }
-            if (platform.discBased && (referencing.isNotEmpty() || playable.size > 1)) {
+            if (platform.discBased && (referencing.isNotEmpty() || (discCompanion && playable.size > 1))) {
                 // Disco com várias partes (cue + bin, vários discos): baixa a pasta toda e abre a lista ou o primeiro cue.
                 folder = true
                 val names = playable.map { it.getString("file_name") }.sorted()

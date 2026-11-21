@@ -13,6 +13,8 @@ data class GamePlatform(
     val discBased: Boolean = false,
     /** O arquivo ZIP é a própria ROM (ex.: conjuntos arcade do Neo Geo), não um pacote a extrair. */
     val zipIsNativeRom: Boolean = false,
+    /** Arquivos que acompanham a faixa de dados de um disco e não são jogos independentes. */
+    val discCompanionExtensions: Set<String> = emptySet(),
     /** Arquivos de BIOS que o núcleo usa (basta um deles). */
     val bios: List<BiosFile> = emptyList(),
     /** true = sem BIOS o jogo não roda; false = só melhora a compatibilidade. */
@@ -82,6 +84,7 @@ object GamePlatforms {
             folderAliases = setOf("psx", "ps1", "playstation", "playstation1", "sonyplaystation"),
             sortOrder = 60,
             discBased = true,
+            discCompanionExtensions = setOf("bin", "img", "sub", "sbi", "ccd", "wav"),
             bios = listOf(
                 BiosFile("scph5501.bin", "PlayStation (EUA) v3.0"),
                 BiosFile("scph5500.bin", "PlayStation (Japão)"),
