@@ -60,7 +60,7 @@ jobs:
               exit 1
             fi
           done
-          printf '%s\\n' "storePassword=$TANDEM_KEYSTORE_PASSWORD" "keyAlias=$TANDEM_KEY_ALIAS" "keyPassword=$TANDEM_KEY_PASSWORD" "storeFile=$GITHUB_WORKSPACE/key.jks" > keystore.properties
+          printf '%s\n' "storePassword=$TANDEM_KEYSTORE_PASSWORD" "keyAlias=$TANDEM_KEY_ALIAS" "keyPassword=$TANDEM_KEY_PASSWORD" "storeFile=$GITHUB_WORKSPACE/key.jks" > keystore.properties
           printf '%s' "$TANDEM_KEYSTORE" | base64 --decode > "$GITHUB_WORKSPACE/key.jks"
           chmod 600 keystore.properties "$GITHUB_WORKSPACE/key.jks"
 
@@ -85,7 +85,12 @@ jobs:
           curl --fail --location --retry 3 \
             "https://github.com/izzyn0okami/Tandem/releases/download/tandem-latest/Tandem.apk" \
             --output "$RUNNER_TEMP/Tandem-latest.apk"
-          APKSIGNER="$(find "${ANDROID_HOME:-$ANDROID_SDK_ROOT}/build-tools" -type f -name apksigner | sort -V | tail -n 1)"
+          SDK_ROOT="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-}}"
+          if [ -z "$SDK_ROOT" ]; then
+            echo "::error::Android SDK não encontrado."
+            exit 1
+          fi
+          APKSIGNER="$(find "$SDK_ROOT/build-tools" -type f -name apksigner | sort -V | tail -n 1)"
           if [ -z "$APKSIGNER" ]; then
             echo "::error::apksigner não foi encontrado no Android SDK."
             exit 1
