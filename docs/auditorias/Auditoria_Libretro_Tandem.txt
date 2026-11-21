@@ -522,4 +522,24 @@ ESTADO ATUAL
 - Merge ainda pendente de nova CI na versão reconciliada.
 - Teste de instalação e reconhecimento pelo Obtanium pendentes.
 
+CONCLUSÃO — PR #14 / IDENTIDADE TANDEM
+Data: 2026-11-21
+
+- PR #14: https://github.com/izzyn0okami/Tandem/pull/14
+- Estado: FECHADA E MESCLADA, conforme autorização explícita do usuário.
+- Método: merge normal (não squash).
+- Merge commit: 231fa06fcebc6361d890efc764c8e74c30445638.
+- A PR foi reconciliada com a versão mais recente de game-mode-m2-dev, preservando as atualizações concorrentes do arquivo de auditoria.
+- CI pré-merge #354: https://github.com/izzyn0okami/Tandem/actions/runs/44946514100 — sucesso no commit 50569f297fc44bd652adcabab438a28de446402a. Spotless, compilação do APK, upload do artefato e final-status passaram.
+- Após a reconciliação da auditoria, o conteúdo de código/recursos da PR permaneceu igual ao conteúdo validado pela CI #354; a reconciliação adicional alterou o histórico/arquivo TXT.
+- CI pós-merge: NÃO CONFIRMADA. A consulta de workflows e de status do merge commit não retornou verificações associadas. Não registrar como sucesso nem presumir publicação.
+- Release tandem-latest: ainda não confirmada com package ID app.tandem. Não orientar instalação como atualização automática.
+
+PRÓXIMAS VERIFICAÇÕES
+1. Confirmar execução de CI de push após merge e eventual atualização da release tandem-latest.
+2. Inspecionar o APK publicado para confirmar applicationId app.tandem e assinatura/canal esperados.
+3. Instalar o Tandem como aplicativo novo; a instalação antiga app.lawnchair e seus dados não são migrados automaticamente nem removidos.
+4. Confirmar no Obtanium que o pacote app.tandem é reconhecido e que o fluxo de atualização funciona.
+5. Testar visualmente o novo ícone no launcher do Android.
+
 FIM DO DOCUMENTO
