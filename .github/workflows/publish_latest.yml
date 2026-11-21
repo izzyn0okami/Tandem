@@ -105,7 +105,7 @@ jobs:
               echo "::error::A Release tandem-latest existe, mas não contém Tandem.apk."
               exit 1
             fi
-            CURRENT_CODE="$("$AAPT" dump badging "$CURRENT_APK" | sed -n "s/.*versionCode='\([0-9][0-9]*\)'.*/\1/p" | sed -n '1p')"
+            CURRENT_CODE="$("$AAPT" dump badging "$CURRENT_APK" | sed -n "s/.*versionCode='\\([0-9][0-9]*\\)'.*/\\1/p" | sed -n '1p')"
             if ! [[ "$CURRENT_CODE" =~ ^[0-9]+$ ]]; then
               echo "::error::Não foi possível ler o versionCode do APK atualmente publicado."
               exit 1
@@ -145,8 +145,8 @@ jobs:
           AAPT="$SDK_ROOT/build-tools/37.0.0/aapt"
           APKSIGNER="$SDK_ROOT/build-tools/37.0.0/apksigner"
           PACKAGE_INFO="$("$AAPT" dump badging "$APK" | sed -n '1p')"
-          PACKAGE_NAME="$(sed -n "s/.*name='\([^']*\)'.*/\1/p" <<< "$PACKAGE_INFO")"
-          ACTUAL_CODE="$(sed -n "s/.*versionCode='\([0-9][0-9]*\)'.*/\1/p" <<< "$PACKAGE_INFO")"
+          PACKAGE_NAME="$(sed -n "s/^package: name='\\([^']*\\)'.*/\\1/p" <<< "$PACKAGE_INFO")"
+          ACTUAL_CODE="$(sed -n "s/.*versionCode='\\([0-9][0-9]*\\)'.*/\\1/p" <<< "$PACKAGE_INFO")"
           if [ "$ACTUAL_CODE" != "$VERSION_CODE" ]; then
             echo "::error::versionCode inesperado: esperado $VERSION_CODE, recebido $ACTUAL_CODE."
             exit 1
@@ -159,7 +159,7 @@ jobs:
 
           if [ -f "$RUNNER_TEMP/current-latest/Tandem.apk" ]; then
             OLD_PACKAGE_INFO="$("$AAPT" dump badging "$RUNNER_TEMP/current-latest/Tandem.apk" | sed -n '1p')"
-            OLD_PACKAGE="$(sed -n "s/.*name='\([^']*\)'.*/\1/p" <<< "$OLD_PACKAGE_INFO")"
+            OLD_PACKAGE="$(sed -n "s/^package: name='\\([^']*\\)'.*/\\1/p" <<< "$OLD_PACKAGE_INFO")"
             if [ "$OLD_PACKAGE" != "$PACKAGE_NAME" ]; then
               echo "::error::O identificador do APK mudou; publicação bloqueada para não criar uma instalação separada."
               exit 1
