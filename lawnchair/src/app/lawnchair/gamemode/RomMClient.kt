@@ -620,7 +620,7 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
             }
 
             if (game.fileName.endsWith(".m3u", ignoreCase = true)) {
-                val supportedDiscs = setOf("cue", "gdi", "bin", "img", "sub", "ccd", "wav", "chd", "iso", "pbp")
+                val supportedDiscs = setOf("cue", "gdi", "bin", "img", "sub", "ccd", "wav", "raw", "chd", "iso", "cdi", "cso", "pbp")
                 val existingPlaylists = content.walkTopDown()
                     .filter { it.isFile && it.extension.equals("m3u", ignoreCase = true) }
                     .toList()
@@ -652,8 +652,10 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
                         .toList()
                     val referencedDiscs = sourceResolution?.takeIf { it.second }?.first.orEmpty()
                     val discs = referencedDiscs.ifEmpty { discoveredDiscs }
-                    val cues = discs.filter { it.extension.lowercase() in setOf("cue", "gdi") }
-                    val selectedDiscs = (cues.ifEmpty { discs })
+                    val primaryDiscs = discs.filter {
+                        it.extension.lowercase() in setOf("cue", "gdi", "ccd", "chd", "iso", "cdi", "cso", "pbp")
+                    }
+                    val selectedDiscs = (primaryDiscs.ifEmpty { discs })
                         .distinctBy { it.canonicalPath }
                         .sortedBy { naturalSortKey(it.relativeTo(content).invariantSeparatorsPath) }
                     check(selectedDiscs.isNotEmpty()) {
