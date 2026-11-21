@@ -1,0 +1,344 @@
+AUDITORIA LIBRETRO — TANDEM
+Projeto: izzyn0okami/Tandem
+Documento vivo — atualizado em 2026-11-21
+
+OBJETIVO E ESCOPO
+Auditoria de completude e robustez da integração Libretro no launcher Tandem, priorizando o uso pessoal no Motorola Edge 30 Fusion. A arquitetura ARM64 (arm64-v8a) é intencional; não é uma pendência de compatibilidade universal.
+
+ESTADO GERAL
+- Motor LibretroDroid integrado ao launcher e executado no mesmo processo.
+- RetroAchievements possui integração extensa e foi validado em uso real no telefone.
+- A auditoria estática identificou pontos de melhoria em seleção de ROMs, BIOS/firmware, atualização de núcleos, cobertura de sistemas e testes.
+- A auditoria estática não equivale à validação real de todos os núcleos, jogos e BIOS no aparelho.
+
+CONCLUÍDO E VALIDADO
+1. Integração do LibretroDroid ao projeto.
+2. Suporte de compilação ARM64 para o aparelho-alvo, por decisão intencional.
+3. Integração RetroAchievements: autenticação, identificação de jogos, sessão, modos Hardcore/Softcore, desbloqueios, Rich Presence, leaderboards, sincronização e persistência local — funcionalidades verificadas em testes reais.
+4. Overlays e notificações de RetroAchievements — testados no telefone.
+5. Correção de overflow em libretrodroid/src/main/cpp/achievements.cpp — integrada.
+6. Fluxo permanente de APK mais recente em tandem-latest; não depende de release convencional.
+7. CI e APK publicado em tandem-latest foram anteriormente confirmados pelo usuário como corretos e funcionais.
+
+PENDÊNCIAS DA AUDITORIA
+Prioridade 1 — ROMs e identificação
+- Tratar ZIPs com múltiplas ROMs sem selecionar silenciosamente um arquivo arbitrário.
+- Confirmar comportamento para ZIP com uma ROM, múltiplas ROMs, nenhuma ROM compatível e ZIP corrompido.
+- Revisar formatos auxiliares, arquivos multidisco e sistemas cujo próprio formato de ROM é ZIP.
+- Verificar fluxo quando plataforma é nula ou não possui extensões cadastradas.
+
+Prioridade 2 — BIOS e firmware
+- Revisar BiosManager.kt, GamePlatforms.kt e pontos de chamada.
+- O comportamento atual identificado considera suficiente encontrar qualquer arquivo de BIOS cadastrado; isso pode ser insuficiente quando vários arquivos são simultaneamente obrigatórios.
+- Distinguir componentes obrigatórios simultâneos de alternativas regionais/de núcleo.
+- Exemplo que exige verificação: Intellivision pode precisar de exec.bin e grom.bin.
+- Mapear requisitos por núcleo efetivamente usado, não apenas por plataforma.
+- Validar nomes, diretórios, importação e integridade dos arquivos.
+
+Prioridade 3 — Núcleos
+- CoreInstaller verifica núcleo existente por ELF, mas não possui fluxo completo de atualização/versionamento/hash.
+- Avaliar atualização segura, integridade, disponibilidade e seleção de núcleos.
+- Revisar cobertura desigual de plataformas e núcleos alternativos.
+- CoresScreen exibe apenas plataformas com mais de um núcleo; avaliar se a apresentação atende ao uso pretendido.
+
+Prioridade 4 — Compatibilidade real
+- Testar no Edge 30 Fusion os sistemas e núcleos efetivamente utilizados.
+- Não tratar núcleo listado ou disponível no Buildbot como prova de funcionamento.
+- Registrar separadamente suporte declarado, build disponível, validação estática, CI e teste real no telefone.
+
+Prioridade 5 — Robustez da sessão
+- Avaliar saves, ciclo de vida, áudio/vídeo, controles, falhas e diagnóstico.
+- Atualmente o motor roda no mesmo processo do launcher; falha nativa pode encerrar o launcher. Isolamento de processo não está implementado.
+
+Prioridade 6 — Testes
+- Ampliar testes automatizados para catálogo, detecção de ROM, instalação de núcleos, BIOS e sessão completa.
+- Manter matriz de validação real no aparelho.
+
+PR EM ANDAMENTO — CORREÇÃO DE ZIP
+PR #6: Fix ambiguous ROM archive selection
+URL: https://github.com/izzyn0okami/Tandem/pull/6
+Branch: fix/rom-archive-selection
+Base: game-mode-m2-dev
+Commit observado: 5645a1a5d9ef272cbd47fcb075b44e96048c0ffd
+Estado: aberta, draft, NÃO mesclada.
+
+Mudanças propostas na PR #6
+- Para ZIPs comuns, exige exatamente uma entrada compatível com as extensões da plataforma.
+- ZIP sem ROM compatível ou com múltiplas ROMs compatíveis gera erro claro, em vez de escolher o maior arquivo.
+- Remove fallback que tentava abrir o ZIP original após falha de extração.
+- GameSessionActivity captura o erro, informa o usuário e encerra a sessão.
+- ZIPs de plataformas discBased são ignorados pela extração genérica para preservar formatos próprios de sistemas como Neo Geo.
+
+Validação da PR #6
+- CI run #329: https://github.com/izzyn0okami/Tandem/actions/runs/44846366663
+- Job check-style: concluído com sucesso; spotlessCheck passou.
+- Job build-debug-apk: concluído com sucesso; tarefa Build APK e Upload artifact aprovadas.
+- Job final-status: sucesso.
+- Resultado global: CI #329 concluída com sucesso.
+- Testes no aparelho ainda pendentes: ZIP com uma ROM; ZIP com duas ou mais ROMs; ZIP sem ROM compatível/corrompido; ROM fora de ZIP; ZIP discBased.
+- Não mesclar sem autorização explícita.
+
+REGRAS DE MANUTENÇÃO DESTE DOCUMENTO
+- Atualizar o histórico sempre que uma execução de CI do Tandem terminar com sucesso, registrando número/URL da execução, commit, jobs aprovados e artefatos gerados.
+- Uma CI parcialmente aprovada não deve ser registrada como CI completa bem-sucedida.
+- Registrar também falhas relevantes e o que continua pendente.
+- Após CI bem-sucedida, não marcar teste no telefone como concluído sem confirmação explícita do usuário.
+- Preservar RetroAchievements e Rich Presence; não reabrir funcionalidades já validadas sem motivo concreto.
+- Antes de criar outra PR, verificar PRs abertas para evitar sobreposição e conflitos.
+- Não mesclar PR sem autorização explícita.
+- Não publicar tandem-latest antes da validação exigida e autorização/processo acordado.
+
+HISTÓRICO DE CI — ATUALIZAÇÕES
+2026-11-21 — PR #6 / CI run #329
+- Commit: 5645a1a5d9ef272cbd47fcb075b44e96048c0ffd.
+- URL: https://github.com/izzyn0okami/Tandem/actions/runs/44846366663
+- check-style / spotlessCheck: sucesso.
+- build-debug-apk / assembleLawnWithQuickstepGithubDebug: sucesso.
+- Build APK: sucesso.
+- Upload artifact: sucesso.
+- final-status: sucesso.
+- Artefato: assembleLawnWithQuickstepGithubDebug, ID 14683093722, 45.646.897 bytes; disponível até 2027-02-19 (conforme metadados consultados).
+- Digest SHA-256 do artefato ZIP: 73f6973e8dcb85a0a825ed104103464de9cc4944d62b62691954ad1447a26dc4.
+- Resultado global: CI concluída com sucesso.
+- Teste no telefone: ainda pendente; não confundir compilação bem-sucedida com validação funcional.
+
+FIM DO DOCUMENTO
+
+AUDITORIA BIOS/FIRMWARE — DESCOBERTAS DE CÓDIGO E DOCUMENTAÇÃO
+Data: 2026-11-21
+Arquivos inspecionados na branch game-mode-m2-dev:
+- lawnchair/src/app/lawnchair/gamemode/BiosManager.kt
+- lawnchair/src/app/lawnchair/gamemode/GamePlatforms.kt
+- lawnchair/src/app/lawnchair/gamemode/BiosScreen.kt
+
+ACHADO CONFIRMADO — INTELLIVISION
+- GamePlatforms.kt cadastra exec.bin e grom.bin como BIOS obrigatórios do núcleo freeintv.
+- BiosManager.isReady(), no entanto, usa platform.bios.any { has(...) } para todas as plataformas sem biosKit. Assim, considera Intellivision pronto quando apenas um dos dois arquivos está presente.
+- BiosScreen usa isReady() para a cor/estado geral da plataforma; portanto pode apresentar estado pronto incorretamente.
+- A documentação oficial do núcleo FreeIntv marca exec.bin e grom.bin como obrigatórios (firmware_count=2; firmware0_opt=false; firmware1_opt=false) e informa os MD5 esperados:
+  exec.bin: 62e761035cb657903761800f4437b8af
+  grom.bin: 0cd5946c6473e42e8e4c2137785e427f
+- Fonte oficial: https://docs.libretro.com/library/freeintv/
+- Metadados oficiais do núcleo: https://github.com/libretro/FreeIntv/blob/master/FreeIntv_libretro.info
+- Conclusão: o modelo atual de BIOS como lista de alternativas não representa corretamente o FreeIntv. A prontidão precisa distinguir arquivos alternativos (qualquer um) de conjuntos simultâneos (todos).
+
+OUTROS ACHADOS A VALIDAR
+- O comentário de GamePlatform.bios afirma que basta um arquivo da lista; isso é válido para listas regionais alternativas como Sega CD, mas não para Intellivision.
+- BiosManager valida presença pelo nome/caminho, não o conteúdo por hash/tamanho. Arquivos incorretos podem ser considerados presentes; FreeIntv publica hashes oficiais para os dois arquivos.
+- kitReady() considera cada subpasta pronta se existir ao menos um arquivo nela. Isso pode ser apenas um indicador grosseiro para blueMSX, não uma validação da integridade/completude das bases de dados e máquinas.
+- BiosManager.import() grava em .part, apaga o destino anterior e tenta renomear; revisar tratamento de falha para evitar perda do arquivo anterior e validar conteúdo antes de substituir.
+- downloadFromServer() incrementa a contagem após chamar downloadFirmware; revisar se o cliente confirma sucesso e se o arquivo realmente foi gravado.
+- Importação manual reconhece BIOS por nome final sem distinguir origem/núcleo; verificar colisões de nomes e a necessidade de regras por core.
+
+PENDÊNCIA DE IMPLEMENTAÇÃO
+1. Criar uma representação explícita de grupos de BIOS: alternativas (OR) e arquivos simultâneos (AND), mantendo compatibilidade com as listas regionais existentes.
+2. Corrigir a prontidão e a apresentação da tela para Intellivision exigir exec.bin E grom.bin.
+3. Adicionar validação de integridade por hash/tamanho quando houver metadados oficiais confiáveis; não presumir que presença equivale a BIOS válida.
+4. Auditar os requisitos de cada núcleo usado, começando por Sega CD, PlayStation, Saturn, Dreamcast, 3DO, Atari 5200, ColecoVision, MSX/blueMSX e Neo Geo.
+5. Testar importação manual, varredura da pasta bios e download RomM, incluindo arquivo incompleto/corrompido.
+
+Esta etapa é auditoria estática/documental. Nenhuma alteração de BIOS foi implementada e nenhum teste funcional de BIOS foi executado no telefone.
+
+AUDITORIA DOCUMENTAL ADICIONAL — REQUISITOS POR NÚCLEO
+Data: 2026-11-21
+Fontes primárias consultadas: documentação oficial Libretro por núcleo.
+
+1. Sega CD / Genesis Plus GX
+- A documentação lista bios_CD_U.bin, bios_CD_E.bin e bios_CD_J.bin como BIOS regionais necessárias para jogos das respectivas regiões.
+- A regra de qualquer um dos arquivos é uma simplificação aceitável para indicar que há uma BIOS disponível, mas não garante que a BIOS corresponda à região do jogo.
+- Fonte: https://docs.libretro.com/library/genesis_plus_gx/
+- Pendente: associar região do jogo/BIOS quando possível; ao menos informar que a BIOS precisa corresponder à região.
+
+2. PlayStation / PCSX ReARMed
+- O núcleo pode recorrer a BIOS HLE quando não encontra BIOS real; a documentação recomenda BIOS real para melhor compatibilidade.
+- A lista atual do Tandem inclui scph5501.bin e scph1001.bin, além de scph5500.bin/scph5502.bin. A documentação oficial consultada enumera PSXONPSP660.bin, scph101.bin, scph7001.bin, scph5501.bin e scph1001.bin, além de fallback para nomes iniciados por scph.
+- biosRequired=false é coerente com a existência de fallback HLE, embora a tela deva deixar claro que BIOS real é recomendada.
+- Fonte: https://docs.libretro.com/library/pcsx_rearmed/
+- Pendente: revisar a lista de nomes aceitos e evitar tratar ausência como bloqueio absoluto.
+
+3. Dreamcast / Flycast
+- dc_boot.bin é listado como opcional. A documentação também relaciona dc_flash.bin a problemas de data/hora e memória não volátil, mas não o apresenta na tabela principal de firmware obrigatório.
+- O Tandem lista ambos; biosRequired=false é coerente com a documentação.
+- Os arquivos devem ficar em system/dc/; o caminho dc/dc_boot.bin e dc/dc_flash.bin no catálogo respeita essa estrutura.
+- Fonte: https://docs.libretro.com/library/flycast/
+- Pendente: distinguir BIOS opcional de flash/NVRAM auxiliar e revisar se a UI descreve corretamente a função de cada arquivo.
+
+4. 3DO / Opera
+- A documentação aceita vários BIOS alternativos de fabricantes/modelos, incluindo panafz1.bin, panafz10.bin, variantes RSA, Goldstar e Sanyo. Um deles é suficiente para iniciar software; ROM de fonte japonesa é opcional para alguns jogos.
+- O catálogo atual inclui somente panafz10.bin, embora biosRequired=true.
+- Fonte: https://docs.libretro.com/library/opera/
+- Pendente: ampliar o catálogo de alternativas aceitas e representar BIOS de fonte japonesa como opcional/condicional, sem exigir todos os arquivos.
+
+5. ColecoVision / Gearcoleco
+- colecovision.rom é uma BIOS obrigatória; o núcleo também aceita coleco.rom ou os7.u2 como nomes alternativos para a mesma BIOS.
+- O modo ADAM exige ainda eos.rom e writer.rom (ou nomes alternativos) além da BIOS OS-7. A configuração atual do Tandem descreve somente ColecoVision, não ADAM.
+- Fonte: https://docs.libretro.com/library/gearcoleco/
+- Pendente: manter o escopo ColecoVision explícito ou modelar ADAM separadamente; incluir aliases de nomes aceitos se úteis.
+
+6. MSX / blueMSX
+- A documentação confirma que as pastas Databases e Machines devem vir de uma instalação completa do blueMSX.
+- O Tandem exige as duas pastas, o que corresponde ao requisito de estrutura, mas kitReady() só verifica se cada pasta contém ao menos um arquivo; não valida integridade nem completude.
+- Fonte: https://docs.libretro.com/library/bluemsx/
+- Pendente: melhorar validação do kit ou deixar explícito que o estado atual é apenas uma verificação estrutural superficial.
+
+7. Neo Geo / FinalBurn Neo
+- A documentação lista neogeo como BIOS necessária para alguns sistemas arcade e recomenda SYSTEM_DIRECTORY/fbneo/ como localização, com busca adicional no diretório do jogo e no diretório system raiz.
+- O catálogo atual registra neogeo.zip na raiz do system. A documentação indica que o núcleo pode encontrá-lo ali, mas o arquivo info pode continuar reportando ausência se não estiver em system/fbneo/.
+- Fonte: https://docs.libretro.com/library/fbneo/
+- Pendente: considerar importação para system/fbneo/neogeo.zip e alinhar a verificação visual com o local realmente esperado pelo núcleo.
+
+8. Atari 5200 / a5200
+- A pesquisa documental desta rodada não confirmou a lista exata de nomes e hashes do núcleo usado. Não marcar como validado; manter pendente de consulta ao info file do core.
+
+9. Sega Saturn / mednafen_saturn
+- A documentação consultada para Beetle Saturn descreve BIOS regionais sega_101.bin (Japão) e mpr-17933.bin (EUA/Europa), além de ROMs de cartucho requeridas apenas por jogos específicos.
+- O Tandem usa mednafen_saturn; confirmar se o pacote/build instalado corresponde exatamente a Beetle Saturn e se os nomes/hashes são idênticos antes de aplicar esta referência.
+- Fonte de referência: https://docs.libretro.com/library/beetle_saturn/
+- Pendente: confirmar identidade do core e a lista correta do seu info file.
+
+SÍNTESE DA ETAPA
+- Confirmado bug de lógica AND/OR para Intellivision.
+- Confirmada lista incompleta de BIOS alternativas no Opera/3DO.
+- Confirmado requisito de diretórios blueMSX, mas validação atual é superficial.
+- Requerem refinamento de classificação: BIOS regional do Sega CD; BIOS real recomendada mas não obrigatória no PCSX ReARMed; Dreamcast opcional; Neo Geo localização preferencial; Coleco ADAM fora do escopo atual.
+- Ainda não foram feitas alterações de código nem testes no aparelho para esta frente.
+
+ATUALIZAÇÃO DE ACOMPANHAMENTO — PR #7 / CI 332
+Data: 2026-11-21
+
+- PR #7: Publish every PR through the single tandem-latest channel.
+- Commit validado pela CI normal: 27f857c9321ab68bdb3f4ee2285baf730db93812.
+- CI #332: https://github.com/izzyn0okami/Tandem/actions/runs/44862879784
+- Resultado global da CI normal: sucesso.
+- Verificação de estilo (Spotless): sucesso.
+- Compilação do APK: sucesso.
+- Esta CI bem-sucedida não valida a publicação: o workflow Publish Tandem latest #1 falhou na etapa de identidade do pacote antes de comparar os certificados.
+- Execução de publicação: https://github.com/izzyn0okami/Tandem/actions/runs/44862879693
+- A falha não comprova incompatibilidade de assinatura; a comparação não foi alcançada.
+- Nenhum APK foi publicado nessa execução; tandem-latest permaneceu inalterada.
+- Correção posterior enviada à branch da PR #7: commit 86fd4b2a6d26f1bfecdef4516d2564ea362e1377. Ainda sem CI disparada/validada, pois commits feitos pela integração GitHub não iniciaram automaticamente os workflows.
+- Estado da PR #7: aberta, draft, não mesclada. A integração reportou mergeable=false na última consulta; verificar atualização da branch/base antes de qualquer integração.
+- Estado da PR #6: permanece aberta e não mesclada; não foi publicada para teste pelo novo fluxo.
+
+PENDÊNCIA IMEDIATA DE VALIDAÇÃO
+- Executar os workflows para o commit 86fd4b2a6d26f1bfecdef4516d2564ea362e1377 por um evento autorizado do GitHub (por exemplo, Run workflow na interface do Actions, caso disponível). A integração conectada permite consultar e reexecutar jobs existentes, mas não expõe a operação workflow_dispatch nem consegue iniciar um novo workflow para esse commit.
+- Confirmar que a extração do applicationId funciona, que a identidade do pacote novo corresponde ao APK atual e que os certificados SHA-256 são idênticos.
+- Só após publicação bem-sucedida instalar o APK e executar os testes reais de ZIP no telefone.
+- Não mesclar PR #7 ou PR #6 sem autorização explícita.
+
+ATUALIZAÇÃO DE ACOMPANHAMENTO — CI #333 / PR #7
+Data: 2026-11-21
+
+- Commit validado pela CI normal: 86fd4b2a6d26f1bfecdef4516d2564ea362e1377.
+- CI #333: https://github.com/izzyn0okami/Tandem/actions/runs/44863580524
+- Resultado global: sucesso.
+- Spotless/style: sucesso; compilação assembleLawnWithQuickstepGithubDebug: sucesso; upload do artefato: sucesso.
+- Publicador #3: https://github.com/izzyn0okami/Tandem/actions/runs/44863580513 — falhou em “Verify APK identity, version and signature”.
+- A publicação foi bloqueada antes das etapas de confirmação da PR e atualização da Release; tandem-latest permaneceu inalterada.
+- A inspeção do log não mostrou a mensagem específica da falha, apenas encerramento com exit code 1 dentro do script de validação. Não há evidência suficiente para concluir que os certificados são diferentes.
+- Foi adicionada instrumentação diagnóstica ao workflow em .github/workflows/publish_latest.yml, commit 34fc846db355456506c5e3f389eefefbb495d491. Ela imprime as identidades dos pacotes e captura saídas de erro de aapt/apksigner.
+- O commit 34fc846db355456506c5e3f389eefefbb495d491 atualiza a PR #7 (aberta, draft, não mesclada), mas ainda não tem CI associada. A integração GitHub não iniciou automaticamente uma nova execução para esse commit.
+- PR #6 continua aberta e não mesclada. Nenhum APK desta PR foi publicado no canal tandem-latest.
+
+PENDÊNCIA IMEDIATA
+- Gerar um evento de push autorizado para disparar CI e Publish Tandem latest no commit 34fc846db355456506c5e3f389eefefbb495d491.
+- Examinar o diagnóstico novo para identificar o comando exato que falha; somente então corrigir a validação e repetir.
+- Confirmar igualdade de package ID e certificado SHA-256 antes de permitir qualquer publicação ou instalação.
+- Não mesclar PR #7 ou PR #6 sem autorização explícita.
+
+================================================================
+CONSOLIDAÇÃO E ESTADO ATUAL — 2026-11-21
+================================================================
+
+Esta seção é a referência vigente para o estado do projeto. Os estados de PR e CI descritos nas seções históricas acima são registros do momento em que foram escritos e ficam SUPERSEDIDOS quando contradizem esta consolidação. O conteúdo técnico anterior foi preservado para manter a trilha de auditoria.
+
+REPOSITÓRIO E BASE
+- Repositório: https://github.com/izzyn0okami/Tandem
+- Branch principal de trabalho: game-mode-m2-dev
+- Commit-base desta consolidação: b711ff2384bd940b03b88fcd67c37640b8366a84
+- Data da consolidação: 2026-11-21
+- PRs abertas verificadas antes desta alteração: nenhuma.
+
+ESTADO ATUAL DAS PRs
+PR #6 — Fix ambiguous ROM archive selection
+- URL: https://github.com/izzyn0okami/Tandem/pull/6
+- Estado atual: FECHADA E MESCLADA.
+- Merge commit: b35b01e651249f18f9cfaaa6ed54504a4d0a2f95.
+- CI #337: https://github.com/izzyn0okami/Tandem/actions/runs/44900936265 — sucesso.
+- Resultado: seleção de ROM em ZIP deixa de escolher arbitrariamente quando há múltiplas entradas compatíveis; ausência ou ambiguidade deve gerar erro claro.
+
+PR #7 — Publish every PR through the single tandem-latest channel
+- URL: https://github.com/izzyn0okami/Tandem/pull/7
+- Estado atual: FECHADA SEM MERGE (merged=false; merged_at=null).
+- Não tratar como PR aberta nem como mudança integrada.
+- O fluxo oficial atual de publicação tandem-latest foi confirmado funcionando por CI #341/build 341.
+
+PR #8 — Fix Neo Geo AES/MVS detection from RomM
+- URL: https://github.com/izzyn0okami/Tandem/pull/8
+- Estado atual: FECHADA E MESCLADA.
+- Commit da alteração: 0904edd06f1035f3dba40649f37a7e547336d293.
+- Merge commit: 7ec3546379ba1338a215ea91e8e079f49f237afc.
+- CI #338: https://github.com/izzyn0okami/Tandem/actions/runs/44924774661 — sucesso.
+- CI #339: https://github.com/izzyn0okami/Tandem/actions/runs/44926811463 — sucesso.
+- Resultado: slugs RomM neogeoaes e neogeomvs reconhecidos; Neo Geo classificado corretamente como sistema não baseado em disco.
+- Observação: a mudança isolada de discBased para false causou extração indevida do ZIP; corrigida na PR #9.
+
+PR #9 — Preserve Neo Geo ZIP files as native ROMs
+- URL: https://github.com/izzyn0okami/Tandem/pull/9
+- Estado atual: FECHADA E MESCLADA, mediante autorização explícita do usuário.
+- Head commit: 294da765c1433bf59749d7cf779c47fe437f6be7.
+- Merge commit: b711ff2384bd940b03b88fcd67c37640b8366a84.
+- CI #340: https://github.com/izzyn0okami/Tandem/actions/runs/44930355731 — sucesso.
+- Correção: introduz zipIsNativeRom para preservar ZIPs que são a própria ROM, sem classificar Neo Geo como sistema baseado em disco.
+- RomUnzipper deixa de extrair genericamente ZIPs quando a plataforma informa zipIsNativeRom=true.
+- Validação do usuário: o comportamento corrigido do Neo Geo funcionou corretamente no aparelho. Não extrapolar essa confirmação para toda a matriz de testes de ZIPs de todas as plataformas.
+
+CI PÓS-MERGE E PUBLICAÇÃO
+CI #341
+- URL: https://github.com/izzyn0okami/Tandem/actions/runs/44931799931
+- Evento: push na branch game-mode-m2-dev.
+- Commit: b711ff2384bd940b03b88fcd67c37640b8366a84.
+- Estado: completed / success.
+- Verificações de compilação e estilo concluídas com sucesso.
+
+Release tandem-latest
+- URL: https://github.com/izzyn0okami/Tandem/releases/tag/tandem-latest
+- Nome publicado: Tandem (build 341).
+- Asset: Tandem.apk.
+- Tamanho: 52.031.490 bytes.
+- SHA-256: ee5a62107f4ac6abeab2922813eee625b82278df83cf771e4641fa1e29b7e7af.
+- URL direta: https://github.com/izzyn0okami/Tandem/releases/download/tandem-latest/Tandem.apk
+- Release aponta para o commit b711ff2384bd940b03b88fcd67c37640b8366a84.
+- O usuário confirmou o funcionamento correto da correção Neo Geo após instalar/testar a versão atual.
+
+PENDÊNCIAS ATUAIS DA AUDITORIA
+1. ROMs/ZIPs:
+   - Completar e registrar a matriz de testes: ZIP com uma ROM compatível; ZIP com múltiplas ROMs compatíveis; ZIP sem ROM compatível/corrompido; ROM avulsa; ZIPs de sistemas baseados em disco.
+   - A confirmação de funcionamento do Neo Geo não conclui automaticamente todos esses cenários.
+2. BIOS/firmware:
+   - Corrigir o modelo de requisitos AND/OR para BIOS simultâneas versus alternativas; Intellivision deve exigir exec.bin E grom.bin.
+   - Rever validação por hash/tamanho, importação atômica e confirmação de download.
+   - Rever alternativas do Opera/3DO, BIOS regional do Sega CD, nomes aceitos do PCSX ReARMed, auxiliares Flycast, blueMSX, localização Neo Geo e identidade/lista do core Saturn.
+   - Atari 5200 permanece sem confirmação documental suficiente.
+3. Núcleos:
+   - Revisar atualização/versionamento/integridade dos núcleos e cobertura.
+4. Compatibilidade real:
+   - Distinguir suporte declarado, disponibilidade de build, auditoria estática, CI e teste real no aparelho.
+5. Robustez:
+   - Revisar saves, ciclo de vida, áudio/vídeo, controles, falhas e diagnóstico; o motor ainda roda no mesmo processo do launcher.
+6. Testes automatizados:
+   - Ampliar cobertura para catálogo, detecção de ROM, BIOS, instalação de núcleos e sessão.
+
+REGRAS OPERACIONAIS VIGENTES
+- Este TXT no repositório passa a ser o registro oficial e versionado da auditoria Libretro/Tandem.
+- Caminho oficial: docs/auditorias/Auditoria_Libretro_Tandem.txt
+- Após cada CI concluída com sucesso, registrar número, URL, commit, jobs e artefatos/publicação quando aplicável.
+- Após cada PR concluída (merge ou fechamento sem merge), registrar estado, motivo/resultado e links.
+- Não marcar teste no telefone como concluído sem confirmação explícita do usuário.
+- Antes de abrir nova PR, consultar PRs abertas e avaliar sobreposição/conflitos.
+- Não mesclar PR sem autorização explícita do usuário.
+- Não substituir o canal tandem-latest por artefato de CI. O APK para atualização por cima deve ser publicado no Release tandem-latest pelo fluxo oficial, mantendo identidade e assinatura compatíveis.
+- Preservar funcionalidades já validadas de RetroAchievements e Rich Presence; não reabrir sem motivo concreto.
+- Manter pendências separadas de itens concluídos e não transformar achados estáticos em validações funcionais.
+
+FIM DA CONSOLIDAÇÃO — 2026-11-21
