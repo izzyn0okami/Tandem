@@ -188,7 +188,10 @@ jobs:
   tandem-release:
     runs-on: ubuntu-latest
     needs: final-status
-    if: github.repository_owner != 'LawnchairLauncher' && github.event_name == 'push' && endsWith(github.ref, '-dev') && needs.final-status.result == 'success'
+    if: github.repository_owner != 'LawnchairLauncher' && github.event_name == 'push' && github.ref == 'refs/heads/game-mode-m2-dev' && needs.final-status.result == 'success'
+    concurrency:
+      group: tandem-latest-publish
+      cancel-in-progress: false
     permissions:
       contents: write
     steps:
