@@ -124,12 +124,14 @@ object SaveSync {
             if (current == prefs.getString("$key:hash", null)) continue
             val existing = prefs.getLong("$key:id", -1L).takeIf { it >= 0 }
             val extension = if (kind == RemoteFileKind.Save) "srm" else "state"
-            val uploaded = runCatching {
-                client.uploadRemoteFile(kind, romId, emulatorTag(coreId), existing, file, "${File(romPath).nameWithoutExtension}.$extension")
-            }.getOrElse {
-                // O registro antigo pode ter sumido do servidor: tenta criar um novo.
-                if (existing == null) throw it
-                client.uploadRemoteFile(kind, romId, emulatorTag(coreId), null, file, "${File(romPath).nameWithoutExtension}.$extension")
+            val uploadName = "${File(romPath).nameWithoutExtension}.$extension"
+            val uploaded = try {
+                client.uploadRemoteFile(kind, romId, emulatorTag(coreId), existing, file, uploadName)
+            } catch (error: RomMHttpException) {
+                // Só cria um registro novo quando o RomM confirma que o antigo não existe.
+                // Falhas de rede, autenticação ou servidor não podem gerar saves duplicados.
+                if (existing == null || error.statusCode != 404) throw error
+                client.uploadRemoteFile(kind, romId, emulatorTag(coreId), null, file, uploadName)
             }
             prefs.edit {
                 putString("$key:hash", current)
