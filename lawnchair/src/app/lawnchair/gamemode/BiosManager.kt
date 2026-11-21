@@ -26,8 +26,7 @@ object BiosManager {
      * um arquivo presente. Sem grupos explícitos, a lista antiga [GamePlatform.bios] continua
      * sendo tratada como um único grupo de alternativas.
      */
-    private fun requiredBiosGroups(platform: GamePlatform): List<List<BiosFile>> =
-        platform.biosGroups.ifEmpty { listOf(platform.bios) }
+    private fun requiredBiosGroups(platform: GamePlatform): List<List<BiosFile>> = platform.biosGroups.ifEmpty { listOf(platform.bios) }
 
     /** O jogo pode rodar? BIOS opcionais dispensam arquivos; requisitos explícitos usam AND/OR. */
     fun isReady(context: Context, platform: GamePlatform): Boolean = when {
