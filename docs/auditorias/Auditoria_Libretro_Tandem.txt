@@ -943,3 +943,45 @@ Data: 2026-11-21
 - check-style: concluído com sucesso; ./gradlew spotlessCheck passou.
 - build-debug-apk: ainda em execução na última consulta; Build APK e Upload artifact ainda não concluídos.
 - Resultado global da CI pós-merge: PENDENTE até a conclusão do build e do status final.
+
+
+ATUALIZAÇÃO — CI PÓS-MERGE DA PR #19
+Data: 2026-11-21
+
+- Execução CI #386: https://github.com/izzyn0okami/Tandem/actions/runs/44961450399
+- Commit: efbc9c4c33c338679cbf4ea179c8f5925fc7ba1c.
+- check-style / spotlessCheck: sucesso.
+- build-debug-apk / assembleLawnWithQuickstepGithubDebug: sucesso.
+- Upload artifact: sucesso.
+- final-status: sucesso.
+- tandem-release: sucesso; publicação do canal tandem-latest concluída pelo workflow.
+- send-notifications, crowdin-auto-merge e nightly-release foram ignorados pelas condições do workflow.
+- Resultado global: CI pós-merge concluída com sucesso. A compilação e o fluxo de publicação foram concluídos sem falha.
+
+AUDITORIA ROMM — VERIFICAÇÃO DE ESPAÇO ANTES DE DOWNLOADS
+Data: 2026-11-21
+
+ACHADOS NA BRANCH game-mode-m2-dev
+- Downloads individuais gravam em arquivo temporário, mas não consultam o espaço disponível antes de iniciar a transferência.
+- Downloads multidisco baixam primeiro um ZIP temporário e depois extraem os arquivos para outra pasta; durante a extração, ZIP e conteúdo coexistem e exigem espaço simultâneo.
+- Downloads de firmware também usam arquivo .part e validam o tamanho recebido, mas não verificam previamente o espaço livre.
+- A implementação atual não retoma transferências interrompidas: o arquivo parcial é descartado no início/na falha.
+- Não foi confirmado suporte confiável a HTTP Range nos endpoints de conteúdo/ZIP do RomM. Não implementar retomada até verificar o comportamento real do servidor; não presumir que um ZIP dinâmico possa ser retomado com segurança.
+
+CORREÇÃO PROPOSTA — PR #20
+- PR: https://github.com/izzyn0okami/Tandem/pull/20
+- Branch: fix/romm-storage-preflight.
+- Commit atual no momento do registro: 171349a894849c2c281aaf82009c693fc4b965a6.
+- A alteração consulta StatFs.availableBytes antes de gravar o corpo da resposta.
+- Para downloads individuais, considera o tamanho informado pela resposta ou, quando indisponível, o tamanho informado pelo RomM; para arquivos individuais que podem vir empacotados, considera também espaço para extração.
+- Para ROMs multidisco, considera o ZIP e o conteúdo extraído simultaneamente, usando fs_size_bytes do RomM como estimativa do conteúdo.
+- Reserva adicional: mínimo de 32 MiB ou 5% do espaço estimado, o que for maior.
+- Registra no GameLog o espaço disponível e o estimado; se insuficiente, interrompe antes de começar a gravar a transferência e apresenta mensagem clara.
+- Inclui também verificação para downloads de firmware quando Content-Length está disponível.
+- Escopo não altera endpoints, autenticação, ZIP/M3U, saves/states ou agrupamento de ROMs.
+
+VALIDAÇÃO / PENDÊNCIAS
+- CI da PR #20: em andamento no momento deste registro; aguardar check-style e build-debug-apk no commit final.
+- Teste funcional no aparelho: pendente. Validar um download normal com espaço suficiente e confirmar que um cenário de espaço insuficiente é recusado antes de iniciar a transferência.
+- Retomada de downloads: permanece pendente de investigação do suporte Range no endpoint real do RomM.
+- A CI #386 pós-merge da PR #19 foi concluída com sucesso; não reabrir a correção de BIOS sem regressão.
