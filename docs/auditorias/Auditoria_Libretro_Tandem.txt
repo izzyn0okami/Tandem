@@ -687,3 +687,36 @@ PENDÊNCIA DE PUBLICAÇÃO
 - Verificar o workflow pós-merge e a Release tandem-latest antes de orientar instalação/atualização pelo canal permanente.
 
 FIM DO DOCUMENTO
+
+CONCLUSÃO — PR #16 / AUDITORIA E CORREÇÃO ROMM 5.4.1
+Data: 2026-11-21
+
+- PR #16: https://github.com/izzyn0okami/Tandem/pull/16
+- Estado: FECHADA E MESCLADA após autorização explícita do usuário.
+- Método: merge normal (não squash).
+- Branch: fix/romm-5-4-integration-audit.
+- Head validado pela CI: 000007c6ee43c324fb722231592c7dc94810f4cc.
+- Merge commit na branch game-mode-m2-dev: f3f139b79e510ec28db31cd381e1b74b28f6547c.
+- CI pré-merge #370: https://github.com/izzyn0okami/Tandem/actions/runs/44954314685 — completed / success.
+- Jobs obrigatórios aprovados: check-style (Spotless), build-debug-apk (assembleLawnWithQuickstepGithubDebug) e final-status.
+- Jobs opcionais tandem-release, nightly-release, crowdin-auto-merge e send-notifications foram ignorados pelas condições do workflow; não representam falha.
+- A CI validou estilo e compilação do APK Debug. Não confirma ainda o funcionamento real do ZIP transmitido por nginx/mod_zip.
+- Alterações integradas: download completo e validação de ZIP multidisco; extração via ZipFile/diretório central; instrumentação de entradas/tamanhos/bytes; seleção de arquivos via file_ids fornecidos pelo RomM; reconhecimento e reparo/geração de M3U; suporte a formatos multidisco e arquivos auxiliares; downloads temporários e validação de tamanho para firmware/saves/states; upload de saves/states por streaming; correção para evitar duplicatas em falhas transitórias; restrição do envio de token à mesma origem.
+- O TXT oficial de auditoria já estava incluído na PR; esta seção registra o resultado final do merge e da CI.
+- Testes funcionais no telefone com RomM 5.4.1: PENDENTES. Não considerar a integração comprovada apenas pela CI.
+
+TESTES FUNCIONAIS PENDENTES APÓS PR #16
+1. Castlevania: Symphony of the Night — ROM 829: download ZIP completo, extração de todas as entradas e abertura pela M3U.
+2. Castlevania: Symphony of the Night — ROM 20: confirmar que permanece separada da ROM 829.
+3. Castlevania Ultimate — ROM 830: validar o conjunto próprio.
+4. CHD individual (Final Fantasy VIII): confirmar que continua funcionando.
+5. Multidisco sem CUE/M3U prévio: confirmar geração da M3U e ordem correta.
+6. Saves/states: atualizar registro existente; verificar que erros transitórios não criam duplicatas; confirmar criação apenas quando a API realmente retorna 404.
+7. Firmware: baixar e validar integridade.
+8. Confirmar que ROMs distintas continuam separadas conforme o agrupamento do RomM.
+
+PENDÊNCIAS FUTURAS
+- Revisar retomada/resume de downloads.
+- Verificar espaço livre antes de baixar ZIPs grandes para arquivos temporários.
+- Registrar no log os resultados dos testes funcionais após retorno do usuário.
+
