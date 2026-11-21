@@ -996,3 +996,16 @@ Data: 2026-11-21
 - Nova CI disparada pelo commit de correção: pendente de consulta; não considerar PR #20 aprovada até check-style, build-debug-apk e final-status passarem no novo head.
 - CI #391 (run 44961921289), commit 085181d3e571c9fafac40a3bf221575980d4838b na branch game-mode-m2-dev: check-style, build-debug-apk, upload artifact, final-status e tandem-release passaram; publicação tandem-latest concluída.
 - Teste funcional da proteção de armazenamento no telefone continua pendente. PR #20 permanece aberta e não mesclada; não mesclar sem autorização explícita.
+
+
+CONCLUSÃO — PR #20 / PROTEÇÃO DE ESPAÇO EM DOWNLOADS ROMM
+Data: 2026-11-21
+
+- PR #20 mesclada por merge normal. Merge commit: 3b5c00626f46811e4ce0b88f386484d30c762225.
+- Head aprovado: c64b78e72d515bd1da6484155faf7b71612db4f7.
+- CI da PR #20 (run 44962691143 / #392): check-style, build-debug-apk e final-status concluídos com sucesso. Jobs condicionais de release/notificação/Crowdin foram ignorados conforme condições do workflow.
+- CI da branch base após o commit de correção do log (run 44962700397 / #393): check-style, build-debug-apk, final-status e tandem-release concluídos com sucesso; tandem-latest publicado.
+- Proteção adicionada: pré-checagem de espaço para downloads individuais, ZIPs multidisco e firmware, considerando arquivo compactado e conteúdo extraído simultaneamente quando aplicável, com reserva mínima de 32 MiB e margem adicional de 5%.
+- A correção de formatação Spotless foi aplicada sem alterar a lógica.
+- Pendência funcional: testar no aparelho downloads normais com espaço suficiente e confirmar que um download é recusado antes da transferência quando o espaço é insuficiente.
+- Retomada automática de downloads permanece fora do escopo até confirmar suporte HTTP Range nos endpoints RomM.
