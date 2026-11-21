@@ -16,6 +16,7 @@ import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.MultipartBody
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import okhttp3.RequestBody.Companion.asRequestBody
 import okhttp3.RequestBody.Companion.toRequestBody
 import okhttp3.Response
 import org.json.JSONObject
@@ -850,7 +851,7 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
     fun uploadRemoteFile(kind: RemoteFileKind, romId: Long, emulator: String, existingId: Long?, file: File, uploadName: String): RemoteFile {
         val body = MultipartBody.Builder()
             .setType(MultipartBody.FORM)
-            .addFormDataPart(kind.part, uploadName, file.readBytes().toRequestBody("application/octet-stream".toMediaType()))
+            .addFormDataPart(kind.part, uploadName, file.asRequestBody("application/octet-stream".toMediaType()))
             .build()
         val builder = if (existingId != null) {
             request(base.resolve("api/${kind.path}/$existingId")!!).put(body)
