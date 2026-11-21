@@ -985,3 +985,14 @@ VALIDAÇÃO / PENDÊNCIAS
 - Teste funcional no aparelho: pendente. Validar um download normal com espaço suficiente e confirmar que um cenário de espaço insuficiente é recusado antes de iniciar a transferência.
 - Retomada de downloads: permanece pendente de investigação do suporte Range no endpoint real do RomM.
 - A CI #386 pós-merge da PR #19 foi concluída com sucesso; não reabrir a correção de BIOS sem regressão.
+
+
+ATUALIZAÇÃO — PR #20 / PRIMEIRA FALHA DE ESTILO E CORREÇÃO
+Data: 2026-11-21
+
+- CI #390 (run 44961880975), no commit 171349a894849c2c281aaf82009c693fc4b965a6: build-debug-apk e upload artifact passaram; check-style falhou em spotlessKotlinCheck e final-status falhou.
+- Causa exata: formatação da expressão condicional em estimatedBytes(), no arquivo lawnchair/src/app/lawnchair/gamemode/RomMClient.kt. O Spotless exige os ramos do if/else em blocos com quebras de linha.
+- Correção aplicada na branch fix/romm-storage-preflight, sem alterar a lógica: c64b78e72d515bd1da6484155faf7b71612db4f7.
+- Nova CI disparada pelo commit de correção: pendente de consulta; não considerar PR #20 aprovada até check-style, build-debug-apk e final-status passarem no novo head.
+- CI #391 (run 44961921289), commit 085181d3e571c9fafac40a3bf221575980d4838b na branch game-mode-m2-dev: check-style, build-debug-apk, upload artifact, final-status e tandem-release passaram; publicação tandem-latest concluída.
+- Teste funcional da proteção de armazenamento no telefone continua pendente. PR #20 permanece aberta e não mesclada; não mesclar sem autorização explícita.
