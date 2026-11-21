@@ -542,4 +542,34 @@ PRÓXIMAS VERIFICAÇÕES
 4. Confirmar no Obtanium que o pacote app.tandem é reconhecido e que o fluxo de atualização funciona.
 5. Testar visualmente o novo ícone no launcher do Android.
 
+
+DIAGNÓSTICO E CORREÇÃO EM PREPARAÇÃO — PSX MULTIARQUIVO / LOG 15
+Data: 2026-11-21
+
+EVIDÊNCIA DO LOG 15
+- Arquivo recebido do usuário via Dropbox: tandem-log-15.txt.
+- Castlevania: Symphony of the Night (ROM 829): endpoint de conteúdo respondeu HTTP 200, application/zip, 583.332.462 bytes.
+- Outra entrada do mesmo jogo (ROM 20): HTTP 200, application/zip, 589.146.131 bytes.
+- Nas tentativas, a extração reportou somente 1 arquivo e terminou com "Nenhum disco compatível encontrado".
+- Final Fantasy VIII (Disc 1) em CHD: HTTP 200, 491.235.152 bytes; fluxo de arquivo único concluiu e o núcleo pcsx_rearmed foi iniciado.
+- Diagnóstico: falha anterior à abertura do núcleo PSX, no tratamento do pacote ZIP de ROMs com múltiplos arquivos.
+
+CAUSA IDENTIFICADA NO CÓDIGO
+- Em downloadFolder(), cada entrada ZIP era gravada com zip.copyTo(output).
+- ZipInputStream.copyTo() continua lendo o fluxo além do fim da entrada atual, podendo consumir o restante do pacote na primeira gravação. Isso explica a contagem de apenas um arquivo extraído.
+- A lista de extensões de disco usadas ao criar M3U também não incluía BIN.
+
+CORREÇÃO PREPARADA
+- A extração agora lê ZipInputStream em blocos até o fim da entrada atual, antes de avançar para a próxima entrada ZIP.
+- BIN foi incluído entre as extensões reconhecidas para descobrir imagens de disco ao criar M3U.
+- A lógica de CHD individual e os critérios de agrupamento do RomM não foram alterados.
+- Não foi criado agrupamento automático entre ROMs independentes.
+
+VALIDAÇÃO / PENDÊNCIAS
+- Branch: fix/psx-multi-file-zip-extraction.
+- Commit de código: a21bd0a8c4fe62a6985c9ec68540f6c7d53f0a61.
+- CI, compilação e testes funcionais ainda pendentes.
+- Testes no telefone após CI: CHD individual; pacote BIN+CUE com múltiplas entradas; conjunto multidisco agrupado pelo RomM; conferir se a M3U gerada referencia os CUE corretos.
+- Não mesclar sem autorização explícita do usuário.
+
 FIM DO DOCUMENTO
