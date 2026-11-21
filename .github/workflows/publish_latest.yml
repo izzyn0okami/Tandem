@@ -1,6 +1,15 @@
 name: Publish Tandem latest
 
 on:
+  push:
+    branches:
+      - game-mode-m2-dev
+  pull_request:
+    types:
+      - opened
+      - synchronize
+      - reopened
+      - ready_for_review
   workflow_dispatch:
     inputs:
       source_branch:
@@ -11,6 +20,7 @@ on:
 
 permissions:
   contents: write
+  pull-requests: read
 
 concurrency:
   group: tandem-latest-publish
@@ -18,14 +28,16 @@ concurrency:
 
 jobs:
   publish:
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     steps:
-      - name: Validate source branch
+      - name: Validate manual source branch
+        if: github.event_name == 'workflow_dispatch'
         env:
           SOURCE_BRANCH: ${{ inputs.source_branch }}
         run: |
           if [[ ! "$SOURCE_BRANCH" =~ ^[A-Za-z0-9._/-]+-dev$ ]]; then
-            echo "::error::A branch de origem deve terminar em -dev."
+            echo "::error::A branch manual deve terminar em -dev."
             exit 1
           fi
           if [[ "$SOURCE_BRANCH" == */../* || "$SOURCE_BRANCH" == ../* || "$SOURCE_BRANCH" == *"/.." ]]; then
@@ -33,10 +45,10 @@ jobs:
             exit 1
           fi
 
-      - name: Checkout selected branch
+      - name: Checkout source
         uses: actions/checkout@v7
         with:
-          ref: ${{ inputs.source_branch }}
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || (github.event_name == 'workflow_dispatch' && inputs.source_branch) || github.sha }}
           submodules: recursive
           fetch-depth: 0
 
@@ -58,7 +70,7 @@ jobs:
         run: |
           for name in TANDEM_KEYSTORE TANDEM_KEYSTORE_PASSWORD TANDEM_KEY_ALIAS TANDEM_KEY_PASSWORD; do
             if [ -z "${!name}" ]; then
-              echo "::error::$name não está configurado; publicação cancelada para evitar APK incompatível ou sem assinatura."
+              echo "::error::$name não está configurado; publicação cancelada para proteger a atualização instalada."
               exit 1
             fi
           done
@@ -66,39 +78,165 @@ jobs:
           printf '%s' "$TANDEM_KEYSTORE" | base64 --decode > "$GITHUB_WORKSPACE/key.jks"
           chmod 600 keystore.properties "$GITHUB_WORKSPACE/key.jks"
 
-      - name: Check formatting
-        run: ./gradlew spotlessCheck
-
-      - name: Build debug APK
-        run: ./gradlew assembleLawnWithQuickstepGithubDebug
-
-      - name: Prepare publication
-        id: prepare
-        run: |
-          APK="$(find build/outputs/apk -type f -name '*.apk' -print -quit)"
-          if [ -z "$APK" ]; then
-            echo "::error::O APK não foi encontrado."
-            exit 1
-          fi
-          mkdir -p out
-          cp "$APK" out/Tandem.apk
-          echo "source_sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
-
-      - name: Publish fixed download
+      - name: Determine next Android versionCode
+        id: version
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          SOURCE_SHA: ${{ steps.prepare.outputs.source_sha }}
-          SOURCE_BRANCH: ${{ inputs.source_branch }}
-          RUN_NUMBER: ${{ github.run_number }}
         run: |
-          TITLE="Tandem (publicação manual #${RUN_NUMBER})"
-          NOTES="APK do Tandem compilado a partir da branch ${SOURCE_BRANCH}. Commit: ${SOURCE_SHA}. O arquivo pode ser instalado sobre a versão anterior."
+          set -euo pipefail
+          SDK_ROOT="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-}}"
+          if [ -z "$SDK_ROOT" ]; then
+            echo "::error::Android SDK não encontrado."
+            exit 1
+          fi
+          SDKMANAGER="$(find "$SDK_ROOT/cmdline-tools" -type f -name sdkmanager 2>/dev/null | sort -V | tail -n 1)"
+          if [ -z "$SDKMANAGER" ]; then
+            echo "::error::sdkmanager não encontrado."
+            exit 1
+          fi
+          "$SDKMANAGER" "build-tools;37.0.0" >/dev/null
+          AAPT="$SDK_ROOT/build-tools/37.0.0/aapt"
+          if [ ! -x "$AAPT" ]; then
+            echo "::error::aapt não foi encontrado após instalar Build Tools."
+            exit 1
+          fi
 
-          if gh release view tandem-latest >/dev/null 2>&1; then
-            gh release upload tandem-latest out/Tandem.apk --clobber
-            gh release edit tandem-latest --title "$TITLE" --notes "$NOTES"
+          if gh release view tandem-latest --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            mkdir -p "$RUNNER_TEMP/current-latest"
+            gh release download tandem-latest --repo "$GITHUB_REPOSITORY" --pattern Tandem.apk --dir "$RUNNER_TEMP/current-latest"
+            CURRENT_APK="$RUNNER_TEMP/current-latest/Tandem.apk"
+            if [ ! -s "$CURRENT_APK" ]; then
+              echo "::error::A Release tandem-latest existe, mas não contém Tandem.apk."
+              exit 1
+            fi
+            CURRENT_CODE="$("$AAPT" dump badging "$CURRENT_APK" | sed -n "s/.*versionCode='\([0-9][0-9]*\)'.*/\1/p" | head -n 1)"
+            if ! [[ "$CURRENT_CODE" =~ ^[0-9]+$ ]]; then
+              echo "::error::Não foi possível ler o versionCode do APK atualmente publicado."
+              exit 1
+            fi
           else
-            gh release create tandem-latest out/Tandem.apk --prerelease --target "$SOURCE_SHA" --title "$TITLE" --notes "$NOTES"
+            CURRENT_CODE=1600020100
+          fi
+
+          NEXT_CODE=$((CURRENT_CODE + 1))
+          if [ "$NEXT_CODE" -gt 2100000000 ]; then
+            echo "::error::O limite de versionCode do Android foi atingido."
+            exit 1
+          fi
+          echo "current=$CURRENT_CODE"
+          echo "next=$NEXT_CODE"
+          echo "version_code=$NEXT_CODE" >> "$GITHUB_OUTPUT"
+
+      - name: Run style checks and build the signed APK
+        env:
+          VERSION_CODE: ${{ steps.version.outputs.version_code }}
+        run: ./gradlew spotlessCheck assembleLawnWithQuickstepGithubDebug -PtandemVersionCode="$VERSION_CODE"
+
+      - name: Verify APK identity, version and signature
+        id: apk
+        env:
+          VERSION_CODE: ${{ steps.version.outputs.version_code }}
+        run: |
+          set -euo pipefail
+          mapfile -t APKS < <(find build/outputs/apk -type f -name 'Lawnchair.*.github.debug.apk' -print)
+          if [ "${#APKS[@]}" -ne 1 ]; then
+            echo "::error::Esperado exatamente um APK do variant publicado; encontrados: ${#APKS[@]}."
+            printf '%s\n' "${APKS[@]}"
+            exit 1
+          fi
+          APK="${APKS[0]}"
+          SDK_ROOT="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-}}"
+          AAPT="$SDK_ROOT/build-tools/37.0.0/aapt"
+          APKSIGNER="$SDK_ROOT/build-tools/37.0.0/apksigner"
+          PACKAGE_INFO="$("$AAPT" dump badging "$APK" | head -n 1)"
+          PACKAGE_NAME="$(sed -n "s/.*name='\([^']*\)'.*/\1/p" <<< "$PACKAGE_INFO")"
+          ACTUAL_CODE="$(sed -n "s/.*versionCode='\([0-9][0-9]*\)'.*/\1/p" <<< "$PACKAGE_INFO")"
+          if [ "$ACTUAL_CODE" != "$VERSION_CODE" ]; then
+            echo "::error::versionCode inesperado: esperado $VERSION_CODE, recebido $ACTUAL_CODE."
+            exit 1
+          fi
+          if [ "$PACKAGE_NAME" != "app.lawnchair.debug" ]; then
+            echo "::error::Identificador do aplicativo inesperado: $PACKAGE_NAME."
+            exit 1
+          fi
+          "$APKSIGNER" verify "$APK"
+
+          if [ -f "$RUNNER_TEMP/current-latest/Tandem.apk" ]; then
+            OLD_PACKAGE_INFO="$("$AAPT" dump badging "$RUNNER_TEMP/current-latest/Tandem.apk" | head -n 1)"
+            OLD_PACKAGE="$(sed -n "s/.*name='\([^']*\)'.*/\1/p" <<< "$OLD_PACKAGE_INFO")"
+            if [ "$OLD_PACKAGE" != "$PACKAGE_NAME" ]; then
+              echo "::error::O identificador do APK mudou; publicação bloqueada para não criar uma instalação separada."
+              exit 1
+            fi
+
+            certificate_sha256() {
+              local file="$1"
+              local output
+              output="$("$APKSIGNER" verify --print-certs "$file" 2>&1)"
+              local digest
+              digest="$(printf '%s\n' "$output" | awk -F': ' 'tolower($1) ~ /certificate sha-256 digest/ { print $NF; exit }' | tr -d '[:space:]:' | tr '[:upper:]' '[:lower:]')"
+              if ! [[ "$digest" =~ ^[0-9a-f]{64}$ ]]; then
+                echo "::error::Não foi possível interpretar o certificado de $file."
+                printf '%s\n' "$output"
+                return 1
+              fi
+              printf '%s' "$digest"
+            }
+            NEW_CERT="$(certificate_sha256 "$APK")"
+            OLD_CERT="$(certificate_sha256 "$RUNNER_TEMP/current-latest/Tandem.apk")"
+            if [ "$NEW_CERT" != "$OLD_CERT" ]; then
+              echo "::error::A chave de assinatura mudou. Publicação bloqueada para preservar a atualização e os dados."
+              exit 1
+            fi
+          fi
+
+          mkdir -p out
+          cp "$APK" out/Tandem.apk
+          echo "path=$APK" >> "$GITHUB_OUTPUT"
+          echo "source_sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
+      - name: Confirm the pull request is still current
+        if: github.event_name == 'pull_request'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          EXPECTED_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          PR="$(gh pr view "$PR_NUMBER" --repo "$GITHUB_REPOSITORY" --json state,headRefOid)"
+          STATE="$(jq -r '.state' <<< "$PR")"
+          CURRENT_SHA="$(jq -r '.headRefOid' <<< "$PR")"
+          if [ "$STATE" != "OPEN" ] || [ "$CURRENT_SHA" != "$EXPECTED_SHA" ]; then
+            echo "::error::A PR foi fechada ou recebeu novos commits durante a compilação. APK antigo não será publicado."
+            exit 1
+          fi
+
+      - name: Publish or update the single tandem-latest release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SOURCE_SHA: ${{ steps.apk.outputs.source_sha }}
+          VERSION_CODE: ${{ steps.version.outputs.version_code }}
+          EVENT_NAME: ${{ github.event_name }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_BRANCH: ${{ github.head_ref }}
+          MANUAL_BRANCH: ${{ inputs.source_branch }}
+        run: |
+          set -euo pipefail
+          if [ "$EVENT_NAME" = "pull_request" ]; then
+            SOURCE_LABEL="PR #$PR_NUMBER ($PR_BRANCH)"
+          elif [ "$EVENT_NAME" = "workflow_dispatch" ]; then
+            SOURCE_LABEL="publicação manual ($MANUAL_BRANCH)"
+          else
+            SOURCE_LABEL="branch game-mode-m2-dev"
+          fi
+          TITLE="Tandem latest — $SOURCE_LABEL"
+          NOTES="APK único de atualização do Tandem. Origem: $SOURCE_LABEL. versionCode: $VERSION_CODE. Commit: $SOURCE_SHA. Instale sobre a versão existente para manter os dados."
+
+          if gh release view tandem-latest --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release upload tandem-latest out/Tandem.apk --clobber --repo "$GITHUB_REPOSITORY"
+            gh release edit tandem-latest --title "$TITLE" --notes "$NOTES" --repo "$GITHUB_REPOSITORY"
+          else
+            gh release create tandem-latest out/Tandem.apk --prerelease --target "$SOURCE_SHA" --title "$TITLE" --notes "$NOTES" --repo "$GITHUB_REPOSITORY"
           fi
 
           gh api --method PATCH "repos/${GITHUB_REPOSITORY}/git/refs/tags/tandem-latest" -f sha="$SOURCE_SHA" -F force=true
