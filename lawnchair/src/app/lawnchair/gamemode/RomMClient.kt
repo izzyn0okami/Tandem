@@ -699,10 +699,9 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
         }
     }
 
-    private fun naturalSortKey(value: String): String =
-        Regex("(\\d+)").replace(value.lowercase()) { match ->
-            match.value.toLongOrNull()?.toString()?.padStart(12, '0') ?: match.value
-        }
+    private fun naturalSortKey(value: String): String = Regex("(\\d+)").replace(value.lowercase()) { match ->
+        match.value.toLongOrNull()?.toString()?.padStart(12, '0') ?: match.value
+    }
 
     /** Arquivos de firmware (BIOS) que o servidor guarda, de todas as plataformas. */
     fun listFirmware(): List<RemoteFirmware> {
