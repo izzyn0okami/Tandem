@@ -366,3 +366,12 @@ PENDÊNCIAS ATUALIZADAS
 - A correção de identificação/download PSX foi integrada; validar no aparelho o conjunto CUE + BIN e, se disponíveis, outros formatos complementares (IMG/SUB/CCD/WAV).
 - Permanecem pendentes os cenários gerais de ZIP listados na matriz anterior; o merge da PR #11 não os valida automaticamente.
 - Demais pendências de BIOS/firmware, núcleos, compatibilidade real, robustez e testes automatizados permanecem inalteradas.
+
+
+ACOMPANHAMENTO PÓS-MERGE — PR #11
+- CI de push #345: https://github.com/izzyn0okami/Tandem/actions/runs/44939000123
+- Commit: 112f7a79a319427a25bfbd7a275cfd8b6b984725 (merge da PR #11).
+- Último estado consultado: in_progress; resultado ainda não disponível.
+- Workflow Crowdin Upload #77: skipped (não é falha da compilação).
+- Release tandem-latest consultada após o merge: ainda exibe build 343, associada ao commit anterior 78f89a54f89362a1c93b36fae72e3b2b1bae8402; portanto, ainda NÃO contém a correção da PR #11.
+- Não instalar APK até o workflow pós-merge concluir e a Release tandem-latest apontar para o commit/versão novos.
