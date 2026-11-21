@@ -11,6 +11,8 @@ data class GamePlatform(
     val raConsoleId: Int? = null,
     /** Jogos em disco (cue/chd/iso...): podem vir como pasta com vários arquivos. */
     val discBased: Boolean = false,
+    /** O arquivo ZIP é a própria ROM (ex.: conjuntos arcade do Neo Geo), não um pacote a extrair. */
+    val zipIsNativeRom: Boolean = false,
     /** Arquivos de BIOS que o núcleo usa (basta um deles). */
     val bios: List<BiosFile> = emptyList(),
     /** true = sem BIOS o jogo não roda; false = só melhora a compatibilidade. */
@@ -292,6 +294,7 @@ object GamePlatforms {
             folderAliases = setOf("neogeo", "neogeoaes", "neogeomvs", "neo-geo", "mvs", "aes"),
             sortOrder = 88,
             discBased = false,
+            zipIsNativeRom = true,
             bios = listOf(BiosFile("neogeo.zip", "Neo Geo (BIOS do conjunto)")),
             biosRequired = true,
         ),
