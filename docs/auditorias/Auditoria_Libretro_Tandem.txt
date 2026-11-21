@@ -900,3 +900,14 @@ Data: 2026-11-21
 - Commit da segunda correção de estilo: 59d1adcfece50f2f88bb7146346f2ec28411d7c5.
 - Nova CI será necessária para validar estilo e compilação sobre o commit atualizado; resultados anteriores não validam este novo estado.
 - PR #19 continua aberta e não mesclada. Testes no aparelho continuam pendentes.
+
+
+ATUALIZAÇÃO — TERCEIRA FALHA SPOTLESS NA PR #19
+Data: 2026-11-21
+
+- CI #383 (run 44960264977): build-debug-apk / assembleLawnWithQuickstepGithubDebug passou e o artefato foi enviado; check-style falhou em spotlessKotlinCheck, fazendo final-status falhar.
+- O Spotless apontou BiosManager.kt, na função isReady(), exigindo linhas em branco entre os ramos do when. Não houve erro de compilação do APK.
+- Correção aplicada na branch fix/bios-required-groups: adicionadas linhas em branco entre os casos de isReady(), sem alteração funcional.
+- Commit da correção: b7750f35ee4e16f90c89bec4da92129b7bded0ee.
+- Nova CI necessária para validar estilo e compilação no commit atualizado. O APK da CI #383 não deve ser tratado como versão aprovada, pois a verificação obrigatória de estilo falhou.
+- PR #19 permanece aberta e não mesclada; testes no aparelho continuam pendentes.
