@@ -461,3 +461,26 @@ PENDÊNCIAS DESTA CORREÇÃO
 2. Executar CI de estilo e compilação.
 3. Após aprovação da PR e autorização explícita para merge, confirmar publicação tandem-latest.
 4. Testar no telefone: ROM individual com fileId distinto de romId; registro has_file_on_disk=false; conjunto multidisco corretamente agrupado no RomM; e faixas cadastradas separadamente, que não devem ser combinadas pelo Tandem.
+
+
+CONFIRMAÇÃO PÓS-MERGE — PR #13 / ROMM COMO FONTE DE VERDADE
+Data: 2026-11-21
+
+- PR #13 — Respect RomM file grouping and correct file download IDs.
+- URL: https://github.com/izzyn0okami/Tandem/pull/13
+- Estado confirmado: FECHADA E MESCLADA.
+- Commit de código da PR: 9a89c2277fba6480250d4ad8f97d7960cbae0d3c.
+- Merge commit na branch game-mode-m2-dev: 5f5c1d0697c9aea4e00432f4da62e164ddf4e0e8.
+- O commit de merge contém a alteração de RomMClient.kt e a diretriz de confiar no agrupamento/metadados do RomM.
+- A PR #13 foi mesclada antes desta confirmação; portanto, a solicitação atual do usuário não exigiu um novo merge.
+- PR aberta verificada no repositório: #14 (identidade do app/ícone), sem sobreposição direta com a correção RomM. Não foi alterada.
+
+RESULTADO DE VALIDAÇÃO PÓS-MERGE
+- A consulta ao status combinado do commit de merge não retornou verificações/status associados.
+- A consulta disponível de execuções associadas ao commit também não retornou execuções. Assim, CI pós-merge e publicação tandem-latest NÃO estão confirmadas por esta consulta; não registrar como sucesso.
+- Teste funcional no telefone permanece PENDENTE. A correção deve ser validada com: (1) arquivo individual cujo fileId seja diferente do romId; (2) registro com has_file_on_disk=false, que deve ser omitido; (3) ROM multi-arquivo agrupada pelo próprio RomM; (4) faixas cadastradas como ROMs separadas, que não devem ser combinadas.
+- A regra funcional aprovada permanece: o Tandem não agrupa registros independentes por nome, faixa ou HASH; usa somente os vínculos e metadados do RomM.
+
+PENDÊNCIAS IMEDIATAS
+1. Confirmar a CI de push pós-merge e a publicação tandem-latest antes de orientar a instalação do APK.
+2. Executar os quatro testes funcionais acima no telefone e atualizar este log com os resultados informados pelo usuário.
