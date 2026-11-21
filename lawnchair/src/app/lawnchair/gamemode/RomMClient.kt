@@ -560,16 +560,18 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
             val sourcePlaylist = existingPlaylists.firstOrNull {
                 it.name.equals(expectedPlaylist.name, ignoreCase = true)
             } ?: existingPlaylists.firstOrNull()
-            val referencedDiscs = sourcePlaylist?.readLines().orEmpty().mapNotNull { line ->
-                val entry = line.trim()
-                if (entry.isEmpty() || entry.startsWith("#")) return@mapNotNull null
-                runCatching { File(sourcePlaylist.parentFile, entry).canonicalFile }.getOrNull()
-                    ?.takeIf {
-                        it.isFile &&
-                            it.path.startsWith(contentRoot.path + File.separator) &&
-                            it.extension.lowercase() in supportedDiscs
-                    }
-            }
+            val referencedDiscs = sourcePlaylist?.let { playlist ->
+                playlist.readLines().mapNotNull { line ->
+                    val entry = line.trim()
+                    if (entry.isEmpty() || entry.startsWith("#")) return@mapNotNull null
+                    runCatching { File(playlist.parentFile, entry).canonicalFile }.getOrNull()
+                        ?.takeIf {
+                            it.isFile &&
+                                it.path.startsWith(contentRoot.path + File.separator) &&
+                                it.extension.lowercase() in supportedDiscs
+                        }
+                }
+            }.orEmpty()
             val discoveredDiscs = content.walkTopDown()
                 .filter { it.isFile && it.extension.lowercase() in supportedDiscs }
                 .toList()
