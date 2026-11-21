@@ -103,14 +103,14 @@ jobs:
             local verify_output
             if ! verify_output="$("$APKSIGNER" verify --print-certs "$apk" 2>&1)"; then
               echo "::error::apksigner não conseguiu validar: $apk"
-              printf '%s\\n' "$verify_output"
+              printf '%s\n' "$verify_output"
               return 1
             fi
             local digest
-            digest="$(printf '%s\\n' "$verify_output" | awk -F': ' 'tolower($1) ~ /certificate sha-256 digest/ { print $NF; exit }' | tr -d '[:space:]:' | tr '[:upper:]' '[:lower:]')"
+            digest="$(printf '%s\n' "$verify_output" | awk -F': ' 'tolower($1) ~ /certificate sha-256 digest/ { print $NF; exit }' | tr -d '[:space:]:' | tr '[:upper:]' '[:lower:]')"
             if ! [[ "$digest" =~ ^[0-9a-f]{64}$ ]]; then
               echo "::error::Não foi possível interpretar o SHA-256 do certificado em: $apk"
-              printf '%s\\n' "$verify_output"
+              printf '%s\n' "$verify_output"
               return 1
             fi
             printf '%s' "$digest"
