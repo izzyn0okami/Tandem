@@ -889,3 +889,14 @@ Data: 2026-11-21
 - Commit da correção de estilo: 6ceae27223f3a4ee6ee957df3a149a3ec28e10a8.
 - Nova CI após a correção: pendente; não considerar estilo validado até check-style passar.
 - PR #19 permanece aberta e não mesclada. Testes funcionais no aparelho continuam pendentes.
+
+
+ATUALIZAÇÃO — SEGUNDA FALHA SPOTLESS NA PR #19
+Data: 2026-11-21
+
+- CI #381 (run 44959952361): check-style falhou novamente em BiosManager.kt; a compilação do APK ainda estava em andamento no momento da falha de estilo.
+- O Spotless apontou uma segunda quebra de linha incompatível, agora na expressão requiredBiosGroups().
+- Correção aplicada na mesma branch, mantendo a lógica: expressão colocada em uma única linha conforme o formatador.
+- Commit da segunda correção de estilo: 59d1adcfece50f2f88bb7146346f2ec28411d7c5.
+- Nova CI será necessária para validar estilo e compilação sobre o commit atualizado; resultados anteriores não validam este novo estado.
+- PR #19 continua aberta e não mesclada. Testes no aparelho continuam pendentes.
