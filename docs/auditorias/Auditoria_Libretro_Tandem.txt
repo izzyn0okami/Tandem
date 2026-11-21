@@ -157,7 +157,7 @@ CORREÇÕES PREPARADAS NA BRANCH fix/romm-5-4-integration-audit
    - Downloads de firmware e saves/states agora usam arquivo temporário, buffer e validação do tamanho recebido antes de substituir o destino.
    - A extração ZIP do caminho individual também passou a respeitar o fim da entrada atual.
    - O token de acesso só é enviado quando esquema, host e porta coincidem com a origem configurada do RomM.
-   - Uploads de saves/states agora transmitem o arquivo do disco em vez de carregar o arquivo inteiro na memória.
+   - Uploads de saves/states agora transmitem o arquivo do disco em vez de carregar o arquivo inteiro na memória, usando prazo estendido para transferências grandes.
 5. Sincronização de saves:
    - A atualização de um save existente só cria outro registro quando RomM responde HTTP 404.
    - Erros de rede, autenticação e servidor não geram uma nova cópia/duplicata.
@@ -165,9 +165,9 @@ CORREÇÕES PREPARADAS NA BRANCH fix/romm-5-4-integration-audit
 
 VALIDAÇÃO E LIMITES
 - Branch: fix/romm-5-4-integration-audit.
-- Última alteração de código registrada nesta branch: ba8067391596349b5890100cb7fb984b796ada90.
+- Última alteração de código registrada nesta branch: 27802485a717ea0fcf337fdb3577eedcfb4ce337.
 - PR #16 aberta: https://github.com/izzyn0okami/Tandem/pull/16.
-- As execuções CI #362, #363 e #364 foram iniciadas em heads anteriores durante a atualização da PR; a execução que valida o head final será confirmada separadamente.
+- As execuções CI #362 a #366 foram iniciadas em heads anteriores durante a atualização da PR; a execução que valida o head final será confirmada separadamente.
 - CI, compilação e testes automatizados do head final: PENDENTES até conclusão da execução.
 - Teste no aparelho: PENDENTE. A CI não comprova o download real do ZIP servido por nginx/mod_zip.
 - Não houve merge nem publicação de APK.
