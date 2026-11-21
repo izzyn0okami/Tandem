@@ -771,3 +771,35 @@ PENDÊNCIAS DE VALIDAÇÃO NO APARELHO — PR #17
 4. Informar se os efeitos visuais aproximados dos SVGs estão aceitáveis.
 
 FIM DA AUDITORIA DA PR #17
+
+
+AUDITORIA — DOWNLOAD INDIVIDUAL DE ARQUIVOS ROMM 5.4.1
+Data: 2026-11-21
+
+EVIDÊNCIA DO USUÁRIO — tandem-log-13.txt
+- O servidor RomM 5.4.1 responde HTTP 200 ao download ZIP de uma ROM multidisco PSX (ROM 829), mas a extração falhava na versão registrada pelo aparelho.
+- O usuário informou posteriormente que a atualização seguinte corrigiu os jogos de PSX; essa correção deve ser preservada e não reaberta nesta tarefa.
+- Para downloads individuais, o log registra ROM id=19 e fileId=18, mas a aplicação solicitou /api/roms/18/files/content/{file_name}; o servidor respondeu HTTP 404.
+- Segundo caso: ROM id=815 e fileId=813, com a mesma rota incorreta e HTTP 404.
+- O problema está na composição do endereço do download individual, não na autenticação ou na conectividade geral quando o servidor está acessível.
+
+CAUSA IDENTIFICADA
+- A implementação usava game.fileId como primeiro identificador em /api/roms/{id}/files/content/{file_name}.
+- Na API do RomM 5.4.1, esse segmento é o ID da ROM; fileId identifica o arquivo associado e não deve substituir o ID da ROM na rota.
+- Referência técnica: documentação oficial de endpoints do RomM, seção ROM Files: GET /{id}/files/content/{name}.
+
+CORREÇÃO PREPARADA
+- Para downloads individuais, manter a seleção de rota /files/content quando existe um fileId, mas usar game.id no segmento da URL.
+- Preservar game.fileId como indicador de que o registro selecionou um arquivo específico; não alterar o download ZIP multidisco nem o parâmetro file_ids.
+- Nenhuma alteração de comportamento foi feita para saves, states, firmware ou autenticação.
+
+VALIDAÇÃO / PENDÊNCIAS
+- Branch: fix/romm-single-file-download-id.
+- Commit de código: 327f06fdefeb5fb6087522a2677bd760af0f1121.
+- PR e CI: pendentes nesta atualização do log.
+- Teste funcional após instalar a versão gerada: baixar um jogo individual que antes falhava (ex.: ROM 19 / arquivo 18) e confirmar resposta bem-sucedida, arquivo íntegro e abertura pelo núcleo.
+- Repetir com o segundo caso (ROM 815 / arquivo 813) se continuar disponível.
+- Revalidar pelo menos um jogo PSX multidisco já corrigido para garantir que o fluxo ZIP/M3U permaneceu intacto.
+- Não considerar a correção comprovada apenas pela compilação; aguardar os testes no aparelho.
+
+FIM DA AUDITORIA DE DOWNLOAD INDIVIDUAL
