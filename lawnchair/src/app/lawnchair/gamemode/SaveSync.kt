@@ -39,7 +39,18 @@ object SaveSync {
 
     private fun emulatorTag(coreId: String) = "tandem_$coreId"
 
-    private fun hash(file: File): String = MessageDigest.getInstance("SHA-1").digest(file.readBytes()).joinToString("") { "%02x".format(it) }
+    private fun hash(file: File): String {
+        val digest = MessageDigest.getInstance("SHA-1")
+        file.inputStream().buffered().use { input ->
+            val buffer = ByteArray(64 * 1024)
+            while (true) {
+                val read = input.read(buffer)
+                if (read < 0) break
+                digest.update(buffer, 0, read)
+            }
+        }
+        return digest.digest().joinToString("") { "%02x".format(it) }
+    }
 
     private fun files(store: SaveStore) = listOf(
         RemoteFileKind.Save to store.sramFile,
