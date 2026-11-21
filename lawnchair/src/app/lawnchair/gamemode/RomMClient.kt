@@ -535,7 +535,14 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
                         out.mkdirs()
                     } else {
                         out.parentFile?.mkdirs()
-                        out.outputStream().use { zip.copyTo(it) }
+                        out.outputStream().use { output ->
+                            val buffer = ByteArray(64 * 1024)
+                            while (true) {
+                                val read = zip.read(buffer)
+                                if (read < 0) break
+                                output.write(buffer, 0, read)
+                            }
+                        }
                     }
                     entry = zip.nextEntry
                 }
@@ -550,7 +557,7 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
             "Caminho de arquivo inválido no pacote de ${game.title}"
         }
         if (!expectedPlaylist.isFile && game.fileName.endsWith(".m3u", ignoreCase = true)) {
-            val supportedDiscs = setOf("cue", "gdi", "chd", "iso", "pbp")
+            val supportedDiscs = setOf("cue", "gdi", "bin", "chd", "iso", "pbp")
             val existingPlaylists = content.walkTopDown()
                 .filter { it.isFile && it.extension.equals("m3u", ignoreCase = true) }
                 .toList()
