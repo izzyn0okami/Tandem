@@ -184,6 +184,7 @@ jobs:
           gh release view "nightly" && gh release delete "nightly" -y --cleanup-tag
           gh release create "nightly" "./$APK_NAME" -p -t "Lawnchair Nightly" --generate-notes
 
+# Tandem: publicação restrita à branch principal de desenvolvimento.
   # Tandem: mantém o APK mais recente numa página fixa de downloads do fork (cria a release uma vez e depois só troca o arquivo).
   tandem-release:
     runs-on: ubuntu-latest
