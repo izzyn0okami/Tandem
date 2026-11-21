@@ -470,10 +470,10 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
             downloadFolder(game, target, onProgress)
             return
         }
-        // ROMs aninhadas usam o endpoint de arquivo individual: o ID da rota é o ID
-        // do arquivo, não o ID da ROM. O endpoint /content/{fs_name} baixa a ROM inteira.
+        // O endpoint de arquivo individual também recebe o ID da ROM; fileId identifica
+        // o arquivo dentro da resposta, mas não é o identificador usado na rota.
         val url = if (game.fileId != null) {
-            base.resolve("api/roms/${game.fileId}/files/content/")!!.newBuilder()
+            base.resolve("api/roms/${game.id}/files/content/")!!.newBuilder()
                 .addPathSegment(game.fileName)
                 .build()
         } else {
@@ -547,12 +547,46 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
         // O pacote pode trazer tudo dentro de uma pasta única: sobe o conteúdo um nível.
         val onlyChild = temp.listFiles()?.singleOrNull()
         val content = if (onlyChild != null && onlyChild.isDirectory) onlyChild else temp
-        if (!File(content, game.fileName).isFile && game.fileName.endsWith(".m3u", ignoreCase = true)) {
-            val discs = content.listFiles().orEmpty().filter { it.isFile && it.extension.lowercase() in setOf("cue", "gdi", "chd", "iso", "pbp") }
+        val contentRoot = content.canonicalFile
+        val expectedPlaylist = File(content, game.fileName)
+        check(expectedPlaylist.canonicalPath.startsWith(contentRoot.path + File.separator)) {
+            "Caminho de arquivo inválido no pacote de ${game.title}"
+        }
+        if (!expectedPlaylist.isFile && game.fileName.endsWith(".m3u", ignoreCase = true)) {
+            val supportedDiscs = setOf("cue", "gdi", "chd", "iso", "pbp")
+            val existingPlaylists = content.walkTopDown()
+                .filter { it.isFile && it.extension.equals("m3u", ignoreCase = true) }
+                .toList()
+            val sourcePlaylist = existingPlaylists.firstOrNull {
+                it.name.equals(expectedPlaylist.name, ignoreCase = true)
+            } ?: existingPlaylists.firstOrNull()
+            val referencedDiscs = sourcePlaylist?.let { playlist ->
+                playlist.readLines().mapNotNull { line ->
+                    val entry = line.trim()
+                    if (entry.isEmpty() || entry.startsWith("#")) return@mapNotNull null
+                    runCatching { File(playlist.parentFile, entry).canonicalFile }.getOrNull()
+                        ?.takeIf {
+                            it.isFile &&
+                                it.path.startsWith(contentRoot.path + File.separator) &&
+                                it.extension.lowercase() in supportedDiscs
+                        }
+                }
+            }.orEmpty()
+            val discoveredDiscs = content.walkTopDown()
+                .filter { it.isFile && it.extension.lowercase() in supportedDiscs }
+                .toList()
+            val discs = referencedDiscs.ifEmpty { discoveredDiscs }
             val cues = discs.filter { it.extension.lowercase() in setOf("cue", "gdi") }
-            val list = (cues.ifEmpty { discs }).map { it.name }.sorted()
-            check(list.isNotEmpty()) { "Nenhum disco encontrado em ${game.title}" }
-            File(content, game.fileName).writeText(list.joinToString("\n") + "\n")
+            val selectedDiscs = (cues.ifEmpty { discs }).distinctBy { it.canonicalPath }
+            check(selectedDiscs.isNotEmpty()) {
+                "Nenhum disco compatível encontrado em ${game.title} (arquivos extraídos: ${content.walkTopDown().count { it.isFile }})"
+            }
+            expectedPlaylist.parentFile?.mkdirs()
+            val entries = selectedDiscs
+                .map { it.relativeTo(expectedPlaylist.parentFile ?: content).invariantSeparatorsPath }
+                .sorted()
+            expectedPlaylist.writeText(entries.joinToString("\n") + "\n")
+            GameLog.log("romm", "lista M3U criada: ${game.title}; discos=${entries.size}; caminhos=${entries.joinToString()}")
         }
         dir.deleteRecursively()
         check(content.renameTo(dir)) { "Não consegui gravar ${dir.name}" }
