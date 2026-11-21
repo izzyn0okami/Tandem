@@ -401,3 +401,33 @@ PENDÊNCIAS APÓS A PR #12
 - Confirmar no telefone o download/extração do jogo multidisco e a abertura via playlist M3U.
 - Prosseguir com a auditoria do SaveSync, especialmente o risco de criar duplicatas quando uma atualização remota falha; depois revisar saves/states, firmware, capas, pareamento e autenticação.
 
+TESTE FUNCIONAL — LOG 14 / ROMM 5.4.1
+Data: 2026-11-21
+Fonte: tandem-log-14.txt (Dropbox; sessão c0753612; app build 349).
+
+RESULTADO DO TESTE
+- Listagem RomM: sucesso; 824 jogos compatíveis identificados.
+- Download individual de Castlevania - Symphony of the Night Ultimate.bin (ROM 830): HTTP 200, 38.765.664 bytes; concluído.
+- Download do Track 1 de Castlevania: Symphony of the Night: HTTP 200, 589.145.424 bytes; concluído.
+- Download do Track 2: HTTP 404 HTML do nginx em /api/roms/18/files/content/Castlevania...Track 2.bin; operação do jogo falhou.
+- Registro CUE (ROM 17): /api/roms/17/content/Castlevania...cue retornou HTTP 404 JSON: "ROM 17 has no file to download".
+- A interface pode chegar a 100% porque o primeiro arquivo grande termina; o conjunto ainda falha ao solicitar o arquivo seguinte.
+- Teste funcional da PR #12: FALHOU para multidisco; download individual de BIN foi validado apenas nos exemplos acima, não como cobertura geral.
+
+CONTRATO DA API ROMM 5.4.1 — CORREÇÃO DE DIAGNÓSTICO
+- Fonte oficial: https://github.com/rommapp/romm/blob/5.4.1/backend/endpoints/roms/files.py
+- GET /api/roms/{id}/files/content/{file_name}: o parâmetro de rota é o ID interno do arquivo (RomFile.id), não o ID da ROM.
+- Fonte oficial: https://github.com/rommapp/romm/blob/5.4.1/backend/endpoints/roms/__init__.py
+- GET /api/roms/{id}/content/{file_name}: o parâmetro é o ID da ROM; entrega um arquivo quando a ROM tem um arquivo e um ZIP quando é uma ROM multi-arquivo; aceita file_ids para selecionar arquivos.
+- A implementação atual da PR #12 usa game.id na rota /files/content; isso não corresponde ao contrato documentado e precisa ser revisto. O HTTP 200 do Track 1 não prova que a identificação esteja correta, pois os IDs podem coincidir.
+- O registro CUE 17 não possui arquivo baixável segundo a própria API. Os Tracks 1 e 2 aparecem como registros ROM separados (IDs 19 e 18), e não como uma única ROM multi-arquivo no log.
+- Documentação RomM 5.4.0 sobre estrutura: uma pasta no nível {game} representa um único jogo multi-arquivo; os arquivos dos discos devem estar juntos nessa pasta e o RomM deve ser revarrido: https://docs.romm.app/5.4.0/getting-started/folder-structure/
+- Antes de implementar agrupamento automático no Tandem, confirmar se a biblioteca RomM deve ser organizada como uma única pasta multi-arquivo ou se o aplicativo deve combinar ROMs separadas por nome/numeração de faixa. Não agrupar por título apenas sem regra segura, para evitar misturar revisões/regiões.
+
+PENDÊNCIAS
+1. Revisar o uso dos dois endpoints conforme o contrato 5.4.1: ID de arquivo em /files/content e ID de ROM em /content.
+2. Ignorar ou apresentar corretamente registros com has_file_on_disk=false; a API já fornece esse campo no esquema de ROM.
+3. Definir tratamento para faixas/discos que o RomM indexou como ROMs separadas; avaliar irmãos/sibling_roms e nomes de Track N.
+4. Reproduzir teste em uma ROM multi-arquivo corretamente agrupada pelo RomM e confirmar ZIP/M3U, sem considerar a CI como teste funcional.
+5. Não mesclar qualquer PR corretiva sem autorização explícita.
+
