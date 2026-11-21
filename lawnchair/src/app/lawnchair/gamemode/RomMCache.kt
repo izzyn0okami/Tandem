@@ -42,6 +42,9 @@ object RomMCache {
                         coverUrl = o.optString("cover_url").ifEmpty { null },
                         serverName = o.optString("server").ifEmpty { o.getString("file") },
                         fileId = if (o.has("fileId")) o.getLong("fileId") else null,
+                        fileIds = o.optJSONArray("fileIds")?.let { ids ->
+                            (0 until ids.length()).map { index -> ids.getLong(index) }
+                        }.orEmpty(),
                         folder = o.optBoolean("folder", false),
                     ),
                 )
@@ -65,6 +68,7 @@ object RomMCache {
                         .put("cover_url", it.coverUrl.orEmpty())
                         .put("server", it.serverName)
                         .put("folder", it.folder)
+                        .put("fileIds", JSONArray().apply { it.fileIds.forEach { id -> put(id) } })
                         .apply { it.fileId?.let { id -> put("fileId", id) } },
                 )
             }
