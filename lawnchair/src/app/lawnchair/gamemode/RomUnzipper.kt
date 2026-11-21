@@ -13,7 +13,7 @@ object RomUnzipper {
 
     fun prepare(context: Context, romPath: String, platform: GamePlatform?): File {
         val rom = File(romPath)
-        if (!rom.extension.equals("zip", ignoreCase = true) || platform?.discBased == true) return rom
+        if (!rom.extension.equals("zip", ignoreCase = true) || platform?.discBased == true || platform?.zipIsNativeRom == true) return rom
         return try {
             extract(context, rom, platform?.extensions.orEmpty())
                 ?: throw IllegalArgumentException("O arquivo ${rom.name} não contém uma ROM compatível.")
