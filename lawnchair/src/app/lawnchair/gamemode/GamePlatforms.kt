@@ -68,6 +68,7 @@ object GamePlatforms {
             folderAliases = setOf("scd", "segacd", "megacd", "segamegacd"),
             sortOrder = 44,
             discBased = true,
+            discCompanionExtensions = setOf("bin", "wav"),
             bios = listOf(
                 BiosFile("bios_CD_U.bin", "Sega CD (EUA)"),
                 BiosFile("bios_CD_E.bin", "Mega CD (Europa)"),
@@ -105,6 +106,7 @@ object GamePlatforms {
             folderAliases = setOf("saturn", "segasaturn"),
             sortOrder = 45,
             discBased = true,
+            discCompanionExtensions = setOf("bin", "img", "sub", "wav"),
             bios = listOf(
                 BiosFile("sega_101.bin", "Saturn (Japão)"),
                 BiosFile("mpr-17933.bin", "Saturn (EUA/Europa)"),
@@ -119,6 +121,7 @@ object GamePlatforms {
             folderAliases = setOf("dreamcast", "dc", "segadreamcast"),
             sortOrder = 46,
             discBased = true,
+            discCompanionExtensions = setOf("bin", "raw", "wav"),
             bios = listOf(
                 BiosFile("dc/dc_boot.bin", "Dreamcast (boot ROM)"),
                 BiosFile("dc/dc_flash.bin", "Dreamcast (flash)"),
@@ -154,6 +157,7 @@ object GamePlatforms {
             folderAliases = setOf("3do", "panasonic3do"),
             sortOrder = 62,
             discBased = true,
+            discCompanionExtensions = setOf("bin"),
             bios = listOf(BiosFile("panafz10.bin", "3DO FZ-10")),
             biosRequired = true,
         ),
