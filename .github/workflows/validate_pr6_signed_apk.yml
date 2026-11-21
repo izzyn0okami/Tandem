@@ -21,7 +21,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          PR="$(gh pr view 6 --json state,headRefName,headRefOid)"
+          PR="$(gh pr view 6 --repo "$GITHUB_REPOSITORY" --json state,headRefName,headRefOid)"
           STATE="$(jq -r '.state' <<< "$PR")"
           BRANCH="$(jq -r '.headRefName' <<< "$PR")"
           SHA="$(jq -r '.headRefOid' <<< "$PR")"
@@ -67,15 +67,18 @@ jobs:
       - name: Build APK with publication signing
         run: ./gradlew assembleLawnWithQuickstepGithubDebug
 
-      - name: Locate APK
+      - name: Locate the expected APK
         id: apk
         run: |
-          APK="$(find build/outputs/apk -type f -name '*.apk' -print -quit)"
-          if [ -z "$APK" ]; then
-            echo "::error::O APK não foi encontrado."
+          set -euo pipefail
+          mapfile -t APKS < <(find build/outputs/apk -type f -path '*/lawnWithQuickstep/github/debug/*.apk' -print)
+          if [ "${#APKS[@]}" -ne 1 ]; then
+            echo "::error::Esperado exatamente um APK de lawnWithQuickstepGithubDebug; encontrados: ${#APKS[@]}."
+            printf '%s\n' "${APKS[@]}"
             exit 1
           fi
-          echo "path=$APK" >> "$GITHUB_OUTPUT"
+          echo "path=${APKS[0]}" >> "$GITHUB_OUTPUT"
+          echo "APK selecionado: ${APKS[0]}"
 
       - name: Compare certificate with current tandem-latest APK
         env:
