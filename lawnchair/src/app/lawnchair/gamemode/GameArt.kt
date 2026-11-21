@@ -20,6 +20,11 @@ object GameArt {
         override fun sizeOf(key: String, value: ImageBitmap) = value.width * value.height * 4
     }
 
+    /** Métricas do cache já limitado em bytes. */
+    fun cacheEntryCount(): Int = memory.snapshot().size
+
+    fun cacheBytes(): Int = memory.size()
+
     /** Depois de uma falha de rede, não tenta baixar capas por um tempo (evita esperas por capa). */
     @Volatile
     private var offlineUntilMs = 0L
@@ -61,6 +66,28 @@ object GameArt {
     fun androidCover(context: Context, game: AndroidGame): ImageBitmap? {
         if (System.currentTimeMillis() < offlineUntilMs) return null
         return gridCover(context, "android|${game.title}", game.title, "androidcover:${game.packageName}", allowNetwork = true)
+    }
+
+    /**
+     * Arte grande (hero/banner) para o fundo da tela de detalhes, só do SteamGridDB (precisa de chave).
+     * Nulo = a tela de detalhes usa a capa normal ampliada e desfocada no lugar.
+     */
+    fun heroArt(context: Context, key: String, title: String): ImageBitmap? {
+        if (GameModeSettings.steamGridKey(context) == null || !GameModeSettings.isScraperEnabled(context)) return null
+        if (System.currentTimeMillis() < offlineUntilMs) return null
+        val memoryKey = "hero:$key"
+        memory.get(memoryKey)?.let { return it }
+        var file = SteamGridDb.cachedHeroFile(context, key)
+        if (file == null) {
+            when (val result = SteamGridDb.downloadHero(context, key, title)) {
+                is ScrapeResult.Found -> file = result.file
+                ScrapeResult.Offline -> offlineUntilMs = System.currentTimeMillis() + OFFLINE_PAUSE_MS
+                ScrapeResult.NotFound -> Unit
+            }
+        }
+        val image = file?.let { RomMCovers.decode(it) } ?: return null
+        memory.put(memoryKey, image)
+        return image
     }
 
     /** Capa do acervo do Libretro (scraper local), se o jogo for de um console suportado. */

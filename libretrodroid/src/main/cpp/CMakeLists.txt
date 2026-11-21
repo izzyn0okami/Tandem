@@ -71,6 +71,14 @@ set(RCHEEVOS_SOURCES
     ${RCHEEVOS_DIR}/src/rc_util.c
     ${RCHEEVOS_DIR}/src/rc_version.c
     ${RCHEEVOS_DIR}/src/rc_libretro.c
+    # rc_client: motor oficial de sessão (login, carregar jogo, desbloqueios com fila de novas
+    # tentativas, modo hardcore oficial). Troca o acesso direto ao rc_runtime (achievements.cpp)
+    # pela camada completa da RetroAchievements; rc_client usa o rc_runtime acima por baixo.
+    ${RCHEEVOS_DIR}/src/rc_client.c
+    ${RCHEEVOS_DIR}/src/rapi/rc_api_common.c
+    ${RCHEEVOS_DIR}/src/rapi/rc_api_info.c
+    ${RCHEEVOS_DIR}/src/rapi/rc_api_runtime.c
+    ${RCHEEVOS_DIR}/src/rapi/rc_api_user.c
 )
 
 set (LIBRETRO_COMMON
@@ -162,6 +170,7 @@ add_library(libretrodroid SHARED
         rewindbuffer.cpp
         achievements.h
         achievements.cpp
+        achievements_extra.cpp
         achievements_test.h
         achievements_test.cpp
         ${LIBRETRO_COMMON}

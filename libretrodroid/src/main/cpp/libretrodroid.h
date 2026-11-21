@@ -117,7 +117,7 @@ public:
     void reset();
 
     void loadGameFromPath(const std::string &gamePath);
-    void loadGameFromBytes(const int8_t *data, size_t size);
+    void loadGameFromBytes(char *data, size_t size);
     void loadGameFromVirtualFiles(std::vector<VFSFile> virtualFiles);
 
     void onKeyEvent(unsigned int port, int action, int keyCode);
@@ -149,10 +149,8 @@ public:
     bool isRumbleEnabled() const;
     void handleRumbleUpdates(const std::function<void(int, float, float)> &handler);
 
-    void initAchievements(const std::vector<AchievementDef>& achievements, uint32_t consoleId);
-    void clearAchievements();
-    void handleAchievementUnlocks(const std::function<void(uint32_t)>& handler);
     Achievements& getAchievements() { return achievements; }
+    void achievementsBeginLoadGame(JNIEnv* env, uint32_t consoleId, const std::string& hash);
 
     void setFrameSpeed(unsigned int speed);
 
@@ -291,6 +289,9 @@ private:
     float splitPrimaryAspect = 0.0F;
     float secondaryCrop[4] = { 0.0F, 0.0F, 0.0F, 0.0F };
     float secondaryAspect = 0.0F;
+
+    // Keep frontend-provided content alive until retro_deinit() has returned.
+    std::unique_ptr<char[]> gameContent;
 
     std::unique_ptr<Core> core;
     std::unique_ptr<Audio> audio;

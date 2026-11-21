@@ -32,6 +32,7 @@ import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -165,6 +166,15 @@ private fun GameModeRoot(refreshKey: Int, onExit: () -> Unit) {
     val detail = entries.firstOrNull { it.key == detailKey }
     val networkRequest = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {}
 
+    DisposableEffect(Unit) {
+        onDispose { GameThemeMusic.stop("modo jogos encerrado") }
+    }
+    LaunchedEffect(tab, detailKey) {
+        if (detailKey == null) {
+            GameThemeMusic.stop(if (tab == GameTab.Library) "saída dos detalhes do jogo" else "saída da Biblioteca")
+        }
+    }
+
     LaunchedEffect(remote.connected, remote.tick, refreshKey) { remote.refresh() }
     LaunchedEffect(remote.connected) {
         if (remote.connected && !localNetworkGranted(context)) runCatching { networkRequest.launch(LOCAL_NETWORK_PERMISSION) }
@@ -191,6 +201,7 @@ private fun GameModeRoot(refreshKey: Int, onExit: () -> Unit) {
     }
 
     suspend fun startGame(coreId: String, romPath: String, title: String, loadState: Boolean, platform: GamePlatform?) {
+        GameThemeMusic.stop("início de jogo")
         GameLog.log("jogo", "abrir: $title (plataforma=${platform?.slug ?: "?"}, núcleo=$coreId)")
         if (platform != null && platform.launch != LaunchMode.LIBRETRO) {
             status = context.getString(R.string.game_external_opening, title)
@@ -310,10 +321,14 @@ private fun GameModeRoot(refreshKey: Int, onExit: () -> Unit) {
                     }
                 },
                 label = "gameScreen",
-            ) {
+            ) { targetScreen ->
+                val targetDetail = targetScreen.key
+                    .takeIf { it.startsWith("detail:") }
+                    ?.removePrefix("detail:")
+                    ?.let { key -> entries.firstOrNull { it.key == key } }
                 when {
-                    current != null -> GameDetailScreen(
-                        entry = current,
+                    targetDetail != null -> GameDetailScreen(
+                        entry = targetDetail,
                         progress = remote.progress,
                         busy = busy,
                         onPlay = { play(it) },
@@ -322,7 +337,7 @@ private fun GameModeRoot(refreshKey: Int, onExit: () -> Unit) {
                         onBack = { detailKey = null },
                     )
 
-                    tab == GameTab.Library -> LibraryScreen(
+                    targetScreen.key == "tab:Library" -> LibraryScreen(
                         games = games,
                         entries = entries,
                         androidGames = androidGames,
@@ -342,19 +357,19 @@ private fun GameModeRoot(refreshKey: Int, onExit: () -> Unit) {
                         },
                     )
 
-                    tab == GameTab.Settings && showBios -> BiosScreen(rootPath = rootPath)
+                    targetScreen.key == "bios" -> BiosScreen(rootPath = rootPath)
 
-                    tab == GameTab.Settings && showEmulators -> EmulatorsScreen()
+                    targetScreen.key == "emulators" -> EmulatorsScreen()
 
-                    tab == GameTab.Settings && showFolders -> FoldersScreen()
+                    targetScreen.key == "folders" -> FoldersScreen()
 
-                    tab == GameTab.Settings && showCores -> CoresScreen()
+                    targetScreen.key == "cores" -> CoresScreen()
 
-                    tab == GameTab.Settings && showScraper -> ScraperScreen()
+                    targetScreen.key == "scraper" -> ScraperScreen()
 
-                    tab == GameTab.Settings && showServer -> ServerScreen(remote)
+                    targetScreen.key == "server" -> ServerScreen(remote)
 
-                    tab == GameTab.Settings -> SettingsScreen(
+                    targetScreen.key == "tab:Settings" -> SettingsScreen(
                         rootPath = rootPath,
                         needsAccess = needsAccess,
                         busy = busy,

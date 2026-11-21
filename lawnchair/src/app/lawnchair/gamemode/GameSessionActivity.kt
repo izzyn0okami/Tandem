@@ -27,6 +27,8 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -52,8 +54,10 @@ import com.swordfish.libretrodroid.Variable
 import java.io.Closeable
 import java.io.File
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -67,6 +71,9 @@ class GameSessionActivity : ComponentActivity() {
     private var retroView: GLRetroView? = null
     private var saveStore: SaveStore? = null
     private var menuOpen by mutableStateOf(false)
+
+    /** Loop que processa eventos pendentes das conquistas enquanto o jogo está pausado. */
+    private var raIdleJob: Job? = null
 
     /** Camada de avisos e menu por cima do jogo: com o menu fechado, o toque passa direto para o jogo (DS, 3DS). */
     private fun passThrough(content: View): View = object : FrameLayout(this) {
@@ -82,10 +89,21 @@ class GameSessionActivity : ComponentActivity() {
     private lateinit var lostWatcher: ControllerLostWatcher
     private var romPath: String? = null
     private var raSession: RaSession? = null
-    private var raToast by mutableStateOf<RaAchievement?>(null)
+    private var nativeDestroyed = false
+    private val raUnlockQueue = mutableStateListOf<RaAchievement>()
+    private val raNoticeQueue = mutableStateListOf<String>()
     private var raEntries by mutableStateOf<List<RaEntry>>(emptyList())
     private var raHardcore by mutableStateOf(false)
+    private var raSyncPending by mutableStateOf(false)
+    private var raRichPresence by mutableStateOf("")
+    private var raRichPresenceVisible by mutableStateOf(true)
     private var raListOpen by mutableStateOf(false)
+
+    // Indicadores e avisos extras do overlay de conquistas (padrão RetroAchievements; ver RaBadge.kt).
+    private val raChallengeIndicators = mutableStateMapOf<Long, RaChallengeIndicator>()
+    private var raProgressIndicator by mutableStateOf<RaProgressIndicator?>(null)
+    private val raLeaderboardTrackers = mutableStateMapOf<Long, RaLeaderboardTracker>()
+    private val raMasteryQueue = mutableStateListOf<RaMastery>()
     private var optionsOpen by mutableStateOf(false)
     private var coreOptions by mutableStateOf<List<CoreOption>>(emptyList())
     private var coreLog: Closeable? = null
@@ -93,6 +111,7 @@ class GameSessionActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        raRichPresenceVisible = GameModeSettings.isRaRichPresenceVisible(this)
 
         // O Context da Activity só é válido após super.onCreate().
         // Inicializar aqui evita a NPE ao construir a Activity antes do attach.
@@ -130,8 +149,10 @@ class GameSessionActivity : ComponentActivity() {
         // Calculado uma vez, sem depender de rede: o menu de pausa usa isso para travar "Carregar estado"
         // desde o primeiro frame, sem esperar a sessão do RetroAchievements (que é assíncrona) confirmar.
         val statesBlocked = platformObject != null && RaSettings.blocksStates(this, platformObject)
+        // Reflete o modo escolhido desde o início, antes do login/identificação assíncronos do rc_client.
+        raHardcore = statesBlocked
         if (platformObject?.raConsoleId != null && RaSettings.isLoggedIn(this)) {
-            toast(if (statesBlocked) R.string.game_ra_hardcore_label else R.string.game_ra_softcore_label)
+            raNoticeQueue.add(getString(if (statesBlocked) R.string.game_ra_hardcore_label else R.string.game_ra_softcore_label))
         }
         // Núcleos como N64 e DS não abrem .zip: extrai antes (os saves continuam com o nome do .zip).
         val loadPath = RomUnzipper.prepare(this, romPath, platformObject).absolutePath
@@ -159,32 +180,72 @@ class GameSessionActivity : ComponentActivity() {
 
         val platform = platformObject
         if (platform?.raConsoleId != null && RaSettings.isLoggedIn(this)) {
-            val session = RaSession(
-                context = applicationContext,
-                view = view,
-                platform = platform,
-                romPath = loadPath,
-                scope = lifecycleScope,
-                hardcore = RaSettings.hardcore(this),
-                onUnlock = {
-                    raToast = it
-                    if (GameModeSettings.isSoundEnabled(this)) NavSound.unlock()
-                },
-                onState = { entries, hardcore ->
-                    raEntries = entries
-                    raHardcore = hardcore && entries.isNotEmpty()
-                },
-                onStatus = { status, unlocked, total ->
-                    when (status) {
-                        RaGameStatus.UNSUPPORTED -> toast(R.string.game_ra_status_unsupported)
-                        RaGameStatus.NO_ACHIEVEMENTS -> toast(R.string.game_ra_status_none)
-                        RaGameStatus.TRACKING -> toast(getString(R.string.game_ra_status_progress, unlocked, total))
-                    }
-                },
-            )
-            raSession = session
             lifecycleScope.launch {
+                // O nome do núcleo e suas opções só ficam disponíveis depois que o primeiro frame
+                // inicializa o core. Verifique opções salvas antes de ativar Hardcore.
                 view.getGLRetroEvents().first { it is GLRetroView.GLRetroEvents.FrameRendered }
+                val hasDisallowedSetting = RaSettings.hardcore(this@GameSessionActivity) &&
+                    view.getVariables().any { variable ->
+                        val key = variable.key
+                        val value = variable.value
+                        key != null && value != null && !view.isAchievementsCoreSettingAllowed(key, value)
+                    }
+                val sessionHardcore = RaSettings.hardcore(this@GameSessionActivity) && !hasDisallowedSetting
+                val progressUser = RaSettings.user(this@GameSessionActivity)
+                val savedRaProgress = progressUser?.let { user ->
+                    withContext(Dispatchers.IO) { store.readRaProgress(user) }
+                }
+                if (hasDisallowedSetting) {
+                    raHardcore = false
+                    raNoticeQueue.add("Hardcore desativado: o núcleo está usando uma opção incompatível.")
+                    GameLog.log("conquistas", "Hardcore desativado: há opções do núcleo não permitidas")
+                }
+                val session = RaSession(
+                    context = applicationContext,
+                    view = view,
+                    platform = platform,
+                    romPath = loadPath,
+                    cacheKeyPath = romPath,
+                    scope = lifecycleScope,
+                    hardcore = sessionHardcore,
+                    onUnlock = {
+                        raUnlockQueue.add(it)
+                        if (GameModeSettings.isSoundEnabled(this@GameSessionActivity)) NavSound.unlock()
+                    },
+                    onState = { entries, hardcore ->
+                        raEntries = entries
+                        // Hardcore é uma regra da sessão, não depende de haver conquistas listadas.
+                        raHardcore = hardcore
+                    },
+                    onStatus = { status, unlocked, total ->
+                        when (status) {
+                            RaGameStatus.UNSUPPORTED -> raNoticeQueue.add(getString(R.string.game_ra_status_unsupported))
+                            RaGameStatus.NO_ACHIEVEMENTS -> raNoticeQueue.add(getString(R.string.game_ra_status_none))
+                            RaGameStatus.TRACKING -> raNoticeQueue.add(getString(R.string.game_ra_status_progress, unlocked, total))
+                            RaGameStatus.FEATURES_ONLY -> raNoticeQueue.add(getString(R.string.game_ra_status_features_only))
+                        }
+                    },
+                    onOverlayEvent = { event -> handleRaOverlayEvent(event) },
+                    onConnectionState = { connected -> raSyncPending = !connected },
+                    onRichPresence = { message -> raRichPresence = message },
+                    onGameLoaded = { onRestored ->
+                        // Só tenta restaurar quando existe progresso salvo. Sem arquivo, libera
+                        // imediatamente a publicação do estado inicial da sessão.
+                        if (savedRaProgress == null) {
+                            onRestored()
+                        } else {
+                            // Sempre adia a publicação para depois que o callback nativo de load retornar.
+                            view.restoreAchievementsProgressAsync(savedRaProgress) { restored ->
+                                if (restored == false) {
+                                    progressUser?.let(store::deleteRaProgress)
+                                    GameLog.log("conquistas", "progresso local incompatível; arquivo descartado")
+                                }
+                                onRestored()
+                            }
+                        }
+                    },
+                )
+                raSession = session
                 session.start()
             }
         }
@@ -194,13 +255,33 @@ class GameSessionActivity : ComponentActivity() {
                 ComposeView(this).apply {
                     setContent {
                         LawnchairTheme {
-                            raToast?.let { unlocked ->
-                                LaunchedEffect(unlocked) {
-                                    delay(RA_TOAST_MS)
-                                    if (raToast == unlocked) raToast = null
+                            // Avisos temporários são serializados para nunca se sobreporem na tela.
+                            val unlocked = raUnlockQueue.firstOrNull()
+                            val mastery = raMasteryQueue.firstOrNull()
+                            val notice = raNoticeQueue.firstOrNull()
+                            when {
+                                unlocked != null -> AchievementOverlay(unlocked, hardcore = raHardcore) {
+                                    if (raUnlockQueue.firstOrNull()?.id == unlocked.id) raUnlockQueue.removeAt(0)
                                 }
-                                AchievementToast(unlocked)
+
+                                mastery != null -> MasteryOverlay(
+                                    mastery = mastery,
+                                    playtimeLabel = formatPlaytime(PlayHistory.get(this@GameSessionActivity, romPath).playtimeMs),
+                                    userName = RaSettings.user(this@GameSessionActivity).orEmpty(),
+                                ) {
+                                    if (raMasteryQueue.firstOrNull() == mastery) raMasteryQueue.removeAt(0)
+                                }
+
+                                notice != null -> GameMessageOverlay(notice) {
+                                    if (raNoticeQueue.firstOrNull() == notice) raNoticeQueue.removeAt(0)
+                                }
                             }
+                            // Indicadores persistentes seguem as posições e regras recomendadas pelo RA.
+                            ChallengeIndicatorsRow(raChallengeIndicators.values.toList())
+                            raProgressIndicator?.let { ProgressIndicatorBadge(it) }
+                            LeaderboardTrackersColumn(raLeaderboardTrackers.values.toList())
+                            if (raRichPresenceVisible) RichPresenceOverlay(raRichPresence)
+                            RaSyncIndicator(raSyncPending)
                             if (menuOpen) {
                                 val progress = if (raEntries.isEmpty()) {
                                     null
@@ -211,8 +292,14 @@ class GameSessionActivity : ComponentActivity() {
                                 PauseMenu(
                                     title = File(romPath).nameWithoutExtension,
                                     subtitle = progress,
-                                    canLoad = store.hasState() && !statesBlocked,
+                                    canSave = true,
+                                    canLoad = store.hasState() && !raHardcore,
                                     hasAchievements = raEntries.isNotEmpty(),
+                                    raRichPresenceVisible = raRichPresenceVisible,
+                                    onToggleRichPresence = {
+                                        raRichPresenceVisible = !raRichPresenceVisible
+                                        GameModeSettings.setRaRichPresenceVisible(this@GameSessionActivity, raRichPresenceVisible)
+                                    },
                                     onAchievements = { raListOpen = true },
                                     onCoreOptions = { openCoreOptions() },
                                     onResume = { setMenu(false) },
@@ -285,13 +372,75 @@ class GameSessionActivity : ComponentActivity() {
         }
     }
 
+    /** Traduz um evento de overlay do rc_client (ver RetroAchievements.kt) no estado que a tela desenha. */
+    private fun handleRaOverlayEvent(event: RaOverlayEvent) {
+        when (event) {
+            is RaOverlayEvent.ChallengeShow -> raChallengeIndicators[event.indicator.id] = event.indicator
+
+            is RaOverlayEvent.ChallengeHide -> raChallengeIndicators.remove(event.id)
+
+            is RaOverlayEvent.Progress -> raProgressIndicator = event.indicator
+
+            RaOverlayEvent.ProgressHide -> raProgressIndicator = null
+
+            is RaOverlayEvent.LeaderboardMessage -> raNoticeQueue.add(event.text)
+
+            is RaOverlayEvent.Tracker -> raLeaderboardTrackers[event.tracker.id] = event.tracker
+
+            is RaOverlayEvent.TrackerHide -> raLeaderboardTrackers.remove(event.id)
+
+            is RaOverlayEvent.Mastery -> {
+                raMasteryQueue.add(event.info)
+                if (GameModeSettings.isSoundEnabled(this)) NavSound.mastery()
+            }
+        }
+    }
+
+    /** "1h30min" ou "12 min" — usado só na legenda do aviso de Mastered/Completed. */
+    private fun formatPlaytime(ms: Long): String {
+        val totalMinutes = ms / 60_000
+        val hours = totalMinutes / 60
+        val minutes = totalMinutes % 60
+        return if (hours > 0) getString(R.string.game_ra_playtime_hm, hours, minutes) else getString(R.string.game_ra_playtime_m, minutes)
+    }
+
     private fun setMenu(open: Boolean) {
+        if (open == menuOpen) return
+        // Hardcore: evita pausas seguidas que poderiam burlar condições de conquista.
+        if (open && raHardcore && !(retroView?.canPauseAchievements() ?: false)) {
+            raNoticeQueue.add("Aguarde alguns instantes antes de pausar novamente")
+            return
+        }
         menuOpen = open
         if (!open) {
             optionsOpen = false
             raListOpen = false
         }
-        if (open) retroView?.pauseEmulation() else retroView?.resumeEmulation()
+        if (open) {
+            retroView?.pauseEmulation()
+            startRaIdleLoop()
+        } else {
+            stopRaIdleLoop()
+            retroView?.resumeEmulation()
+        }
+    }
+
+    /** Enquanto pausado, o rc_client precisa de idle (no lugar de do_frame) para manter a fila viva. */
+    private fun startRaIdleLoop() {
+        if (raSession == null) return
+        raIdleJob?.cancel()
+        raIdleJob = lifecycleScope.launch {
+            while (isActive) {
+                // runOnGLThread aguarda o GL thread; não bloquear a thread principal a cada segundo.
+                withContext(Dispatchers.Default) { retroView?.idleAchievements() }
+                delay(1_000)
+            }
+        }
+    }
+
+    private fun stopRaIdleLoop() {
+        raIdleJob?.cancel()
+        raIdleJob = null
     }
 
     private fun persistSram() {
@@ -301,20 +450,67 @@ class GameSessionActivity : ComponentActivity() {
             val bytes = view.serializeSRAM()
             if (bytes.isNotEmpty()) store.writeSram(bytes)
         }
+        val user = RaSettings.user(this) ?: return
+        if (raSession != null) {
+            runCatching {
+                val progress = view.serializeAchievementsProgress()
+                if (progress != null && progress.isNotEmpty()) store.writeRaProgress(user, progress)
+            }.onFailure { GameLog.error("conquistas", "falha ao salvar progresso local", it) }
+        }
     }
 
     private fun saveQuickState() {
         val view = retroView ?: return
         val store = saveStore ?: return
-        val saved = runCatching { store.writeState(view.serializeState()) }.isSuccess
+        val saved = runCatching {
+            val (emuState, raProgress) = view.serializeStateWithAchievements()
+            if (emuState == null) return@runCatching false
+            val payload = if (raProgress != null) {
+                val header = "TNDM".toByteArray(Charsets.US_ASCII)
+                val len = raProgress.size
+                header + byteArrayOf(
+                    (len shr 24).toByte(),
+                    (len shr 16).toByte(),
+                    (len shr 8).toByte(),
+                    len.toByte(),
+                ) + raProgress + emuState
+            } else {
+                emuState
+            }
+            store.writeState(payload)
+            true
+        }.getOrDefault(false)
         toast(if (saved) R.string.game_session_state_saved else R.string.game_session_state_save_failed)
         setMenu(false)
     }
 
     private fun loadQuickState() {
+        // Defesa adicional: nenhum caminho de chamada pode carregar estados durante o Hardcore.
+        if (raHardcore) {
+            toast(R.string.game_session_state_load_failed)
+            return
+        }
         val view = retroView ?: return
-        val bytes = saveStore?.readState() ?: return
-        val loaded = runCatching { view.unserializeState(bytes) }.getOrDefault(false)
+        val payload = saveStore?.readState() ?: return
+        var emuState = payload
+        var raProgress: ByteArray? = null
+        val marker = "TNDM".toByteArray(Charsets.US_ASCII)
+        if (payload.size >= 8 && payload.copyOfRange(0, 4).contentEquals(marker)) {
+            val len = ((payload[4].toInt() and 0xFF) shl 24) or
+                ((payload[5].toInt() and 0xFF) shl 16) or
+                ((payload[6].toInt() and 0xFF) shl 8) or
+                (payload[7].toInt() and 0xFF)
+            val emuSize = payload.size - 8 - len
+            if (len < 0 || emuSize <= 0) {
+                // Cabeçalho corrompido ou pacote truncado: não entrega o conteúdo ao núcleo.
+                toast(R.string.game_session_state_load_failed)
+                setMenu(false)
+                return
+            }
+            raProgress = payload.copyOfRange(8, 8 + len)
+            emuState = payload.copyOfRange(8 + len, payload.size)
+        }
+        val loaded = runCatching { view.unserializeStateWithAchievements(emuState, raProgress) }.getOrDefault(false)
         toast(if (loaded) R.string.game_session_state_loaded else R.string.game_session_state_load_failed)
         setMenu(false)
     }
@@ -328,13 +524,23 @@ class GameSessionActivity : ComponentActivity() {
     private fun toast(message: String) = Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
 
     override fun onResume() {
+        // A Activity restaura o estado do ciclo de vida automaticamente; preserve o menu pausado
+        // antes que o observer do GLRetroView tente retomar a emulação.
+        retroView?.suppressAutoResume = menuOpen
         super.onResume()
+        retroView?.suppressAutoResume = false
+        if (menuOpen) startRaIdleLoop() else stopRaIdleLoop()
         resumedAtMs = SystemClock.elapsedRealtime()
         lostWatcher.start()
     }
 
     override fun onDestroy() {
-        raSession?.stop()
+        stopRaIdleLoop()
+        if (!nativeDestroyed) {
+            raSession?.stop()
+            retroView?.destroyNative()
+            nativeDestroyed = true
+        }
         coreLog?.close()
         if (isFinishing) SessionDiagnostics.sessionEnded(this, "encerrado normalmente")
         super.onDestroy()
@@ -370,7 +576,12 @@ class GameSessionActivity : ComponentActivity() {
     }
 
     private fun changeCoreOption(option: CoreOption, value: String) {
-        retroView?.updateVariables(Variable(key = option.key, value = value))
+        val view = retroView ?: return
+        if (raHardcore && !view.isAchievementsCoreSettingAllowed(option.key, value)) {
+            raNoticeQueue.add("Esta opção não é permitida no modo Hardcore.")
+            return
+        }
+        view.updateVariables(Variable(key = option.key, value = value))
         CoreRegistry.saveOption(this, coreIdForOptions, option.key, value)
         coreOptions = coreOptions.map { if (it.key == option.key) it.copy(current = value) else it }
         GameLog.log("núcleos", "$coreIdForOptions: ${option.key} = $value")
@@ -394,7 +605,17 @@ class GameSessionActivity : ComponentActivity() {
         }
         resumedAtMs = 0L
         lostWatcher.stop()
+        // Ao encerrar ou recriar a Activity, descarte o cliente RA e o núcleo antes de o
+        // GLSurfaceView suspender o GL thread. Em uma pausa comum, preserve a sessão.
+        if (isFinishing || isChangingConfigurations) {
+            stopRaIdleLoop()
+            raSession?.stop()
+            retroView?.destroyNative()
+            nativeDestroyed = true
+        }
         super.onPause()
+        // Em uma pausa comum, o idle é retomado em onResume; respostas de rede aguardam o GL.
+        stopRaIdleLoop()
     }
 
     override fun dispatchKeyEvent(event: KeyEvent): Boolean {
@@ -464,8 +685,11 @@ class GameSessionActivity : ComponentActivity() {
 private fun PauseMenu(
     title: String,
     subtitle: String?,
+    canSave: Boolean,
     canLoad: Boolean,
     hasAchievements: Boolean,
+    raRichPresenceVisible: Boolean,
+    onToggleRichPresence: () -> Unit,
     onAchievements: () -> Unit,
     onCoreOptions: () -> Unit,
     onResume: () -> Unit,
@@ -502,8 +726,12 @@ private fun PauseMenu(
             if (subtitle != null) {
                 Text(text = subtitle, color = GameColors.success, fontSize = 14.sp, modifier = Modifier.padding(bottom = 14.dp))
             }
+            GameButton(
+                if (raRichPresenceVisible) "Ocultar descrição da partida" else "Exibir descrição da partida",
+                onToggleRichPresence,
+            )
             GameButton(stringResource(R.string.game_session_resume), onResume, primary = true, modifier = Modifier.focusRequester(firstItem))
-            GameButton(stringResource(R.string.game_session_save_state), onSave)
+            GameButton(stringResource(R.string.game_session_save_state), onSave, enabled = canSave)
             GameButton(stringResource(R.string.game_session_load_state), onLoad, enabled = canLoad)
             GameButton(stringResource(R.string.game_session_reset), onReset)
             if (hasAchievements) GameButton(stringResource(R.string.game_session_achievements), onAchievements)

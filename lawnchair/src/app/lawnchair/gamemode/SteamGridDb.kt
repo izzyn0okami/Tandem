@@ -37,6 +37,9 @@ object SteamGridDb {
     /** Capa já baixada para esse jogo, se houver. [key] identifica o jogo (plataforma + título). */
     fun cachedFile(context: Context, key: String): File? = File(dir(context), "${fingerprint(key)}.img").takeIf { it.isFile && it.length() > 0 }
 
+    /** Arte grande (hero/banner) já baixada para esse jogo, se houver. Usada como fundo na tela de detalhes. */
+    fun cachedHeroFile(context: Context, key: String): File? = File(dir(context), "${fingerprint(key)}.hero.img").takeIf { it.isFile && it.length() > 0 }
+
     private fun request(url: HttpUrl, apiKey: String) = Request.Builder().url(url).header("Authorization", "Bearer $apiKey").build()
 
     /** Testa a chave. Devolve null se estiver certa, ou a mensagem de erro. */
@@ -88,6 +91,52 @@ object SteamGridDb {
         } catch (e: IOException) {
             GameLog.error("arte", "steamgriddb offline ou com erro", e)
             ScrapeResult.Offline
+        }
+    }
+
+    /** Bloqueante: procura o jogo pelo título e baixa a primeira arte grande (hero/banner). Nulo = não achou. */
+    fun downloadHero(context: Context, key: String, title: String): ScrapeResult {
+        val apiKey = GameModeSettings.steamGridKey(context) ?: return ScrapeResult.NotFound
+        val folder = dir(context).apply { mkdirs() }
+        val print = fingerprint(key)
+        val miss = File(folder, "$print.hero.none")
+        if (miss.isFile && System.currentTimeMillis() - miss.lastModified() < MISS_RETRY_MS) return ScrapeResult.NotFound
+        val search = title.replace(tags, "").trim().ifEmpty { title }
+        return try {
+            val id = firstId(search, apiKey)
+            val url = id?.let { firstHero(it, apiKey) }
+            if (url == null) {
+                miss.writeText("")
+                ScrapeResult.NotFound
+            } else {
+                val target = File(folder, "$print.hero.img")
+                val temp = File(folder, "$print.hero.${Thread.currentThread().id}.part")
+                try {
+                    http.newCall(Request.Builder().url(url).build()).execute().use { response ->
+                        if (!response.isSuccessful) throw IOException("HTTP ${response.code} ao baixar a arte")
+                        temp.outputStream().use { response.body.byteStream().copyTo(it) }
+                    }
+                    if (temp.renameTo(target)) ScrapeResult.Found(target) else ScrapeResult.NotFound
+                } finally {
+                    temp.delete()
+                }
+            }
+        } catch (e: IOException) {
+            GameLog.error("arte", "steamgriddb (hero) offline ou com erro", e)
+            ScrapeResult.Offline
+        }
+    }
+
+    private fun firstHero(id: Int, apiKey: String): HttpUrl? {
+        val url = api("heroes", "game", id.toString())
+            .addQueryParameter("types", "static")
+            .addQueryParameter("nsfw", "false")
+            .build()
+        http.newCall(request(url, apiKey)).execute().use { response ->
+            if (!response.isSuccessful) throw IOException("HTTP ${response.code} nas artes")
+            val data = JSONObject(response.body.string()).optJSONArray("data") ?: return null
+            if (data.length() == 0) return null
+            return data.getJSONObject(0).optString("url").takeIf { it.startsWith("https://") }?.toHttpUrlOrNull()
         }
     }
 

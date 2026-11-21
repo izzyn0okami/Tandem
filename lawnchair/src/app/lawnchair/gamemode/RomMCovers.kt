@@ -15,6 +15,13 @@ object RomMCovers {
 
     fun cached(id: Long): ImageBitmap? = memory.get(id)
 
+    /** Métricas aproximadas do cache; não altera sua política de retenção. */
+    fun cacheEntryCount(): Int = memory.snapshot().size
+
+    fun estimatedMemoryBytes(): Long = memory.snapshot().values.sumOf {
+        it.width.toLong() * it.height.toLong() * 4L
+    }
+
     /** Onde a capa fica guardada no aparelho (dentro da pasta de imagens escolhida). */
     fun coverFile(context: Context, id: Long): File = File(File(GameFolders.dir(context, FolderKind.Assets), "covers"), "$id.img")
 

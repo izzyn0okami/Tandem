@@ -550,12 +550,14 @@ void LibretroDroid::loadGameFromPath(const std::string& gamePath) {
         game_info.size = 0;
     } else {
         struct Utils::ReadResult file = Utils::readFileAsBytes(gamePath);
-        game_info.data = file.data;
+        gameContent.reset(file.data);
+        game_info.data = gameContent.get();
         game_info.size = file.size;
     }
 
     bool result = core->retro_load_game(&game_info);
     if (!result) {
+        gameContent.reset();
         LOGE("Cannot load game. Leaving.");
         throw std::runtime_error("Cannot load game");
     }
@@ -563,7 +565,8 @@ void LibretroDroid::loadGameFromPath(const std::string& gamePath) {
     afterGameLoad();
 }
 
-void LibretroDroid::loadGameFromBytes(const int8_t *data, size_t size) {
+void LibretroDroid::loadGameFromBytes(char *data, size_t size) {
+    gameContent.reset(data);
     LOGD("Performing libretrodroid loadGameFromBytes");
 
     struct retro_system_info system_info {};
@@ -577,12 +580,13 @@ void LibretroDroid::loadGameFromBytes(const int8_t *data, size_t size) {
         game_info.data = nullptr;
         game_info.size = 0;
     } else {
-        game_info.data = data;
+        game_info.data = gameContent.get();
         game_info.size = size;
     }
 
     bool result = core->retro_load_game(&game_info);
     if (!result) {
+        gameContent.reset();
         LOGE("Cannot load game. Leaving.");
         throw std::runtime_error("Cannot load game");
     }
@@ -618,12 +622,14 @@ void LibretroDroid::loadGameFromVirtualFiles(std::vector<VFSFile> virtualFiles) 
         game_info.size = 0;
     } else {
         struct Utils::ReadResult file = Utils::readFileAsBytes(firstFileFD);
-        game_info.data = file.data;
+        gameContent.reset(file.data);
+        game_info.data = gameContent.get();
         game_info.size = file.size;
     }
 
     bool result = core->retro_load_game(&game_info);
     if (!result) {
+        gameContent.reset();
         LOGE("Cannot load game. Leaving.");
         throw std::runtime_error("Cannot load game");
     }
@@ -695,6 +701,8 @@ void LibretroDroid::destroy() {
         core->retro_unload_game();
         if (!vulkan) core->retro_deinit();
     }
+    // Keep content valid until both unload and deinit have returned.
+    gameContent.reset();
 
     video = nullptr;
 
@@ -703,6 +711,7 @@ void LibretroDroid::destroy() {
         VulkanBackend::getInstance().shutdown();
         vulkanContextReset = false;
         if (core) core->retro_deinit();
+        gameContent.reset();
     }
 
     core = nullptr;
@@ -757,6 +766,7 @@ void LibretroDroid::step() {
                 video->bindHWContext();
             }
             core->retro_run();
+            achievements.doFrame();
             if (video && video->isHWAccelerated()) {
                 video->bindMainContext();
             }
@@ -781,6 +791,7 @@ void LibretroDroid::step() {
 
         for (size_t i = 0; i < frames; i++) {
             core->retro_run();
+            achievements.doFrame();
 
             if (input) {
                 input->flushPendingReleases();
@@ -799,10 +810,6 @@ void LibretroDroid::step() {
         if (video && video->isHWAccelerated()) {
             video->bindMainContext();
         }
-    }
-
-    if (achievements.isActive()) {
-        achievements.evaluateFrame();
     }
 
     // The second display is drawn before the game's own frame, never after: changing the draw
@@ -891,9 +898,7 @@ void LibretroDroid::stepForNetplay() {
         video->bindMainContext();
     }
 
-    if (achievements.isActive()) {
-        achievements.evaluateFrame();
-    }
+    achievements.doFrame();
 
     // The second display is drawn before the game's own frame, never after: changing the draw
     // surface between the emulator's draw and the swap that presents it loses that frame on
@@ -1485,20 +1490,9 @@ void LibretroDroid::renderSecondaryFrame() {
     secondaryOutput.endFrame();
 }
 
-void LibretroDroid::initAchievements(const std::vector<AchievementDef>& achievementDefs, uint32_t consoleId) {
-    Achievements::setCore(core.get());
-    achievements.init(achievementDefs);
-
+void LibretroDroid::achievementsBeginLoadGame(JNIEnv* env, uint32_t consoleId, const std::string& hash) {
     const struct retro_memory_map* mmap = Environment::getInstance().getMemoryMap();
-    achievements.initMemory(consoleId, mmap);
-}
-
-void LibretroDroid::clearAchievements() {
-    achievements.clear();
-}
-
-void LibretroDroid::handleAchievementUnlocks(const std::function<void(uint32_t)>& handler) {
-    achievements.handleUnlocks(handler);
+    achievements.beginLoadGame(env, core.get(), consoleId, mmap, hash);
 }
 
 } //namespace libretrodroid

@@ -579,14 +579,14 @@ JNIEXPORT void JNICALL Java_com_swordfish_libretrodroid_LibretroDroid_loadGameFr
 ) {
     try {
         size_t size = env->GetArrayLength(gameFileBytes);
-        auto* data = new int8_t[size];
+        auto data = std::make_unique<char[]>(size);
         env->GetByteArrayRegion(
             gameFileBytes,
             0,
             size,
-            reinterpret_cast<int8_t*>(data)
+            reinterpret_cast<jbyte*>(data.get())
         );
-        LibretroDroid::getInstance().loadGameFromBytes(data, size);
+        LibretroDroid::getInstance().loadGameFromBytes(data.release(), size);
     } catch (std::exception &exception) {
         LOGE("Error in loadGameFromBytes: %s", exception.what());
         JavaUtils::throwRetroException(env, ERROR_LOAD_GAME);
@@ -694,11 +694,6 @@ JNIEXPORT void JNICALL Java_com_swordfish_libretrodroid_LibretroDroid_step(
         });
     }
 
-    LibretroDroid::getInstance().handleAchievementUnlocks([&](uint32_t achievementId) {
-        jclass cls = env->GetObjectClass(glRetroView);
-        jmethodID onAchievementUnlockedMethodID = env->GetMethodID(cls, "onAchievementUnlocked", "(J)V");
-        env->CallVoidMethod(glRetroView, onAchievementUnlockedMethodID, static_cast<jlong>(achievementId));
-    });
 }
 
 JNIEXPORT void JNICALL Java_com_swordfish_libretrodroid_LibretroDroid_renderFrameOnly(
@@ -736,11 +731,6 @@ JNIEXPORT void JNICALL Java_com_swordfish_libretrodroid_LibretroDroid_stepForNet
         });
     }
 
-    LibretroDroid::getInstance().handleAchievementUnlocks([&](uint32_t achievementId) {
-        jclass cls = env->GetObjectClass(glRetroView);
-        jmethodID onAchievementUnlockedMethodID = env->GetMethodID(cls, "onAchievementUnlocked", "(J)V");
-        env->CallVoidMethod(glRetroView, onAchievementUnlockedMethodID, static_cast<jlong>(achievementId));
-    });
 }
 
 JNIEXPORT void JNICALL Java_com_swordfish_libretrodroid_LibretroDroid_setInputPortState(
@@ -1102,50 +1092,108 @@ JNIEXPORT jdouble JNICALL Java_com_swordfish_libretrodroid_LibretroDroid_getCont
     return LibretroDroid::getInstance().getContentFps();
 }
 
-JNIEXPORT void JNICALL Java_com_swordfish_libretrodroid_LibretroDroid_initAchievements(
+// --- RetroAchievements (rc_client) -----------------------------------------------------------
+// Ponte JNI do motor oficial da RetroAchievements: quem faz a chamada HTTP de verdade é o Kotlin
+// (RetroAchievements.kt, usando o OkHttp que o app já tem); o nativo só monta o pedido e processa
+// a resposta. Ver achievements.h/.cpp e RaCallbacks.java.
+
+JNIEXPORT void JNICALL Java_com_swordfish_libretrodroid_LibretroDroid_raSetCallbacks(
     JNIEnv* env,
     jclass obj,
-    jobjectArray achievementArray,
-    jint consoleId
+    jobject callbacks
 ) {
-    std::vector<AchievementDef> achievements;
-
-    jsize count = env->GetArrayLength(achievementArray);
-    LOGI("initAchievements JNI called: count=%d, consoleId=%d", count, consoleId);
-    if (count == 0) {
-        LOGI("No achievements to initialize - empty array");
-        return;
-    }
-
-    jclass achClass = env->FindClass("com/swordfish/libretrodroid/AchievementDef");
-    jfieldID idField = env->GetFieldID(achClass, "id", "J");
-    jfieldID memAddrField = env->GetFieldID(achClass, "memAddr", "Ljava/lang/String;");
-
-    for (jsize i = 0; i < count; i++) {
-        jobject achObj = env->GetObjectArrayElement(achievementArray, i);
-
-        AchievementDef def;
-        def.id = static_cast<uint32_t>(env->GetLongField(achObj, idField));
-
-        jstring memAddr = static_cast<jstring>(env->GetObjectField(achObj, memAddrField));
-        const char* memAddrStr = env->GetStringUTFChars(memAddr, nullptr);
-        def.memAddr = memAddrStr;
-        env->ReleaseStringUTFChars(memAddr, memAddrStr);
-
-        achievements.push_back(def);
-        env->DeleteLocalRef(achObj);
-        env->DeleteLocalRef(memAddr);
-    }
-
-    LOGI("Initializing %zu achievements in native for console %d", achievements.size(), consoleId);
-    LibretroDroid::getInstance().initAchievements(achievements, static_cast<uint32_t>(consoleId));
+    LibretroDroid::getInstance().getAchievements().setCallbacks(env, callbacks);
 }
 
-JNIEXPORT void JNICALL Java_com_swordfish_libretrodroid_LibretroDroid_clearAchievements(
+JNIEXPORT void JNICALL Java_com_swordfish_libretrodroid_LibretroDroid_raCreate(
     JNIEnv* env,
     jclass obj
 ) {
-    LibretroDroid::getInstance().clearAchievements();
+    LibretroDroid::getInstance().getAchievements().create();
+}
+
+JNIEXPORT void JNICALL Java_com_swordfish_libretrodroid_LibretroDroid_raDestroy(
+    JNIEnv* env,
+    jclass obj
+) {
+    LibretroDroid::getInstance().getAchievements().destroyClient();
+}
+
+JNIEXPORT void JNICALL Java_com_swordfish_libretrodroid_LibretroDroid_raSetHardcoreEnabled(
+    JNIEnv* env,
+    jclass obj,
+    jboolean enabled
+) {
+    LibretroDroid::getInstance().getAchievements().setHardcoreEnabled(enabled == JNI_TRUE);
+}
+
+JNIEXPORT void JNICALL Java_com_swordfish_libretrodroid_LibretroDroid_raBeginLoginWithToken(
+    JNIEnv* env,
+    jclass obj,
+    jstring user,
+    jstring token
+) {
+    if (user == nullptr || token == nullptr) return;
+    JniString userStr(env, user);
+    JniString tokenStr(env, token);
+    LibretroDroid::getInstance().getAchievements().beginLoginWithToken(env, userStr.stdString(), tokenStr.stdString());
+}
+
+JNIEXPORT void JNICALL Java_com_swordfish_libretrodroid_LibretroDroid_raBeginLoadGame(
+    JNIEnv* env,
+    jclass obj,
+    jstring hash,
+    jint consoleId
+) {
+    if (hash == nullptr) return;
+    JniString hashStr(env, hash);
+    LibretroDroid::getInstance().achievementsBeginLoadGame(env, static_cast<uint32_t>(consoleId), hashStr.stdString());
+}
+
+JNIEXPORT void JNICALL Java_com_swordfish_libretrodroid_LibretroDroid_raUnloadGame(
+    JNIEnv* env,
+    jclass obj
+) {
+    LibretroDroid::getInstance().getAchievements().unloadGame();
+}
+
+JNIEXPORT void JNICALL Java_com_swordfish_libretrodroid_LibretroDroid_raDeliverServerResponse(
+    JNIEnv* env,
+    jclass obj,
+    jint requestId,
+    jint httpStatus,
+    jstring body,
+    jboolean networkError
+) {
+    std::string bodyStr;
+    if (body != nullptr) {
+        JniString bodyJniStr(env, body);
+        bodyStr = bodyJniStr.stdString();
+    }
+    LibretroDroid::getInstance().getAchievements().deliverServerResponse(
+        env, requestId, httpStatus, bodyStr, networkError == JNI_TRUE
+    );
+}
+
+JNIEXPORT jstring JNICALL Java_com_swordfish_libretrodroid_LibretroDroid_raGetAchievementListJson(
+    JNIEnv* env,
+    jclass obj
+) {
+    return env->NewStringUTF(LibretroDroid::getInstance().getAchievements().getAchievementListJson().c_str());
+}
+
+JNIEXPORT jstring JNICALL Java_com_swordfish_libretrodroid_LibretroDroid_raGetSummaryJson(
+    JNIEnv* env,
+    jclass obj
+) {
+    return env->NewStringUTF(LibretroDroid::getInstance().getAchievements().getSummaryJson().c_str());
+}
+
+JNIEXPORT jboolean JNICALL Java_com_swordfish_libretrodroid_LibretroDroid_raIsGameLoaded(
+    JNIEnv* env,
+    jclass obj
+) {
+    return LibretroDroid::getInstance().getAchievements().isGameLoaded() ? JNI_TRUE : JNI_FALSE;
 }
 
 JNIEXPORT jint JNICALL Java_com_swordfish_libretrodroid_LibretroDroid_runAchievementTests(
@@ -1212,6 +1260,14 @@ JNIEXPORT jboolean JNICALL Java_com_swordfish_libretrodroid_LibretroDroid_isCore
     JniString valueStr(env, value);
     return rc_libretro_is_setting_allowed(disallowed, keyStr.stdString().c_str(), valueStr.stdString().c_str())
         ? JNI_TRUE : JNI_FALSE;
+}
+
+// Guarda a JavaVM para o motor de conquistas (achievements.cpp) conseguir chamar de volta o
+// Kotlin a partir de qualquer chamada nativa (login, carregar jogo, cada quadro), sem precisar
+// anexar uma thread nova à JVM.
+JNIEXPORT jint JNICALL JNI_OnLoad(JavaVM* vm, void* reserved) {
+    Achievements::setJavaVM(vm);
+    return JNI_VERSION_1_6;
 }
 
 }

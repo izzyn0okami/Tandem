@@ -177,6 +177,10 @@ android {
         resValues true
     }
 
+    packagingOptions {
+        jniLibs.useLegacyPackaging = true
+    }
+
     packagingOptions.resources.excludes += [
         "**/*.proto",
         "**/*.bin",
@@ -505,6 +509,7 @@ dependencies {
 
     debugImplementation libs.leakcanary.android
     debugImplementation libs.leakcanary.androidstudio
+
 }
 
 ksp {

@@ -278,6 +278,7 @@ class GLRetroView(
     var suppressAutoResume = false
     private var isAborted = false
     @Volatile private var isDestroyed = false
+    @Volatile private var achievementsHardcoreEnabled = false
     private var previewModeEnabled = false
 
     private val retroGLEventsSubject = MutableSharedFlow<GLRetroEvents>(1)
@@ -415,7 +416,7 @@ class GLRetroView(
         LibretroDroid.getSerializeSize()
     }
     fun setCheat(index : Int, enable : Boolean, code : String) = runOnGLThread {
-        LibretroDroid.setCheat(index, enable, code)
+        if (!achievementsHardcoreEnabled) LibretroDroid.setCheat(index, enable, code)
     }
 
     fun resetCheat() = runOnGLThread {
@@ -423,11 +424,11 @@ class GLRetroView(
     }
 
     fun unserializeState(data: ByteArray): Boolean = runOnGLThread {
-        LibretroDroid.unserializeState(data)
+        !achievementsHardcoreEnabled && LibretroDroid.unserializeState(data)
     }
 
     fun unserializePersistedState(data: ByteArray): Boolean = runOnGLThread {
-        LibretroDroid.unserializePersistedState(data)
+        !achievementsHardcoreEnabled && LibretroDroid.unserializePersistedState(data)
     }
 
     fun serializeSRAM(): ByteArray =
@@ -478,6 +479,156 @@ class GLRetroView(
 
     fun reset() = runOnGLThread {
         LibretroDroid.reset()
+        LibretroDroid.raReset()
+    }
+
+    /**
+     * rc_client emits RESET when a mode change requires the core to restart.
+     * Defer the reset until the current rc_client callback has unwound.
+     */
+    fun resetAfterAchievementsModeChange() {
+        queueEvent {
+            if (!isDestroyed) {
+                LibretroDroid.reset()
+                LibretroDroid.raReset()
+            }
+        }
+    }
+
+    /**
+     * Snapshot the emulator and RetroAchievements runtime on the same GL thread/frame boundary.
+     * Keeping these operations together prevents a frame from advancing between the two snapshots.
+     */
+    fun serializeStateWithAchievements(): Pair<ByteArray?, ByteArray?> = runOnGLThread {
+        // RetroAchievements permite criar estados no Hardcore para depuração, mas não carregá-los.
+        // Não inclua o snapshot do rc_client nesse caso: ao abrir o estado em Casual, o progresso
+        // atual da sessão não deve ser substituído por um snapshot obtido durante o Hardcore.
+        val state = LibretroDroid.serializeState()
+        val progress = if (achievementsHardcoreEnabled) null else LibretroDroid.raSerializeProgress()
+        state to progress
+    }
+
+    /** Restore the emulator and achievement runtime in order on the GL thread. */
+    fun unserializeStateWithAchievements(state: ByteArray, progress: ByteArray?): Boolean = runOnGLThread {
+        if (achievementsHardcoreEnabled) return@runOnGLThread false
+        val loaded = LibretroDroid.unserializeState(state)
+        if (loaded) LibretroDroid.raDeserializeProgress(progress)
+        loaded
+    }
+
+    fun idleAchievements() = runOnGLThread {
+        LibretroDroid.raIdle()
+    }
+
+    fun canPauseAchievements(): Boolean = runOnGLThread {
+        LibretroDroid.raCanPause()
+    }
+
+    /** Keep every rc_client operation on the same GL thread that advances its frames. */
+    fun startAchievements(callbacks: RaCallbacks, hardcore: Boolean) = runOnGLThread {
+        achievementsHardcoreEnabled = hardcore
+        if (hardcore) {
+            rewindEnabled = false
+            isRewinding = false
+        }
+        LibretroDroid.raCreate()
+        LibretroDroid.raSetCallbacks(callbacks)
+        LibretroDroid.raSetHardcoreEnabled(hardcore)
+    }
+
+    /** Queue asynchronous RA work without blocking an IO thread while the GL surface is paused. */
+    fun beginAchievementsLogin(user: String, token: String, shouldStart: () -> Boolean) {
+        queueEvent {
+            if (!isDestroyed && shouldStart()) LibretroDroid.raBeginLoginWithToken(user, token)
+        }
+    }
+
+    fun beginAchievementsGame(hash: String, consoleId: Int) {
+        queueEvent {
+            if (!isDestroyed) LibretroDroid.raBeginLoadGame(hash, consoleId)
+        }
+    }
+
+    fun deliverAchievementsResponse(
+        requestId: Int,
+        status: Int,
+        body: String,
+        networkError: Boolean,
+        shouldDeliver: () -> Boolean,
+    ) {
+        queueEvent {
+            if (!isDestroyed && shouldDeliver()) {
+                LibretroDroid.raDeliverServerResponse(requestId, status, body, networkError)
+            }
+        }
+    }
+
+    fun stopAchievements() = runOnGLThread {
+        LibretroDroid.raUnloadGame()
+        LibretroDroid.raSetCallbacks(null)
+        LibretroDroid.raDestroy()
+        achievementsHardcoreEnabled = false
+    }
+
+    fun getAchievementsJson(): String = runOnGLThread {
+        LibretroDroid.raGetAchievementListJson()
+    }
+
+    /** Persist rc_client's in-memory achievement progress independently from emulator save states. */
+    fun serializeAchievementsProgress(): ByteArray? = runOnGLThread {
+        LibretroDroid.raSerializeProgress()
+    }
+
+    /**
+     * Restore progress after the current rc_client load callback has returned. Calling
+     * rc_client_deserialize_progress from inside its own load callback risks reentrancy.
+     */
+    fun restoreAchievementsProgressAsync(progress: ByteArray, onComplete: (Boolean?) -> Unit) {
+        queueEvent {
+            // null means the GL surface was destroyed before the queued restore could run.
+            val restored = if (isDestroyed) null else LibretroDroid.raDeserializeProgress(progress)
+            onComplete(restored)
+        }
+    }
+
+    fun getAchievementsGameId(): Long = runOnGLThread {
+        LibretroDroid.raGetGameId()
+    }
+
+    fun getAchievementsUserAgentClause(): String = runOnGLThread {
+        LibretroDroid.raGetUserAgentClause()
+    }
+
+    fun getAchievementsRichPresence(): String = runOnGLThread {
+        LibretroDroid.raGetRichPresenceMessage()
+    }
+
+    fun isAchievementsProcessingRequired(): Boolean = runOnGLThread {
+        LibretroDroid.raIsProcessingRequired()
+    }
+
+    /** Validate a core option using rcheevos' official Hardcore disallowed-settings table. */
+    fun isAchievementsCoreSettingAllowed(key: String, value: String): Boolean = runOnGLThread {
+        LibretroDroid.isCoreSettingAllowed(key, value)
+    }
+
+    fun setAchievementsHardcoreEnabled(enabled: Boolean) = runOnGLThread {
+        achievementsHardcoreEnabled = enabled
+        if (enabled) {
+            rewindEnabled = false
+            isRewinding = false
+        }
+        LibretroDroid.raSetHardcoreEnabled(enabled)
+    }
+
+    /** Disable Hardcore safely even when called from an rc_client callback. */
+    fun disableAchievementsHardcore() {
+        achievementsHardcoreEnabled = false
+        queueEvent {
+            if (!isDestroyed) {
+                LibretroDroid.raSetHardcoreEnabled(false)
+            }
+        }
     }
 
     fun setBackgroundFrame(bitmap: Bitmap) = runOnGLThread {
@@ -547,16 +698,22 @@ class GLRetroView(
     fun changeDisk(index: Int) = runOnGLThread { LibretroDroid.changeDisk(index) }
     fun changeDisk(index: Int, path: String) = runOnGLThread { LibretroDroid.changeDiskWithPath(index, path) }
 
-    var rewindEnabled: Boolean by Delegates.observable(false) { _, _, value ->
-        LibretroDroid.setRewindEnabled(value)
-    }
+    var rewindEnabled: Boolean = false
+        set(value) {
+            field = value && !achievementsHardcoreEnabled
+            val enabled = field
+            queueEvent { LibretroDroid.setRewindEnabled(enabled) }
+        }
 
-    var isRewinding: Boolean by Delegates.observable(false) { _, _, value ->
-        LibretroDroid.setRewinding(value)
-    }
+    var isRewinding: Boolean = false
+        set(value) {
+            field = value && !achievementsHardcoreEnabled
+            val active = field
+            queueEvent { LibretroDroid.setRewinding(active) }
+        }
 
     var rewindSpeed: Int by Delegates.observable(1) { _, _, value ->
-        LibretroDroid.setRewindSpeed(value)
+        queueEvent { LibretroDroid.setRewindSpeed(value) }
     }
 
     fun initRewindBuffer(maxSlots: Int, budgetBytes: Long) = runOnGLThread {
@@ -987,14 +1144,6 @@ class GLRetroView(
             rumbleEventsSubject.emit(RumbleEvent(port, strengthWeak, strengthStrong))
         }
     }
-
-    /** Called from native when an achievement is unlocked. */
-    @Suppress("unused")
-    private fun onAchievementUnlocked(achievementId: Long) {
-        achievementUnlockListener?.invoke(achievementId)
-    }
-
-    var achievementUnlockListener: ((Long) -> Unit)? = null
 
     private fun refreshAspectRatio() {
         runOnGLThread {

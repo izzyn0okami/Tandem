@@ -1,11 +1,14 @@
 package app.lawnchair.gamemode
 
 import android.content.Context
+import android.os.SystemClock
 import androidx.core.content.edit
 import java.io.File
 import java.io.IOException
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
+import okhttp3.Call
+import okhttp3.EventListener
 import okhttp3.HttpUrl
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
@@ -14,6 +17,7 @@ import okhttp3.MultipartBody
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
+import okhttp3.Response
 import org.json.JSONObject
 
 /** Jogo que existe no servidor RomM (ainda não necessariamente baixado). */
@@ -32,6 +36,8 @@ data class RemoteGame(
     val fileId: Long? = null,
     /** Jogo de vários arquivos (ex.: cue + bin): baixa a pasta inteira e abre [fileName]. */
     val folder: Boolean = false,
+    /** Descrição/sinopse do jogo, quando o RomM tiver (vem do provedor de metadados dele). */
+    val summary: String? = null,
 ) {
     /** Destino dentro da pasta de jogos: uma subpasta por plataforma (e uma pasta por jogo, se for de vários arquivos). */
     fun destination(root: File): File {
@@ -108,6 +114,27 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
         .connectTimeout(30, TimeUnit.SECONDS)
         .readTimeout(60, TimeUnit.SECONDS)
         .writeTimeout(60, TimeUnit.SECONDS)
+        // Diagnóstico passivo: registra apenas HTTP não-2xx e falhas de rede/timeout.
+        .eventListenerFactory {
+            object : EventListener() {
+                override fun responseHeadersEnd(call: Call, response: Response) {
+                    if (!response.isSuccessful) {
+                        GameLog.log(
+                            "romm-http",
+                            "HTTP ${response.code}: ${call.request().method} ${call.request().url.encodedPath}",
+                        )
+                    }
+                }
+
+                override fun callFailed(call: Call, ioe: IOException) {
+                    GameLog.error(
+                        "romm-http",
+                        "falha de rede: ${call.request().method} ${call.request().url.encodedPath}",
+                        ioe,
+                    )
+                }
+            }
+        }
         .build()
 
     /** Listar a biblioteca inteira e baixar jogos grandes podem ficar parados por bastante tempo. */
@@ -129,7 +156,23 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
     /** Testa se o servidor responde; devolve nulo se está tudo bem ou o motivo da falha em palavras. */
     fun checkServer(): String? = try {
         http.newCall(request(base.resolve("api/heartbeat")!!).build()).execute().use { response ->
-            if (response.isSuccessful) null else "o servidor respondeu ${response.code}"
+            if (!response.isSuccessful) {
+                "o servidor respondeu ${response.code}"
+            } else {
+                val body = response.body.string()
+                val heartbeat = runCatching { JSONObject(body) }.getOrNull()
+                val versionFields = heartbeat?.keys()?.asSequence()
+                    ?.filter { it.contains("version", ignoreCase = true) }
+                    ?.map { key -> "$key=${heartbeat.optString(key)}" }
+                    ?.toList()
+                    .orEmpty()
+                GameLog.log(
+                    "romm",
+                    "heartbeat: HTTP ${response.code}; " +
+                        (versionFields.takeIf { it.isNotEmpty() }?.joinToString() ?: "versão não identificada"),
+                )
+                null
+            }
         }
     } catch (e: IOException) {
         e.message?.let { "${e.javaClass.simpleName}: $it" } ?: e.javaClass.simpleName
@@ -277,9 +320,29 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
         }
         val serverName = item.optString("fs_name").ifEmpty { return null }
         val allowed = platform.extensions + if (platform.discBased) emptySet() else GamePlatforms.genericExtensions
-        val flat = File(serverName).extension.lowercase() in allowed &&
+        val serverExtension = File(serverName).extension.lowercase()
+        // CUE/M3U/GDI são arquivos de índice: mesmo quando o RomM marca a ROM como
+        // arquivo único, os dados (BIN/IMG/subdiscos) podem estar ao lado. Trate-os
+        // como pasta para baixar o conjunto completo pelo endpoint /content da ROM.
+        val discReference = platform.discBased && serverExtension in setOf("cue", "m3u", "gdi")
+        val flat = serverExtension in allowed &&
+            !discReference &&
             !item.optBoolean("has_multiple_files", false) &&
             !item.optBoolean("has_nested_single_file", false)
+        if (platform.discBased && File(serverName).extension.lowercase() in setOf("cue", "gdi")) {
+            val files = item.optJSONArray("files")
+            val fileSummary = (0 until (files?.length() ?: 0)).take(12).map { index ->
+                val file = files!!.getJSONObject(index)
+                "${file.optLong("id", -1L)}:${file.optString("file_name")}"
+            }
+            GameLog.log(
+                "romm",
+                "metadados de disco: rom=${item.optLong("id", -1L)}; fs_name=$serverName; " +
+                    "has_multiple_files=${item.optBoolean("has_multiple_files", false)}; " +
+                    "has_nested_single_file=${item.optBoolean("has_nested_single_file", false)}; " +
+                    "files=${files?.length() ?: 0}; amostra=$fileSummary",
+            )
+        }
         var fileName = serverName
         var fileId: Long? = null
         var folder = false
@@ -327,12 +390,18 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
             platform = platform,
             fileName = fileName,
             sizeBytes = item.optLong("fs_size_bytes", 0L),
-            coverPath = (item.optString("path_cover_small").ifEmpty { null } ?: item.optString("path_cover_large").ifEmpty { null })
-                .also { logCoverSample(item) },
-            coverUrl = item.optString("url_cover").ifEmpty { null },
+            coverPath = (
+                item.optString("path_cover_small")
+                    .takeUnless { it.isBlank() || it.equals("null", ignoreCase = true) }
+                    ?: item.optString("path_cover_large")
+                        .takeUnless { it.isBlank() || it.equals("null", ignoreCase = true) }
+                ).also { logCoverSample(item) },
+            coverUrl = item.optString("url_cover")
+                .takeUnless { it.isBlank() || it.equals("null", ignoreCase = true) },
             serverName = serverName,
             fileId = fileId,
             folder = folder,
+            summary = item.optString("summary").ifEmpty { null },
         )
     }
 
@@ -349,19 +418,69 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
         )
     }
 
+    /**
+     * Instrumentação de download: registra rota, resposta e duração sem expor o token.
+     * Não altera os prazos, cabeçalhos ou a estratégia de transferência.
+     */
+    private fun <T> withDownloadResponse(url: HttpUrl, description: String, consume: (Response) -> T): T {
+        val startedAt = SystemClock.elapsedRealtime()
+        val path = url.encodedPath + (url.encodedQuery?.let { "?$it" } ?: "")
+        GameLog.log("romm", "download início: $description; caminho=$path")
+        try {
+            return longHttp.newCall(request(url).build()).execute().use { response ->
+                GameLog.log(
+                    "romm",
+                    "download HTTP: $description; status=${response.code}; " +
+                        "tipo=${response.header("Content-Type") ?: "-"}; " +
+                        "bytes=${response.body.contentLength()}; caminho=${response.request.url.encodedPath}",
+                )
+                if (!response.isSuccessful) {
+                    val errorBody = runCatching { response.peekBody(2048).string() }.getOrDefault("")
+                    val safeError = errorBody
+                        .replace(Regex("""(?i)(token|authorization|password)(\\s*[:=]\\s*)[^",\\s}]+"""), "\\$1\\$2[redacted]")
+                        .take(240)
+                    GameLog.log(
+                        "romm",
+                        "detalhe HTTP: status=${response.code}; corpo=${safeError.ifBlank { "<vazio>" }}",
+                    )
+                    throw IOException("Servidor respondeu ${response.code} ao baixar $description")
+                }
+                consume(response)
+            }
+        } catch (e: Exception) {
+            GameLog.error(
+                "romm",
+                "download falhou: $description; caminho=$path; " +
+                    "duração=${SystemClock.elapsedRealtime() - startedAt}ms",
+                e,
+            )
+            throw e
+        } finally {
+            GameLog.log("romm", "download fim: $description; duração=${SystemClock.elapsedRealtime() - startedAt}ms")
+        }
+    }
+
     /** Baixa para um arquivo temporário e só renomeia no fim; [onProgress] recebe bytes baixados. */
     fun download(game: RemoteGame, target: File, onProgress: (Long) -> Unit) {
         if (game.folder) {
             downloadFolder(game, target, onProgress)
             return
         }
-        val url = base.resolve("api/roms/${game.id}/content/")!!.newBuilder()
-            .addPathSegment(game.serverName)
-            .apply { game.fileId?.let { addQueryParameter("file_ids", it.toString()) } }
-            .build()
+        // ROMs aninhadas usam o endpoint de arquivo individual: o ID da rota é o ID
+        // do arquivo, não o ID da ROM. O endpoint /content/{fs_name} baixa a ROM inteira.
+        val url = if (game.fileId != null) {
+            base.resolve("api/roms/${game.fileId}/files/content/")!!.newBuilder()
+                .addPathSegment(game.fileName)
+                .build()
+        } else {
+            base.resolve("api/roms/${game.id}/content/")!!.newBuilder()
+                .addPathSegment(game.serverName)
+                .build()
+        }
         target.parentFile?.mkdirs()
         val temp = File(target.parentFile, "${target.name}.part")
-        longHttp.newCall(request(url).build()).execute().use { response ->
+        val description = "rom=${game.id}, título=${game.title}, arquivo=${game.serverName}, fileId=${game.fileId ?: "-"}"
+        withDownloadResponse(url, description) { response ->
             if (!response.isSuccessful) throw IOException("Servidor respondeu ${response.code}")
             var total = 0L
             response.body.byteStream().use { input ->
@@ -389,7 +508,8 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
         val temp = File(dir.parentFile, "${dir.name}.part")
         temp.deleteRecursively()
         temp.mkdirs()
-        longHttp.newCall(request(url).build()).execute().use { response ->
+        val description = "rom=${game.id}, título=${game.title}, pasta=${game.serverName}"
+        withDownloadResponse(url, description) { response ->
             if (!response.isSuccessful) throw IOException("Servidor respondeu ${response.code}")
             var total = 0L
             val counting = object : java.io.FilterInputStream(response.body.byteStream()) {

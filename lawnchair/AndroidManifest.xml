@@ -58,7 +58,8 @@
         android:name="${packageName}.permission.HOTSEAT_EDU"
         tools:node="remove" />
 
-    <application android:usesCleartextTraffic="true">
+    <application
+        android:usesCleartextTraffic="true">
         <meta-data
             android:name="preloaded_fonts"
             android:resource="@array/preloaded_fonts" />
@@ -178,6 +179,7 @@
                 android:name="android.accessibilityservice"
                 android:resource="@xml/accessibility_service_config" />
         </service>
+
 
         <provider
             android:name="app.lawnchair.bugreport.FileProvider"

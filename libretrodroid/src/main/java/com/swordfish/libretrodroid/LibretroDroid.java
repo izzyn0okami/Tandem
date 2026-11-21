@@ -30,6 +30,11 @@ public class LibretroDroid {
     public static final int MOTION_SOURCE_ANALOG_RIGHT = 2;
     public static final int MOTION_SOURCE_POINTER = 3;
 
+    // Bit masks shared with CoreSensors in the native Libretro sensor interface.
+    public static final int SENSOR_ACCELEROMETER = 1;
+    public static final int SENSOR_GYROSCOPE = 2;
+    public static final int SENSOR_ILLUMINANCE = 4;
+
     public static final int SHADER_DEFAULT = 0;
     public static final int SHADER_CRT = 1;
     public static final int SHADER_LCD = 2;
@@ -38,10 +43,6 @@ public class LibretroDroid {
     public static final int SHADER_UPSCALE_CUT2 = 5;
     public static final int SHADER_UPSCALE_CUT3 = 6;
     public static final int SHADER_CUSTOM = 100;
-
-    public static final int SENSOR_ACCELEROMETER = 1;
-    public static final int SENSOR_GYROSCOPE = 2;
-    public static final int SENSOR_ILLUMINANCE = 4;
 
     public static final String SHADER_UPSCALE_CUT_PARAM_USE_DYNAMIC_BLEND = "USE_DYNAMIC_BLEND";
     public static final String SHADER_UPSCALE_CUT_PARAM_BLEND_MIN_CONTRAST_EDGE = "BLEND_MIN_CONTRAST_EDGE";
@@ -63,6 +64,7 @@ public class LibretroDroid {
     public static final String SHADER_UPSCALE_CUT2_PARAM_SOFT_EDGES_SHARPENING = "SOFT_EDGES_SHARPENING";
     public static final String SHADER_UPSCALE_CUT2_PARAM_SOFT_EDGES_SHARPENING_AMOUNT = "SOFT_EDGES_SHARPENING_AMOUNT";
     public static final String SHADER_UPSCALE_CUT2_PARAM_HARD_EDGES_SEARCH_MAX_ERROR = "HARD_EDGES_SEARCH_MAX_ERROR";
+    public static final String SHADER_UPSCALE_CUT2_PARAM_HARD_EDGES_SEARCH_MAX_DISTANCE = "HARD_EDGES_SEARCH_MAX_DISTANCE";
 
     public static final String SHADER_UPSCALE_CUT3_PARAM_USE_DYNAMIC_BLEND = "USE_DYNAMIC_BLEND";
     public static final String SHADER_UPSCALE_CUT3_PARAM_BLEND_MIN_CONTRAST_EDGE = "BLEND_MIN_CONTRAST_EDGE";
@@ -218,8 +220,42 @@ public class LibretroDroid {
     public static native void setRewindSpeed(int speed);
     public static native double getContentFps();
 
-    public static native void initAchievements(AchievementDef[] achievements, int consoleId);
-    public static native void clearAchievements();
+    /**
+     * Motor oficial da RetroAchievements (rc_client). Ver RaCallbacks e RetroAchievements.kt:
+     * quem faz a chamada HTTP de verdade é o Kotlin (com o OkHttp que o app já tem); o nativo só
+     * monta o pedido (onServerCall) e recebe a resposta (raDeliverServerResponse).
+     */
+    public static native void raSetCallbacks(RaCallbacks callbacks);
+    public static native void raCreate();
+    public static native void raDestroy();
+    public static native void raSetHardcoreEnabled(boolean enabled);
+    public static native boolean isCoreSettingAllowed(String key, String value);
+    public static native void raBeginLoginWithToken(String user, String token);
+    public static native void raBeginLoadGame(String hash, int consoleId);
+    public static native void raUnloadGame();
+    public static native void raDeliverServerResponse(int requestId, int httpStatus, String body, boolean networkError);
+    public static native String raGetAchievementListJson();
+    public static native String raGetSummaryJson();
+    public static native boolean raIsGameLoaded();
+    public static native long raGetGameId();
+    public static native String raGetUserAgentClause();
+    public static native String raGetRichPresenceMessage();
+    public static native boolean raIsProcessingRequired();
+
+    /** Progresso das conquistas, para gravar junto ao estado rápido do emulador. */
+    public static native byte[] raSerializeProgress();
+
+    /** Restaura o progresso das conquistas de um estado salvo; nulo reinicia o progresso. */
+    public static native boolean raDeserializeProgress(byte[] progress);
+
+    /** Reinicia o progresso das conquistas (o usuário reiniciou o jogo). */
+    public static native void raReset();
+
+    /** Processa eventos pendentes enquanto o jogo está pausado. */
+    public static native void raIdle();
+
+    /** O hardcore permite pausar agora? Evita pausas seguidas para burlar condições de conquista. */
+    public static native boolean raCanPause();
 
     /**
      * Run native achievement condition tests.
@@ -241,10 +277,4 @@ public class LibretroDroid {
      */
     public static native String computeRomHash(String romPath, int consoleId);
 
-    /**
-     * Whether RetroAchievements hardcore allows the loaded core to run with this option value,
-     * per rcheevos' disallowed-settings table. True when no core is loaded or the core has no
-     * restrictions.
-     */
-    public static native boolean isCoreSettingAllowed(String key, String value);
 }

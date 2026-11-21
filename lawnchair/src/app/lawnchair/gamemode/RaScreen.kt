@@ -42,6 +42,10 @@ internal fun AchievementsScreen() {
     var password by remember { mutableStateOf("") }
     var message by remember { mutableStateOf("") }
     var busy by remember { mutableStateOf(false) }
+    var webApiKeyInput by remember { mutableStateOf("") }
+    var webApiKeyConfigured by remember { mutableStateOf(RaSettings.webApiKey(context) != null) }
+    var webApiKeyMessage by remember { mutableStateOf("") }
+    var checkingWebApiKey by remember { mutableStateOf(false) }
 
     Column(
         modifier = Modifier
@@ -55,6 +59,59 @@ internal fun AchievementsScreen() {
         val current = user
         if (current != null && RaSettings.isLoggedIn(context)) {
             Text(stringResource(R.string.game_ra_connected, current), color = GameColors.success, fontSize = 16.sp)
+            Text(stringResource(R.string.game_ra_web_key_note), color = GameColors.textDim, fontSize = 12.sp)
+            OutlinedTextField(
+                value = webApiKeyInput,
+                onValueChange = { webApiKeyInput = it },
+                label = { Text(stringResource(R.string.game_ra_web_key)) },
+                singleLine = true,
+                visualTransformation = PasswordVisualTransformation(),
+                modifier = Modifier.width(420.dp),
+            )
+            GameButton(
+                label = stringResource(if (checkingWebApiKey) R.string.game_ra_web_key_checking else R.string.game_ra_web_key_save),
+                enabled = !checkingWebApiKey && webApiKeyInput.isNotBlank(),
+                primary = true,
+                modifier = Modifier.width(260.dp),
+                onClick = {
+                    val candidate = webApiKeyInput
+                    checkingWebApiKey = true
+                    webApiKeyMessage = context.getString(R.string.game_ra_web_key_checking)
+                    scope.launch {
+                        val result = withContext(Dispatchers.IO) {
+                            runCatching {
+                                RaPreviewClient().validateWebApiKey(current, candidate)
+                                RaSettings.saveWebApiKey(context, candidate)
+                            }
+                        }
+                        result.onSuccess {
+                            webApiKeyConfigured = true
+                            webApiKeyInput = ""
+                            webApiKeyMessage = context.getString(R.string.game_ra_web_key_saved)
+                        }.onFailure {
+                            webApiKeyMessage = it.message ?: context.getString(R.string.game_ra_web_key_failed)
+                        }
+                        checkingWebApiKey = false
+                    }
+                },
+            )
+            if (webApiKeyConfigured) {
+                Text(stringResource(R.string.game_ra_web_key_configured), color = GameColors.success, fontSize = 12.sp)
+                GameButton(
+                    label = stringResource(R.string.game_ra_web_key_remove),
+                    danger = true,
+                    modifier = Modifier.width(220.dp),
+                    onClick = {
+                        RaSettings.clearWebApiKey(context)
+                        webApiKeyConfigured = false
+                        webApiKeyInput = ""
+                        webApiKeyMessage = context.getString(R.string.game_ra_web_key_removed)
+                    },
+                )
+            }
+            if (webApiKeyMessage.isNotBlank()) {
+                Text(webApiKeyMessage, color = GameColors.textDim, fontSize = 12.sp)
+            }
             var hardcore by remember { mutableStateOf(RaSettings.hardcore(context)) }
             FocusSurface(
                 onClick = {
@@ -80,6 +137,9 @@ internal fun AchievementsScreen() {
                 modifier = Modifier.width(220.dp),
                 onClick = {
                     RaSettings.clear(context)
+                    webApiKeyConfigured = false
+                    webApiKeyInput = ""
+                    webApiKeyMessage = ""
                     user = null
                 },
             )
@@ -108,7 +168,7 @@ internal fun AchievementsScreen() {
                     scope.launch {
                         busy = true
                         message = context.getString(R.string.game_ra_logging_in)
-                        val result = withContext(Dispatchers.IO) { runCatching { RaClient().login(typedUser, password) } }
+                        val result = withContext(Dispatchers.IO) { runCatching { RaPreviewClient().login(typedUser, password) } }
                         result.onSuccess { (name, token) ->
                             RaSettings.save(context, name, token)
                             user = name
