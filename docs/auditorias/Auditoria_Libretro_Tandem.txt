@@ -484,3 +484,42 @@ RESULTADO DE VALIDAÇÃO PÓS-MERGE
 PENDÊNCIAS IMEDIATAS
 1. Confirmar a CI de push pós-merge e a publicação tandem-latest antes de orientar a instalação do APK.
 2. Executar os quatro testes funcionais acima no telefone e atualizar este log com os resultados informados pelo usuário.
+
+
+MUDANÇA DE IDENTIDADE — TANDEM
+Data: 2026-11-21
+
+DECISÃO AUTORIZADA PELO USUÁRIO
+- O projeto passa a adotar identidade Android própria, com applicationId principal app.tandem.
+- O usuário aceita que o Android trate o Tandem como aplicativo novo, sem atualização direta da instalação antiga app.lawnchair e sem migração automática dos dados locais.
+- Os canais GitHub, Nightly e Play devem manter identificadores próprios sob o namespace app.tandem (app.tandem, app.tandem.nightly e app.tandem.play).
+- Nome exibido e nome dos APKs passam a usar Tandem.
+- A terceira proposta visual aprovada pelo usuário será a referência estética para o ícone. Foi implementada uma primeira versão vetorial adaptativa com gamepad retrô, fundo escuro e acentos ciano/roxo.
+
+ALTERAÇÕES NA PR #14
+- applicationId GitHub: app.tandem.
+- applicationId Nightly: app.tandem.nightly.
+- applicationId Play: app.tandem.play.
+- Nome Gradle: Tandem; nome exibido: Tandem; nome dos APKs: Tandem.
+- Ícones adaptativo e monocromático substituídos por recursos vetoriais próprios.
+
+VALIDAÇÃO DA PR #14
+- PR: https://github.com/izzyn0okami/Tandem/pull/14
+- Commit inicial validado: 50569f297fc44bd652adcabab438a28de446402a.
+- CI #354: https://github.com/izzyn0okami/Tandem/actions/runs/44946514100 — completed / success.
+- Jobs check-style (Spotless), build-debug-apk (assembleLawnWithQuickstepGithubDebug) e final-status: sucesso.
+- Build APK e Upload artifact: sucesso.
+- A CI #354 é anterior à resolução do conflito da auditoria; a nova versão da PR precisa de nova CI antes do merge.
+- A publicação tandem-latest e a validação do package ID do APK final ainda não foram confirmadas.
+
+IMPACTO DA IDENTIDADE
+- Android tratará app.tandem como aplicativo diferente de app.lawnchair. A instalação antiga e seus dados não são atualizados nem migrados automaticamente.
+- O projeto não desinstala nem apaga a instalação antiga.
+- Obtanium só poderá ser confirmado após a publicação e inspeção do APK com applicationId app.tandem.
+
+ESTADO ATUAL
+- Conflito inicial de merge causado por atualização concorrente deste TXT na branch base foi resolvido preservando o conteúdo mais recente da branch principal e esta seção.
+- Merge ainda pendente de nova CI na versão reconciliada.
+- Teste de instalação e reconhecimento pelo Obtanium pendentes.
+
+FIM DO DOCUMENTO
