@@ -496,7 +496,13 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
     }
 
     private fun estimatedBytes(vararg values: Long): Long = values.fold(0L) { total, value ->
-        if (value <= 0L) total else if (Long.MAX_VALUE - total < value) Long.MAX_VALUE else total + value
+        if (value <= 0L) {
+            total
+        } else if (Long.MAX_VALUE - total < value) {
+            Long.MAX_VALUE
+        } else {
+            total + value
+        }
     }
 
     /** Baixa para um arquivo temporário e só renomeia no fim; [onProgress] recebe bytes baixados. */
