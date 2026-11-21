@@ -71,9 +71,9 @@ jobs:
         id: apk
         run: |
           set -euo pipefail
-          mapfile -t APKS < <(find build/outputs/apk -type f -path '*/lawnWithQuickstep/github/debug/*.apk' -print)
+          mapfile -t APKS < <(find build/outputs/apk -type f -name 'Lawnchair.*.github.debug.apk' -print)
           if [ "${#APKS[@]}" -ne 1 ]; then
-            echo "::error::Esperado exatamente um APK de lawnWithQuickstepGithubDebug; encontrados: ${#APKS[@]}."
+            echo "::error::Esperado exatamente um APK do variant lawnWithQuickstepGithubDebug; encontrados: ${#APKS[@]}."
             printf '%s\n' "${APKS[@]}"
             exit 1
           fi
