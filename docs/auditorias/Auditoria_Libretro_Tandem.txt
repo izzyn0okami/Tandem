@@ -145,6 +145,7 @@ CORREÇÕES PREPARADAS NA BRANCH fix/romm-5-4-integration-audit
 2. Seleção de arquivos RomM:
    - RemoteGame agora preserva os IDs internos dos arquivos que o próprio RomM associou à ROM.
    - O cliente envia file_ids no endpoint de conteúdo, limitando o ZIP aos arquivos selecionados dentro daquele registro RomM.
+   - A seleção exclui extras classificados pelo RomM como manual, walkthrough, soundtrack ou screenshot, mas preserva categorias de jogo como DLC/update/patch.
    - Os IDs são persistidos no cache local para que a lista em cache mantenha a mesma seleção.
 3. Reconhecimento multidisco:
    - Conjuntos com mais de uma imagem de disco passam a ser reconhecidos mesmo quando são CHD/ISO/CCD/CSO/CDI e não existe CUE/M3U previamente cadastrado.
@@ -164,10 +165,10 @@ CORREÇÕES PREPARADAS NA BRANCH fix/romm-5-4-integration-audit
 
 VALIDAÇÃO E LIMITES
 - Branch: fix/romm-5-4-integration-audit.
-- Commits de implementação registrados no histórico desta branch; última alteração de código até esta atualização: 64076d65d99ce6e3c406f6ba49526fb82d8b1156.
+- Última alteração de código registrada nesta branch: ba8067391596349b5890100cb7fb984b796ada90.
 - PR #16 aberta: https://github.com/izzyn0okami/Tandem/pull/16.
-- CI #362: https://github.com/izzyn0okami/Tandem/actions/runs/44952639836 — em execução no head 5a54b2c907093eddf9ab0f964200996e017e75f8; aguardar resultado final.
-- CI, compilação e testes automatizados: PENDENTES até conclusão da execução.
+- As execuções CI #362, #363 e #364 foram iniciadas em heads anteriores durante a atualização da PR; a execução que valida o head final será confirmada separadamente.
+- CI, compilação e testes automatizados do head final: PENDENTES até conclusão da execução.
 - Teste no aparelho: PENDENTE. A CI não comprova o download real do ZIP servido por nginx/mod_zip.
 - Não houve merge nem publicação de APK.
 - O usuário mantém a decisão de confiar no agrupamento do RomM e não combinar registros separados por nome, HASH ou numeração de faixa.
