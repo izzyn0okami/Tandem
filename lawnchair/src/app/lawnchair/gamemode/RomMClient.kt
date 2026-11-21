@@ -365,7 +365,10 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
             val files = item.optJSONArray("files")
             val playable = (0 until (files?.length() ?: 0)).map { files!!.getJSONObject(it) }.filter {
                 val name = it.optString("file_name")
-                !name.startsWith(".") && File(name).extension.lowercase() in discFiles
+                val category = it.optString("category")
+                val isGameFile = category.isBlank() || category.equals("null", ignoreCase = true) ||
+                    category.equals("game", ignoreCase = true)
+                isGameFile && !name.startsWith(".") && File(name).extension.lowercase() in discFiles
             }
             if (playable.isEmpty()) {
                 skippedExtension++
