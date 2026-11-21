@@ -431,3 +431,33 @@ PENDÊNCIAS
 4. Reproduzir teste em uma ROM multi-arquivo corretamente agrupada pelo RomM e confirmar ZIP/M3U, sem considerar a CI como teste funcional.
 5. Não mesclar qualquer PR corretiva sem autorização explícita.
 
+
+
+DIRETRIZ DO USUÁRIO E CORREÇÃO PREPARATÓRIA — ROMM COMO FONTE DE VERDADE
+Data: 2026-11-21
+
+DECISÃO FUNCIONAL
+- O Tandem deve confiar nos registros, no agrupamento e nos metadados fornecidos pelo RomM.
+- Não combinar automaticamente ROMs que o RomM cadastrou como registros/jogos distintos, mesmo que os nomes contenham Track 1, Track 2 ou sejam semelhantes.
+- Não inferir versões, regiões ou parentesco de jogos por nome ou HASH no Tandem. O HASH ajuda o RomM a distinguir arquivos/versões, mas não determina sozinho que arquivos diferentes pertençam ao mesmo jogo.
+- Um conjunto multidisco só será tratado como conjunto quando seus arquivos estiverem associados à mesma ROM no próprio RomM.
+- O Tandem deve respeitar has_file_on_disk=false e não oferecer download de registros sem arquivo físico.
+
+CORREÇÕES PREPARADAS NA BRANCH fix/romm-authoritative-file-metadata
+- Corrigido o endpoint /api/roms/{id}/files/content/{file_name}: agora usa o ID interno do arquivo (fileId/RomFile.id), conforme o contrato da API 5.4.1. O endpoint /api/roms/{id}/content continua usando o ID da ROM.
+- A listagem passa a ignorar registros quando o RomM informa explicitamente has_file_on_disk=false.
+- Removida a inferência que forçava CUE/M3U/GDI ou arquivos auxiliares a serem tratados como pasta/conjunto quando o RomM não os agrupou na mesma ROM.
+- Extensões auxiliares continuam aceitas quando o próprio RomM as apresenta como registros individuais; isso não cria associação entre registros distintos.
+- A seleção de arquivos de um conjunto permanece limitada aos arquivos que o RomM retorna dentro do mesmo objeto ROM.
+
+VALIDAÇÃO
+- Commit de código: 9a89c2277fba6480250d4ad8f97d7960cbae0d3c.
+- Estado: implementação preparada em branch; CI e revisão ainda pendentes.
+- Nenhum merge realizado. Nenhum teste funcional no telefone realizado nesta etapa.
+- Após CI bem-sucedida, registrar execução, jobs, artefatos e resultado aqui.
+
+PENDÊNCIAS DESTA CORREÇÃO
+1. Revisar o diff completo e verificar se a lógica preserva conjuntos multidisco que o RomM efetivamente cadastra como uma única ROM multi-arquivo.
+2. Executar CI de estilo e compilação.
+3. Após aprovação da PR e autorização explícita para merge, confirmar publicação tandem-latest.
+4. Testar no telefone: ROM individual com fileId distinto de romId; registro has_file_on_disk=false; conjunto multidisco corretamente agrupado no RomM; e faixas cadastradas separadamente, que não devem ser combinadas pelo Tandem.
