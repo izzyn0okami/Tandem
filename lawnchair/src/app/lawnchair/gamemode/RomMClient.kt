@@ -34,6 +34,8 @@ data class RemoteGame(
     val serverName: String = fileName,
     /** Arquivo dentro da pasta do jogo, quando o jogo é uma pasta com um único arquivo jogável. */
     val fileId: Long? = null,
+    /** IDs dos arquivos que o RomM associou a esta ROM; usados para limitar o ZIP ao próprio jogo. */
+    val fileIds: List<Long> = emptyList(),
     /** Jogo de vários arquivos (ex.: cue + bin): baixa a pasta inteira e abre [fileName]. */
     val folder: Boolean = false,
     /** Descrição/sinopse do jogo, quando o RomM tiver (vem do provedor de metadados dele). */
@@ -347,6 +349,7 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
         }
         var fileName = serverName
         var fileId: Long? = null
+        var fileIds: List<Long> = emptyList()
         var folder = false
         if (!flat) {
             val files = item.optJSONArray("files")
@@ -358,22 +361,21 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
                 skippedExtension++
                 return null
             }
-            val referencing = playable.filter { File(it.getString("file_name")).extension.lowercase() in setOf("cue", "m3u", "gdi") }
-            if (platform.discBased && referencing.isNotEmpty()) {
-                // Disco com várias partes (cue + bin, vários discos): baixa a pasta toda e abre a lista ou o primeiro cue.
+            val names = playable.map { it.getString("file_name") }
+            val ids = playable.mapNotNull { file -> file.optLong("id", -1L).takeIf { it > 0L } }
+            // O RomM pode agrupar multidiscos CHD sem CUE/M3U. A associação dentro da mesma
+            // ROM é a fonte de verdade: mais de uma imagem de disco significa um único conjunto.
+            if (platform.discBased && playable.size > 1) {
                 folder = true
-                val names = playable.map { it.getString("file_name") }.sorted()
+                fileIds = ids
                 fileName = names.firstOrNull { it.endsWith(".m3u", ignoreCase = true) }
-                    ?: names.singleOrNull()
-                    ?: "${File(serverName).nameWithoutExtension}.m3u"
+                    ?: "\${File(serverName).nameWithoutExtension}.m3u"
             } else if (platform.multiFileFolder && playable.size > 1) {
-                // Switch e parecidos: jogo base + atualização + DLC em arquivos separados. Baixa a pasta
-                // toda (o emulador externo instala a atualização/DLC por conta própria depois) e abre o
-                // arquivo principal: entre os que não parecem atualização/DLC pelo nome, o de nome mais
-                // curto (o jogo base costuma ter o nome mais simples; a atualização/DLC vem com sufixo).
+                // Switch e semelhantes: manter jogo base + atualização/DLC na mesma pasta,
+                // mas abrir somente o arquivo principal.
                 folder = true
+                fileIds = ids
                 val addonWords = listOf("update", "upd", "patch", "dlc", "atualiz", "addon", "add-on", "[v")
-                val names = playable.map { it.getString("file_name") }
                 val base = names.filterNot { name -> addonWords.any { name.contains(it, ignoreCase = true) } }
                     .ifEmpty { names }
                     .minByOrNull { File(it).nameWithoutExtension.length }
@@ -402,6 +404,7 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
                 .takeUnless { it.isBlank() || it.equals("null", ignoreCase = true) },
             serverName = serverName,
             fileId = fileId,
+            fileIds = fileIds,
             folder = folder,
             summary = item.optString("summary").ifEmpty { null },
         )
@@ -505,97 +508,186 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
     /** Baixa a pasta do jogo (o servidor entrega um zip) e extrai tudo; cria a lista .m3u se faltar. */
     private fun downloadFolder(game: RemoteGame, target: File, onProgress: (Long) -> Unit) {
         val dir = checkNotNull(target.parentFile)
-        val url = base.resolve("api/roms/${game.id}/content/")!!.newBuilder().addPathSegment(game.serverName).build()
-        val temp = File(dir.parentFile, "${dir.name}.part")
+        val parent = checkNotNull(dir.parentFile)
+        val temp = File(parent, "\${dir.name}.part")
+        val archive = File(parent, "\${dir.name}.zip.part")
         temp.deleteRecursively()
+        archive.delete()
         temp.mkdirs()
-        val description = "rom=${game.id}, título=${game.title}, pasta=${game.serverName}"
-        withDownloadResponse(url, description) { response ->
-            if (!response.isSuccessful) throw IOException("Servidor respondeu ${response.code}")
-            var total = 0L
-            val counting = object : java.io.FilterInputStream(response.body.byteStream()) {
-                override fun read(): Int = super.read().also { if (it >= 0) onProgress(++total) }
 
-                override fun read(b: ByteArray, off: Int, len: Int): Int = super.read(b, off, len).also {
-                    if (it > 0) {
-                        total += it
-                        onProgress(total)
+        val urlBuilder = base.resolve("api/roms/\${game.id}/content/")!!
+            .newBuilder()
+            .addPathSegment(game.serverName)
+        if (game.fileIds.isNotEmpty()) {
+            urlBuilder.addQueryParameter("file_ids", game.fileIds.joinToString(","))
+        }
+        val url = urlBuilder.build()
+        val description = "rom=\${game.id}, título=\${game.title}, pasta=\${game.serverName}, " +
+            "fileIds=\${game.fileIds.size}"
+        try {
+            withDownloadResponse(url, description) { response ->
+                if (!response.isSuccessful) throw IOException("Servidor respondeu \${response.code}")
+                val expectedBytes = response.body.contentLength()
+                var total = 0L
+                response.body.byteStream().use { input ->
+                    archive.outputStream().use { output ->
+                        val buffer = ByteArray(64 * 1024)
+                        while (true) {
+                            val read = input.read(buffer)
+                            if (read < 0) break
+                            output.write(buffer, 0, read)
+                            total += read
+                            onProgress(total)
+                        }
                     }
                 }
+                check(expectedBytes < 0L || total == expectedBytes) {
+                    "Download incompleto de \${game.title}: recebidos $total de $expectedBytes bytes"
+                }
+                GameLog.log(
+                    "romm",
+                    "pacote ZIP recebido: \${game.title}; bytes=$total; contentLength=$expectedBytes; " +
+                        "tipo=\${response.header("Content-Type") ?: "-"}",
+                )
             }
-            java.util.zip.ZipInputStream(counting).use { zip ->
-                val canonicalTemp = temp.canonicalPath
-                var entry = zip.nextEntry
-                checkNotNull(entry) { "O servidor não devolveu um pacote para ${game.title}" }
-                while (entry != null) {
+            check(isZip(archive)) {
+                "O RomM não entregou um ZIP válido para \${game.title} " +
+                    "(assinatura inicial inválida; tamanho=\${archive.length()} bytes)"
+            }
+
+            var archiveEntries = 0
+            var extractedFiles = 0
+            var extractedBytes = 0L
+            val entrySamples = mutableListOf<String>()
+            java.util.zip.ZipFile(archive, Charsets.UTF_8).use { zip ->
+                val canonicalTemp = temp.canonicalFile
+                val entries = zip.entries()
+                while (entries.hasMoreElements()) {
+                    val entry = entries.nextElement()
+                    archiveEntries++
+                    if (entrySamples.size < 40) {
+                        entrySamples += "\${entry.name} (\${entry.size} bytes)"
+                    }
                     val out = File(temp, entry.name)
-                    // Protege contra caminhos como ../ dentro do pacote.
-                    check(out.canonicalPath.startsWith(canonicalTemp + File.separator)) { "Pacote inválido" }
+                    val canonicalOut = out.canonicalFile
+                    // Protege contra caminhos absolutos e ../ dentro do pacote.
+                    check(canonicalOut.path.startsWith(canonicalTemp.path + File.separator)) {
+                        "Pacote inválido: caminho fora da pasta de destino"
+                    }
                     if (entry.isDirectory) {
                         out.mkdirs()
                     } else {
                         out.parentFile?.mkdirs()
-                        out.outputStream().use { output ->
-                            val buffer = ByteArray(64 * 1024)
-                            while (true) {
-                                val read = zip.read(buffer)
-                                if (read < 0) break
-                                output.write(buffer, 0, read)
+                        zip.getInputStream(entry).use { input ->
+                            out.outputStream().use { output ->
+                                val buffer = ByteArray(64 * 1024)
+                                while (true) {
+                                    val read = input.read(buffer)
+                                    if (read < 0) break
+                                    output.write(buffer, 0, read)
+                                    extractedBytes += read
+                                }
                             }
                         }
+                        extractedFiles++
                     }
-                    entry = zip.nextEntry
                 }
             }
-        }
-        // O pacote pode trazer tudo dentro de uma pasta única: sobe o conteúdo um nível.
-        val onlyChild = temp.listFiles()?.singleOrNull()
-        val content = if (onlyChild != null && onlyChild.isDirectory) onlyChild else temp
-        val contentRoot = content.canonicalFile
-        val expectedPlaylist = File(content, game.fileName)
-        check(expectedPlaylist.canonicalPath.startsWith(contentRoot.path + File.separator)) {
-            "Caminho de arquivo inválido no pacote de ${game.title}"
-        }
-        if (!expectedPlaylist.isFile && game.fileName.endsWith(".m3u", ignoreCase = true)) {
-            val supportedDiscs = setOf("cue", "gdi", "bin", "chd", "iso", "pbp")
-            val existingPlaylists = content.walkTopDown()
-                .filter { it.isFile && it.extension.equals("m3u", ignoreCase = true) }
-                .toList()
-            val sourcePlaylist = existingPlaylists.firstOrNull {
-                it.name.equals(expectedPlaylist.name, ignoreCase = true)
-            } ?: existingPlaylists.firstOrNull()
-            val referencedDiscs = sourcePlaylist?.let { playlist ->
-                playlist.readLines().mapNotNull { line ->
-                    val entry = line.trim()
-                    if (entry.isEmpty() || entry.startsWith("#")) return@mapNotNull null
-                    runCatching { File(playlist.parentFile, entry).canonicalFile }.getOrNull()
-                        ?.takeIf {
-                            it.isFile &&
-                                it.path.startsWith(contentRoot.path + File.separator) &&
-                                it.extension.lowercase() in supportedDiscs
-                        }
-                }
-            }.orEmpty()
-            val discoveredDiscs = content.walkTopDown()
-                .filter { it.isFile && it.extension.lowercase() in supportedDiscs }
-                .toList()
-            val discs = referencedDiscs.ifEmpty { discoveredDiscs }
-            val cues = discs.filter { it.extension.lowercase() in setOf("cue", "gdi") }
-            val selectedDiscs = (cues.ifEmpty { discs }).distinctBy { it.canonicalPath }
-            check(selectedDiscs.isNotEmpty()) {
-                "Nenhum disco compatível encontrado em ${game.title} (arquivos extraídos: ${content.walkTopDown().count { it.isFile }})"
+            GameLog.log(
+                "romm",
+                "ZIP extraído: \${game.title}; entradas=$archiveEntries; arquivos=$extractedFiles; " +
+                    "bytesExtraídos=$extractedBytes; amostra=\${entrySamples.joinToString(" | ")}",
+            )
+            check(extractedFiles > 0) { "O ZIP de \${game.title} não contém arquivos extraíveis" }
+
+            // O pacote pode trazer tudo dentro de uma pasta única: sobe o conteúdo um nível.
+            val onlyChild = temp.listFiles()?.singleOrNull()
+            val content = if (onlyChild != null && onlyChild.isDirectory) onlyChild else temp
+            val contentRoot = content.canonicalFile
+            val expectedPlaylist = File(content, game.fileName)
+            check(expectedPlaylist.canonicalPath.startsWith(contentRoot.path + File.separator)) {
+                "Caminho de arquivo inválido no pacote de \${game.title}"
             }
-            expectedPlaylist.parentFile?.mkdirs()
-            val entries = selectedDiscs
-                .map { it.relativeTo(expectedPlaylist.parentFile ?: content).invariantSeparatorsPath }
-                .sorted()
-            expectedPlaylist.writeText(entries.joinToString("\n") + "\n")
-            GameLog.log("romm", "lista M3U criada: ${game.title}; discos=${entries.size}; caminhos=${entries.joinToString()}")
+
+            if (game.fileName.endsWith(".m3u", ignoreCase = true)) {
+                val supportedDiscs = setOf("cue", "gdi", "bin", "img", "sub", "ccd", "wav", "chd", "iso", "pbp")
+                val existingPlaylists = content.walkTopDown()
+                    .filter { it.isFile && it.extension.equals("m3u", ignoreCase = true) }
+                    .toList()
+                val sourcePlaylist = existingPlaylists.firstOrNull {
+                    it.name.equals(expectedPlaylist.name, ignoreCase = true)
+                } ?: existingPlaylists.firstOrNull()
+
+                fun resolvePlaylist(playlist: File): Pair<List<File>, Boolean> {
+                    val lines = playlist.readLines()
+                        .map { it.trim() }
+                        .filter { it.isNotEmpty() && !it.startsWith("#") }
+                    val resolved = lines.mapNotNull { line ->
+                        runCatching { File(playlist.parentFile, line).canonicalFile }.getOrNull()
+                            ?.takeIf {
+                                it.isFile &&
+                                    it.path.startsWith(contentRoot.path + File.separator) &&
+                                    it.extension.lowercase() in supportedDiscs
+                            }
+                    }
+                    return resolved to (lines.isNotEmpty() && resolved.size == lines.size)
+                }
+
+                val sourceResolution = sourcePlaylist?.let(::resolvePlaylist)
+                val expectedResolution = if (expectedPlaylist.isFile) resolvePlaylist(expectedPlaylist) else null
+                val validExistingPlaylist = expectedResolution?.second == true
+                if (!validExistingPlaylist) {
+                    val discoveredDiscs = content.walkTopDown()
+                        .filter { it.isFile && it.extension.lowercase() in supportedDiscs }
+                        .toList()
+                    val referencedDiscs = sourceResolution?.takeIf { it.second }?.first.orEmpty()
+                    val discs = referencedDiscs.ifEmpty { discoveredDiscs }
+                    val cues = discs.filter { it.extension.lowercase() in setOf("cue", "gdi") }
+                    val selectedDiscs = (cues.ifEmpty { discs })
+                        .distinctBy { it.canonicalPath }
+                        .sortedBy { naturalSortKey(it.relativeTo(content).invariantSeparatorsPath) }
+                    check(selectedDiscs.isNotEmpty()) {
+                        "Nenhum disco compatível encontrado em \${game.title} " +
+                            "(entradas ZIP=$archiveEntries; arquivos extraídos=$extractedFiles; " +
+                            "amostra=\${entrySamples.joinToString(" | ")})"
+                    }
+                    expectedPlaylist.parentFile?.mkdirs()
+                    val entries = selectedDiscs
+                        .map { it.relativeTo(expectedPlaylist.parentFile ?: content).invariantSeparatorsPath }
+                    expectedPlaylist.writeText(entries.joinToString("\n") + "\n")
+                    GameLog.log(
+                        "romm",
+                        "lista M3U criada/reparada: \${game.title}; discos=\${entries.size}; " +
+                            "caminhos=\${entries.joinToString()}",
+                    )
+                } else {
+                    GameLog.log("romm", "M3U do RomM validada: \${game.title}; discos=\${expectedResolution.first.size}")
+                }
+            } else {
+                check(expectedPlaylist.isFile) {
+                    "O ZIP do RomM não contém o arquivo principal \${game.fileName} " +
+                        "(entradas ZIP=$archiveEntries; arquivos extraídos=$extractedFiles)"
+                }
+            }
+
+            // Só substitui uma pasta já existente depois de validar todo o pacote.
+            dir.deleteRecursively()
+            check(content.renameTo(dir)) { "Não consegui gravar \${dir.name}" }
+            temp.deleteRecursively()
+            GameLog.log("romm", "download multidisco concluído: \${game.title}; pasta=\${dir.name}")
+        } catch (error: Exception) {
+            temp.deleteRecursively()
+            throw error
+        } finally {
+            archive.delete()
+            temp.deleteRecursively()
         }
-        dir.deleteRecursively()
-        check(content.renameTo(dir)) { "Não consegui gravar ${dir.name}" }
-        temp.deleteRecursively()
     }
+
+    private fun naturalSortKey(value: String): String =
+        Regex("(\\d+)").replace(value.lowercase()) { match ->
+            match.value.toLongOrNull()?.toString()?.padStart(12, '0') ?: match.value
+        }
 
     /** Arquivos de firmware (BIOS) que o servidor guarda, de todas as plataformas. */
     fun listFirmware(): List<RemoteFirmware> {
