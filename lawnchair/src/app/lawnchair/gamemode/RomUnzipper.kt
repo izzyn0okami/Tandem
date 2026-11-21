@@ -14,16 +14,29 @@ object RomUnzipper {
     fun prepare(context: Context, romPath: String, platform: GamePlatform?): File {
         val rom = File(romPath)
         if (!rom.extension.equals("zip", ignoreCase = true) || platform?.discBased == true) return rom
-        return runCatching { extract(context, rom, platform?.extensions.orEmpty()) }
-            .onFailure { GameLog.error("jogo", "falha ao extrair ${rom.name}", it) }
-            .getOrNull() ?: rom
+        return try {
+            extract(context, rom, platform?.extensions.orEmpty())
+                ?: throw IllegalArgumentException("O arquivo ${rom.name} não contém uma ROM compatível.")
+        } catch (error: IllegalArgumentException) {
+            GameLog.error("jogo", "arquivo ZIP inválido ou ambíguo: ${rom.name}", error)
+            throw error
+        } catch (error: Exception) {
+            GameLog.error("jogo", "falha ao extrair ${rom.name}", error)
+            throw IllegalArgumentException("Não foi possível extrair a ROM de ${rom.name}.", error)
+        }
     }
 
     private fun extract(context: Context, rom: File, wanted: Set<String>): File? = ZipFile(rom).use { zip ->
-        val files = zip.entries().asSequence().filter { !it.isDirectory }.toList()
-        val entry = files.filter { File(it.name).extension.lowercase() in wanted }.maxByOrNull { it.size }
-            ?: files.maxByOrNull { it.size }
-            ?: return null
+        val candidates = zip.entries().asSequence()
+            .filter { !it.isDirectory && File(it.name).extension.lowercase() in wanted }
+            .toList()
+        require(candidates.size == 1) {
+            when (candidates.size) {
+                0 -> "O arquivo ${rom.name} não contém uma ROM com extensão reconhecida."
+                else -> "O arquivo ${rom.name} contém ${candidates.size} ROMs possíveis. Extraia ou selecione o jogo desejado."
+            }
+        }
+        val entry = candidates.single()
         val root = File(context.cacheDir, "unzipped")
         val folder = File(root, rom.absolutePath.hashCode().toString())
         val out = File(folder, "${rom.nameWithoutExtension}.${File(entry.name).extension}")

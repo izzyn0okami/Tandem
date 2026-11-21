@@ -155,7 +155,17 @@ class GameSessionActivity : ComponentActivity() {
             raNoticeQueue.add(getString(if (statesBlocked) R.string.game_ra_hardcore_label else R.string.game_ra_softcore_label))
         }
         // Núcleos como N64 e DS não abrem .zip: extrai antes (os saves continuam com o nome do .zip).
-        val loadPath = RomUnzipper.prepare(this, romPath, platformObject).absolutePath
+        val loadPath = try {
+            RomUnzipper.prepare(this, romPath, platformObject).absolutePath
+        } catch (error: IllegalArgumentException) {
+            Toast.makeText(
+                this,
+                error.message ?: "Não foi possível preparar este arquivo de jogo.",
+                Toast.LENGTH_LONG,
+            ).show()
+            finish()
+            return
+        }
         val data = GLRetroViewData(this).apply {
             coreFilePath = corePath
             gameFilePath = loadPath
