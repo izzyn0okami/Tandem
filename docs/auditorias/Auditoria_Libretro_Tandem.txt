@@ -720,3 +720,28 @@ PENDÊNCIAS FUTURAS
 - Verificar espaço livre antes de baixar ZIPs grandes para arquivos temporários.
 - Registrar no log os resultados dos testes funcionais após retorno do usuário.
 
+
+
+AUDITORIA — IDENTIDADE VISUAL DOS ÍCONES TANDEM E MODO JOGO
+Data: 2026-11-21
+
+DECISÃO DO USUÁRIO
+- O Tandem é um único aplicativo Android.
+- O Modo jogo é uma Activity interna, exibida como atalho próprio na gaveta de aplicativos; não é um segundo aplicativo.
+- O ícone geral do aplicativo deve usar os arquivos tandem_* fornecidos pelo usuário.
+- O atalho Modo jogos deve usar os arquivos jogos_* fornecidos pelo usuário, substituindo o ícone herdado do Lawnchair.
+
+IMPLEMENTAÇÃO PREPARADA
+- Preservar os seis SVGs originais no Dropbox, sem modificá-los.
+- Adaptar os desenhos para recursos vetoriais Android, pois o Android VectorDrawable não reproduz integralmente filtros SVG de blur, máscaras e gradientes radiais.
+- Atualizar a identidade principal com a composição tandem_fg/tandem_bg.
+- Atribuir ao manifesto da GameModeActivity um drawable próprio baseado em jogos_fg/jogos_bg.
+- Não criar outro pacote, outro aplicativo ou outra entrada launcher independente.
+- Não alterar dados, armazenamento, applicationId ou lógica de navegação do Modo jogo.
+
+VALIDAÇÃO E PENDÊNCIAS
+- Implementação submetida à CI na PR correspondente; aguardar validação de estilo e compilação.
+- Confirmar no aparelho que Tandem aparece com seu ícone próprio e que o atalho Modo jogos aparece com o ícone de controle azul.
+- Confirmar que ambos continuam abrindo as telas corretas e que o Modo jogo não aparece duplicado.
+- Os vetores Android são adaptações compatíveis; filtros de brilho e gradientes originais são aproximados, enquanto os SVGs originais permanecem preservados.
+- Não mesclar sem autorização explícita do usuário.
