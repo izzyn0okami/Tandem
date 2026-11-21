@@ -342,3 +342,27 @@ REGRAS OPERACIONAIS VIGENTES
 - Manter pendências separadas de itens concluídos e não transformar achados estáticos em validações funcionais.
 
 FIM DA CONSOLIDAÇÃO — 2026-11-21
+
+
+ATUALIZAÇÃO — PR #11 / CORREÇÃO DE DOWNLOAD PSX CUE + BIN
+Data: 2026-11-21
+
+- PR #11: Fix PlayStation CUE/BIN downloads.
+- URL: https://github.com/izzyn0okami/Tandem/pull/11
+- Branch: fix/psx-cue-bin-download.
+- Commit da branch: 7488dd23b3c2a8a8821e0457f2c589d943e1c062.
+- Merge commit: 112f7a79a319427a25bfbd7a275cfd8b6b984725.
+- Estado: FECHADA E MESCLADA após autorização explícita do usuário.
+- CI de validação da PR #344: https://github.com/izzyn0okami/Tandem/actions/runs/44938188621 — completed / success.
+- Jobs aprovados: check-style (Spotless), build-debug-apk (assembleLawnWithQuickstepGithubDebug), final-status. O APK de depuração foi compilado e o artefato enviado com sucesso.
+- Arquivos alterados: GamePlatforms.kt e RomMClient.kt.
+- Correção: PSX passa a reconhecer BIN, IMG, SUB, SBI, CCD e WAV como arquivos complementares de disco, sem listá-los como jogos independentes; o CUE permanece como arquivo de abertura e os arquivos relacionados são baixados em conjunto.
+- Escopo: não altera o fluxo Neo Geo.
+- Teste funcional no telefone: PENDENTE. A CI confirma estilo e compilação, não confirma que o RomM entrega o conjunto completo nem que o jogo inicia corretamente.
+- Próximo teste do usuário: confirmar que CUE + BIN aparece como um único jogo, que ambos são baixados, que o CUE abre e referencia o BIN, e que o BIN não aparece isoladamente.
+- CI pós-merge/publicação tandem-latest: ainda não confirmada nesta atualização. Acompanhar o workflow disparado pelo merge antes de orientar instalação.
+
+PENDÊNCIAS ATUALIZADAS
+- A correção de identificação/download PSX foi integrada; validar no aparelho o conjunto CUE + BIN e, se disponíveis, outros formatos complementares (IMG/SUB/CCD/WAV).
+- Permanecem pendentes os cenários gerais de ZIP listados na matriz anterior; o merge da PR #11 não os valida automaticamente.
+- Demais pendências de BIOS/firmware, núcleos, compatibilidade real, robustez e testes automatizados permanecem inalteradas.
