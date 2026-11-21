@@ -877,3 +877,15 @@ VALIDAÇÃO / PENDÊNCIAS
 - Teste no aparelho: pendente. Intellivision deve aparecer como não pronto quando faltar qualquer um dos dois arquivos e como pronto somente quando ambos estiverem presentes.
 - Verificar que plataformas com BIOS regional alternativa (Sega CD, PlayStation, Saturn) continuam prontas quando ao menos uma alternativa válida estiver presente.
 - Não mesclar sem autorização explícita do usuário.
+
+
+ATUALIZAÇÃO — PR #19 / CORREÇÃO DE ESTILO
+Data: 2026-11-21
+
+- CI #380 (run 44959288534): build-debug-apk passou; check-style falhou exclusivamente no Spotless Kotlin.
+- Arquivo apontado: lawnchair/src/app/lawnchair/gamemode/BiosManager.kt.
+- Causa: quebra de linha na expressão de platformsWithBios() divergente da formatação Spotless exigida.
+- Correção aplicada na branch fix/bios-required-groups: expressão formatada em uma única linha, sem alteração funcional.
+- Commit da correção de estilo: 6ceae27223f3a4ee6ee957df3a149a3ec28e10a8.
+- Nova CI após a correção: pendente; não considerar estilo validado até check-style passar.
+- PR #19 permanece aberta e não mesclada. Testes funcionais no aparelho continuam pendentes.
