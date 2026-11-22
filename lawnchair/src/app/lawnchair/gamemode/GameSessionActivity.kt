@@ -125,12 +125,12 @@ class GameSessionActivity : ComponentActivity() {
 
         val corePath = intent.getStringExtra(EXTRA_CORE_PATH)
         val romPath = intent.getStringExtra(EXTRA_ROM_PATH)
-        this.romPath = romPath
         val stableIdentity = intent.getStringExtra(EXTRA_GAME_IDENTITY)
         if (corePath == null || romPath == null || stableIdentity.isNullOrBlank()) {
             finish()
             return
         }
+        this.romPath = romPath
         gameIdentity = stableIdentity
         SaveSync.markSessionActive(this, romPath, intent.getStringExtra(EXTRA_PLATFORM), stableIdentity)
 
