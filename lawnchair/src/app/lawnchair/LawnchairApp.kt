@@ -96,6 +96,7 @@ class LawnchairApp : LauncherApplication() {
             WorkManager.initialize(this, Configuration.Builder().build())
         }
     }
+
     /**
      * Writes the bundled baseline profile so ART can use it on sideloaded installs. The manifest
      * removes androidx.startup's InitializationProvider, which also drops
