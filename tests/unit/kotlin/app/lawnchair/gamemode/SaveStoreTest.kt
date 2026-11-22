@@ -222,7 +222,7 @@ class SaveStoreTest {
         val target = File(root, "stable/Pokemon").apply { mkdirs() }
         File(target, "sram.srm").writeBytes(byteArrayOf(9, 9, 9))
 
-        assertFalse(GameIdentityResolver.migrateLegacy(legacy, target))
+        assertTrue(GameIdentityResolver.migrateLegacy(legacy, target))
         assertArrayEquals(byteArrayOf(1, 2, 3), File(legacy, "sram.srm").readBytes())
         assertArrayEquals(byteArrayOf(9, 9, 9), File(target, "sram.srm").readBytes())
     }
