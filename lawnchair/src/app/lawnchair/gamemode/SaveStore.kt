@@ -54,6 +54,17 @@ internal object GameIdentityResolver {
         return digest("$server|$token")
     }
 
+    /** Fingerprint of the credentials that originally linked this game, even while disconnected. */
+    fun originAccountFingerprint(context: Context, romFile: File): String? {
+        val prefs = context.getSharedPreferences("romm_sync", Context.MODE_PRIVATE)
+        val direct = prefs.getLong("rom:${romFile.absolutePath}", -1L)
+        if (direct >= 0L) return prefs.getString("rom_account:${romFile.absolutePath}", null)
+        val currentAccount = connectionFingerprint(context) ?: return null
+        val server = normalizedServer(RomMSettings.url(context)) ?: return null
+        val linked = prefs.getLong(linkKey(server, currentAccount, fingerprint(romFile)), -1L)
+        return currentAccount.takeIf { linked >= 0L }
+    }
+
     /** Finds a moved ROM by its stable identity, without trusting the old path. */
     fun findRomPath(context: Context, identity: String, preferredPath: String, platformSlug: String?): String? {
         val preferred = File(preferredPath)
