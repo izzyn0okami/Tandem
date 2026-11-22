@@ -253,8 +253,9 @@ internal object GameIdentityResolver {
         return runCatching {
             check(temp.mkdirs())
             val expectedHashes = linkedMapOf<String, String>()
+            val conflictingFiles = mutableListOf<String>()
 
-            fun copyTree(from: File) {
+            fun copyTree(from: File, preserveExisting: Boolean) {
                 from.walkTopDown().filter { it.isFile }.forEach { file ->
                     val relative = file.relativeTo(from).path
                     val destination = File(temp, relative)
@@ -263,22 +264,27 @@ internal object GameIdentityResolver {
                         check(destination.delete())
                     }
                     if (destination.exists()) {
-                        check(fileHash(destination) == sourceHash) {
-                            "save collision while merging legacy migration: $relative"
+                        val existingHash = fileHash(destination)
+                        if (existingHash != sourceHash) {
+                            check(preserveExisting) {
+                                "save collision inside stable target: $relative"
+                            }
+                            conflictingFiles += relative
                         }
                     } else {
                         destination.parentFile?.let { check(it.exists() || it.mkdirs()) }
                         file.copyTo(destination)
                     }
-                    check(destination.length() == file.length())
-                    check(fileHash(destination) == sourceHash)
                     check(fileHash(file) == sourceHash)
-                    expectedHashes[relative] = sourceHash
+                    val chosenHash = fileHash(destination)
+                    check(destination.length() > 0L || file.length() == 0L)
+                    check(fileHash(destination) == chosenHash)
+                    expectedHashes[relative] = chosenHash
                 }
             }
 
-            if (target.isDirectory) copyTree(target)
-            copyTree(source)
+            if (target.isDirectory) copyTree(target, preserveExisting = false)
+            copyTree(source, preserveExisting = true)
 
             val copiedFiles = temp.walkTopDown()
                 .filter { it.isFile }
@@ -288,6 +294,14 @@ internal object GameIdentityResolver {
             check(expectedHashes.all { (relative, expected) ->
                 fileHash(File(temp, relative)) == expected
             })
+            if (conflictingFiles.isNotEmpty()) {
+                runCatching {
+                    GameLog.log(
+                        "saves",
+                        "arquivos legados conflitantes preservados na origem: ${conflictingFiles.joinToString()}",
+                    )
+                }
+            }
 
             if (target.exists()) {
                 var suffix = 0
