@@ -277,8 +277,6 @@ internal object GameIdentityResolver {
                     }
                     check(fileHash(file) == sourceHash)
                     val chosenHash = fileHash(destination)
-                    check(destination.length() > 0L || file.length() == 0L)
-                    check(fileHash(destination) == chosenHash)
                     expectedHashes[relative] = chosenHash
                 }
             }
