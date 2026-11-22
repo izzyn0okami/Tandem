@@ -274,73 +274,89 @@ object SaveSync {
             prefs.edit { putString(appliedKey, localHash) }
         }
 
-        val remoteChanged = SaveSyncPolicy.isRemoteVersionChanged(
-            remote.updatedAtMs,
-            remote.id,
-            lastRemoteMs,
-            lastRemoteId,
-            remote.contentHash,
-            lastRemoteHash,
-        )
-        val shouldApplyRemote = SaveSyncPolicy.shouldApplyRemote(
-            remoteChanged = remoteChanged,
-            localExists = local != null,
-            appliedHash = appliedHash,
-        )
-
-        if (!shouldApplyRemote) {
-            // Atualiza a identidade do registro mesmo quando o conteúdo é idêntico.
-            // Isso evita que o próximo upload tente atualizar um ID antigo já substituído no RomM.
-            prefs.edit {
-                putLong("$key:remote", remote.updatedAtMs)
-                putLong("$key:id", remote.id)
-                if (remote.contentHash == null) remove(remoteKey) else putString(remoteKey, remote.contentHash)
+        val temp = File(file.parentFile, "${file.name}.remote")
+        var remoteContentHash = remote.contentHash
+        var tempReady = false
+        try {
+            // Algumas versões do RomM não expõem content_hash. Nesse caso, baixa o SRAM
+            // temporariamente e calcula o hash real do conteúdo antes de decidir se mudou.
+            if (SaveSyncPolicy.shouldVerifyRemoteContent(kind, remoteContentHash)) {
+                client.downloadRemoteFile(kind, remote.id, temp)
+                if (temp.length() == 0L) {
+                    throw IOException("O servidor RomM retornou um save vazio para ${File(romPath).name}")
+                }
+                remoteContentHash = hash(temp)
+                tempReady = true
             }
-            if (localHash != appliedHash) {
+
+            val remoteChanged = SaveSyncPolicy.isRemoteVersionChanged(
+                remote.updatedAtMs,
+                remote.id,
+                lastRemoteMs,
+                lastRemoteId,
+                remoteContentHash,
+                lastRemoteHash,
+            )
+            val shouldApplyRemote = SaveSyncPolicy.shouldApplyRemote(
+                remoteChanged = remoteChanged,
+                localExists = local != null,
+                appliedHash = appliedHash,
+            )
+
+            if (!shouldApplyRemote) {
+                // Atualiza a identidade do registro mesmo quando o conteúdo é idêntico.
+                // Isso evita que o próximo upload tente atualizar um ID antigo já substituído no RomM.
+                prefs.edit {
+                    putLong("$key:remote", remote.updatedAtMs)
+                    putLong("$key:id", remote.id)
+                    if (remoteContentHash == null) remove(remoteKey) else putString(remoteKey, remoteContentHash)
+                }
+                if (localHash != appliedHash) {
+                    GameLog.log(
+                        "saves",
+                        "save local mudou desde a última sincronização; servidor sem nova versão; mantendo progresso local para envio posterior",
+                    )
+                } else {
+                    GameLog.log("saves", "save local já corresponde à versão remota conhecida; nenhum download necessário")
+                }
+                return
+            }
+
+            if (SaveSyncPolicy.shouldBackupLocal(local != null, localHash, appliedHash)) {
+                // O arquivo de outro núcleo pode existir, mas ainda não ter recebido a versão remota atual.
+                // Preserve-o antes de colocar o head remoto no diretório do núcleo que será iniciado.
+                backup(store, file)
                 GameLog.log(
                     "saves",
-                    "save local mudou desde a última sincronização; servidor sem nova versão; mantendo progresso local para envio posterior",
+                    "save local divergente preservado em backup antes de aplicar a versão remota",
                 )
-            } else {
-                GameLog.log("saves", "save local já corresponde à versão remota conhecida; nenhum download necessário")
             }
-            return
-        }
 
-        if (SaveSyncPolicy.shouldBackupLocal(local != null, localHash, appliedHash)) {
-            // O arquivo de outro núcleo pode existir, mas ainda não ter recebido a versão remota atual.
-            // Preserve-o antes de colocar o head remoto no diretório do núcleo que será iniciado.
-            backup(store, file)
+            if (!tempReady) {
+                client.downloadRemoteFile(kind, remote.id, temp)
+                if (temp.length() == 0L) {
+                    throw IOException("O servidor RomM retornou um save vazio para ${File(romPath).name}")
+                }
+                tempReady = true
+                if (remoteContentHash == null) remoteContentHash = hash(temp)
+            }
+            // Keep the previous local save until the downloaded file is safely promoted.
+            RomMFileReplacement.replaceFile(temp, file)
+            val downloadedHash = hash(file)
+            prefs.edit {
+                putString("$key:hash", downloadedHash)
+                putString(appliedKey, downloadedHash)
+                putLong("$key:remote", remote.updatedAtMs)
+                putLong("$key:id", remote.id)
+                if (remoteContentHash == null) remove(remoteKey) else putString(remoteKey, remoteContentHash)
+            }
             GameLog.log(
                 "saves",
-                "save local divergente preservado em backup antes de aplicar a versão remota",
+                "save remoto aplicado: tipo=${kind.path}, id=${remote.id}, núcleo destino=$coreId, bytes=${file.length()}",
             )
-        }
-
-        val temp = File(file.parentFile, "${file.name}.remote")
-        try {
-            client.downloadRemoteFile(kind, remote.id, temp)
-            if (temp.length() == 0L) {
-                throw IOException("O servidor RomM retornou um save vazio para ${File(romPath).name}")
-            }
-        } catch (error: Exception) {
+        } finally {
             temp.delete()
-            throw error
         }
-        // Keep the previous local save until the downloaded file is safely promoted.
-        RomMFileReplacement.replaceFile(temp, file)
-        val downloadedHash = hash(file)
-        prefs.edit {
-            putString("$key:hash", downloadedHash)
-            putString(appliedKey, downloadedHash)
-            putLong("$key:remote", remote.updatedAtMs)
-            putLong("$key:id", remote.id)
-            if (remote.contentHash == null) remove(remoteKey) else putString(remoteKey, remote.contentHash)
-        }
-        GameLog.log(
-            "saves",
-            "save remoto aplicado: tipo=${kind.path}, id=${remote.id}, núcleo destino=$coreId, bytes=${file.length()}",
-        )
     }
 
     private fun backup(store: SaveStore, file: File) {
