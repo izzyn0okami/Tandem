@@ -105,9 +105,6 @@ object SaveSync {
         GameIdentityResolver.link(context, File(romPath), romId)
     }
 
-    private fun romId(context: Context, romPath: String): Long? =
-        GameIdentityResolver.linkedRomId(context, File(romPath))
-
     private fun emulatorTag(coreId: String) = "tandem_$coreId"
 
     private fun hash(file: File): String {
@@ -462,10 +459,6 @@ object SaveSync {
                 throw error
             }
         }
-    }
-
-    internal fun cancelPending(context: Context) {
-        WorkManager.getInstance(context.applicationContext).cancelAllWorkByTag(WORK_TAG)
     }
 
     private fun workName(gameIdentity: String, coreId: String): String {
