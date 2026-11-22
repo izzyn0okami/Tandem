@@ -237,7 +237,6 @@ internal fun LibraryScreen(
 /** Só o chip selecionado recebe o foco quando o botão Y pede para ir aos consoles. */
 private fun chipModifier(selected: Boolean, focus: FocusRequester): Modifier = if (selected) Modifier.focusRequester(focus) else Modifier
 
-
 @Composable
 private fun SaveSyncBadge(status: SaveSyncStatus?) {
     if (status == null) return
