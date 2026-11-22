@@ -642,7 +642,9 @@ object SaveSync {
             listOf(coreId) + siblingCores,
             gameIdentity,
         )
-        if (migrationPlan.ambiguous) return false
+        // A pending ownership decision must block background uploads as well as game launch.
+        // Only an explicit user confirmation may copy these legacy bytes into the account namespace.
+        if (migrationPlan.ambiguous || migrationPlan.confirmationSources.isNotEmpty()) return false
         val linkedRomId = GameIdentityResolver.linkedRomId(app, activeRom, connection) ?: return false
         val syncClient = RomMClient(connection.url, connection.token)
         lock.withLock {
