@@ -98,6 +98,25 @@ internal object GameIdentityResolver {
         return link.romId.takeIf { link.server == server && link.accountFingerprint == account }
     }
 
+    fun linkedRomPaths(
+        context: Context,
+        romId: Long,
+        connection: RomMConnectionSnapshot,
+        currentPath: String,
+    ): List<String> {
+        val prefs = context.getSharedPreferences("romm_sync", Context.MODE_PRIVATE)
+        val previousPaths = prefs.all.keys.asSequence()
+            .filter { it.startsWith("rom:") }
+            .map { it.removePrefix("rom:") }
+            .filter { oldPath ->
+                prefs.getLong("rom:$oldPath", -1L) == romId &&
+                    prefs.getString("rom_server:$oldPath", null) == connection.server &&
+                    prefs.getString("rom_account:$oldPath", null) == connection.accountFingerprint
+            }
+            .toList()
+        return (listOf(currentPath) + previousPaths).distinct()
+    }
+
     fun connectionSnapshot(context: Context): RomMConnectionSnapshot? {
         val url = RomMSettings.url(context)?.takeIf { it.isNotBlank() } ?: return null
         val token = RomMSettings.token(context)?.takeIf { it.isNotBlank() } ?: return null
