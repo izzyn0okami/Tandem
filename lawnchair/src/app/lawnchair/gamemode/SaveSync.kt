@@ -129,14 +129,11 @@ object SaveSync {
         RemoteFileKind.State to store.stateFile,
     )
 
-    private fun appliedHashKey(kind: RemoteFileKind, romPath: String, coreId: String) =
-        "${kind.path}:$romPath:$coreId:applied_hash"
+    private fun appliedHashKey(kind: RemoteFileKind, romPath: String, coreId: String) = "${kind.path}:$romPath:$coreId:applied_hash"
 
-    private fun remoteHashKey(kind: RemoteFileKind, romPath: String) =
-        "${kind.path}:$romPath:remote_hash"
+    private fun remoteHashKey(kind: RemoteFileKind, romPath: String) = "${kind.path}:$romPath:remote_hash"
 
-    private fun newestRemoteFile(kind: RemoteFileKind, remotes: List<RemoteFile>, coreId: String): RemoteFile? =
-        SaveSyncPolicy.newestCompatibleRemote(kind, remotes, coreId)
+    private fun newestRemoteFile(kind: RemoteFileKind, remotes: List<RemoteFile>, coreId: String): RemoteFile? = SaveSyncPolicy.newestCompatibleRemote(kind, remotes, coreId)
 
     /** Registra que a ROM está em uma sessão ativa, impedindo upload enquanto ela pode mudar. */
     fun markSessionActive(context: Context, romPath: String) {
