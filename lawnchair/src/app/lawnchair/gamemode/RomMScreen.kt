@@ -208,10 +208,15 @@ private fun PairingWait(pairing: DevicePairing, onApprove: (String, Long) -> Uni
                     }
                     return@LaunchedEffect latestApprove(result.token, accountId)
                 }
+
                 DevicePoll.Denied -> return@LaunchedEffect latestFail(context.getString(R.string.game_romm_pair_denied))
+
                 DevicePoll.Expired -> return@LaunchedEffect latestFail(context.getString(R.string.game_romm_pair_expired))
+
                 is DevicePoll.Failed -> return@LaunchedEffect latestFail(result.message)
+
                 DevicePoll.SlowDown -> intervalMs = (intervalMs + 5_000L).coerceAtMost(30_000L)
+
                 DevicePoll.Pending -> Unit
             }
         }

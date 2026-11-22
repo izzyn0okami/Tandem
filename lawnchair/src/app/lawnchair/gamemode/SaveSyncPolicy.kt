@@ -5,8 +5,7 @@ internal object SaveSyncPolicy {
     const val SESSION_TIMEOUT_MS = 120_000L
 
     /** A identidade da conta depende do usuário RomM, nunca do token que pode ser rotacionado. */
-    fun accountFingerprint(server: String, userId: Long): String =
-        sha256("$server|user:$userId")
+    fun accountFingerprint(server: String, userId: Long): String = sha256("$server|user:$userId")
 
     /** Migra vínculos antigos somente quando a mesma conta é comprovada. */
     fun canMigrateAccountLinks(
@@ -21,13 +20,9 @@ internal object SaveSyncPolicy {
     }
 
     /** Namespace físico/metadados de um jogo RomM: instância + conta + ID remoto. */
-    fun rommGameIdentity(server: String, accountFingerprint: String, romId: Long): String =
-        "romm-${sha256("$server|$accountFingerprint|$romId")}"
+    fun rommGameIdentity(server: String, accountFingerprint: String, romId: Long): String = "romm-${sha256("$server|$accountFingerprint|$romId")}"
 
-    private fun sha256(value: String): String =
-        java.security.MessageDigest.getInstance("SHA-256")
-            .digest(value.toByteArray(Charsets.UTF_8))
-            .joinToString("") { "%02x".format(it.toInt() and 0xff) }
+    private fun sha256(value: String): String = java.security.MessageDigest.getInstance("SHA-256").digest(value.toByteArray(Charsets.UTF_8)).joinToString("") { "%02x".format(it.toInt() and 0xff) }
 
     internal data class StatusResolution(
         val status: SaveSyncStatus,
