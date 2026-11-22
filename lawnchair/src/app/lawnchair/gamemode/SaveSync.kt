@@ -3,6 +3,7 @@ package app.lawnchair.gamemode
 import android.content.Context
 import androidx.core.content.edit
 import java.io.File
+import java.io.IOException
 import java.security.MessageDigest
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -19,6 +20,18 @@ import kotlinx.coroutines.sync.withLock
  * Falhas de rede nunca atrapalham o jogo.
  */
 enum class SaveSyncStatus { PENDING, SYNCING, SYNCED }
+
+class SaveRollbackException(message: String, cause: Throwable) : IOException(message, cause)
+
+private data class SaveFileSnapshot(
+    val file: File,
+    val backup: File?,
+    val existed: Boolean,
+    val key: String,
+    val hash: String?,
+    val remote: Long,
+    val id: Long,
+)
 
 object SaveSync {
 
@@ -95,19 +108,83 @@ object SaveSync {
         RemoteFileKind.State to store.stateFile,
     )
 
-    /** Antes de jogar: traz do servidor o que for mais novo. Bloqueante. */
-    fun pull(context: Context, romPath: String, coreId: String) {
+    /** Marca a falha do pull como pendente sem confundi-la com sincronização confirmada. */
+    fun markSyncPending(context: Context, romPath: String) {
+        if (romId(context, romPath) == null) return
+        prefs(context).edit {
+            putString(statusKey(romPath), "pending")
+            remove("${statusKey(romPath)}:started")
+        }
+    }
+
+    /** Antes de jogar: aguarda o pull terminar e restaura os saves locais se qualquer etapa falhar. */
+    suspend fun pull(context: Context, romPath: String, coreId: String) {
         val romId = romId(context, romPath) ?: return
-        val client = client(context) ?: return
+        val client = client(context) ?: throw IOException("RomM está conectado, mas não foi possível criar o cliente")
         val store = SaveStore(context, coreId, File(romPath))
-        runCatching {
-            for ((kind, file) in files(store)) {
-                val remote = client.listRemoteFiles(kind, romId)
-                    .filter { it.emulator == emulatorTag(coreId) }
-                    .maxByOrNull { it.updatedAtMs } ?: continue
-                pullOne(context, client, store, kind, file, remote, romPath)
+        // Compartilha o mesmo bloqueio do push: nunca permita pull e push simultâneos.
+        lock.withLock {
+            val prefs = prefs(context)
+            val snapshots = files(store).map { (kind, file) ->
+                val existed = file.isFile
+                val backup = if (existed) {
+                    File(file.parentFile, "${file.name}.pre-pull-${System.nanoTime()}").also {
+                        file.copyTo(it, overwrite = true)
+                    }
+                } else {
+                    null
+                }
+                val key = "${kind.path}:$romPath"
+                SaveFileSnapshot(
+                    file = file,
+                    backup = backup,
+                    existed = existed,
+                    key = key,
+                    hash = prefs.getString("$key:hash", null),
+                    remote = prefs.getLong("$key:remote", Long.MIN_VALUE),
+                    id = prefs.getLong("$key:id", Long.MIN_VALUE),
+                )
             }
-        }.onFailure { GameLog.error("saves", "falha ao buscar saves de ${File(romPath).name}", it) }
+            var preserveSnapshots = false
+            try {
+                for ((kind, file) in files(store)) {
+                    val remote = client.listRemoteFiles(kind, romId)
+                        .filter { it.emulator == emulatorTag(coreId) }
+                        .maxByOrNull { it.updatedAtMs } ?: continue
+                    pullOne(context, client, store, kind, file, remote, romPath)
+                }
+            } catch (error: Exception) {
+                var restoreFailure: Throwable? = null
+                snapshots.forEach { snapshot ->
+                    runCatching {
+                        if (snapshot.backup != null && snapshot.backup.isFile) {
+                            RomMFileReplacement.replaceFile(snapshot.backup, snapshot.file)
+                        } else if (!snapshot.existed) {
+                            snapshot.file.delete()
+                        }
+                        prefs.edit {
+                            if (snapshot.hash == null) remove("${snapshot.key}:hash") else putString("${snapshot.key}:hash", snapshot.hash)
+                            if (snapshot.remote == Long.MIN_VALUE) remove("${snapshot.key}:remote") else putLong("${snapshot.key}:remote", snapshot.remote)
+                            if (snapshot.id == Long.MIN_VALUE) remove("${snapshot.key}:id") else putLong("${snapshot.key}:id", snapshot.id)
+                        }
+                    }.onFailure {
+                        restoreFailure = it
+                        GameLog.error("saves", "falha ao restaurar save local após erro no pull", it)
+                    }
+                }
+                if (restoreFailure != null) {
+                    // Keep any remaining snapshot files as recovery copies if rollback was incomplete.
+                    preserveSnapshots = true
+                    throw SaveRollbackException(
+                        "A sincronização falhou e não foi possível confirmar a restauração do save local. Não inicie com o save local.",
+                        restoreFailure!!,
+                    )
+                }
+                throw error
+            } finally {
+                if (!preserveSnapshots) snapshots.forEach { it.backup?.delete() }
+            }
+        }
     }
 
     private fun pullOne(context: Context, client: RomMClient, store: SaveStore, kind: RemoteFileKind, file: File, remote: RemoteFile, romPath: String) {
@@ -133,10 +210,14 @@ object SaveSync {
             if (localChanged) backup(store, file)
         }
         val temp = File(file.parentFile, "${file.name}.remote")
-        client.downloadRemoteFile(kind, remote.id, temp)
-        if (temp.length() == 0L) {
+        try {
+            client.downloadRemoteFile(kind, remote.id, temp)
+            if (temp.length() == 0L) {
+                throw IOException("O servidor RomM retornou um save vazio para ${File(romPath).name}")
+            }
+        } catch (error: Exception) {
             temp.delete()
-            return
+            throw error
         }
         // Keep the previous local save until the downloaded file is safely promoted.
         RomMFileReplacement.replaceFile(temp, file)

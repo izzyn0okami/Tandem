@@ -172,6 +172,11 @@
     <string name="game_romm_download">Baixar</string>
     <string name="game_romm_downloaded">Baixado</string>
     <string name="game_mode_status_syncing">Sincronizando saves com o servidor…</string>
+    <string name="game_save_sync_failed_title">Falha ao sincronizar os saves</string>
+    <string name="game_save_sync_failed_body">Não foi possível sincronizar com o RomM: %1$s. Os arquivos locais foram preservados. Você pode tentar novamente ou iniciar com o save local; a sincronização continuará pendente.</string>
+    <string name="game_save_sync_unsafe_body">Não foi possível sincronizar e o Tandem não conseguiu confirmar a restauração do save local. Por segurança, iniciar com o save local foi desativado. Tente novamente.</string>
+    <string name="game_save_sync_retry">Tentar novamente</string>
+    <string name="game_save_sync_use_local">Iniciar com save local</string>
     <string name="game_android">Jogos Android</string>
     <string name="game_pad_disconnected_title">Controle desconectado</string>
     <string name="game_pad_disconnected_body">Quer continuar no modo jogos ou voltar ao launcher?</string>

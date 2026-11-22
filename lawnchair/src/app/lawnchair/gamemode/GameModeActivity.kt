@@ -60,7 +60,6 @@ import java.io.File
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import kotlinx.coroutines.withTimeoutOrNull
 
 /**
  * Modo jogos: biblioteca (pasta configurável, jogos baixados e colocados à mão), destaque de
@@ -128,7 +127,15 @@ class GameModeActivity : ComponentActivity() {
     }
 }
 
-private const val SYNC_TIMEOUT_MS = 15_000L
+private data class PendingSaveSync(
+    val coreId: String,
+    val romPath: String,
+    val title: String,
+    val loadState: Boolean,
+    val platform: GamePlatform?,
+    val error: String,
+    val localSaveAvailable: Boolean,
+)
 
 private enum class GameTab(val label: Int) {
     Library(R.string.game_tab_library),
@@ -146,6 +153,7 @@ private fun GameModeRoot(refreshKey: Int, onExit: () -> Unit) {
     var tab by remember { mutableStateOf(GameTab.Library) }
     var detailKey by remember { mutableStateOf<String?>(null) }
     var status by remember { mutableStateOf("") }
+    var pendingSaveSync by remember { mutableStateOf<PendingSaveSync?>(null) }
     var busy by remember { mutableStateOf(false) }
     var rootPath by remember { mutableStateOf(GameLibrarySettings.rootPath(context)) }
     var games by remember { mutableStateOf(emptyList<LocalGame>()) }
@@ -200,7 +208,14 @@ private fun GameModeRoot(refreshKey: Int, onExit: () -> Unit) {
         }
     }
 
-    suspend fun startGame(coreId: String, romPath: String, title: String, loadState: Boolean, platform: GamePlatform?) {
+    suspend fun startGame(
+        coreId: String,
+        romPath: String,
+        title: String,
+        loadState: Boolean,
+        platform: GamePlatform?,
+        useLocalSave: Boolean = false,
+    ) {
         GameThemeMusic.stop("início de jogo")
         GameLog.log("jogo", "abrir: $title (plataforma=${platform?.slug ?: "?"}, núcleo=$coreId)")
         if (platform != null && platform.launch != LaunchMode.LIBRETRO) {
@@ -216,13 +231,52 @@ private fun GameModeRoot(refreshKey: Int, onExit: () -> Unit) {
         val core = CoreInstaller.ensureInstalled(context, coreId) { bytes ->
             status = context.getString(R.string.game_mode_status_downloading, coreId, bytes / 1024)
         }.getOrThrow()
-        if (RomMSettings.isConnected(context)) {
+        if (RomMSettings.isConnected(context) && !useLocalSave) {
             status = context.getString(R.string.game_mode_status_syncing)
-            withTimeoutOrNull(SYNC_TIMEOUT_MS) { withContext(Dispatchers.IO) { SaveSync.pull(context, romPath, coreId) } }
+            try {
+                // A partida só começa depois que o pull terminou de verdade.
+                withContext(Dispatchers.IO) { SaveSync.pull(context, romPath, coreId) }
+            } catch (error: Exception) {
+                if (error is kotlinx.coroutines.CancellationException) throw error
+                GameLog.error("saves", "falha ao sincronizar antes de abrir ${File(romPath).name}", error)
+                SaveSync.markSyncPending(context, romPath)
+                pendingSaveSync = PendingSaveSync(
+                    coreId = coreId,
+                    romPath = romPath,
+                    title = title,
+                    loadState = loadState,
+                    platform = platform,
+                    error = error.message ?: error.toString(),
+                    localSaveAvailable = error !is SaveRollbackException,
+                )
+                status = ""
+                return
+            }
         }
         status = context.getString(R.string.game_mode_status_starting, title)
         context.startActivity(GameSessionActivity.intent(context, core.absolutePath, romPath, loadState, platform?.slug))
         status = ""
+    }
+
+    fun continueAfterSyncFailure(pending: PendingSaveSync, useLocalSave: Boolean) {
+        pendingSaveSync = null
+        scope.launch {
+            busy = true
+            runCatching {
+                startGame(
+                    pending.coreId,
+                    pending.romPath,
+                    pending.title,
+                    pending.loadState,
+                    pending.platform,
+                    useLocalSave = useLocalSave,
+                )
+            }.onFailure {
+                GameLog.error("jogo", "falha ao abrir ${pending.title}", it)
+                status = context.getString(R.string.game_mode_status_error, it.message ?: it.toString())
+            }
+            busy = false
+        }
     }
 
     fun play(game: LocalGame, loadState: Boolean = false) {
@@ -418,6 +472,69 @@ private fun GameModeRoot(refreshKey: Int, onExit: () -> Unit) {
             )
         }
         HintBar(inDetail = current != null, tab = tab)
+    }
+    pendingSaveSync?.let { pending ->
+        SaveSyncFailureDialog(
+            error = pending.error,
+            localSaveAvailable = pending.localSaveAvailable,
+            busy = busy,
+            onRetry = { continueAfterSyncFailure(pending, useLocalSave = false) },
+            onUseLocal = { continueAfterSyncFailure(pending, useLocalSave = true) },
+        )
+    }
+}
+
+@Composable
+private fun SaveSyncFailureDialog(
+    error: String,
+    localSaveAvailable: Boolean,
+    busy: Boolean,
+    onRetry: () -> Unit,
+    onUseLocal: () -> Unit,
+) {
+    val retryFocus = remember { FocusRequester() }
+    LaunchedEffect(Unit) { runCatching { retryFocus.requestFocus() } }
+    Box(
+        modifier = Modifier.fillMaxSize().background(GameColors.scrim),
+        contentAlignment = Alignment.Center,
+    ) {
+        Column(
+            modifier = Modifier
+                .width(520.dp)
+                .background(GameColors.backgroundTop, RoundedCornerShape(14.dp))
+                .padding(28.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Text(
+                stringResource(R.string.game_save_sync_failed_title),
+                color = GameColors.text,
+                fontSize = 22.sp,
+                fontWeight = FontWeight.Bold,
+            )
+            Text(
+                if (localSaveAvailable) {
+                    stringResource(R.string.game_save_sync_failed_body, error)
+                } else {
+                    stringResource(R.string.game_save_sync_unsafe_body)
+                },
+                color = GameColors.textDim,
+                fontSize = 15.sp,
+            )
+            GameButton(
+                stringResource(R.string.game_save_sync_retry),
+                onRetry,
+                primary = true,
+                enabled = !busy,
+                modifier = Modifier.focusRequester(retryFocus),
+            )
+            if (localSaveAvailable) {
+                GameButton(
+                    stringResource(R.string.game_save_sync_use_local),
+                    onUseLocal,
+                    enabled = !busy,
+                )
+            }
+        }
     }
 }
 

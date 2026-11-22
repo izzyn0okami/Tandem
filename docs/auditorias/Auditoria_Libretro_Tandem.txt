@@ -1909,3 +1909,35 @@ Data: 2026-11-22
 - Falha de rede/sincronização deve preservar o save local e informar claramente o usuário; não iniciar com uma transferência anterior ainda ativa.
 - A implementação deve usar cancelamento real das chamadas HTTP quando houver cancelamento, ou aguardar a conclusão segura sem permitir corrida; manter feedback de progresso e evitar bloqueio infinito por falha.
 - Esta é uma decisão de comportamento aprovada, ainda não implementada nem validada. Não registrar como concluída até CI e teste funcional.
+
+
+IMPLEMENTAÇÃO PREVENTIVA — AGUARDAR PULL DE SAVE ANTES DE INICIAR O NÚCLEO
+Data: 2026-11-22
+Branch: fix/wait-for-romm-save-sync-before-launch
+- Implementada a decisão aprovada pelo usuário: aguardar a sincronização pré-jogo terminar, sem o timeout artificial de 15 segundos.
+- GameModeActivity agora aguarda SaveSync.pull() em Dispatchers.IO; falhas são propagadas ao fluxo existente de erro e impedem a abertura do núcleo.
+- SaveSync.pull() agora é suspend e compartilha o mesmo Mutex do pushAsync(), impedindo pull e push concorrentes.
+- Removido o tratamento que engolia exceções no pull; erro de rede/servidor interrompe o início do jogo e é apresentado pelo status de erro existente.
+- Download remoto vazio passa a ser tratado como falha; arquivo temporário é removido em falha. A substituição local continua sendo feita somente depois de download concluído e validado; save local anterior permanece preservado.
+- Esta alteração não cancela a requisição ao atingir 15 s: não há mais esse limite no início do jogo. As políticas de timeout de rede do OkHttp continuam valendo; em caso de falha, o jogo não inicia por esse fluxo.
+- CI e revisão de diff ainda pendentes; testes funcionais no aparelho também pendentes. Não considerar concluído até CI aprovada e validação do usuário.
+
+
+RECUPERAÇÃO INTERATIVA APÓS FALHA DE SINCRONIZAÇÃO — ADIÇÃO À PR #31
+Data: 2026-11-22
+- Decisão aprovada pelo usuário: em falha de sincronização pré-jogo, mostrar aviso com duas ações: "Tentar novamente" e "Iniciar com save local".
+- A opção local ignora apenas o pull desta inicialização; o usuário não é obrigado a desconectar do RomM.
+- A falha mantém o estado de sincronização como PENDING; nunca exibir Sync OK por iniciar com arquivo local.
+- Para permitir fallback seguro, SaveSync.pull cria snapshots dos arquivos locais e dos metadados de sincronização antes de aplicar saves remotos. Se qualquer etapa do pull falhar, restaura os arquivos e metadados anteriores, evitando que um pull parcial deixe SRAM/estado ou hashes remotos inconsistentes.
+- O aviso informa o erro e esclarece que os arquivos locais foram preservados. "Tentar novamente" repete o pull; "Iniciar com save local" abre o núcleo sem nova tentativa de pull.
+- Implementação enviada na PR #31; CI após atualização e teste funcional no aparelho pendentes.
+
+
+SALVAGUARDA DO FALLBACK LOCAL — CONDIÇÃO DE SEGURANÇA
+Data: 2026-11-22
+- A opção "Iniciar com save local" só é oferecida quando o rollback do pull confirma que arquivos e metadados locais foram restaurados.
+- Se a restauração falhar, o Tandem desativa o fallback local e oferece apenas nova tentativa, evitando iniciar com um save cuja integridade não pôde ser confirmada.
+
+- Último reforço: se o rollback não conseguir restaurar integralmente os arquivos/metadados, o Tandem desativa a ação "Iniciar com save local" e mantém os snapshots restantes como arquivos de recuperação; oferece apenas nova tentativa. Isso evita apagar a única cópia de recuperação.
+- Commit mais recente da implementação: dd4fb29ece8722a6087357de22125c6ad6eef7fb.
+- CI do commit mais recente e teste funcional no aparelho ainda pendentes.
