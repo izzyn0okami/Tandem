@@ -118,6 +118,7 @@ object RomMSettings {
     }
 
     fun clear(context: Context) {
+        SaveSync.cancelPending(context)
         prefs(context).edit { clear() }
         RomMCache.clear(context)
     }
