@@ -363,7 +363,7 @@ class SaveStoreTest {
     @Test
     fun conflictInspectionListsOnlyDifferentOverlappingFilesAndKeepsBothTrees() {
         val source = File(root, "legacy/Pokemon").apply { mkdirs() }
-        val target = File(root, "stable/romm-game").apply { mkdirs() }
+        val target = File(root, "melonds/romm-game").apply { mkdirs() }
         File(source, "sram.srm").writeBytes(byteArrayOf(1, 2, 3))
         File(target, "sram.srm").writeBytes(byteArrayOf(9, 8, 7))
         File(source, "same.state").writeBytes(byteArrayOf(4, 5, 6))
@@ -391,7 +391,7 @@ class SaveStoreTest {
     @Test
     fun conflictInspectionReturnsEmptyWhenOverlappingFilesAreIdentical() {
         val source = File(root, "legacy/Pokemon").apply { mkdirs() }
-        val target = File(root, "stable/romm-game").apply { mkdirs() }
+        val target = File(root, "melonds/romm-game").apply { mkdirs() }
         val bytes = byteArrayOf(2, 7, 1, 8)
         File(source, "sram.srm").writeBytes(bytes)
         File(target, "sram.srm").writeBytes(bytes)
