@@ -44,15 +44,13 @@ internal object SaveSyncPolicy {
     }
 
     /** SRAM é compartilhável entre núcleos Tandem; estados rápidos exigem o mesmo núcleo. */
-    fun isCompatibleRemote(kind: RemoteFileKind, emulator: String?, coreId: String): Boolean =
-        when (kind) {
-            RemoteFileKind.Save -> emulator?.startsWith("tandem_") == true
-            RemoteFileKind.State -> emulator == "tandem_$coreId"
-        }
+    fun isCompatibleRemote(kind: RemoteFileKind, emulator: String?, coreId: String): Boolean = when (kind) {
+        RemoteFileKind.Save -> emulator?.startsWith("tandem_") == true
+        RemoteFileKind.State -> emulator == "tandem_$coreId"
+    }
 
-    fun newestCompatibleRemote(kind: RemoteFileKind, remotes: List<RemoteFile>, coreId: String): RemoteFile? =
-        remotes.filter { isCompatibleRemote(kind, it.emulator, coreId) }
-            .maxWithOrNull(compareBy<RemoteFile> { it.updatedAtMs }.thenBy { it.id })
+    fun newestCompatibleRemote(kind: RemoteFileKind, remotes: List<RemoteFile>, coreId: String): RemoteFile? = remotes.filter { isCompatibleRemote(kind, it.emulator, coreId) }
+        .maxWithOrNull(compareBy<RemoteFile> { it.updatedAtMs }.thenBy { it.id })
 
     /** SRAM sem hash remoto anterior precisa ser baixado para estabelecer uma comparação confiável. */
     fun shouldVerifyRemoteContent(
@@ -63,12 +61,10 @@ internal object SaveSyncPolicy {
         (remoteContentHash.isNullOrBlank() || lastRemoteContentHash.isNullOrBlank())
 
     /** Um núcleo ainda sem baseline recebe o head remoto; ausência local também pede restauração. */
-    fun shouldApplyRemote(remoteChanged: Boolean, localExists: Boolean, appliedHash: String?): Boolean =
-        remoteChanged || !localExists || appliedHash == null
+    fun shouldApplyRemote(remoteChanged: Boolean, localExists: Boolean, appliedHash: String?): Boolean = remoteChanged || !localExists || appliedHash == null
 
     /** Só preserva local quando ele não é a versão que já havia sido aplicada neste núcleo. */
-    fun shouldBackupLocal(localExists: Boolean, localHash: String?, appliedHash: String?): Boolean =
-        localExists && (appliedHash == null || localHash != appliedHash)
+    fun shouldBackupLocal(localExists: Boolean, localHash: String?, appliedHash: String?): Boolean = localExists && (appliedHash == null || localHash != appliedHash)
 
     fun shouldUpload(
         fileExists: Boolean,
