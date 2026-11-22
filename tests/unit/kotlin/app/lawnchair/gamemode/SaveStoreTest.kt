@@ -188,4 +188,43 @@ class SaveStoreTest {
         assertEquals(before, GameIdentityResolver.fingerprint(renamed))
     }
 
+    @Test
+    fun cueFingerprintSurvivesCueAndDiscRename() {
+        val folder = File(root, "cue-rename").apply { mkdirs() }
+        val cue = File(folder, "Original.cue")
+        val disc = File(folder, "Original.bin")
+        cue.writeText(
+            """FILE "Original.bin" BINARY
+                TRACK 01 MODE1/2352
+            """.trimIndent(),
+        )
+        disc.writeBytes(byteArrayOf(2, 7, 1, 8, 2, 8))
+        val before = GameIdentityResolver.fingerprint(cue)
+
+        val renamedDisc = File(folder, "Renamed.bin")
+        assertTrue(disc.renameTo(renamedDisc))
+        val renamedCue = File(folder, "Renamed.cue")
+        cue.writeText(
+            """FILE "Renamed.bin" BINARY
+                TRACK 01 MODE1/2352
+            """.trimIndent(),
+        )
+        assertTrue(cue.renameTo(renamedCue))
+
+        assertEquals(before, GameIdentityResolver.fingerprint(renamedCue))
+    }
+
+    @Test
+    fun legacyMigrationNeverOverwritesAnExistingStableDirectory() {
+        val legacy = File(root, "legacy/Pokemon")
+        legacy.mkdirs()
+        File(legacy, "sram.srm").writeBytes(byteArrayOf(1, 2, 3))
+        val target = File(root, "stable/Pokemon").apply { mkdirs() }
+        File(target, "sram.srm").writeBytes(byteArrayOf(9, 9, 9))
+
+        assertFalse(GameIdentityResolver.migrateLegacy(legacy, target))
+        assertArrayEquals(byteArrayOf(1, 2, 3), File(legacy, "sram.srm").readBytes())
+        assertArrayEquals(byteArrayOf(9, 9, 9), File(target, "sram.srm").readBytes())
+    }
+
 }
