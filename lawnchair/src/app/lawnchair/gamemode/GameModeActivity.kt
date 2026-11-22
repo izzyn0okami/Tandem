@@ -231,15 +231,19 @@ private fun GameModeRoot(refreshKey: Int, onExit: () -> Unit) {
         val core = CoreInstaller.ensureInstalled(context, coreId) { bytes ->
             status = context.getString(R.string.game_mode_status_downloading, coreId, bytes / 1024)
         }.getOrThrow()
+        // O SHA-256 da ROM pode levar alguns segundos; nunca calcular no thread da interface/sessão.
+        val gameIdentity = withContext(Dispatchers.IO) {
+            GameIdentityResolver.resolve(context, File(romPath), platform?.slug)
+        }
         if (RomMSettings.isConnected(context) && !useLocalSave) {
             status = context.getString(R.string.game_mode_status_syncing)
             try {
                 // A partida só começa depois que o pull terminou de verdade.
-                withContext(Dispatchers.IO) { SaveSync.pull(context, romPath, coreId, platform?.slug) }
+                withContext(Dispatchers.IO) { SaveSync.pull(context, romPath, coreId, platform?.slug, gameIdentity) }
             } catch (error: Exception) {
                 if (error is kotlinx.coroutines.CancellationException) throw error
                 GameLog.error("saves", "falha ao sincronizar antes de abrir ${File(romPath).name}", error)
-                SaveSync.markSyncPending(context, romPath, coreId, platform?.slug)
+                SaveSync.markSyncPending(context, romPath, coreId, platform?.slug, gameIdentity)
                 pendingSaveSync = PendingSaveSync(
                     coreId = coreId,
                     romPath = romPath,
@@ -254,7 +258,7 @@ private fun GameModeRoot(refreshKey: Int, onExit: () -> Unit) {
             }
         }
         status = context.getString(R.string.game_mode_status_starting, title)
-        context.startActivity(GameSessionActivity.intent(context, core.absolutePath, romPath, loadState, platform?.slug))
+        context.startActivity(GameSessionActivity.intent(context, core.absolutePath, romPath, loadState, platform?.slug, gameIdentity))
         status = ""
     }
 
