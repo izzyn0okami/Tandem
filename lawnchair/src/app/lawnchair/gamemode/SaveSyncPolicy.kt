@@ -34,7 +34,22 @@ internal object SaveSyncPolicy {
         remoteId: Long,
         lastRemoteUpdatedAtMs: Long,
         lastRemoteId: Long,
-    ): Boolean = remoteUpdatedAtMs != lastRemoteUpdatedAtMs || remoteId != lastRemoteId
+        remoteContentHash: String? = null,
+        lastRemoteContentHash: String? = null,
+    ): Boolean {
+        if (!remoteContentHash.isNullOrBlank() && !lastRemoteContentHash.isNullOrBlank()) {
+            return remoteContentHash != lastRemoteContentHash
+        }
+        return remoteUpdatedAtMs != lastRemoteUpdatedAtMs || remoteId != lastRemoteId
+    }
+
+    /** Um núcleo ainda sem baseline recebe o head remoto; ausência local também pede restauração. */
+    fun shouldApplyRemote(remoteChanged: Boolean, localExists: Boolean, appliedHash: String?): Boolean =
+        remoteChanged || !localExists || appliedHash == null
+
+    /** Só preserva local quando ele não é a versão que já havia sido aplicada neste núcleo. */
+    fun shouldBackupLocal(localExists: Boolean, localHash: String?, appliedHash: String?): Boolean =
+        localExists && (appliedHash == null || localHash != appliedHash)
 
     fun shouldUpload(
         fileExists: Boolean,
