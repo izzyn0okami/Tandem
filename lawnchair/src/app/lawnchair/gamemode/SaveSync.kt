@@ -689,8 +689,6 @@ object SaveSync {
             )
             if (current == confirmedHash) continue
             val storedId = prefs.getLong("$key:id", -1L).takeIf { it >= 0 }
-            val legacyKey = SaveSyncPolicy.metadataKey(kind, romPath, coreId)
-            val hasLegacyMetadata = storedId == null && prefs.contains("$legacyKey:id")
             val remotes = if (storedId == null) client.listRemoteFiles(kind, romId) else emptyList()
             if (storedId == null) {
                 migrateLegacyMetadata(
