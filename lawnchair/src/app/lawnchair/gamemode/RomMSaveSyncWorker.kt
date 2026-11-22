@@ -14,8 +14,9 @@ class RomMSaveSyncWorker(
     override suspend fun doWork(): Result {
         val romPath = inputData.getString(KEY_ROM_PATH) ?: return Result.failure()
         val coreId = inputData.getString(KEY_CORE_ID) ?: return Result.failure()
+        val platformSlug = inputData.getString(KEY_PLATFORM)
         return try {
-            val completed = SaveSync.pushFromWorker(applicationContext, romPath, coreId)
+            val completed = SaveSync.pushFromWorker(applicationContext, romPath, coreId, platformSlug)
             if (SaveSyncPolicy.shouldRetryWorker(completed)) Result.retry() else Result.success()
         } catch (cancelled: CancellationException) {
             throw cancelled
@@ -28,5 +29,6 @@ class RomMSaveSyncWorker(
     companion object {
         const val KEY_ROM_PATH = "rom_path"
         const val KEY_CORE_ID = "core_id"
+        const val KEY_PLATFORM = "platform_slug"
     }
 }
