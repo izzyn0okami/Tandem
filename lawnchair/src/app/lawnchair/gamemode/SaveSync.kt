@@ -199,14 +199,14 @@ object SaveSync {
         val connection = GameIdentityResolver.connectionSnapshot(context)
         if (connection == null) {
             if (GameIdentityResolver.hasRomMLink(context, File(romPath))) {
-                throw IOException("Este jogo está vinculado a outra conta ou servidor RomM. Reconecte a conta original para sincronizar os saves.")
+                throw IOException("O vínculo salvo deste jogo não pôde ser confirmado com a conta RomM atual. Reimporte o jogo do servidor ou associe-o novamente antes de sincronizar.")
             }
             return
         }
         val linkedRomId = GameIdentityResolver.linkedRomId(context, File(romPath), connection)
         if (linkedRomId == null) {
             if (GameIdentityResolver.hasRomMLink(context, File(romPath))) {
-                throw IOException("Este jogo está vinculado a outra conta ou servidor RomM. Reconecte a conta original para sincronizar os saves.")
+                throw IOException("O vínculo salvo deste jogo não pôde ser confirmado com a conta RomM atual. Reimporte o jogo do servidor ou associe-o novamente antes de sincronizar.")
             }
             return
         }
