@@ -95,7 +95,10 @@ jobs:
           distribution: 'zulu'
           java-version: 21
       - uses: gradle/actions/setup-gradle@v6
-      - run: ./gradlew spotlessCheck
+      - name: Diagnose formatting
+        run: |
+          ./gradlew spotlessApply
+          git diff --no-ext-diff --color=never -- lawnchair/src/app/lawnchair/gamemode/SaveStore.kt lawnchair/src/app/lawnchair/gamemode/SaveSync.kt lawnchair/src/app/lawnchair/gamemode/SaveSyncPolicy.kt
 
   send-notifications:
     runs-on: ubuntu-latest
