@@ -55,7 +55,7 @@ object SaveSync {
 
     /** Estado persistente exibido na biblioteca. Só existe para ROM vinculada ao RomM e com saves locais. */
     fun status(context: Context, romPath: String, coreId: String, platformSlug: String? = null): SaveSyncStatus? {
-        if (romId(context, romPath) == null) return null
+        if (!GameIdentityResolver.hasRomMLink(context, File(romPath))) return null
         val gameIdentity = GameIdentityResolver.resolve(context, File(romPath), platformSlug)
         val store = SaveStore(context, coreId, File(romPath), platformSlug = platformSlug)
         if (files(store).none { (_, file) -> file.isFile && file.length() > 0L }) return null
@@ -76,7 +76,7 @@ object SaveSync {
 
     /** Marca pendência apenas quando há arquivo local diferente da última versão confirmada. */
     fun markPending(context: Context, romPath: String, coreId: String, platformSlug: String? = null) {
-        if (romId(context, romPath) == null) return
+        if (!GameIdentityResolver.hasRomMLink(context, File(romPath))) return
         val gameIdentity = GameIdentityResolver.resolve(context, File(romPath), platformSlug)
         val store = SaveStore(context, coreId, File(romPath), platformSlug = platformSlug)
         val prefs = prefs(context)
