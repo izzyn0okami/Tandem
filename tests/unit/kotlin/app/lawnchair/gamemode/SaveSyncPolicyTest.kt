@@ -182,4 +182,12 @@ class SaveSyncPolicyTest {
         assertTrue(SaveSyncPolicy.shouldUpload(true, 10L, "new", "old"))
         assertTrue(SaveSyncPolicy.shouldUpload(true, 10L, "first", null))
     }
+    @Test
+    fun workerOnlyRunsWithTheOriginatingRomMAccount() {
+        assertTrue(SaveSyncPolicy.isSameSyncAccount("account-a", "account-a"))
+        assertFalse(SaveSyncPolicy.isSameSyncAccount("account-a", "account-b"))
+        assertFalse(SaveSyncPolicy.isSameSyncAccount("account-a", null))
+        assertFalse(SaveSyncPolicy.isSameSyncAccount(null, "account-a"))
+    }
+
 }
