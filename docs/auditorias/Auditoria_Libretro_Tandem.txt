@@ -1582,3 +1582,30 @@ Data: 2026-11-22
 
 REVISÃO DO STATUS DAS CIs
 - Na consulta desta etapa, CI #435 / ID 44984294349 e CI #436 / ID 44984462877 ainda apareciam como in_progress, com check-style concluído com sucesso e build-debug-apk sem conclusão. Aguardar finalização e não marcar como aprovadas.
+
+
+RETOMADA DA AUDITORIA — REVISÃO DE BIOS E CIs PENDENTES
+Data: 2026-11-22
+
+VERIFICAÇÃO DO ESTADO DO REPOSITÓRIO
+- Branch consultada: game-mode-m2-dev.
+- Log oficial relido integralmente; blob SHA consultado: 355c9df7f80394df28355f0f886e19d4fdf6073e.
+- PRs abertas: nenhuma encontrada na consulta.
+- CIs ainda sem conclusão na última verificação:
+  - #435 / run ID 44984294349, commit b1690ddc99ac1ca04d7c441e4a17571667658a0b: check-style sucesso; build-debug-apk em execução.
+  - #436 / run ID 44984462877, commit 823ebd65c6338c10f486516cab6d9136a761409b: check-style sucesso; build-debug-apk em execução.
+  - #437 / run ID 44984600627, commit 18b34c29b40d3a97851fc641f18f91cc1666006c: check-style sucesso; build-debug-apk em execução.
+  - #438 / run ID 44984612588, commit f1c7c39d7399c7a3eacb28031f17108a38d8b6f2: check-style sucesso; build-debug-apk em execução.
+- Nenhuma dessas execuções deve ser considerada concluída/aprovada até o resultado final do workflow. A execução Crowdin Upload #130 para o mesmo commit foi ignorada (skipped), sem impacto na CI Android.
+
+REVALIDAÇÃO DO FLUXO DE IMPORTAÇÃO DE BIOS
+Arquivo inspecionado: lawnchair/src/app/lawnchair/gamemode/BiosManager.kt.
+- A correção AND/OR de requisitos BIOS da PR #19 está presente e integrada: todos os grupos declarados são exigidos; arquivos dentro de cada grupo são alternativas.
+- Foi confirmado que a importação manual ainda grava em arquivo .part e executa target.delete() antes de temp.renameTo(target).
+- Se a exclusão ou a renomeação falhar, o fluxo não preserva garantidamente o BIOS anterior; target.delete() também não tem seu retorno verificado. Isso mantém aberta a pendência de substituição segura para importação manual de BIOS.
+- A correção de substituição segura de arquivos da PR #23 foi feita em RomMClient.kt para os fluxos de ROM/firmware/saves, mas não cobre esta função independente em BiosManager.import().
+- A prontidão de BIOS continua baseada em presença pelo nome/caminho; não verifica o conteúdo de BIOS importada manualmente. Hashes oficiais conhecidos para exec.bin/grom.bin já constam na auditoria anterior, mas a validação de integridade desses arquivos não foi implementada nesta função.
+- Não foi alterado código nesta etapa. Não foi criada PR.
+- Próxima etapa técnica: avaliar substituição com backup/rollback e validação segura do arquivo importado, sem sobrescrever uma BIOS válida antes de concluir a gravação; conferir também os requisitos de cada núcleo sem reabrir a correção AND/OR já integrada.
+- Testes funcionais no aparelho permanecem pendentes apenas para os cenários BIOS ainda não confirmados; a confirmação consolidada anterior de firmware RomM e prontidão AND/OR não deve ser confundida com teste de falha na importação manual.
+
