@@ -2787,3 +2787,53 @@ RESULTADO
 - A CI está aprovada para o código funcional da PR #40 e o APK debug está disponível para teste.
 - Ainda não recomendo concluir a revisão nem mesclar: isolamento físico/metadados por conta, identidade estável da conta e payload imutável da fila seguem como pendências de arquitetura; teste funcional no telefone também não foi realizado.
 - Próximo passo: corrigir as pendências 1–3 e decidir a resolução visual/operacional de conflitos antes de solicitar teste funcional e autorização de merge.
+
+
+IMPLEMENTAÇÃO DA PR #40 — IDENTIDADE DE CONTA, SNAPSHOTS E MIGRAÇÃO SEGURA
+Data: 2026-11-22
+Head de código observado antes desta atualização documental: 639693024ae9f094da498ef04fdbb492db0a5b12
+
+IDENTIDADE ESTÁVEL ROMM
+- RomMClient.currentUserId consulta GET /api/users/me e exige resposta com ID de usuário positivo; o escopo OAuth me.read já faz parte dos escopos solicitados no pareamento.
+- RomMSettings salva account_server + user_id. isConnected e connectionSnapshot recusam uma conexão sem esses dados; não há fallback para identidade baseada no token.
+- accountFingerprint passa a ser SHA-256(server + user ID). Renovação do token da mesma conta mantém a identidade.
+- GameIdentityResolver.rommGameIdentity usa servidor + accountFingerprint + romId. Como gameIdentity compõe o caminho SaveStore e as chaves SaveSyncPolicy.metadataKey/remoteHashKey, arquivos e metadados SRAM/state ficam separados por conta; states continuam isolados por coreId.
+- Vínculos antigos só têm seu fingerprint migrado se a conta anterior for comprovadamente a mesma: mesmo user_id ou, para instalações antigas sem user_id, exatamente o mesmo token e servidor. Troca de conta não migra vínculos.
+- Instalações existentes sem user_id passam a aparecer como desconectadas e precisam refazer o pareamento/autorização para registrar o ID estável.
+
+UPLOADS PERSISTENTES
+- Novo SaveSnapshotStore captura SRAM/state uma vez por ID de Worker, quando o Worker pode operar sem sessão ativa.
+- O manifesto registra SHA-256 de cada arquivo. Em retries, o Worker valida e reutiliza os mesmos bytes; não lê uma versão diferente do SaveStore vivo para o mesmo job.
+- A captura é promovida atomicamente de staging para diretório final. Manifesto ou arquivo alterado/incompleto bloqueia upload em vez de enviar bytes não verificados.
+- O snapshot é apagado somente depois de o upload terminar e o status SYNCED ser persistido. Falhas de rede/conta/sessão mantêm o snapshot para retry.
+- O snapshot é capturado no primeiro processamento seguro do Worker, não no instante de enqueue; enquanto a sessão estiver ativa o Worker aguarda e então captura o progresso persistido mais recente.
+
+MIGRAÇÃO E CONFLITOS
+- Saves RomM antigos em diretório sem namespace de conta ou em pasta legada por basename não são atribuídos automaticamente à conta atual. O jogo é bloqueado e os arquivos permanecem intactos até uma decisão explícita.
+- Migração de identidade local para RomM continua possível quando a origem é conhecida e não há outro candidato.
+- Planos de migração verificam conflitos de bytes no destino. Se dois arquivos do mesmo caminho relativo diferirem, a migração é recusada; source e destination permanecem intactos.
+- migrateLegacy também recusa conflitos no momento da cópia, protegendo contra mudança entre pré-verificação e promoção.
+- Ainda não existe diálogo visual para confirmar a atribuição de um save legado compartilhado à conta atualmente vinculada. O estado atual é bloqueio seguro com mensagem; a experiência de resolução explícita precisa ser definida antes de teste de migração antiga.
+
+TESTES ADICIONADOS/ALTERADOS
+- Identidade de conta estável para o mesmo user ID e distinta entre usuários.
+- Migração de vínculo legado permitida somente com mesma conta comprovada.
+- Identidade física RomM diferente entre contas.
+- Snapshot imutável entre retries, captura nova para novo Worker e rejeição de snapshot adulterado.
+- Migração de arquivos conflitantes agora deve retornar false e preservar ambos os diretórios.
+
+CI E ESTADO
+- Run #609 (ID 45078799154): falhou por import ausente de java.io.IOException em SaveStore.kt; corrigido no commit bb30876ef1fe6095528e9b02201ff9d140bb63ea.
+- Run #612 (ID 45078924723): mesma falha de import no head anterior à correção.
+- Run #613 (ID 45079120078), head bb30876ef1fe6095528e9b02201ff9d140bb63ea: check-style passou; testes/build ainda estavam em andamento na última consulta.
+- Run #614 (ID 45079241494), head 639693024ae9f094da498ef04fdbb492db0a5b12: check-style passou; testes/build ainda estavam em andamento na última consulta.
+- Portanto, ainda não registrar CI final aprovada para esta implementação. Confirmar que os testes unitários foram executados (sem NO-SOURCE), build APK e upload do artefato concluíram.
+- Teste funcional no telefone ainda não realizado. Nenhum merge autorizado ou executado.
+- Jobs WorkManager legados sem identidade/conta ou com fingerprint anterior permanecem bloqueados em retry; não são reassociados automaticamente à conta atualmente conectada.
+
+PRÓXIMAS PENDÊNCIAS
+1. Confirmar CI no head final e corrigir qualquer falha.
+2. Definir o diálogo de resolução: permitir ao usuário atribuir explicitamente um save legado compartilhado à conta vinculada, copiando e validando os bytes e mantendo a origem, ou manter o bloqueio sem atribuição.
+3. Projetar recuperação/re-enqueue segura dos jobs WorkManager legados sem identidade estável, sem cancelar nem enviar dados para outra conta.
+4. Após CI, validar no telefone pareamento com me.read, isolamento entre contas, retry offline com snapshot, SRAM/state cross-core e comportamento de bloqueio/recuperação de saves legados.
+5. PR #40 continua draft; não mesclar sem autorização explícita.
