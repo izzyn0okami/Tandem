@@ -355,6 +355,109 @@ internal object GameIdentityResolver {
         }
     }
 
+    fun fingerprint(romFile: File): String {
+        val digest = MessageDigest.getInstance("SHA-256")
+        val visited = mutableSetOf<String>()
+
+        fun addFile(file: File, depth: Int) {
+            val canonical = runCatching { file.canonicalPath }.getOrDefault(file.absolutePath)
+            if (depth > 4 || !file.isFile || !visited.add(canonical)) return
+            when (file.extension.lowercase(Locale.ROOT)) {
+                "m3u" -> {
+                    digest.update("playlist".toByteArray(Charsets.UTF_8))
+                    file.readLines().map(String::trim)
+                        .filter { it.isNotEmpty() && !it.startsWith("#") }
+                        .forEachIndexed { index, reference ->
+                            digest.update(index.toString().toByteArray(Charsets.UTF_8))
+                            addFile(referencedFile(file.parentFile, reference), depth + 1)
+                        }
+                }
+
+                "cue" -> {
+                    digest.update("cue".toByteArray(Charsets.UTF_8))
+                    val references = mutableListOf<String>()
+                    val normalizedLines = file.readLines().map { line ->
+                        val match = cueFileReference.find(line)
+                        if (match != null) {
+                            references += match.groupValues[1].ifBlank { match.groupValues[2] }
+                            cueFileDirective.replace(line, "FILE <DISC>")
+                        } else {
+                            line.trim()
+                        }
+                    }
+                    digest.update(normalizedLines.joinToString("\n").toByteArray(Charsets.UTF_8))
+                    references.forEachIndexed { index, reference ->
+                        digest.update(index.toString().toByteArray(Charsets.UTF_8))
+                        addFile(referencedFile(file.parentFile, reference), depth + 1)
+                    }
+                }
+
+                else -> digest.update(fileHash(file).toByteArray(Charsets.UTF_8))
+            }
+        }
+
+        addFile(romFile, 0)
+        return digest.digest().toHex()
+    }
+
+    private fun sourceSignature(
+        romFile: File,
+        depth: Int = 0,
+        visited: MutableSet<String> = mutableSetOf(),
+    ): String {
+        val canonical = runCatching { romFile.canonicalPath }.getOrDefault(romFile.absolutePath)
+        if (depth > 4 || !romFile.isFile) return "missing:$canonical"
+        if (!visited.add(canonical)) return "visited:$canonical"
+        val base = "$canonical:${romFile.length()}:${romFile.lastModified()}"
+        return when (romFile.extension.lowercase(Locale.ROOT)) {
+            "m3u" -> {
+                val references = romFile.readLines().map(String::trim)
+                    .filter { it.isNotEmpty() && !it.startsWith("#") }
+                "$base:${fileHash(romFile)}:" + references.joinToString("|") {
+                    sourceSignature(referencedFile(romFile.parentFile, it), depth + 1, visited)
+                }
+            }
+
+            "cue" -> {
+                val references = romFile.readLines().mapNotNull { line ->
+                    cueFileReference.find(line)?.let { match ->
+                        match.groupValues[1].ifBlank { match.groupValues[2] }
+                    }
+                }
+                "$base:${fileHash(romFile)}:" + references.joinToString("|") {
+                    sourceSignature(referencedFile(romFile.parentFile, it), depth + 1, visited)
+                }
+            }
+
+            else -> base
+        }
+    }
+
+    private fun fingerprintCacheKey(romFile: File): String {
+        val canonicalPath = runCatching { romFile.canonicalPath }.getOrDefault(romFile.absolutePath)
+        return "fingerprint:${digest(canonicalPath)}"
+    }
+
+    private fun cachedFingerprintIfAvailable(context: Context, romFile: File): String? {
+        val cacheKey = fingerprintCacheKey(romFile)
+        val signature = sourceSignature(romFile)
+        val preferences = context.getSharedPreferences("game_identity_cache", Context.MODE_PRIVATE)
+        if (preferences.getString("$cacheKey:signature", null) != signature) return null
+        return preferences.getString("$cacheKey:value", null)
+    }
+
+    private fun cachedFingerprint(context: Context, romFile: File): String {
+        cachedFingerprintIfAvailable(context, romFile)?.let { return it }
+        val cacheKey = fingerprintCacheKey(romFile)
+        val value = fingerprint(romFile)
+        val signature = sourceSignature(romFile)
+        context.getSharedPreferences("game_identity_cache", Context.MODE_PRIVATE).edit {
+            putString("$cacheKey:signature", signature)
+            putString("$cacheKey:value", value)
+        }
+        return value
+    }
+
     private fun fileHash(file: File): String {
         val digest = MessageDigest.getInstance("SHA-256")
         file.inputStream().buffered().use { input ->
