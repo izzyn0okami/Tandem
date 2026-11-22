@@ -2195,3 +2195,24 @@ Data: 2026-11-22
 - CI #504: o job de testes unitários ainda estava em andamento na última consulta; resultado dos testes não deve ser considerado aprovado até confirmação final.
 - Próxima validação pendente: nova CI no commit de correção, incluindo Spotless, seis testes JVM, build-debug APK, upload do artefato e final-status.
 - PR #35 permanece aberta e não mesclada; merge depende de autorização explícita.
+
+
+RESULTADO FINAL — PR #35 / TESTES AUTOMATIZADOS DA POLÍTICA DE SAVE SYNC
+Data: 2026-11-22
+- PR #35 — “Add automated tests for RomM save sync policy”.
+- URL: https://github.com/izzyn0okami/Tandem/pull/35
+- Head integrado: 39b347453b2ad4313886ca9b3898277736fcc04c.
+- CI #505 / run ID 45054634642: CONCLUÍDA COM SUCESSO no head final.
+- URL: https://github.com/izzyn0okami/Tandem/actions/runs/45054634642
+- check-style / spotlessCheck: sucesso.
+- build-debug-apk: sucesso; etapa “Run unit tests”, Build APK e Upload artifact concluídos com sucesso.
+- final-status: sucesso.
+- tandem-release e nightly-release: skipped nesta execução; não houve publicação por esta CI da PR.
+- Os seis testes unitários de SaveSyncPolicy foram executados com sucesso junto à suíte do módulo.
+- As duas falhas anteriores do Spotless (#503 e #504) foram corrigidas na mesma branch; a CI #505 confirma a formatação final.
+- Merge autorizado pelo usuário e concluído com sucesso.
+- Merge commit: 9c7b2dd9319554ab262d84a2d51d58e0dcd34319.
+- A PR #35 está mesclada em game-mode-m2-dev.
+- Testes funcionais adicionais no telefone não são necessários para esta PR de testes unitários; não houve alteração de comportamento de rede, WorkManager, concorrência, pull/push ou interface.
+- Próxima etapa da auditoria: avaliar testes de integração WorkManager em ambiente apropriado e, posteriormente, cobertura instrumentada para lifecycle/GL; manter como pendência a avaliação de isolamento de processo contra crashes nativos.
+- Consultar a CI pós-merge no merge commit e registrar seu resultado quando concluída.
