@@ -135,16 +135,8 @@ object SaveSync {
     private fun remoteHashKey(kind: RemoteFileKind, romPath: String) =
         "${kind.path}:$romPath:remote_hash"
 
-    /** SRAM é compatível entre núcleos Libretro da mesma ROM; estados rápidos não são. */
-    private fun isCompatibleRemote(kind: RemoteFileKind, remote: RemoteFile, coreId: String): Boolean =
-        when (kind) {
-            RemoteFileKind.Save -> remote.emulator?.startsWith("tandem_") == true
-            RemoteFileKind.State -> remote.emulator == emulatorTag(coreId)
-        }
-
     private fun newestRemoteFile(kind: RemoteFileKind, remotes: List<RemoteFile>, coreId: String): RemoteFile? =
-        remotes.filter { isCompatibleRemote(kind, it, coreId) }
-            .maxWithOrNull(compareBy<RemoteFile> { it.updatedAtMs }.thenBy { it.id })
+        SaveSyncPolicy.newestCompatibleRemote(kind, remotes, coreId)
 
     /** Registra que a ROM está em uma sessão ativa, impedindo upload enquanto ela pode mudar. */
     fun markSessionActive(context: Context, romPath: String) {
@@ -211,7 +203,7 @@ object SaveSync {
                     GameLog.log(
                         "saves",
                         "save remoto selecionado: tipo=${kind.path}, id=${remote.id}, núcleo=${remote.emulator}, " +
-                            "updatedAt=${remote.updatedAtMs}, candidatos compatíveis=${remotes.count { isCompatibleRemote(kind, it, coreId) }}",
+                            "updatedAt=${remote.updatedAtMs}, candidatos compatíveis=${remotes.count { SaveSyncPolicy.isCompatibleRemote(kind, it.emulator, coreId) }}",
                     )
                     pullOne(context, client, store, kind, file, remote, romPath, coreId)
                 }
@@ -297,6 +289,13 @@ object SaveSync {
         )
 
         if (!shouldApplyRemote) {
+            // Atualiza a identidade do registro mesmo quando o conteúdo é idêntico.
+            // Isso evita que o próximo upload tente atualizar um ID antigo já substituído no RomM.
+            prefs.edit {
+                putLong("$key:remote", remote.updatedAtMs)
+                putLong("$key:id", remote.id)
+                if (remote.contentHash == null) remove(remoteKey) else putString(remoteKey, remote.contentHash)
+            }
             if (localHash != appliedHash) {
                 GameLog.log(
                     "saves",
