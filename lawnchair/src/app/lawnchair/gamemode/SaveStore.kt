@@ -147,10 +147,19 @@ internal object GameIdentityResolver {
 
     internal fun accountFingerprint(server: String, userId: Long): String = SaveSyncPolicy.accountFingerprint(server, userId)
 
-    private fun isCurrentAccountGameIdentity(context: Context, romFile: File, gameIdentity: String): Boolean {
+    private fun isCurrentAccountGameIdentity(
+        context: Context,
+        romFile: File,
+        gameIdentity: String,
+    ): Boolean {
         val connection = connectionSnapshot(context) ?: return false
         val romId = linkedRomId(context, romFile, connection) ?: return false
-        return SaveSyncPolicy.rommGameIdentity(connection.server, connection.accountFingerprint, romId) == gameIdentity
+        val expectedIdentity = SaveSyncPolicy.rommGameIdentity(
+            connection.server,
+            connection.accountFingerprint,
+            romId,
+        )
+        return expectedIdentity == gameIdentity
     }
 
     internal fun migrateAccountFingerprint(
@@ -453,10 +462,12 @@ internal object GameIdentityResolver {
     fun claimLegacySaves(
         context: Context,
         romFile: File,
-                gameIdentity: String,
+        gameIdentity: String,
         sources: Map<String, File>,
     ): Boolean {
-        if (sources.isEmpty() || !isCurrentAccountGameIdentity(context, romFile, gameIdentity)) return false
+        if (sources.isEmpty() || !isCurrentAccountGameIdentity(context, romFile, gameIdentity)) {
+            return false
+        }
         val savesRoot = GameFolders.dir(context, FolderKind.Saves)
         return sources.all { (coreId, source) ->
             val target = File(File(savesRoot, coreId), gameIdentity)
