@@ -78,10 +78,22 @@ class GLRetroView(
 
     private val coreMotionAllowed get() = motionSensorsEnabled && !coreSensorsBlocked
 
+    /** Serialize direct JNI entry points with the transition to the destroyed state. */
+    private fun runNativeIfAlive(block: () -> Unit) {
+        synchronized(nativeSessionLock) {
+            if (!isDestroyed) block()
+        }
+    }
+
+    private fun <T> readNativeIfAlive(defaultValue: T, block: () -> T): T =
+        synchronized(nativeSessionLock) {
+            if (isDestroyed) defaultValue else block()
+        }
+
     private fun updateCoreSensorAccess() {
         val motion = if (coreMotionAllowed) motionSensors.availableSensors else 0
         val sun = if (sunSensorEnabled && !coreSensorsBlocked) LibretroDroid.SENSOR_ILLUMINANCE else 0
-        if (!isDestroyed) LibretroDroid.setCoreSensorAccess(motion or sun)
+        runNativeIfAlive { LibretroDroid.setCoreSensorAccess(motion or sun) }
         updateMotionSensors()
     }
 
@@ -123,15 +135,15 @@ class GLRetroView(
     }
 
     var audioEnabled: Boolean by Delegates.observable(true) { _, _, value ->
-        if (!isDestroyed) LibretroDroid.setAudioEnabled(value)
+        runNativeIfAlive { LibretroDroid.setAudioEnabled(value) }
     }
 
     var pitchPreservationEnabled: Boolean by Delegates.observable(false) { _, _, value ->
-        if (!isDestroyed) LibretroDroid.setPitchPreservationEnabled(value)
+        runNativeIfAlive { LibretroDroid.setPitchPreservationEnabled(value) }
     }
 
     var audioVolume: Float by Delegates.observable(1f) { _, _, value ->
-        if (!isDestroyed) LibretroDroid.setAudioVolume(value)
+        runNativeIfAlive { LibretroDroid.setAudioVolume(value) }
     }
 
     var frameSpeed: Int by Delegates.observable(1) { _, _, value ->
@@ -139,7 +151,7 @@ class GLRetroView(
     }
 
     var rotation: Int by Delegates.observable(-1) { _, _, value ->
-        if (!isDestroyed) LibretroDroid.setRotation(value)
+        runNativeIfAlive { LibretroDroid.setRotation(value) }
     }
 
     var shader: ShaderConfig by Delegates.observable(data.shader) { _, _, value ->
@@ -232,7 +244,7 @@ class GLRetroView(
      */
     fun sendSecondaryTouch(position: PointF?) {
         val point = position ?: TOUCH_EVENT_OUTSIDE
-        if (!isDestroyed) LibretroDroid.onMotionEvent(0, MOTION_SOURCE_POINTER, point.x, point.y)
+        runNativeIfAlive { LibretroDroid.onMotionEvent(0, MOTION_SOURCE_POINTER, point.x, point.y) }
     }
 
     fun setScreenSplit(primaryCrop: RectF?, primaryAspectRatio: Float) {
@@ -271,6 +283,8 @@ class GLRetroView(
         }
 
     private val openGLESVersion: Int
+
+    private val nativeSessionLock = Any()
 
     private var isGameLoaded = false
     @Volatile private var isEmulationReady = false
@@ -368,11 +382,11 @@ class GLRetroView(
     }
 
     fun sendKeyEvent(action: Int, keyCode: Int, port: Int = 0) {
-        if (!isDestroyed) LibretroDroid.onKeyEvent(port, action, keyCode)
+        runNativeIfAlive { LibretroDroid.onKeyEvent(port, action, keyCode) }
     }
 
     fun sendMotionEvent(source: Int, xAxis: Float, yAxis: Float, port: Int = 0) {
-        if (!isDestroyed) LibretroDroid.onMotionEvent(port, source, xAxis, yAxis)
+        runNativeIfAlive { LibretroDroid.onMotionEvent(port, source, xAxis, yAxis) }
     }
 
     override fun onTouchEvent(event: MotionEvent?): Boolean {
@@ -387,7 +401,7 @@ class GLRetroView(
         }
 
         if (position != null) {
-            if (!isDestroyed) LibretroDroid.onTouchEvent(position.x, position.y)
+            runNativeIfAlive { LibretroDroid.onTouchEvent(position.x, position.y) }
         }
 
         return true
@@ -676,15 +690,15 @@ class GLRetroView(
     }
 
     fun getControllers(): Array<Array<Controller>> {
-        return if (isDestroyed) emptyArray() else LibretroDroid.getControllers()
+        return readNativeIfAlive(emptyArray()) { LibretroDroid.getControllers() }
     }
 
     fun setControllerType(port: Int, type: Int) {
-        if (!isDestroyed) LibretroDroid.setControllerType(port, type)
+        runNativeIfAlive { LibretroDroid.setControllerType(port, type) }
     }
 
     fun getVariables(): Array<Variable> {
-        return if (isDestroyed) emptyArray() else LibretroDroid.getVariables()
+        return readNativeIfAlive(emptyArray()) { LibretroDroid.getVariables() }
     }
 
     fun updateVariables(vararg variables: Variable) {
@@ -729,8 +743,10 @@ class GLRetroView(
     }
 
     fun destroyNative() {
-        if (isDestroyed) return
-        isDestroyed = true
+        synchronized(nativeSessionLock) {
+            if (isDestroyed) return
+            isDestroyed = true
+        }
         post { updateMotionSensors() }
         renderMode = RENDERMODE_WHEN_DIRTY
         runOnGLThreadVoid {
@@ -738,9 +754,9 @@ class GLRetroView(
         }
     }
 
-    fun getRewindBufferUsage(): Float = if (isDestroyed) 0f else LibretroDroid.getRewindBufferUsage()
+    fun getRewindBufferUsage(): Float = readNativeIfAlive(0f) { LibretroDroid.getRewindBufferUsage() }
 
-    fun getRewindBufferValidCount(): Int = if (isDestroyed) 0 else LibretroDroid.getRewindBufferValidCount()
+    fun getRewindBufferValidCount(): Int = readNativeIfAlive(0) { LibretroDroid.getRewindBufferValidCount() }
 
     private fun getGLESVersion(context: Context): Int {
         val activityManager = context.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
@@ -827,15 +843,16 @@ class GLRetroView(
     // These functions are called only after the GLSurfaceView has been created.
     private inner class RenderLifecycleObserver : DefaultLifecycleObserver {
         fun manualResume() = catchExceptions {
+            runNativeIfAlive { LibretroDroid.resume() }
             if (isDestroyed) return@catchExceptions
-            LibretroDroid.resume()
             isEmulationReady = true
         }
 
         override fun onResume(owner: LifecycleOwner) = catchExceptions {
             if (!isNativeResumed && !isDestroyed) {
+                runNativeIfAlive { LibretroDroid.resume() }
+                if (isDestroyed) return@catchExceptions
                 isNativeResumed = true
-                LibretroDroid.resume()
                 // GLSurfaceView.onResume() is called by LibretroActivity.onResume() --
                 // do NOT call it again here or it corrupts the GL thread state mid-frame.
                 if (!suppressAutoResume) {
@@ -849,7 +866,7 @@ class GLRetroView(
             isEmulationReady = false
             // GLSurfaceView.onPause() is called by LibretroActivity.onPause() --
             // do NOT call it again here.
-            if (!isDestroyed) LibretroDroid.pause()
+            runNativeIfAlive { LibretroDroid.pause() }
         }
     }
 
