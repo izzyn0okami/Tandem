@@ -2286,3 +2286,20 @@ Data: 2026-11-22
 - O usuário confirmou que os testes funcionais foram concluídos. Considerar a validação funcional desta correção APROVADA.
 - A CI #517 não publicou tandem-latest porque os jobs tandem-release/nightly-release foram skipped na execução da PR. Aguardar CI pós-merge para confirmar publicação de tandem-latest e registrar o resultado.
 - Resultado: PR #37 mesclada em game-mode-m2-dev. Não reabrir esta auditoria sem evidência nova de falha.
+
+
+ATUALIZAÇÃO PÓS-MERGE — CI E PUBLICAÇÃO tandem-latest (PR #37)
+Data: 2026-11-22
+- CI pós-merge run ID 45062975289, commit 271a530d75e6b7ec0ea21ad57379eafe28ffd0f4: CONCLUÍDA COM SUCESSO.
+- check-style/Spotless: success.
+- Run unit tests: success.
+- Build APK debug: success.
+- Upload artifact: success.
+- final-status: success.
+- tandem-release: success; tandem-latest atualizado e publicou Tandem.apk.
+- Release publicada: https://github.com/izzyn0okami/Tandem/releases/tag/tandem-latest
+- Nome da release: Tandem (build 520).
+- Asset Tandem.apk: 52.429.527 bytes; SHA-256 d0663bcc9c79c5ba50f418e09e691e44add9ba7e56c826a48fb41e8f99a84b9b.
+- Artefato debug da CI: ID 14769783048, 46.035.006 bytes, disponível até 2027-02-20; SHA-256 69ffc4631f32368d53db0610790dd4bbf9c8b6ede4d4964fcd9162045d2b704c.
+- PR #37 permanece mesclada. Consulta ao GitHub em 2026-11-22 não encontrou PRs abertas no repositório.
+- Resultado final: implementação integrada, CI pós-merge aprovada e versão tandem-latest publicada. Teste funcional da correção já havia sido confirmado pelo usuário.
