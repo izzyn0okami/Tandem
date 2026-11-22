@@ -51,40 +51,42 @@ object SaveSync {
 
     private fun prefs(context: Context) = context.getSharedPreferences("romm_sync", Context.MODE_PRIVATE)
 
-    private fun statusKey(romPath: String) = "sync_status:$romPath"
+    private fun statusKey(gameIdentity: String) = "sync_status:$gameIdentity"
 
     /** Estado persistente exibido na biblioteca. Só existe para ROM vinculada ao RomM e com saves locais. */
-    fun status(context: Context, romPath: String, coreId: String): SaveSyncStatus? {
+    fun status(context: Context, romPath: String, coreId: String, platformSlug: String? = null): SaveSyncStatus? {
         if (romId(context, romPath) == null) return null
-        val store = SaveStore(context, coreId, File(romPath))
+        val gameIdentity = GameIdentityResolver.resolve(context, File(romPath), platformSlug)
+        val store = SaveStore(context, coreId, File(romPath), platformSlug = platformSlug)
         if (files(store).none { (_, file) -> file.isFile && file.length() > 0L }) return null
         val prefs = prefs(context)
         val resolution = SaveSyncPolicy.resolveStatus(
-            prefs.getString(statusKey(romPath), null),
-            prefs.getLong("${statusKey(romPath)}:started", 0L),
+            prefs.getString(statusKey(gameIdentity), null),
+            prefs.getLong("${statusKey(gameIdentity)}:started", 0L),
             System.currentTimeMillis(),
         )
         if (resolution.resetStartedAt) {
             prefs.edit {
-                putString(statusKey(romPath), "pending")
-                remove("${statusKey(romPath)}:started")
+                putString(statusKey(gameIdentity), "pending")
+                remove("${statusKey(gameIdentity)}:started")
             }
         }
         return resolution.status
     }
 
     /** Marca pendência apenas quando há arquivo local diferente da última versão confirmada. */
-    fun markPending(context: Context, romPath: String, coreId: String) {
+    fun markPending(context: Context, romPath: String, coreId: String, platformSlug: String? = null) {
         if (romId(context, romPath) == null) return
-        val store = SaveStore(context, coreId, File(romPath))
+        val gameIdentity = GameIdentityResolver.resolve(context, File(romPath), platformSlug)
+        val store = SaveStore(context, coreId, File(romPath), platformSlug = platformSlug)
         val prefs = prefs(context)
         val changed = files(store).any { (kind, file) ->
             val exists = file.isFile
             val length = if (exists) file.length() else 0L
             val currentHash = if (length > 0L) hash(file) else null
-            val key = SaveSyncPolicy.metadataKey(kind, romPath, coreId)
+            val key = SaveSyncPolicy.metadataKey(kind, gameIdentity, coreId)
             val confirmedHash = prefs.getString(
-                appliedHashKey(kind, romPath, coreId),
+                appliedHashKey(kind, gameIdentity, coreId),
                 prefs.getString("$key:hash", null),
             )
             SaveSyncPolicy.shouldUpload(
@@ -94,15 +96,17 @@ object SaveSync {
                 confirmedHash,
             )
         }
-        if (changed) prefs.edit { putString(statusKey(romPath), "pending") }
+        if (changed) prefs.edit { putString(statusKey(gameIdentity), "pending") }
     }
 
     /** Liga uma ROM baixada ao jogo correspondente no servidor. */
     fun link(context: Context, romPath: String, romId: Long) {
         prefs(context).edit { putLong("rom:$romPath", romId) }
+        GameIdentityResolver.link(context, File(romPath), romId)
     }
 
-    private fun romId(context: Context, romPath: String): Long? = prefs(context).getLong("rom:$romPath", -1L).takeIf { it >= 0 }
+    private fun romId(context: Context, romPath: String): Long? =
+        GameIdentityResolver.linkedRomId(context, File(romPath))
 
     private fun client(context: Context): RomMClient? {
         val url = RomMSettings.url(context) ?: return null
@@ -129,7 +133,7 @@ object SaveSync {
         RemoteFileKind.State to store.stateFile,
     )
 
-    private fun appliedHashKey(kind: RemoteFileKind, romPath: String, coreId: String) = "${kind.path}:$romPath:$coreId:applied_hash"
+    private fun appliedHashKey(kind: RemoteFileKind, gameIdentity: String, coreId: String) = "${kind.path}:$gameIdentity:$coreId:applied_hash"
 
     private fun newestRemoteFile(kind: RemoteFileKind, remotes: List<RemoteFile>, coreId: String): RemoteFile? = SaveSyncPolicy.newestCompatibleRemote(kind, remotes, coreId)
 
@@ -150,19 +154,21 @@ object SaveSync {
     }
 
     /** Marca a falha do pull como pendente sem confundi-la com sincronização confirmada. */
-    fun markSyncPending(context: Context, romPath: String) {
+    fun markSyncPending(context: Context, romPath: String, coreId: String, platformSlug: String? = null) {
         if (romId(context, romPath) == null) return
+        val gameIdentity = GameIdentityResolver.resolve(context, File(romPath), platformSlug)
         prefs(context).edit {
-            putString(statusKey(romPath), "pending")
-            remove("${statusKey(romPath)}:started")
+            putString(statusKey(gameIdentity), "pending")
+            remove("${statusKey(gameIdentity)}:started")
         }
     }
 
     /** Antes de jogar: aguarda o pull terminar e restaura os saves locais se qualquer etapa falhar. */
-    suspend fun pull(context: Context, romPath: String, coreId: String) {
+    suspend fun pull(context: Context, romPath: String, coreId: String, platformSlug: String? = null) {
         val romId = romId(context, romPath) ?: return
+        val gameIdentity = GameIdentityResolver.resolve(context, File(romPath), platformSlug)
         val client = client(context) ?: throw IOException("RomM está conectado, mas não foi possível criar o cliente")
-        val store = SaveStore(context, coreId, File(romPath))
+        val store = SaveStore(context, coreId, File(romPath), platformSlug = platformSlug)
         // Compartilha o mesmo bloqueio do push: nunca permita pull e push simultâneos.
         lock.withLock {
             val prefs = prefs(context)
@@ -175,7 +181,7 @@ object SaveSync {
                 } else {
                     null
                 }
-                val key = SaveSyncPolicy.metadataKey(kind, romPath, coreId)
+                val key = SaveSyncPolicy.metadataKey(kind, gameIdentity, coreId)
                 SaveFileSnapshot(
                     file = file,
                     backup = backup,
@@ -185,9 +191,9 @@ object SaveSync {
                     hash = prefs.getString("$key:hash", null),
                     remote = prefs.getLong("$key:remote", Long.MIN_VALUE),
                     id = prefs.getLong("$key:id", Long.MIN_VALUE),
-                    appliedHashKey = appliedHashKey(kind, romPath, coreId),
-                    appliedHash = prefs.getString(appliedHashKey(kind, romPath, coreId), null),
-                    remoteHash = prefs.getString(SaveSyncPolicy.remoteHashKey(kind, romPath, coreId), null),
+                    appliedHashKey = appliedHashKey(kind, gameIdentity, coreId),
+                    appliedHash = prefs.getString(appliedHashKey(kind, gameIdentity, coreId), null),
+                    remoteHash = prefs.getString(SaveSyncPolicy.remoteHashKey(kind, gameIdentity, coreId), null),
                 )
             }
             var preserveSnapshots = false
@@ -200,7 +206,7 @@ object SaveSync {
                         "save remoto selecionado: tipo=${kind.path}, id=${remote.id}, núcleo=${remote.emulator}, " +
                             "updatedAt=${remote.updatedAtMs}, candidatos compatíveis=${remotes.count { SaveSyncPolicy.isCompatibleRemote(kind, it.emulator, coreId) }}",
                     )
-                    pullOne(context, client, store, kind, file, remote, romPath, coreId)
+                    pullOne(context, client, store, kind, file, remote, romPath, coreId, gameIdentity)
                 }
             } catch (error: Exception) {
                 var restoreFailure: Throwable? = null
@@ -248,13 +254,14 @@ object SaveSync {
         remote: RemoteFile,
         romPath: String,
         coreId: String,
+        gameIdentity: String,
     ) {
         // Recover the previous save if Android stopped the app during an earlier replacement.
         RomMFileReplacement.recoverFile(file)
         val prefs = prefs(context)
-        val key = SaveSyncPolicy.metadataKey(kind, romPath, coreId)
-        val appliedKey = appliedHashKey(kind, romPath, coreId)
-        val remoteKey = SaveSyncPolicy.remoteHashKey(kind, romPath, coreId)
+        val key = SaveSyncPolicy.metadataKey(kind, gameIdentity, coreId)
+        val appliedKey = appliedHashKey(kind, gameIdentity, coreId)
+        val remoteKey = SaveSyncPolicy.remoteHashKey(kind, gameIdentity, coreId)
         val lastRemoteMs = prefs.getLong("$key:remote", 0L)
         val lastRemoteId = prefs.getLong("$key:id", -1L)
         val lastRemoteHash = prefs.getString(remoteKey, null)
@@ -377,21 +384,26 @@ object SaveSync {
     }
 
     /** Ao sair do jogo: agenda um envio persistente, retomável após encerramento do processo. */
-    fun pushAsync(context: Context, romPath: String, coreId: String) {
+    fun pushAsync(context: Context, romPath: String, coreId: String, platformSlug: String? = null) {
         val app = context.applicationContext
         if (romId(app, romPath) == null) return
+        val gameIdentity = GameIdentityResolver.resolve(app, File(romPath), platformSlug)
         val constraints = Constraints.Builder()
             .setRequiredNetworkType(NetworkType.CONNECTED)
             .build()
         val request = OneTimeWorkRequestBuilder<RomMSaveSyncWorker>()
-            .setInputData(workDataOf(RomMSaveSyncWorker.KEY_ROM_PATH to romPath, RomMSaveSyncWorker.KEY_CORE_ID to coreId))
+            .setInputData(workDataOf(
+                RomMSaveSyncWorker.KEY_ROM_PATH to romPath,
+                RomMSaveSyncWorker.KEY_CORE_ID to coreId,
+                RomMSaveSyncWorker.KEY_PLATFORM to platformSlug,
+            ))
             .setConstraints(constraints)
             .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 30, TimeUnit.SECONDS)
             .addTag(WORK_TAG)
             .build()
         prefs(app).edit {
-            putString(statusKey(romPath), "pending")
-            remove("${statusKey(romPath)}:started")
+            putString(statusKey(gameIdentity), "pending")
+            remove("${statusKey(gameIdentity)}:started")
         }
         WorkManager.getInstance(app).enqueueUniqueWork(
             workName(romPath),
@@ -401,22 +413,23 @@ object SaveSync {
     }
 
     /** Chamado somente pelo Worker; o mesmo Mutex protege pull e push contra concorrência. */
-    internal suspend fun pushFromWorker(context: Context, romPath: String, coreId: String): Boolean {
+    internal suspend fun pushFromWorker(context: Context, romPath: String, coreId: String, platformSlug: String? = null): Boolean {
         val app = context.applicationContext
+        val gameIdentity = GameIdentityResolver.resolve(app, File(romPath), platformSlug)
         lock.withLock {
             if (romId(app, romPath) == null) return true
             // A sessão pode ter sido reaberta enquanto o trabalho aguardava rede.
             // Não envie arquivos enquanto o núcleo puder estar atualizando o save.
             if (isSessionActive(app, romPath)) return false
             prefs(app).edit {
-                putString(statusKey(romPath), "syncing")
-                putLong("${statusKey(romPath)}:started", System.currentTimeMillis())
+                putString(statusKey(gameIdentity), "syncing")
+                putLong("${statusKey(gameIdentity)}:started", System.currentTimeMillis())
             }
             try {
-                withContext(Dispatchers.IO) { push(app, romPath, coreId) }
+                withContext(Dispatchers.IO) { push(app, romPath, coreId, platformSlug, gameIdentity) }
                 prefs(app).edit {
-                    putString(statusKey(romPath), "synced")
-                    remove("${statusKey(romPath)}:started")
+                    putString(statusKey(gameIdentity), "synced")
+                    remove("${statusKey(gameIdentity)}:started")
                 }
                 return true
             } catch (error: Exception) {
@@ -435,17 +448,17 @@ object SaveSync {
         val key = digest.joinToString("") { "%02x".format(it) }
         return "romm-save-sync:$key"
     }
-    private fun push(context: Context, romPath: String, coreId: String) {
+    private fun push(context: Context, romPath: String, coreId: String, platformSlug: String?, gameIdentity: String) {
         val romId = romId(context, romPath) ?: return
         val client = client(context) ?: error("RomM não está configurado para enviar saves")
-        val store = SaveStore(context, coreId, File(romPath))
+        val store = SaveStore(context, coreId, File(romPath), platformSlug = platformSlug)
         val prefs = prefs(context)
         for ((kind, file) in files(store)) {
             if (!file.isFile || file.length() == 0L) continue
-            val key = SaveSyncPolicy.metadataKey(kind, romPath, coreId)
+            val key = SaveSyncPolicy.metadataKey(kind, gameIdentity, coreId)
             val current = hash(file)
             val confirmedHash = prefs.getString(
-                appliedHashKey(kind, romPath, coreId),
+                appliedHashKey(kind, gameIdentity, coreId),
                 prefs.getString("$key:hash", null),
             )
             if (current == confirmedHash) continue
@@ -466,10 +479,10 @@ object SaveSync {
             }
             prefs.edit {
                 putString("$key:hash", current)
-                putString(appliedHashKey(kind, romPath, coreId), current)
+                putString(appliedHashKey(kind, gameIdentity, coreId), current)
                 putLong("$key:remote", uploaded.updatedAtMs)
                 putLong("$key:id", uploaded.id)
-                val remoteKey = SaveSyncPolicy.remoteHashKey(kind, romPath, coreId)
+                val remoteKey = SaveSyncPolicy.remoteHashKey(kind, gameIdentity, coreId)
                 if (uploaded.contentHash == null) remove(remoteKey) else putString(remoteKey, uploaded.contentHash)
             }
         }
