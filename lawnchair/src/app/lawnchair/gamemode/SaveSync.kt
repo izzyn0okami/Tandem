@@ -138,18 +138,20 @@ object SaveSync {
     private fun newestRemoteFile(kind: RemoteFileKind, remotes: List<RemoteFile>, coreId: String): RemoteFile? = SaveSyncPolicy.newestCompatibleRemote(kind, remotes, coreId)
 
     /** Registra que a ROM está em uma sessão ativa, impedindo upload enquanto ela pode mudar. */
-    fun markSessionActive(context: Context, romPath: String) {
-        prefs(context).edit { putLong(sessionKey(romPath), System.currentTimeMillis()) }
+    fun markSessionActive(context: Context, romPath: String, platformSlug: String? = null) {
+        val identity = GameIdentityResolver.resolve(context, File(romPath), platformSlug)
+        prefs(context).edit { putLong(sessionKey(identity), System.currentTimeMillis()) }
     }
 
-    fun markSessionInactive(context: Context, romPath: String) {
-        prefs(context).edit { remove(sessionKey(romPath)) }
+    fun markSessionInactive(context: Context, romPath: String, platformSlug: String? = null) {
+        val identity = GameIdentityResolver.resolve(context, File(romPath), platformSlug)
+        prefs(context).edit { remove(sessionKey(identity)) }
     }
 
-    private fun sessionKey(romPath: String) = "session_active:$romPath"
+    private fun sessionKey(gameIdentity: String) = "session_active:$gameIdentity"
 
-    private fun isSessionActive(context: Context, romPath: String): Boolean {
-        val lastActive = prefs(context).getLong(sessionKey(romPath), 0L)
+    private fun isSessionActive(context: Context, gameIdentity: String): Boolean {
+        val lastActive = prefs(context).getLong(sessionKey(gameIdentity), 0L)
         return SaveSyncPolicy.isSessionActive(lastActive, System.currentTimeMillis())
     }
 
@@ -388,6 +390,7 @@ object SaveSync {
         val app = context.applicationContext
         if (romId(app, romPath) == null) return
         val gameIdentity = GameIdentityResolver.resolve(app, File(romPath), platformSlug)
+        val accountFingerprint = GameIdentityResolver.connectionFingerprint(app) ?: return
         val constraints = Constraints.Builder()
             .setRequiredNetworkType(NetworkType.CONNECTED)
             .build()
@@ -396,6 +399,8 @@ object SaveSync {
                 RomMSaveSyncWorker.KEY_ROM_PATH to romPath,
                 RomMSaveSyncWorker.KEY_CORE_ID to coreId,
                 RomMSaveSyncWorker.KEY_PLATFORM to platformSlug,
+                RomMSaveSyncWorker.KEY_GAME_IDENTITY to gameIdentity,
+                RomMSaveSyncWorker.KEY_ACCOUNT_FINGERPRINT to accountFingerprint,
             ))
             .setConstraints(constraints)
             .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 30, TimeUnit.SECONDS)
@@ -406,34 +411,44 @@ object SaveSync {
             remove("${statusKey(gameIdentity)}:started")
         }
         WorkManager.getInstance(app).enqueueUniqueWork(
-            workName(romPath),
+            workName(gameIdentity, coreId),
             ExistingWorkPolicy.APPEND_OR_REPLACE,
             request,
         )
     }
 
     /** Chamado somente pelo Worker; o mesmo Mutex protege pull e push contra concorrência. */
-    internal suspend fun pushFromWorker(context: Context, romPath: String, coreId: String, platformSlug: String? = null): Boolean {
+    internal suspend fun pushFromWorker(
+        context: Context,
+        romPath: String,
+        coreId: String,
+        platformSlug: String?,
+        gameIdentity: String,
+        expectedAccountFingerprint: String?,
+    ): Boolean {
         val app = context.applicationContext
-        val gameIdentity = GameIdentityResolver.resolve(app, File(romPath), platformSlug)
+        if (expectedAccountFingerprint.isNullOrBlank() ||
+            GameIdentityResolver.connectionFingerprint(app) != expectedAccountFingerprint
+        ) return false
+        val activeRomPath = GameIdentityResolver.findRomPath(app, gameIdentity, romPath, platformSlug) ?: return false
         lock.withLock {
-            if (romId(app, romPath) == null) return true
-            // A sessão pode ter sido reaberta enquanto o trabalho aguardava rede.
+            if (romId(app, activeRomPath) == null) return false
+            // A sessão pode ter sido reaberta, inclusive depois de mover a ROM.
             // Não envie arquivos enquanto o núcleo puder estar atualizando o save.
-            if (isSessionActive(app, romPath)) return false
+            if (isSessionActive(app, gameIdentity)) return false
             prefs(app).edit {
                 putString(statusKey(gameIdentity), "syncing")
                 putLong("${statusKey(gameIdentity)}:started", System.currentTimeMillis())
             }
             try {
-                withContext(Dispatchers.IO) { push(app, romPath, coreId, platformSlug, gameIdentity) }
+                withContext(Dispatchers.IO) { push(app, activeRomPath, coreId, platformSlug, gameIdentity) }
                 prefs(app).edit {
                     putString(statusKey(gameIdentity), "synced")
                     remove("${statusKey(gameIdentity)}:started")
                 }
                 return true
             } catch (error: Exception) {
-                markSyncPending(app, romPath)
+                markSyncPending(app, activeRomPath, coreId, platformSlug)
                 throw error
             }
         }
@@ -443,8 +458,8 @@ object SaveSync {
         WorkManager.getInstance(context.applicationContext).cancelAllWorkByTag(WORK_TAG)
     }
 
-    private fun workName(romPath: String): String {
-        val digest = MessageDigest.getInstance("SHA-256").digest(romPath.toByteArray(Charsets.UTF_8))
+    private fun workName(gameIdentity: String, coreId: String): String {
+        val digest = MessageDigest.getInstance("SHA-256").digest("$gameIdentity|$coreId".toByteArray(Charsets.UTF_8))
         val key = digest.joinToString("") { "%02x".format(it) }
         return "romm-save-sync:$key"
     }
