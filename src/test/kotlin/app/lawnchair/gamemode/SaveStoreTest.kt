@@ -2,7 +2,6 @@ package app.lawnchair.gamemode
 
 import java.io.File
 import java.nio.file.Files
-import java.nio.file.attribute.FileTime
 import org.junit.After
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertFalse
