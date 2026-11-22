@@ -10,6 +10,11 @@ import java.util.Locale
  * Resolves a stable game identity without using the ROM filename as the primary key.
  * RomM-linked games use server + RomM game ID; local games use platform + content fingerprint.
  */
+internal data class LegacyMigrationPlan(
+    val sources: Map<String, File>,
+    val ambiguous: Boolean,
+)
+
 internal data class RomMConnectionSnapshot(
     val url: String,
     val token: String,
@@ -160,37 +165,64 @@ internal object GameIdentityResolver {
         platformSlug: String?,
         coreIds: List<String>,
         stableDirectoryName: String,
-    ): Map<String, File> {
+    ): Map<String, File> = planLegacyMigration(
+        context,
+        savesRoot,
+        romFile,
+        platformSlug,
+        coreIds,
+        stableDirectoryName,
+    ).sources
+
+    fun planLegacyMigration(
+        context: Context,
+        savesRoot: File,
+        romFile: File,
+        platformSlug: String?,
+        coreIds: List<String>,
+        stableDirectoryName: String,
+    ): LegacyMigrationPlan {
         val targetExists = coreIds.all { coreId ->
             val target = File(File(savesRoot, coreId), stableDirectoryName)
             target.isDirectory && target.listFiles()?.isNotEmpty() == true
         }
-        if (targetExists) return emptyMap()
-
-        val libraryRoot = File(GameLibrarySettings.rootPath(context))
-        val canonicalRom = runCatching { romFile.canonicalFile }.getOrNull() ?: return emptyMap()
-        val canonicalRoot = runCatching { libraryRoot.canonicalFile }.getOrNull() ?: return emptyMap()
-        if (!canonicalRom.toPath().startsWith(canonicalRoot.toPath())) return emptyMap()
+        if (targetExists) return LegacyMigrationPlan(emptyMap(), ambiguous = false)
 
         val legacyName = sanitize(romFile.nameWithoutExtension)
+        val legacyDataExists = coreIds.distinct().any { coreId ->
+            File(File(savesRoot, coreId), legacyName)
+                .walkTopDown()
+                .any { it.isFile && it.length() > 0L }
+        }
+        if (!legacyDataExists) return LegacyMigrationPlan(emptyMap(), ambiguous = false)
+
+        val libraryRoot = File(GameLibrarySettings.rootPath(context))
+        val canonicalRom = runCatching { romFile.canonicalFile }.getOrNull()
+            ?: return LegacyMigrationPlan(emptyMap(), ambiguous = true)
+        val canonicalRoot = runCatching { libraryRoot.canonicalFile }.getOrNull()
+            ?: return LegacyMigrationPlan(emptyMap(), ambiguous = true)
+        if (!canonicalRom.toPath().startsWith(canonicalRoot.toPath())) {
+            return LegacyMigrationPlan(emptyMap(), ambiguous = true)
+        }
+
         val candidates = runCatching { GameLibraryScanner.scan(libraryRoot) }.getOrNull().orEmpty()
             .filter { sanitize(File(it.path).nameWithoutExtension) == legacyName }
-        if (candidates.size != 1 || candidates.single().platform.slug != platformSlug) {
-            if (candidates.size > 1) {
-                runCatching {
-                    GameLog.log(
-                        "saves",
-                        "migração legada ambígua para $legacyName; diretórios antigos preservados",
-                    )
-                }
+        val uniqueCandidate = candidates.singleOrNull()
+        val candidatePath = uniqueCandidate?.let { runCatching { File(it.path).canonicalFile }.getOrNull() }
+        if (uniqueCandidate?.platform?.slug != platformSlug || candidatePath != canonicalRom) {
+            runCatching {
+                GameLog.log(
+                    "saves",
+                    "migração legada ambígua para $legacyName; diretórios antigos preservados",
+                )
             }
-            return emptyMap()
+            return LegacyMigrationPlan(emptyMap(), ambiguous = true)
         }
-        if (runCatching { File(candidates.single().path).canonicalFile }.getOrNull() != canonicalRom) return emptyMap()
 
-        return coreIds.distinct().associateWith { coreId ->
+        val sources = coreIds.distinct().associateWith { coreId ->
             File(File(savesRoot, coreId), legacyName)
         }.filterValues { it.isDirectory }
+        return LegacyMigrationPlan(sources, ambiguous = false)
     }
 
     fun migrateLegacy(source: File, target: File): Boolean {
