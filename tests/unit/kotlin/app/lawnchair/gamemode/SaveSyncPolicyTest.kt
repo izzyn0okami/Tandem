@@ -9,24 +9,24 @@ class SaveSyncPolicyTest {
     @Test
     fun quickStateMetadataIsIsolatedByCoreWhileSramMetadataIsShared() {
         assertEquals(
-            "states:/games/Example.rom:core-a",
-            SaveSyncPolicy.metadataKey(RemoteFileKind.State, "/games/Example.rom", "core-a"),
+            "states:local-game-identity:core-a",
+            SaveSyncPolicy.metadataKey(RemoteFileKind.State, "local-game-identity", "core-a"),
         )
         assertEquals(
-            "states:/games/Example.rom:core-b",
-            SaveSyncPolicy.metadataKey(RemoteFileKind.State, "/games/Example.rom", "core-b"),
+            "states:local-game-identity:core-b",
+            SaveSyncPolicy.metadataKey(RemoteFileKind.State, "local-game-identity", "core-b"),
         )
         assertEquals(
-            "saves:/games/Example.rom",
-            SaveSyncPolicy.metadataKey(RemoteFileKind.Save, "/games/Example.rom", "core-a"),
+            "saves:local-game-identity",
+            SaveSyncPolicy.metadataKey(RemoteFileKind.Save, "local-game-identity", "core-a"),
         )
         assertEquals(
-            "saves:/games/Example.rom",
-            SaveSyncPolicy.metadataKey(RemoteFileKind.Save, "/games/Example.rom", "core-b"),
+            "saves:local-game-identity",
+            SaveSyncPolicy.metadataKey(RemoteFileKind.Save, "local-game-identity", "core-b"),
         )
         assertEquals(
-            "states:/games/Example.rom:core-a:remote_hash",
-            SaveSyncPolicy.remoteHashKey(RemoteFileKind.State, "/games/Example.rom", "core-a"),
+            "states:local-game-identity:core-a:remote_hash",
+            SaveSyncPolicy.remoteHashKey(RemoteFileKind.State, "local-game-identity", "core-a"),
         )
     }
 
