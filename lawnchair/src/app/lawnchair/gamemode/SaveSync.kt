@@ -682,11 +682,11 @@ object SaveSync {
                         snapshotFiles,
                     )
                 }
-                SaveSnapshotStore(File(app.filesDir, "romm-save-queue")).delete(snapshotJobId)
                 prefs(app).edit {
                     putString(statusKey, "synced")
                     remove("$statusKey:started")
                 }
+                SaveSnapshotStore(File(app.filesDir, "romm-save-queue")).delete(snapshotJobId)
                 return true
             } catch (error: Exception) {
                 prefs(app).edit {
