@@ -164,14 +164,14 @@ object SaveSync {
     suspend fun pull(context: Context, romPath: String, coreId: String, platformSlug: String? = null) {
         val connection = GameIdentityResolver.connectionSnapshot(context)
         if (connection == null) {
-            if (GameIdentityResolver.hasDirectRomMLink(context, File(romPath))) {
+            if (GameIdentityResolver.hasRomMLink(context, File(romPath))) {
                 throw IOException("Este jogo está vinculado a outra conta ou servidor RomM. Reconecte a conta original para sincronizar os saves.")
             }
             return
         }
         val linkedRomId = GameIdentityResolver.linkedRomId(context, File(romPath), connection)
         if (linkedRomId == null) {
-            if (GameIdentityResolver.hasDirectRomMLink(context, File(romPath))) {
+            if (GameIdentityResolver.hasRomMLink(context, File(romPath))) {
                 throw IOException("Este jogo está vinculado a outra conta ou servidor RomM. Reconecte a conta original para sincronizar os saves.")
             }
             return
