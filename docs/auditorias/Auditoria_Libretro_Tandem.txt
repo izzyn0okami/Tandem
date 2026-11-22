@@ -1551,3 +1551,20 @@ Data: 2026-11-22
 CI DO REGISTRO ANTERIOR
 - CI #435 / ID 44984294349, disparada pelo commit b1690ddc99ac1ca04d7c441e4a17571667658a0b: check-style concluído com sucesso; build-debug-apk ainda em execução na última consulta.
 - Não declarar CI completa até confirmar o resultado final.
+
+
+AUDITORIA DE CANDIDATO — NEO GEO / GEOLITH E NEoCD
+Data: 2026-11-22
+- Buildbot oficial Android latest/arm64-v8a consultado: geolith_libretro_android.so.zip presente (305 KB; listagem observada em 2026-11-22) e neocd_libretro_android.so.zip presente (535 KB). Isso confirma a publicação dos pacotes, não sua execução funcional no Tandem.
+- Geolith suporta AES/MVS por cartucho apenas em .neo; Neo Geo CD/CDZ usa .cue/.chd. Não carrega os ZIPs de ROM set MAME/FBNeo como conteúdo de cartucho. Requer BIOS dependente do modo: aes.zip para AES; neogeo.zip para MVS/Universe BIOS; neocd.zip e neocdz.zip para CD Front/Top Loader; neocdz.zip para CDZ. Irrmaze.zip é opcional para trackball.
+- Geolith fornece opções internas para selecionar AES/MVS/Universe BIOS e modo Neo Geo CD/CDZ. Suporta saves, estados, controles e memory monitoring para conquistas. Fonte oficial: https://docs.libretro.com/library/geolith/ .
+- O cadastro atual do Tandem é GamePlatform slug "neogeo", core padrão "fbneo", extensão "zip", zipIsNativeRom=true, BIOS obrigatória "neogeo.zip". Isso está ajustado aos ROM sets MAME/FBNeo e não pode ser substituído diretamente por Geolith sem perder compatibilidade com os ZIPs atuais.
+- A arquitetura atual de BIOS do Tandem representa arquivos/grupos obrigatórios por plataforma, mas não condiciona os requisitos ao modo AES/MVS/CD escolhido nas opções do core. Portanto, registrar aes.zip e neogeo.zip como obrigatórios simultâneos seria incorreto; seriam necessários fluxos de sistema separados ou validação de BIOS sensível ao modo.
+- Para Neo Geo CD, o core oficial NeoCD é uma opção separada e possui pacote Android ARM64 no Buildbot. Documentação aceita .cue/.chd; requer modelagem própria de plataforma baseada em disco, arquivos companheiros e BIOS. Fonte oficial: https://docs.libretro.com/library/neocd/ .
+- Decisão: não adicionar Geolith diretamente como alternativa do slug "neogeo" nesta etapa. Não adicionar NeoCD sem criar e testar uma plataforma Neo Geo CD separada. Ambos ficam como candidatos válidos para uma expansão específica, sem alterar FBNeo e os arquivos ZIP já utilizados.
+- Nenhuma alteração de código foi feita nesta etapa.
+
+STATUS DAS CIs DOS REGISTROS ANTERIORES
+- CI #435 / ID 44984294349 (commit b1690ddc99ac1ca04d7c441e4a17571667658a0b): check-style sucesso; build-debug-apk permanecia em execução na última consulta.
+- CI #436 / ID 44984462877 (commit 823ebd65c6338c10f486516cab6d9136a761409b): check-style sucesso; build-debug-apk permanecia em execução na última consulta.
+- Não declarar qualquer uma das duas como concluída até consultar o estado final.
