@@ -315,7 +315,7 @@ internal object GameIdentityResolver {
                         val hasConflict = preAccountSources.any { (coreId, source) ->
                             hasConflictingFiles(source, File(File(savesRoot, coreId), stableDirectoryName))
                         }
-                        if (hasConflict) return LegacyMigrationPlan(emptyMap(), ambiguous = true, conflictSources = preAccountSources)
+                        if (hasConflict) return LegacyMigrationPlan(emptyMap(), ambiguous = true, conflictSources = preAccountSources.filter { (coreId, source) -> hasConflictingFiles(source, File(File(savesRoot, coreId), stableDirectoryName)) })
                         val alreadyClaimed = preAccountSources.all { (coreId, source) ->
                             isVerifiedLegacyCopy(source, File(File(savesRoot, coreId), stableDirectoryName))
                         }
@@ -349,7 +349,7 @@ internal object GameIdentityResolver {
                     val hasConflict = localSources.any { (coreId, source) ->
                         hasConflictingFiles(source, File(File(savesRoot, coreId), stableDirectoryName))
                     }
-                    if (hasConflict) return LegacyMigrationPlan(emptyMap(), ambiguous = true, conflictSources = localSources)
+                    if (hasConflict) return LegacyMigrationPlan(emptyMap(), ambiguous = true, conflictSources = localSources.filter { (coreId, source) -> hasConflictingFiles(source, File(File(savesRoot, coreId), stableDirectoryName)) })
                     return LegacyMigrationPlan(localSources, ambiguous = false)
                 }
             }
@@ -389,7 +389,7 @@ internal object GameIdentityResolver {
             val hasConflict = sources.any { (coreId, source) ->
                 hasConflictingFiles(source, File(File(savesRoot, coreId), stableDirectoryName))
             }
-            if (hasConflict) return LegacyMigrationPlan(emptyMap(), ambiguous = true, conflictSources = sources)
+            if (hasConflict) return LegacyMigrationPlan(emptyMap(), ambiguous = true, conflictSources = sources.filter { (coreId, source) -> hasConflictingFiles(source, File(File(savesRoot, coreId), stableDirectoryName)) })
             val alreadyClaimed = sources.all { (coreId, source) ->
                 isVerifiedLegacyCopy(source, File(File(savesRoot, coreId), stableDirectoryName))
             }
