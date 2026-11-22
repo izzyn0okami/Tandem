@@ -1120,7 +1120,6 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
     }
 }
 
-
 /**
  * Substitui arquivos por rename no mesmo diretório (atômico no filesystem Android).
  * Para diretórios, usa backup + rollback porque um diretório não vazio não pode ser
