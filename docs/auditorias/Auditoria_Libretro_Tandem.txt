@@ -2263,8 +2263,12 @@ Status: implementação em branch isolada; CI e teste funcional pendentes.
   5. Atualizar a identidade do registro remoto mesmo quando o conteúdo é idêntico, evitando tentar atualizar um ID antigo em uploads futuros.
   6. Adicionar testes JVM para hash remoto, verificação de conteúdo sem `content_hash`, baseline por núcleo, seleção de SRAM entre núcleos, restrição de estados rápidos e proteção de arquivos locais.
 - Branch: `fix/romm-cross-core-save-reconcile`.
-- Head atual da implementação: `113f72411a384e78663591341d75bf259ca78e06`.
+- Head atual da implementação: `a24cc3abd737e791dba334c5efb780f8de02d49b`.
 - PR #37 criada: https://github.com/izzyn0okami/Tandem/pull/37; aberta e não mesclada.
-- CI #512 / run ID 45060850988 foi disparada para o head anterior `f48087b56ad34a246d3ff5239425bcdca45d3f36`; sua conclusão não valida os commits posteriores. A CI do head atualizado está pendente.
-- Spotless, testes JVM e build-debug APK no head atualizado: PENDENTES.
+- CI #516 / run ID 45061248022: Spotless e build-debug APK passaram, mas o log mostrou `testLawnWithQuickstepGithubDebugUnitTest NO-SOURCE`; portanto, essa execução NÃO comprova que os testes JVM foram executados e o artefato dessa execução não deve ser usado para validação funcional.
+- Causa do `NO-SOURCE`: a pasta `tests/unit/kotlin` estava registrada em `java.srcDirs`, mas não em `kotlin.directories`; os arquivos de teste são Kotlin.
+- Correção aplicada em `build.gradle`: `kotlin.directories.addAll('tests/unit/kotlin')`.
+- CI #517 / run ID 45061894316, no head `a24cc3abd737e791dba334c5efb780f8de02d49b`: Spotless APROVADO; tarefa de testes JVM e build-debug APK ainda em andamento na última consulta. URL: https://github.com/izzyn0okami/Tandem/actions/runs/45061894316.
+- Testes JVM efetivamente executados: PENDENTE até confirmar no log que `testLawnWithQuickstepGithubDebugUnitTest` não está como `NO-SOURCE` e que os casos `SaveSyncPolicyTest` foram executados.
+- Teste funcional no telefone: PENDENTE; não disponibilizar artefato para validação até a CI com testes reais e build concluir com sucesso.
 - Teste funcional no Motorola Edge 30 Fusion: PENDENTE. Não considerar resolvido até confirmar que um save remoto mais recente é carregado tanto no núcleo de origem quanto em outro núcleo da mesma plataforma, e que o save local divergente fica recuperável no backup.
