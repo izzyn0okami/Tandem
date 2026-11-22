@@ -103,7 +103,14 @@ object SaveSync {
     ) {
         if (!GameIdentityResolver.hasRomMLink(context, File(romPath))) return
         val gameIdentity = gameIdentityOverride ?: GameIdentityResolver.resolve(context, File(romPath), platformSlug)
-        val store = SaveStore(context, coreId, File(romPath), platformSlug = platformSlug, gameIdentity = gameIdentity, migrationSourcesOverride = emptyMap())
+        val store = SaveStore(
+            context,
+            coreId,
+            File(romPath),
+            platformSlug = platformSlug,
+            gameIdentity = gameIdentity,
+            migrationSourcesOverride = emptyMap(),
+        )
         val prefs = prefs(context)
         val changed = files(store).any { (kind, file) ->
             val exists = file.isFile
@@ -424,7 +431,8 @@ object SaveSync {
                 if (localHash != appliedHash) {
                     GameLog.log(
                         "saves",
-                        "save local mudou desde a última sincronização; servidor sem nova versão; mantendo progresso local para envio posterior",
+                        "save local mudou desde a última sincronização; servidor sem nova versão; " +
+                            "mantendo progresso local para envio posterior",
                     )
                 } else {
                     GameLog.log("saves", "save local já corresponde à versão remota conhecida; nenhum download necessário")
