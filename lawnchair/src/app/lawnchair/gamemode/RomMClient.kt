@@ -578,9 +578,10 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
                     val rangeTotal = rangeMatch?.groupValues?.get(3)?.takeUnless { it == "*" }?.toLongOrNull()
                     val responseLength = response.body.contentLength()
                     val expectedTotal = rangeTotal ?: responseLength.takeIf { it >= 0L }?.let { it + writeOffset } ?: -1L
+                    val requiredSpace = estimateRequiredSpace(expectedTotal.takeIf { it > 0L } ?: 0L)
                     requireAvailableSpace(
                         checkNotNull(temp.parentFile),
-                        estimateRequiredSpace(expectedTotal.takeIf { it > 0L } ?: 0L),
+                        (requiredSpace - writeOffset).coerceAtLeast(0L),
                         description,
                     )
 
