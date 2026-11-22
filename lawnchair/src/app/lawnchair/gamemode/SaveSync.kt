@@ -178,7 +178,7 @@ object SaveSync {
                 for ((kind, file) in files(store)) {
                     val remote = client.listRemoteFiles(kind, romId)
                         .filter { it.emulator == emulatorTag(coreId) }
-                        .maxByOrNull { it.updatedAtMs } ?: continue
+                        .maxWithOrNull(compareBy<RemoteFile> { it.updatedAtMs }.thenBy { it.id }) ?: continue
                     pullOne(context, client, store, kind, file, remote, romPath)
                 }
             } catch (error: Exception) {
@@ -222,20 +222,23 @@ object SaveSync {
         val key = "${kind.path}:$romPath"
         val lastHash = prefs.getString("$key:hash", null)
         val lastRemoteMs = prefs.getLong("$key:remote", 0L)
+        val lastRemoteId = prefs.getLong("$key:id", -1L)
         val local = file.takeIf { it.isFile && it.length() > 0 }
-        val remoteChanged = remote.updatedAtMs != lastRemoteMs
+        val remoteChanged = SaveSyncPolicy.isRemoteVersionChanged(
+            remote.updatedAtMs,
+            remote.id,
+            lastRemoteMs,
+            lastRemoteId,
+        )
         if (!remoteChanged) return
-        if (local != null) {
-            val localChanged = hash(local) != lastHash
-            if (localChanged && local.lastModified() >= remote.updatedAtMs) {
-                // Os dois mudaram e o local é mais novo: o local vence e será enviado ao sair.
-                prefs.edit {
-                    putLong("$key:remote", remote.updatedAtMs)
-                    putLong("$key:id", remote.id)
-                }
-                return
-            }
-            if (localChanged) backup(store, file)
+        if (local != null && hash(local) != lastHash) {
+            // O relógio do aparelho pode divergir do servidor. Quando a versão remota mudou,
+            // preserve o save local divergente como backup e use a versão atual do RomM.
+            backup(store, file)
+            GameLog.log(
+                "saves",
+                "versão remota mais recente selecionada; save local divergente preservado em backup",
+            )
         }
         val temp = File(file.parentFile, "${file.name}.remote")
         try {
