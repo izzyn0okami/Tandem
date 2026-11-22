@@ -648,6 +648,10 @@ private fun GameModeRoot(refreshKey: Int, onExit: () -> Unit) {
             busy = busy,
             onKeepCurrent = { resolveSaveConflict(pending, preferSource = false) },
             onUseLegacy = { resolveSaveConflict(pending, preferSource = true) },
+            onCancel = {
+                pendingSaveConflict = null
+                status = "O conflito permanece sem resolução. O jogo continua bloqueado."
+            },
         )
     }
 }
@@ -760,6 +764,7 @@ private fun SaveConflictDialog(
     busy: Boolean,
     onKeepCurrent: () -> Unit,
     onUseLegacy: () -> Unit,
+    onCancel: () -> Unit,
 ) {
     val currentFocus = remember { FocusRequester() }
     LaunchedEffect(Unit) { runCatching { currentFocus.requestFocus() } }
@@ -800,6 +805,7 @@ private fun SaveConflictDialog(
                 modifier = Modifier.focusRequester(currentFocus),
             )
             GameButton("Usar conjunto legado", onUseLegacy, enabled = !busy)
+            GameButton("Cancelar", onCancel, enabled = !busy)
             Text(
                 "O jogo continuará bloqueado se a cópia, a verificação ou a validação da conta falhar.",
                 color = GameColors.textDim,
