@@ -1761,3 +1761,15 @@ Data: 2026-11-22
 - PR #28 permanece mesclada no commit 73d0e08aec70b203b287180f2f14dfae74cea901; CI da PR #28 (run 44986156397) e CI #444 (run 44985997353) foram aprovadas.
 - A confirmação do usuário é validação funcional no telefone; não equivale a uma CI pós-merge. A CI pós-merge ainda não foi localizada/confirmada.
 - Próxima etapa da auditoria: continuar a avaliação de cobertura de testes automatizados e robustez da sessão Libretro, sem repetir os testes já aprovados de ZIP/cache e sem reabrir BIOS já aprovada.
+
+
+AUDITORIA DE ROBUSTEZ — SINCRONIZAÇÃO DE SAVES ROMM
+Data: 2026-11-22
+- Revisados GameModeActivity.kt, SaveSync.kt, RomMClient.kt, SaveStore.kt, GameSessionActivity.kt, SessionDiagnostics.kt e o ciclo de vida de GLRetroView.kt.
+- A rotina de sessão preserva o núcleo em pausa comum e destrói recursos nativos/RetroAchievements ao finalizar ou recriar a Activity; saves SRAM são persistidos na pausa e periodicamente enquanto a sessão está ativa.
+- Achado: SaveSync.pullOne() baixava o arquivo remoto para um temporário, mas executava file.delete() antes de temp.renameTo(file). Uma falha de renomeação ou interrupção nesse intervalo poderia apagar o último save local válido.
+- Correção preparada na branch fix/romm-save-atomic-replacement: reutilizar a rotina RomMFileReplacement, que promove o temporário por rename no mesmo diretório e, quando necessário, preserva o destino anterior em backup com rollback; recuperar backup deixado por interrupção antes de comparar/baixar o save.
+- PR #29 criada: https://github.com/izzyn0okami/Tandem/pull/29. Branch fix/romm-save-atomic-replacement; destino game-mode-m2-dev. A PR está aberta, não mesclada e mergeable=true na última consulta. Alterações de código em RomMClient.kt e SaveSync.kt, além deste log.
+- Testes automatizados específicos para SaveSync/RomMFileReplacement não foram encontrados na árvore atual. A CI de compilação/estilo será necessária, mas não substitui teste funcional.
+- Validação funcional pendente após CI: sincronizar um save remoto mais novo com save local existente; confirmar que a versão remota substitui corretamente; confirmar que falha/interrupção de substituição mantém ou recupera a versão local anterior; testar também quando o destino ainda não existe. Não usar saves importantes sem cópia de segurança durante o teste.
+- Não reabrir os testes já aprovados de BIOS e ZIP/cache; esta é uma pendência independente.
