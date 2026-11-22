@@ -23,8 +23,8 @@ internal data class RomMConnectionSnapshot(
 )
 
 internal object GameIdentityResolver {
-    private val cueFileReference = Regex("""(?i)^\\s*FILE\\s+(?:"([^"]+)"|(\\S+))""")
-    private val cueFileDirective = Regex("""(?i)^\\s*FILE\\s+(?:"[^"]+"|\\S+)""")
+    private val cueFileReference = Regex("""(?i)^\s*FILE\s+(?:"([^"]+)"|(\S+))""")
+    private val cueFileDirective = Regex("""(?i)^\s*FILE\s+(?:"[^"]+"|\S+)""")
     fun resolve(context: Context, romFile: File, platformSlug: String?): String =
         resolveWithFingerprint(context, romFile, platformSlug, cachedFingerprint(context, romFile))
 
