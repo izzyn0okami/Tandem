@@ -46,10 +46,14 @@ internal object GameIdentityResolver {
         context.getSharedPreferences("romm_sync", Context.MODE_PRIVATE)
             .getLong("rom:${romFile.absolutePath}", -1L) >= 0L
 
-    fun linkedRomId(context: Context, romFile: File): Long? {
+    fun linkedRomId(
+        context: Context,
+        romFile: File,
+        connection: RomMConnectionSnapshot? = connectionSnapshot(context),
+    ): Long? {
         val prefs = context.getSharedPreferences("romm_sync", Context.MODE_PRIVATE)
         val direct = prefs.getLong("rom:${romFile.absolutePath}", -1L)
-        val connection = connectionSnapshot(context) ?: return null
+        connection ?: return null
         val server = connection.server
         val account = connection.accountFingerprint
         if (direct >= 0L) {
