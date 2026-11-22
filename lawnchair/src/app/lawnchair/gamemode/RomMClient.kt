@@ -913,8 +913,7 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
             File(temp.parentFile, "${temp.name}.range").delete()
             throw error
         }
-        target.delete()
-        check(temp.renameTo(target)) { "Não consegui gravar ${target.name}" }
+        RomMFileReplacement.replaceFile(temp, target)
         File(temp.parentFile, "${temp.name}.range").delete()
     }
 
@@ -971,8 +970,7 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
                 estimateRequiredSpace = { it },
                 onProgress = {},
             )
-            target.delete()
-            check(temp.renameTo(target)) { "Não consegui gravar ${target.name}" }
+            RomMFileReplacement.replaceFile(temp, target)
             File(temp.parentFile, "${temp.name}.range").delete()
         } catch (error: Exception) {
             throw error
