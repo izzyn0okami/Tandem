@@ -240,125 +240,80 @@ internal object GameIdentityResolver {
 
     @Synchronized
     fun migrateLegacy(source: File, target: File): Boolean {
-        if (!source.isDirectory || target.exists()) return false
+        if (!source.isDirectory || (target.exists() && !target.isDirectory)) return false
         val parent = target.parentFile ?: return false
         if (!parent.exists() && !parent.mkdirs()) return false
+
+        val recoveryPrefix = ".${target.name}.pre-migration"
+        if (!target.exists()) {
+            val recovery = parent.listFiles()
+                ?.filter { it.name.startsWith(recoveryPrefix) && it.isDirectory }
+                ?.maxByOrNull { it.lastModified() }
+            if (recovery != null && !recovery.renameTo(target)) return false
+        }
+
         val temp = File(parent, ".${target.name}.migration")
         if (temp.exists() && !temp.deleteRecursively()) return false
+        var previous: File? = null
         return runCatching {
             check(temp.mkdirs())
-            source.walkTopDown().filter { it.isFile }.forEach { file ->
-                val relative = file.relativeTo(source)
-                val copy = File(temp, relative.path)
-                check(copy.parentFile?.exists() == true || copy.parentFile?.mkdirs() == true)
-                file.copyTo(copy, overwrite = false)
-                check(file.length() == copy.length())
-                check(fileHash(file) == fileHash(copy))
+            val expectedHashes = linkedMapOf<String, String>()
+
+            fun copyTree(from: File) {
+                from.walkTopDown().filter { it.isFile }.forEach { file ->
+                    val relative = file.relativeTo(from).path
+                    val destination = File(temp, relative)
+                    val sourceHash = fileHash(file)
+                    if (destination.exists()) {
+                        check(fileHash(destination) == sourceHash) {
+                            "save collision while merging legacy migration: $relative"
+                        }
+                    } else {
+                        destination.parentFile?.let { check(it.exists() || it.mkdirs()) }
+                        file.copyTo(destination)
+                    }
+                    check(destination.length() == file.length())
+                    check(fileHash(destination) == sourceHash)
+                    expectedHashes[relative] = sourceHash
+                }
             }
-            val sourceFiles = source.walkTopDown().filter { it.isFile }.map { it.relativeTo(source).path }.toSet()
-            val copiedFiles = temp.walkTopDown().filter { it.isFile }.map { it.relativeTo(temp).path }.toSet()
-            check(sourceFiles == copiedFiles)
-            check(temp.renameTo(target))
-            runCatching {
-                GameLog.log("saves", "save legado migrado e validado para identidade estável; origem preservada")
+
+            if (target.isDirectory) copyTree(target)
+            copyTree(source)
+
+            val copiedFiles = temp.walkTopDown()
+                .filter { it.isFile }
+                .map { it.relativeTo(temp).path }
+                .toSet()
+            check(copiedFiles == expectedHashes.keys)
+            check(expectedHashes.all { (relative, expected) ->
+                fileHash(File(temp, relative)) == expected
+            })
+
+            if (target.exists()) {
+                var suffix = 0
+                var backup = File(parent, recoveryPrefix)
+                while (backup.exists()) {
+                    suffix += 1
+                    backup = File(parent, "$recoveryPrefix-$suffix")
+                }
+                check(target.renameTo(backup))
+                previous = backup
             }
+            if (!temp.renameTo(target)) {
+                previous?.renameTo(target)
+                error("could not promote verified legacy save directory")
+            }
+            previous?.deleteRecursively()
             true
         }.getOrElse {
-            temp.deleteRecursively()
-            runCatching { GameLog.error("saves", "falha ao migrar save legado; origem preservada", it) }
+            if (!target.exists()) previous?.renameTo(target)
+            runCatching { temp.deleteRecursively() }
+            runCatching {
+                GameLog.error("saves", "falha ao migrar save legado; origem preservada", it)
+            }
             false
         }
-    }
-
-    private fun fingerprintCacheKey(romFile: File): String {
-        val canonicalPath = runCatching { romFile.canonicalPath }.getOrDefault(romFile.absolutePath)
-        return "fingerprint:${digest(canonicalPath)}"
-    }
-
-    private fun cachedFingerprintIfAvailable(context: Context, romFile: File): String? {
-        val cacheKey = fingerprintCacheKey(romFile)
-        val signature = sourceSignature(romFile)
-        val prefs = context.getSharedPreferences("game_identity_cache", Context.MODE_PRIVATE)
-        if (prefs.getString("$cacheKey:signature", null) != signature) return null
-        return prefs.getString("$cacheKey:value", null)
-    }
-
-    private fun cachedFingerprint(context: Context, romFile: File): String {
-        cachedFingerprintIfAvailable(context, romFile)?.let { return it }
-        val cacheKey = fingerprintCacheKey(romFile)
-        val value = fingerprint(romFile)
-        context.getSharedPreferences("game_identity_cache", Context.MODE_PRIVATE).edit {
-            putString("$cacheKey:signature", sourceSignature(romFile))
-            putString("$cacheKey:value", value)
-        }
-        return value
-    }
-
-    /** Cheap invalidation signature; large ROM bytes are hashed only when the source changes. */
-    private fun sourceSignature(romFile: File): String {
-        val digest = MessageDigest.getInstance("SHA-256")
-        val visited = mutableSetOf<String>()
-        fun addFile(file: File, depth: Int) {
-            val canonical = runCatching { file.canonicalPath }.getOrDefault(file.absolutePath)
-            if (depth > 4 || !file.isFile || !visited.add(canonical)) return
-            digest.update(file.extension.lowercase(Locale.ROOT).toByteArray(Charsets.UTF_8))
-            digest.update(file.length().toString().toByteArray(Charsets.UTF_8))
-            digest.update(file.lastModified().toString().toByteArray(Charsets.UTF_8))
-            val extension = file.extension.lowercase(Locale.ROOT)
-            if (extension == "m3u" || extension == "cue") digest.update(fileHash(file).toByteArray(Charsets.UTF_8))
-            val references = when (extension) {
-                "m3u" -> file.readLines().map(String::trim).filter { it.isNotEmpty() && !it.startsWith("#") }
-                "cue" -> file.readLines().mapNotNull { line ->
-                    Regex("""(?i)^\s*FILE\s+"([^"]+)"""").find(line)?.groupValues?.getOrNull(1)
-                }
-                else -> emptyList()
-            }
-            references.forEach { addFile(referencedFile(file.parentFile, it), depth + 1) }
-        }
-        addFile(romFile, 0)
-        return digest.digest().toHex()
-    }
-
-    fun fingerprint(romFile: File): String {
-        val digest = MessageDigest.getInstance("SHA-256")
-        val visited = mutableSetOf<String>()
-        fun addFile(file: File, depth: Int) {
-            val canonical = runCatching { file.canonicalPath }.getOrDefault(file.absolutePath)
-            if (depth > 4 || !file.isFile || !visited.add(canonical)) return
-            when (file.extension.lowercase(Locale.ROOT)) {
-                "m3u" -> {
-                    digest.update("playlist".toByteArray(Charsets.UTF_8))
-                    file.readLines().map(String::trim)
-                        .filter { it.isNotEmpty() && !it.startsWith("#") }
-                        .forEachIndexed { index, reference ->
-                            digest.update(index.toString().toByteArray(Charsets.UTF_8))
-                            addFile(referencedFile(file.parentFile, reference), depth + 1)
-                        }
-                }
-                "cue" -> {
-                    digest.update("cue".toByteArray(Charsets.UTF_8))
-                    val lines = file.readLines()
-                    val references = mutableListOf<String>()
-                    val normalizedLines = lines.map { line ->
-                        val match = Regex("""(?i)^\s*FILE\s+"([^"]+)"""").find(line)
-                        if (match != null) {
-                            references += match.groupValues[1]
-                            Regex("""(?i)^\s*FILE\s+"[^"]+"""").replace(line, "FILE <DISC>")
-                        } else {
-                            line.trim()
-                        }
-                    }
-                    digest.update(normalizedLines.joinToString("\n").toByteArray(Charsets.UTF_8))
-                    references.forEachIndexed { index, reference ->
-                        digest.update(index.toString().toByteArray(Charsets.UTF_8))
-                        addFile(File(file.parentFile, reference), depth + 1)
-                    }
-                }
-                else -> digest.update(fileHash(file).toByteArray(Charsets.UTF_8))
-            }
-        }
-        addFile(romFile, 0)
-        return digest.digest().toHex()
     }
 
     private fun fileHash(file: File): String {
@@ -457,12 +412,12 @@ class SaveStore internal constructor(
     private val gameDirName: String = gameIdentity?.takeIf { it.matches(Regex("[A-Za-z0-9._-]+")) } ?: legacyGameDirName
     private fun directoryForCore(targetCoreId: String): File {
         val stable = File(File(savesRoot, targetCoreId), gameDirName)
-        if (stable.isDirectory && stable.listFiles()?.isNotEmpty() == true) return stable
+        val hasPrimarySave = listOf("sram.srm", "state1.state").any { name ->
+            File(stable, name).let { it.isFile && it.length() > 0L }
+        }
+        if (hasPrimarySave) return stable
         val legacy = migrationSources[targetCoreId]
         if (legacy != null && legacy.isDirectory) {
-            // A previous status lookup may have created an empty stable directory before migration.
-            // It is safe to replace only that empty directory, never a directory with user data.
-            if (stable.isDirectory && stable.listFiles()?.isEmpty() == true) stable.delete()
             if (!GameIdentityResolver.migrateLegacy(legacy, stable)) return legacy
             return stable
         }
