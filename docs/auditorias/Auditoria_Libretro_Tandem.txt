@@ -1953,3 +1953,49 @@ Data: 2026-11-22
 - A CI confirma compilação e estilo; não substitui os testes funcionais no Motorola Edge 30 Fusion.
 - PENDENTE: testar sincronização rápida, sincronização demorada, falha de conexão com as opções "Tentar novamente" e "Iniciar com save local", preservação do save local e insígnia Pendente após fallback local.
 - Não marcar a auditoria funcional como concluída até receber confirmação dos testes no aparelho.
+AUDITORIA — PROTEÇÃO DO CICLO DE VIDA DA SESSÃO LIBRETRO / THREAD OPENGL
+Data: 2026-11-22
+Branch: fix/libretro-gl-session-teardown
+Status: implementação inicial; CI e testes funcionais pendentes.
+- Identificado risco de JNI após destruição: eventos assíncronos podiam permanecer na fila GL e executar depois de destroyNative() marcar a sessão como encerrada.
+- Implementado helper queueNativeEvent(), que verifica o estado antes de enfileirar e novamente na execução. Eventos pendentes passam a ser descartados após o início do teardown.
+- Operações síncronas via runOnGLThread() agora verificam o estado antes de enfileirar e no momento da execução; a contagem da latch é mantida mesmo quando o encerramento vence a corrida.
+- Mantido o caminho raw de fila usado por destroyNative(), para não bloquear a própria chamada LibretroDroid.destroy().
+- restoreAchievementsProgressAsync() permanece com tratamento próprio: se a sessão já foi destruída, não chama JNI e conclui o callback com null, preservando o contrato existente.
+- RenderLifecycleObserver deixa de chamar resume/pause nativos após a destruição; entradas diretas de controles, sensores, controladores e leituras de Rewind também passam a ignorar/retornar valores seguros após o encerramento.
+- Chamadas JNI diretas que podem partir da thread de interface agora passam por um lock de sessão compartilhado com destroyNative(): a destruição só marca a sessão como encerrada depois que uma chamada direta em andamento termina, e novas chamadas são rejeitadas. O lock não é mantido para operações enfileiradas na GL thread, cuja ordenação é garantida pela própria fila.
+- Nenhuma alteração foi feita na política de saves, BIOS, núcleos, RetroAchievements ou Rewind durante uma sessão ativa.
+- Limitação conhecida desta etapa: não foi acrescentado teste automatizado de concorrência do GLSurfaceView/JNI; a cobertura atual do módulo não exercita esse ciclo de vida. Revisar o diff, executar Spotless/build/CI e validar no aparelho encerramento normal, pausa/retomada e callbacks tardios antes de considerar concluído.
+
+RESULTADO DA CI — PR #32 / PROTEÇÃO DO TEARDOWN JNI
+Data: 2026-11-22
+- PR: https://github.com/izzyn0okami/Tandem/pull/32
+- Commit validado: 0a11a7b366b0d84e518558e8a88c40952047cf01.
+- CI #477 / run ID 45033906969: CONCLUÍDA COM SUCESSO.
+- check-style / spotlessCheck: sucesso.
+- build-debug-apk / assembleLawnWithQuickstepGithubDebug: sucesso; artefato carregado.
+- final-status: sucesso.
+- Jobs de publicação tandem-release e nightly-release: skipped nesta execução; não registrar publicação de APK.
+- Teste funcional no Motorola Edge 30 Fusion: PENDENTE. A CI não substitui a validação de ciclo de vida, callbacks tardios, áudio, controles, saves e RetroAchievements.
+- Estado da PR na consulta: aberta; GitHub retornou mergeable=false / mergeable_state=dirty. A comparação com a base indicou 7 commits à frente e 0 atrás; a condição de mergeabilidade precisa ser reavaliada antes de qualquer merge.
+- Não mesclar sem validação funcional e autorização explícita do usuário.
+
+VALIDAÇÃO FUNCIONAL NO APARELHO — PR #32 / TEARDOWN JNI
+Data: 2026-11-22
+- O usuário confirmou: "Tudo ok".
+- Interpretação registrada: os testes funcionais solicitados para a PR #32 foram concluídos e aprovados no Motorola Edge 30 Fusion.
+- Itens cobertos conforme checklist: abertura/pausa/retomada/fechamento normal; encerramento com respostas de rede RetroAchievements pendentes; encerramento com eventos de shader/filtro ou Rewind enfileirados; reabertura de outro jogo com controles, áudio, saves e RetroAchievements funcionando.
+- Resultado: validação funcional aprovada pelo usuário.
+- CI #477 / run ID 45033906969 passou para o commit de código 0a11a7b366b0d84e518558e8a88c40952047cf01.
+- O log já havia sido atualizado em commit 7e16c5d43886158a4fe36f061336f4d69cff2252; esta entrada registra o teste funcional posterior.
+- PR #32 permanece aberta. GitHub ainda informa mergeable=false / mergeable_state=dirty; não presumir que está apta para merge.
+- Não houve autorização explícita de merge nesta confirmação; aguardar solicitação específica antes de mesclar.
+
+RECONCILIAÇÃO DO HISTÓRICO E AUTORIZAÇÃO DE MERGE — PR #32
+Data: 2026-11-22
+- O log foi reconstruído a partir da versão atual da branch base game-mode-m2-dev, preservando integralmente o histórico e a atualização pós-merge da PR #31.
+- As três seções da PR #32 (auditoria, CI #477 e validação funcional) foram preservadas integralmente e anexadas após o histórico da base.
+- O usuário autorizou explicitamente o merge da PR #32 com a solicitação “Faça o merge”; essa autorização permanece válida após a reconciliação.
+- A CI #477 e os testes funcionais no Motorola Edge 30 Fusion estão aprovados conforme registros anteriores. A atualização atual altera somente o log, não o código funcional já testado.
+- A divergência de histórico será resolvida por um commit de integração com os dois pais (head da PR e commit atualizado da base), sem force push e sem descartar commits.
+- A aptidão para merge ainda depende da confirmação de mergeabilidade, CI aplicável ao novo head e revisão final do diff.

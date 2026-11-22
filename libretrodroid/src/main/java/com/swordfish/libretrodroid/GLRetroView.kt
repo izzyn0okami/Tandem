@@ -78,10 +78,22 @@ class GLRetroView(
 
     private val coreMotionAllowed get() = motionSensorsEnabled && !coreSensorsBlocked
 
+    /** Serialize direct JNI entry points with the transition to the destroyed state. */
+    private fun runNativeIfAlive(block: () -> Unit) {
+        synchronized(nativeSessionLock) {
+            if (!isDestroyed) block()
+        }
+    }
+
+    private fun <T> readNativeIfAlive(defaultValue: T, block: () -> T): T =
+        synchronized(nativeSessionLock) {
+            if (isDestroyed) defaultValue else block()
+        }
+
     private fun updateCoreSensorAccess() {
         val motion = if (coreMotionAllowed) motionSensors.availableSensors else 0
         val sun = if (sunSensorEnabled && !coreSensorsBlocked) LibretroDroid.SENSOR_ILLUMINANCE else 0
-        LibretroDroid.setCoreSensorAccess(motion or sun)
+        runNativeIfAlive { LibretroDroid.setCoreSensorAccess(motion or sun) }
         updateMotionSensors()
     }
 
@@ -123,27 +135,27 @@ class GLRetroView(
     }
 
     var audioEnabled: Boolean by Delegates.observable(true) { _, _, value ->
-        LibretroDroid.setAudioEnabled(value)
+        runNativeIfAlive { LibretroDroid.setAudioEnabled(value) }
     }
 
     var pitchPreservationEnabled: Boolean by Delegates.observable(false) { _, _, value ->
-        LibretroDroid.setPitchPreservationEnabled(value)
+        runNativeIfAlive { LibretroDroid.setPitchPreservationEnabled(value) }
     }
 
     var audioVolume: Float by Delegates.observable(1f) { _, _, value ->
-        LibretroDroid.setAudioVolume(value)
+        runNativeIfAlive { LibretroDroid.setAudioVolume(value) }
     }
 
     var frameSpeed: Int by Delegates.observable(1) { _, _, value ->
-        queueEvent { LibretroDroid.setFrameSpeed(value) }
+        queueNativeEvent { LibretroDroid.setFrameSpeed(value) }
     }
 
     var rotation: Int by Delegates.observable(-1) { _, _, value ->
-        LibretroDroid.setRotation(value)
+        runNativeIfAlive { LibretroDroid.setRotation(value) }
     }
 
     var shader: ShaderConfig by Delegates.observable(data.shader) { _, _, value ->
-        queueEvent {
+        queueNativeEvent {
             catchExceptions {
                 LibretroDroid.setShaderConfig(buildShader(value))
                 prepareShaderAndUpdateSensors()
@@ -152,7 +164,7 @@ class GLRetroView(
     }
 
     var filterMode: Int by Delegates.observable(-1) { _, _, value ->
-        queueEvent {
+        queueNativeEvent {
             catchExceptions {
                 LibretroDroid.setFilterMode(value)
                 prepareShaderAndUpdateSensors()
@@ -232,7 +244,7 @@ class GLRetroView(
      */
     fun sendSecondaryTouch(position: PointF?) {
         val point = position ?: TOUCH_EVENT_OUTSIDE
-        LibretroDroid.onMotionEvent(0, MOTION_SOURCE_POINTER, point.x, point.y)
+        runNativeIfAlive { LibretroDroid.onMotionEvent(0, MOTION_SOURCE_POINTER, point.x, point.y) }
     }
 
     fun setScreenSplit(primaryCrop: RectF?, primaryAspectRatio: Float) {
@@ -271,6 +283,8 @@ class GLRetroView(
         }
 
     private val openGLESVersion: Int
+
+    private val nativeSessionLock = Any()
 
     private var isGameLoaded = false
     @Volatile private var isEmulationReady = false
@@ -325,32 +339,34 @@ class GLRetroView(
 
     override fun onCreate(owner: LifecycleOwner) = catchExceptions {
         lifecycle = owner.lifecycle
-        LibretroDroid.setVulkanConfig(
-            data.preferVulkan,
-            data.vulkanDriver?.directory,
-            data.vulkanDriver?.libraryName,
-            context.applicationInfo.nativeLibraryDir,
-            context.cacheDir.absolutePath
-        )
-        updateCoreSensorAccess()
-        LibretroDroid.setCoreAccelerometerScale(data.coreAccelerometerScale)
-        LibretroDroid.create(
-            openGLESVersion,
-            data.coreFilePath,
-            data.systemDirectory,
-            data.savesDirectory,
-            data.variables,
-            buildShader(data.shader),
-            getDefaultRefreshRate(),
-            data.preferLowLatencyAudio,
-            data.forceSoftwareTiming,
-            data.enableMicrophone,
-            data.skipDuplicateFrames,
-            data.timingFollowsGeometry,
-            data.immersiveMode,
-            getDeviceLanguage()
-        )
-        LibretroDroid.setRumbleEnabled(data.rumbleEventsEnabled)
+        runNativeIfAlive {
+            LibretroDroid.setVulkanConfig(
+                data.preferVulkan,
+                data.vulkanDriver?.directory,
+                data.vulkanDriver?.libraryName,
+                context.applicationInfo.nativeLibraryDir,
+                context.cacheDir.absolutePath
+            )
+            updateCoreSensorAccess()
+            LibretroDroid.setCoreAccelerometerScale(data.coreAccelerometerScale)
+            LibretroDroid.create(
+                openGLESVersion,
+                data.coreFilePath,
+                data.systemDirectory,
+                data.savesDirectory,
+                data.variables,
+                buildShader(data.shader),
+                getDefaultRefreshRate(),
+                data.preferLowLatencyAudio,
+                data.forceSoftwareTiming,
+                data.enableMicrophone,
+                data.skipDuplicateFrames,
+                data.timingFollowsGeometry,
+                data.immersiveMode,
+                getDeviceLanguage()
+            )
+            LibretroDroid.setRumbleEnabled(data.rumbleEventsEnabled)
+        }
     }
 
     override fun onDestroy(owner: LifecycleOwner) {
@@ -368,11 +384,11 @@ class GLRetroView(
     }
 
     fun sendKeyEvent(action: Int, keyCode: Int, port: Int = 0) {
-        LibretroDroid.onKeyEvent(port, action, keyCode)
+        runNativeIfAlive { LibretroDroid.onKeyEvent(port, action, keyCode) }
     }
 
     fun sendMotionEvent(source: Int, xAxis: Float, yAxis: Float, port: Int = 0) {
-        LibretroDroid.onMotionEvent(port, source, xAxis, yAxis)
+        runNativeIfAlive { LibretroDroid.onMotionEvent(port, source, xAxis, yAxis) }
     }
 
     override fun onTouchEvent(event: MotionEvent?): Boolean {
@@ -387,7 +403,7 @@ class GLRetroView(
         }
 
         if (position != null) {
-            LibretroDroid.onTouchEvent(position.x, position.y)
+            runNativeIfAlive { LibretroDroid.onTouchEvent(position.x, position.y) }
         }
 
         return true
@@ -487,7 +503,7 @@ class GLRetroView(
      * Defer the reset until the current rc_client callback has unwound.
      */
     fun resetAfterAchievementsModeChange() {
-        queueEvent {
+        queueNativeEvent {
             if (!isDestroyed) {
                 LibretroDroid.reset()
                 LibretroDroid.raReset()
@@ -538,13 +554,13 @@ class GLRetroView(
 
     /** Queue asynchronous RA work without blocking an IO thread while the GL surface is paused. */
     fun beginAchievementsLogin(user: String, token: String, shouldStart: () -> Boolean) {
-        queueEvent {
+        queueNativeEvent {
             if (!isDestroyed && shouldStart()) LibretroDroid.raBeginLoginWithToken(user, token)
         }
     }
 
     fun beginAchievementsGame(hash: String, consoleId: Int) {
-        queueEvent {
+        queueNativeEvent {
             if (!isDestroyed) LibretroDroid.raBeginLoadGame(hash, consoleId)
         }
     }
@@ -556,7 +572,7 @@ class GLRetroView(
         networkError: Boolean,
         shouldDeliver: () -> Boolean,
     ) {
-        queueEvent {
+        queueNativeEvent {
             if (!isDestroyed && shouldDeliver()) {
                 LibretroDroid.raDeliverServerResponse(requestId, status, body, networkError)
             }
@@ -624,7 +640,7 @@ class GLRetroView(
     /** Disable Hardcore safely even when called from an rc_client callback. */
     fun disableAchievementsHardcore() {
         achievementsHardcoreEnabled = false
-        queueEvent {
+        queueNativeEvent {
             if (!isDestroyed) {
                 LibretroDroid.raSetHardcoreEnabled(false)
             }
@@ -676,19 +692,19 @@ class GLRetroView(
     }
 
     fun getControllers(): Array<Array<Controller>> {
-        return LibretroDroid.getControllers()
+        return readNativeIfAlive(emptyArray()) { LibretroDroid.getControllers() }
     }
 
     fun setControllerType(port: Int, type: Int) {
-        LibretroDroid.setControllerType(port, type)
+        runNativeIfAlive { LibretroDroid.setControllerType(port, type) }
     }
 
     fun getVariables(): Array<Variable> {
-        return LibretroDroid.getVariables()
+        return readNativeIfAlive(emptyArray()) { LibretroDroid.getVariables() }
     }
 
     fun updateVariables(vararg variables: Variable) {
-        queueEvent {
+        queueNativeEvent {
             variables.forEach { LibretroDroid.updateVariable(it) }
         }
     }
@@ -702,18 +718,18 @@ class GLRetroView(
         set(value) {
             field = value && !achievementsHardcoreEnabled
             val enabled = field
-            queueEvent { LibretroDroid.setRewindEnabled(enabled) }
+            queueNativeEvent { LibretroDroid.setRewindEnabled(enabled) }
         }
 
     var isRewinding: Boolean = false
         set(value) {
             field = value && !achievementsHardcoreEnabled
             val active = field
-            queueEvent { LibretroDroid.setRewinding(active) }
+            queueNativeEvent { LibretroDroid.setRewinding(active) }
         }
 
     var rewindSpeed: Int by Delegates.observable(1) { _, _, value ->
-        queueEvent { LibretroDroid.setRewindSpeed(value) }
+        queueNativeEvent { LibretroDroid.setRewindSpeed(value) }
     }
 
     fun initRewindBuffer(maxSlots: Int, budgetBytes: Long) = runOnGLThread {
@@ -729,8 +745,10 @@ class GLRetroView(
     }
 
     fun destroyNative() {
-        if (isDestroyed) return
-        isDestroyed = true
+        synchronized(nativeSessionLock) {
+            if (isDestroyed) return
+            isDestroyed = true
+        }
         post { updateMotionSensors() }
         renderMode = RENDERMODE_WHEN_DIRTY
         runOnGLThreadVoid {
@@ -738,9 +756,9 @@ class GLRetroView(
         }
     }
 
-    fun getRewindBufferUsage(): Float = LibretroDroid.getRewindBufferUsage()
+    fun getRewindBufferUsage(): Float = readNativeIfAlive(0f) { LibretroDroid.getRewindBufferUsage() }
 
-    fun getRewindBufferValidCount(): Int = LibretroDroid.getRewindBufferValidCount()
+    fun getRewindBufferValidCount(): Int = readNativeIfAlive(0) { LibretroDroid.getRewindBufferValidCount() }
 
     private fun getGLESVersion(context: Context): Int {
         val activityManager = context.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
@@ -827,14 +845,16 @@ class GLRetroView(
     // These functions are called only after the GLSurfaceView has been created.
     private inner class RenderLifecycleObserver : DefaultLifecycleObserver {
         fun manualResume() = catchExceptions {
-            LibretroDroid.resume()
+            runNativeIfAlive { LibretroDroid.resume() }
+            if (isDestroyed) return@catchExceptions
             isEmulationReady = true
         }
 
         override fun onResume(owner: LifecycleOwner) = catchExceptions {
-            if (!isNativeResumed) {
+            if (!isNativeResumed && !isDestroyed) {
+                runNativeIfAlive { LibretroDroid.resume() }
+                if (isDestroyed) return@catchExceptions
                 isNativeResumed = true
-                LibretroDroid.resume()
                 // GLSurfaceView.onResume() is called by LibretroActivity.onResume() --
                 // do NOT call it again here or it corrupts the GL thread state mid-frame.
                 if (!suppressAutoResume) {
@@ -848,7 +868,7 @@ class GLRetroView(
             isEmulationReady = false
             // GLSurfaceView.onPause() is called by LibretroActivity.onPause() --
             // do NOT call it again here.
-            LibretroDroid.pause()
+            runNativeIfAlive { LibretroDroid.pause() }
         }
     }
 
@@ -1001,7 +1021,19 @@ class GLRetroView(
         }
     }
 
+    /**
+     * Queue JNI work only while this native session is alive. The second check closes the
+     * race where teardown starts after an event is enqueued but before the GL thread runs it.
+     */
+    private fun queueNativeEvent(block: () -> Unit) {
+        if (isDestroyed) return
+        queueEvent {
+            if (!isDestroyed) block()
+        }
+    }
+
     private fun <T> runOnGLThread(block: () -> T): T {
+        check(!isDestroyed) { "Libretro session has already been destroyed" }
         if (Thread.currentThread().name.startsWith("GLThread")) {
             return block()
         }
@@ -1011,6 +1043,7 @@ class GLRetroView(
         var failure: Throwable? = null
         queueEvent {
             try {
+                check(!isDestroyed) { "Libretro session was destroyed before the GL operation ran" }
                 result = block()
             } catch (t: Throwable) {
                 failure = t
