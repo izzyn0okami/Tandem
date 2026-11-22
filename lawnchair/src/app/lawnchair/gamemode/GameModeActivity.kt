@@ -318,7 +318,7 @@ private fun GameModeRoot(refreshKey: Int, onExit: () -> Unit) {
     }
 
     fun confirmLegacySaveClaim(pending: PendingLegacySaveClaim) {
-        pendingLegacySaveClaim = null
+        if (busy) return
         scope.launch {
             busy = true
             runCatching {
@@ -332,6 +332,7 @@ private fun GameModeRoot(refreshKey: Int, onExit: () -> Unit) {
                     "saves",
                     "usuário confirmou associação de save legado à conta RomM atual; cópia verificada e origem preservada",
                 )
+                pendingLegacySaveClaim = null
                 startGame(
                     pending.coreId,
                     pending.romPath,
