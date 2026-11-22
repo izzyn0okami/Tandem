@@ -108,11 +108,6 @@ object SaveSync {
     private fun romId(context: Context, romPath: String): Long? =
         GameIdentityResolver.linkedRomId(context, File(romPath))
 
-    private fun client(context: Context): RomMClient? {
-        val url = RomMSettings.url(context) ?: return null
-        return RomMClient(url, RomMSettings.token(context))
-    }
-
     private fun emulatorTag(coreId: String) = "tandem_$coreId"
 
     private fun hash(file: File): String {
@@ -167,7 +162,14 @@ object SaveSync {
 
     /** Antes de jogar: aguarda o pull terminar e restaura os saves locais se qualquer etapa falhar. */
     suspend fun pull(context: Context, romPath: String, coreId: String, platformSlug: String? = null) {
-        val linkedRomId = romId(context, romPath)
+        val connection = GameIdentityResolver.connectionSnapshot(context)
+        if (connection == null) {
+            if (GameIdentityResolver.hasDirectRomMLink(context, File(romPath))) {
+                throw IOException("Este jogo está vinculado a outra conta ou servidor RomM. Reconecte a conta original para sincronizar os saves.")
+            }
+            return
+        }
+        val linkedRomId = GameIdentityResolver.linkedRomId(context, File(romPath), connection)
         if (linkedRomId == null) {
             if (GameIdentityResolver.hasDirectRomMLink(context, File(romPath))) {
                 throw IOException("Este jogo está vinculado a outra conta ou servidor RomM. Reconecte a conta original para sincronizar os saves.")
@@ -175,7 +177,7 @@ object SaveSync {
             return
         }
         val gameIdentity = GameIdentityResolver.resolve(context, File(romPath), platformSlug)
-        val client = client(context) ?: throw IOException("RomM está conectado, mas não foi possível criar o cliente")
+        val client = RomMClient(connection.url, connection.token)
         val store = SaveStore(context, coreId, File(romPath), platformSlug = platformSlug)
         // Compartilha o mesmo bloqueio do push: nunca permita pull e push simultâneos.
         lock.withLock {
@@ -434,12 +436,13 @@ object SaveSync {
         expectedAccountFingerprint: String?,
     ): Boolean {
         val app = context.applicationContext
-        if (expectedAccountFingerprint.isNullOrBlank() ||
-            GameIdentityResolver.connectionFingerprint(app) != expectedAccountFingerprint
-        ) return false
+        if (expectedAccountFingerprint.isNullOrBlank()) return false
+        val connection = GameIdentityResolver.connectionSnapshot(app) ?: return false
+        if (connection.accountFingerprint != expectedAccountFingerprint) return false
         val activeRomPath = GameIdentityResolver.findRomPath(app, gameIdentity, romPath, platformSlug) ?: return false
+        val linkedRomId = GameIdentityResolver.linkedRomId(app, File(activeRomPath), connection) ?: return false
+        val syncClient = RomMClient(connection.url, connection.token)
         lock.withLock {
-            if (romId(app, activeRomPath) == null) return false
             // A sessão pode ter sido reaberta, inclusive depois de mover a ROM.
             // Não envie arquivos enquanto o núcleo puder estar atualizando o save.
             if (isSessionActive(app, gameIdentity)) return false
@@ -448,7 +451,7 @@ object SaveSync {
                 putLong("${statusKey(gameIdentity)}:started", System.currentTimeMillis())
             }
             try {
-                withContext(Dispatchers.IO) { push(app, activeRomPath, coreId, platformSlug, gameIdentity) }
+                withContext(Dispatchers.IO) { push(app, syncClient, activeRomPath, coreId, gameIdentity, linkedRomId) }
                 prefs(app).edit {
                     putString(statusKey(gameIdentity), "synced")
                     remove("${statusKey(gameIdentity)}:started")
@@ -470,10 +473,8 @@ object SaveSync {
         val key = digest.joinToString("") { "%02x".format(it) }
         return "romm-save-sync:$key"
     }
-    private fun push(context: Context, romPath: String, coreId: String, platformSlug: String?, gameIdentity: String) {
-        val romId = romId(context, romPath) ?: return
-        val client = client(context) ?: error("RomM não está configurado para enviar saves")
-        val store = SaveStore(context, coreId, File(romPath), platformSlug = platformSlug)
+    private fun push(context: Context, client: RomMClient, romPath: String, coreId: String, gameIdentity: String, romId: Long) {
+        val store = SaveStore(context, coreId, File(romPath))
         val prefs = prefs(context)
         for ((kind, file) in files(store)) {
             if (!file.isFile || file.length() == 0L) continue
