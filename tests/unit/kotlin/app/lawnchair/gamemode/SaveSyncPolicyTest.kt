@@ -7,26 +7,54 @@ import org.junit.Test
 
 class SaveSyncPolicyTest {
     @Test
+    fun rommAccountIdentityIsStableForTheSameUserAndDifferentAcrossAccounts() {
+        val firstFingerprint = SaveSyncPolicy.accountFingerprint("https://romm.example", 41L)
+        val sameUserAfterTokenRotation = SaveSyncPolicy.accountFingerprint("https://romm.example", 41L)
+        val otherUser = SaveSyncPolicy.accountFingerprint("https://romm.example", 42L)
+
+        assertEquals(firstFingerprint, sameUserAfterTokenRotation)
+        assertFalse(firstFingerprint == otherUser)
+    }
+
+    @Test
+    fun legacyAccountLinksMigrateOnlyWhenTheOriginalAccountIsProven() {
+        assertTrue(SaveSyncPolicy.canMigrateAccountLinks(true, 41L, 41L, "old", "new"))
+        assertFalse(SaveSyncPolicy.canMigrateAccountLinks(true, 41L, 42L, "old", "new"))
+        assertTrue(SaveSyncPolicy.canMigrateAccountLinks(true, -1L, 41L, "same-token", "same-token"))
+        assertFalse(SaveSyncPolicy.canMigrateAccountLinks(true, -1L, 41L, "old-token", "new-token"))
+        assertFalse(SaveSyncPolicy.canMigrateAccountLinks(false, -1L, 41L, "same-token", "same-token"))
+    }
+
+    @Test
+    fun rommGameStorageIdentityIsIsolatedByAccount() {
+        val accountA = SaveSyncPolicy.rommGameIdentity("https://romm.example", "account-a", 7L)
+        val accountB = SaveSyncPolicy.rommGameIdentity("https://romm.example", "account-b", 7L)
+
+        assertEquals(accountA, SaveSyncPolicy.rommGameIdentity("https://romm.example", "account-a", 7L))
+        assertFalse(accountA == accountB)
+    }
+
+    @Test
     fun quickStateMetadataIsIsolatedByCoreWhileSramMetadataIsShared() {
         assertEquals(
-            "states:/games/Example.rom:core-a",
-            SaveSyncPolicy.metadataKey(RemoteFileKind.State, "/games/Example.rom", "core-a"),
+            "states:local-game-identity:core-a",
+            SaveSyncPolicy.metadataKey(RemoteFileKind.State, "local-game-identity", "core-a"),
         )
         assertEquals(
-            "states:/games/Example.rom:core-b",
-            SaveSyncPolicy.metadataKey(RemoteFileKind.State, "/games/Example.rom", "core-b"),
+            "states:local-game-identity:core-b",
+            SaveSyncPolicy.metadataKey(RemoteFileKind.State, "local-game-identity", "core-b"),
         )
         assertEquals(
-            "saves:/games/Example.rom",
-            SaveSyncPolicy.metadataKey(RemoteFileKind.Save, "/games/Example.rom", "core-a"),
+            "saves:local-game-identity",
+            SaveSyncPolicy.metadataKey(RemoteFileKind.Save, "local-game-identity", "core-a"),
         )
         assertEquals(
-            "saves:/games/Example.rom",
-            SaveSyncPolicy.metadataKey(RemoteFileKind.Save, "/games/Example.rom", "core-b"),
+            "saves:local-game-identity",
+            SaveSyncPolicy.metadataKey(RemoteFileKind.Save, "local-game-identity", "core-b"),
         )
         assertEquals(
-            "states:/games/Example.rom:core-a:remote_hash",
-            SaveSyncPolicy.remoteHashKey(RemoteFileKind.State, "/games/Example.rom", "core-a"),
+            "states:local-game-identity:core-a:remote_hash",
+            SaveSyncPolicy.remoteHashKey(RemoteFileKind.State, "local-game-identity", "core-a"),
         )
     }
 
@@ -182,4 +210,12 @@ class SaveSyncPolicyTest {
         assertTrue(SaveSyncPolicy.shouldUpload(true, 10L, "new", "old"))
         assertTrue(SaveSyncPolicy.shouldUpload(true, 10L, "first", null))
     }
+    @Test
+    fun workerOnlyRunsWithTheOriginatingRomMAccount() {
+        assertTrue(SaveSyncPolicy.isSameSyncAccount("account-a", "account-a"))
+        assertFalse(SaveSyncPolicy.isSameSyncAccount("account-a", "account-b"))
+        assertFalse(SaveSyncPolicy.isSameSyncAccount("account-a", null))
+        assertFalse(SaveSyncPolicy.isSameSyncAccount(null, "account-a"))
+    }
+
 }

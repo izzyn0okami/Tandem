@@ -2613,3 +2613,327 @@ REPOSITÓRIO
 - PRs abertas verificadas em 2026-11-22: nenhuma.
 - Nenhuma alteração funcional foi feita nesta auditoria.
 - Não foi criada PR #40 nesta etapa; a implementação deve começar somente depois de a política de namespace da conta e a preservação da fila estarem definidas.
+
+IMPLEMENTAÇÃO EM ANDAMENTO — IDENTIDADE ESTÁVEL DE JOGOS (PR #40)
+Data: 2026-11-22
+Branch: feat/stable-game-save-identity
+Status: implementação em revisão técnica; ainda sem PR aberta e sem CI executada. Não mesclar.
+
+ESCOPO IMPLEMENTADO NA BRANCH
+1. Identidade de jogo:
+   - Jogos RomM vinculados usam hash do servidor normalizado + ID remoto.
+   - Jogos locais usam plataforma + SHA-256 do conteúdo.
+   - ROM única permanece com identidade após renomear/mover o arquivo.
+   - Playlists M3U incluem o conteúdo dos discos referenciados; CUE normaliza o nome do arquivo de disco para que renomeações não alterem a identidade.
+   - Cache de fingerprint usa caminho como chave de cache e assinatura de tamanho/data de modificação para evitar reler ROMs em toda abertura.
+2. Vínculo RomM:
+   - Vínculo por conteúdo permite localizar uma ROM movida dentro da biblioteca configurada.
+   - O vínculo direto por caminho registra também fingerprint do conteúdo; conteúdo diferente no mesmo caminho não herda o vínculo antigo.
+   - Associação por conteúdo é marcada ambígua se o mesmo fingerprint for associado a registros RomM diferentes; nesse caso, não se escolhe silenciosamente um registro.
+   - A validação da sincronização exige servidor e fingerprint de credenciais correspondentes ao vínculo original.
+   - Vínculos antigos que não possuem fingerprint/namespace suficiente falham de forma segura e exigem reassociação; não se deve enviar saves por um vínculo antigo não verificável.
+3. SaveStore e migração:
+   - Diretório novo usa identidade estável separada de coreId.
+   - SRAM pode continuar sendo lida entre núcleos explicitamente compatíveis; estado rápido continua isolado por núcleo.
+   - Migração legada só é proposta quando a biblioteca configurada identifica exatamente um jogo com basename sanitizado correspondente e o arquivo aberto é esse jogo.
+   - Migração copia para diretório temporário, valida comprimento e SHA-256 de cada arquivo, confere a lista de arquivos e promove por rename.
+   - Diretório de origem é preservado; destino existente nunca é sobrescrito.
+   - Se a migração falhar, SaveStore continua usando a origem legada em vez de abrir silenciosamente um diretório vazio.
+   - Descoberta das fontes legadas e fingerprint são preparados em Dispatchers.IO antes de abrir a sessão; identidade e fontes são passadas à Activity. Consultas de status na interface usam apenas identidade já cacheada, evitando hashing integral no thread principal.
+4. WorkManager/RomM:
+   - Nome do trabalho único usa identidade do jogo + coreId, não o caminho.
+   - A tarefa guarda identidade do jogo, plataforma e fingerprint das credenciais de origem.
+   - O Worker procura novamente o arquivo pelo conteúdo na biblioteca configurada, valida a mesma conta/servidor e só então envia.
+   - Se a sessão estiver ativa, o arquivo tiver sido movido sem ser encontrado, ou a conta não corresponder, o Worker retorna retry; não marca SYNCED.
+   - Desconectar RomM não cancela os uploads pendentes. Eles permanecem aguardando reconexão da conta original; credenciais diferentes não são usadas.
+5. Testes adicionados em SaveStoreTest:
+   - separação de dois jogos com mesmo basename usando identidades distintas;
+   - SRAM compartilhada somente com core irmão explicitamente informado e estado rápido não compartilhado;
+   - migração validada preservando origem;
+   - fingerprint multidisco muda quando o conteúdo do disco muda;
+   - fingerprint de ROM única permanece após renomeação;
+   - fingerprint CUE permanece após renomear cue e disco;
+   - vínculo direto exige fingerprint correspondente;
+   - migração não sobrescreve diretório estável já existente.
+   - Total de testes no arquivo: 13. Ainda precisam ser executados pela CI.
+
+PONTOS DE REVISÃO OBRIGATÓRIA ANTES DE APROVAR
+- Confirmar compilação e execução real dos testes; não aceitar NO-SOURCE.
+- Confirmar que as rotas de download RomM e abertura de sessão passam a identidade correta.
+- Verificar comportamento de vínculos antigos sem fingerprint: mensagem deve orientar reassociação sem bloquear o uso do save local.
+- Verificar que o fingerprint de playlists CUE/M3U não cria colisões nem deixa de considerar arquivos referenciados.
+- Verificar a recuperação de uploads antigos na fila WorkManager. Tarefas antigas sem fingerprint de conta não podem ser enviadas com credenciais presumidas; definir tratamento explícito para elas.
+- Verificar que a reconexão com token renovado da mesma conta não deixa a fila permanentemente bloqueada. Atualmente a impressão digital da conta deriva do token; é conservadora contra envio cruzado, mas pode exigir nova associação se o token mudar.
+- Verificar custo de fingerprint em bibliotecas grandes e ausência de leitura integral no thread principal.
+
+ESTADO DE GIT/CI
+- PRs abertas verificadas antes da preparação: nenhuma.
+- Branch de implementação: feat/stable-game-save-identity.
+- CI: ainda não iniciada nesta etapa.
+- Testes funcionais no telefone: ainda não solicitados; aguardam CI e revisão.
+- PR #40: ainda não criada.
+- Nenhuma alteração foi mesclada.
+
+ATUALIZAÇÃO DA IMPLEMENTAÇÃO — 2026-11-22 (PR #40)
+Branch: feat/stable-game-save-identity
+PR: https://github.com/izzyn0okami/Tandem/pull/40
+Estado: draft aberta; não mesclar sem autorização explícita.
+
+COMPLEMENTOS IMPLEMENTADOS DESDE A REVISÃO ANTERIOR
+1. Identidade e movimentação:
+   - A identidade local é derivada de plataforma + SHA-256 do conteúdo; a identidade RomM usa servidor normalizado + ID remoto.
+   - M3U considera a ordem e o conteúdo dos discos referenciados. CUE normaliza referências de arquivos de disco, aceita nomes entre aspas ou sem aspas e normaliza separadores Windows.
+   - Ao mover uma ROM vinculada, a associação por conteúdo permite reencontrá-la na biblioteca. O vínculo direto por caminho só é aceito quando o fingerprint corresponde.
+   - Se o mesmo conteúdo for associado a registros RomM diferentes, o mapa por conteúdo fica ambíguo. A sincronização não escolhe um registro silenciosamente; um vínculo direto explicitamente confirmado continua válido para aquele caminho.
+2. Migração e colisões:
+   - Se houver um diretório estável local anterior e o mesmo conteúdo passar a ter identidade RomM, a migração transfere os artefatos locais para a nova identidade.
+   - A migração pode mesclar arquivos não conflitantes com um diretório estável já existente. Um arquivo de destino diferente não é sobrescrito; o arquivo legado conflitante permanece na origem e é registrado no log.
+   - A promoção usa diretório temporário, valida hashes e conteúdo, rename no mesmo diretório e recuperação de backup em caso de interrupção. A origem legada não é apagada.
+   - Se não for possível provar a qual ROM pertence um save legado, a abertura do jogo é bloqueada com mensagem explicativa. Isso evita iniciar com progresso vazio ou atribuir bytes ao jogo errado. Os dados antigos permanecem intactos.
+   - A opção de iniciar com save local só aparece quando existe SRAM recuperável (inclusive de núcleo irmão) ou estado rápido válido; falha de rollback continua sem fallback.
+3. Metadados RomM:
+   - Metadados antigos indexados por caminho podem ser migrados para a identidade estável quando o ID remoto antigo é encontrado e validado na lista do mesmo jogo e núcleo compatível.
+   - Para ROMs movidas depois da adoção do novo vínculo, caminhos anteriores são encontrados apenas quando servidor, conta e ID remoto coincidem. Candidatos múltiplos sem prova única não são migrados.
+   - Os metadados antigos não são apagados. Estados rápidos continuam com IDs, timestamps e hashes isolados por core; SRAM mantém o escopo compartilhado entre núcleos compatíveis.
+4. Conta e fila persistente:
+   - O fingerprint da conta é derivado do servidor + hash do token; o token em si não é colocado na fila.
+   - Nome único do WorkManager inclui identidade do jogo, core e fingerprint da conta. O status visual também é separado por conta; se outra conta estiver conectada, não mostra SYNCED como se fosse a conta original.
+   - Desconectar RomM mantém trabalhos pendentes. Credenciais diferentes não são usadas.
+   - Trabalhos antigos sem identidade/fingerprint de conta não inferem credenciais atuais: permanecem em retry, sem envio cruzado. Uma nova associação pode criar um trabalho novo, isolado por conta.
+   - Rotação de token exige reassociação para atualizar a impressão digital; não existe ainda um ID de conta estável persistido no cliente.
+5. Interface e thread principal:
+   - Identidade, fingerprint e descoberta/migração são preparados em IO antes de iniciar a sessão.
+   - A Activity recebe identidade e fontes já preparadas; heartbeat de sessão usa identidade recebida, sem recalcular fingerprint.
+   - Consulta de status usa cache e não faz hash integral da ROM na interface.
+6. Testes:
+   - SaveStoreTest contém 17 testes, incluindo colisões por basename, SRAM entre núcleos explicitamente relacionados, isolamento de states, migração validada e merge, preservação da origem, identidade após renomeação, M3U/CUE e transição de identidade local para RomM.
+   - Os testes da política de sincronização também continuam no conjunto JVM.
+
+CI DIAGNÓSTICA INTERMEDIÁRIA
+- Run 45075705072: SpotlessApply executou com sucesso; a tarefa testLawnWithQuickstepGithubDebugUnitTest foi executada (não NO-SOURCE) e terminou BUILD SUCCESSFUL; Build APK também terminou BUILD SUCCESSFUL.
+- Essa execução foi feita em commit intermediário, antes dos últimos ajustes de conta, fallback local e detecção de vínculo ambíguo. Não é a validação final da branch atual.
+- CI final com spotlessCheck, testes e APK ainda pendente para o HEAD atual.
+
+PENDÊNCIAS
+- Aguardar CI final no HEAD atual e confirmar que a tarefa de testes JVM executa os 17 testes de SaveStoreTest.
+- Depois da CI, solicitar teste funcional no telefone: ROMs diferentes com mesmo basename; mover/renomear ROM local e RomM; migração local→RomM; upload pendente e troca/desconexão de conta; SRAM cross-core compatível e state por core.
+- Definir a experiência visual de resolução de saves legados ambíguos: atualmente a abertura é bloqueada e os arquivos ficam preservados; ainda não há diálogo para escolher explicitamente qual jogo deve receber o save.
+- Jobs antigos sem metadados de identidade/conta permanecem em retry; não são descartados nem enviados com credenciais presumidas.
+- Rotação de token pode exigir reassociação. A impressão digital de conta é conservadora e não substitui um identificador estável de usuário do servidor.
+
+GIT
+- PR #40 é a única PR aberta relevante e permanece em draft.
+- Nenhum merge foi realizado.
+- Não iniciar PR concorrente enquanto #40 estiver aberta.
+
+
+REVISÃO TÉCNICA ADICIONAL DA PR #40 — 2026-11-22
+Head observado: 79b257577783ffc2fddf44beec05bb4c80d66a98
+
+BLOQUEIOS CONFIRMADOS NA IMPLEMENTAÇÃO
+1. O diretório físico de SaveStore para jogo RomM deriva de servidor + romId, sem incluir conta. SaveSyncPolicy.metadataKey também recebe apenas kind, gameIdentity e coreId. Assim, contas diferentes na mesma instância podem compartilhar os arquivos locais e metadados remotos. É necessário incluir namespace estável de conta na identidade de armazenamento e em todas as chaves de sync; states continuam também isolados por coreId.
+2. A conta ainda é identificada por SHA-256(server + token). Isso impede usar credencial diferente, mas token renovado da mesma conta muda o identificador e pode deixar trabalhos pendentes sem retomada automática. RomM 5.4.x disponibiliza GET /api/users/me, protegido por me.read, para obter o ID estável do usuário. Adotar servidor + user ID; se me.read não estiver concedido, bloquear sync e orientar reautorização com esse escopo, sem fallback duradouro para token.
+3. O Worker guarda caminho, core, identidade do jogo e fingerprint de conta, mas resolve o SaveStore e lê o arquivo mutável quando executa. Ainda não há snapshot imutável do conteúdo enfileirado. Definir política segura de snapshot/coalescência e preservar associação por conta/jogo/artefato antes de adicionar slots.
+4. migrateLegacy mantém os arquivos de origem, mas quando destino e origem contêm bytes diferentes para o mesmo caminho relativo, mantém o destino, registra o conflito e conclui. Isso pode escolher um progresso sem resolução explícita. Bloquear abertura/migração conflitante e preservar ambos os conjuntos até escolha explícita.
+
+VALIDAÇÃO E ESTADO
+- PR #40 é a única PR aberta relevante, permanece draft. Não houve merge.
+- Run 45076202195 (#590) foi iniciada no head 9e1a5f14597c0395b0e1cca2e6a1a8efad64a640 e continuava in_progress na última consulta. A branch avançou desde então; essa CI não valida o head 79b257577783ffc2fddf44beec05bb4c80d66a98.
+- Run 45075705072 foi descrita na atualização anterior como validação intermediária (SpotlessApply, testes JVM e build APK); não valida o head final.
+- Nenhuma execução CI foi associada ao head atual na consulta. A CI final precisa ser disparada/concluída depois das correções e confirmar execução real dos testes, sem NO-SOURCE.
+- Comentário de revisão foi enviado à conversa da PR com os bloqueios acima. Nenhuma alteração funcional adicional foi feita nesta revisão.
+- Teste funcional no telefone continua pendente.
+
+RESULTADO DA CI FINAL — 2026-11-22
+- Workflow run: #596 / ID 45076680204.
+- HEAD validado: d00631bb899cc4390e32e2e34c1fcf29b7e0ca04.
+- check-style / spotlessCheck: SUCCESS.
+- Run unit tests: SUCCESS. A tarefa testLawnWithQuickstepGithubDebugUnitTest foi executada e terminou BUILD SUCCESSFUL em 3m54s; não houve NO-SOURCE nessa tarefa (há NO-SOURCE apenas em módulos/tarefas auxiliares sem fontes próprias).
+- Build APK: SUCCESS; assembleLawnWithQuickstepGithubDebug terminou BUILD SUCCESSFUL em 1m02s.
+- Upload artifact: SUCCESS.
+- Artefato debug: ID 14775581597; nome assembleLawnWithQuickstepGithubDebug; 46.066.885 bytes; SHA-256 87730464f323c1c3f765267cc43afc200f3862f32d2f76071f97ed57e7f6a167; expira em 2027-02-20.
+- Runs #593 e #594 falharam antes do teste por duas referências de compilação no status de sincronização (connectionFingerprint e SaveSyncStatus.Pending). Corrigidas para usar connectionSnapshot(...).accountFingerprint e SaveSyncStatus.PENDING; a execução #596 confirmou o código corrigido.
+- O APK é artefato de PR e não foi publicado em tandem-latest, pois a PR ainda não foi mesclada.
+
+SITUAÇÃO ATUAL
+- CI final aprovada no HEAD acima.
+- PR #40 continua aberta em draft; não mesclada.
+- Teste funcional no telefone ainda pendente.
+- Próximo passo: disponibilizar ao usuário o artefato da run #596 e aguardar validação no dispositivo antes de qualquer merge.
+
+ARTEFATO EXTRAÍDO PARA TESTE FUNCIONAL
+- APK extraído da execução #596: Tandem-PR40-debug.apk.
+- Tamanho do APK: 52.461.511 bytes.
+- SHA-256 do APK: 664de26a1b1a645ead5fe3fb6db95157bc4b12f01e83566af2d049aa12674fa4.
+- O tamanho/hash do artefato ZIP reportado pela API do GitHub refere-se ao pacote de Actions; não confundir com o hash do APK extraído acima.
+- O APK permanece fora do repositório; o artefato original de Actions pode ser baixado pela execução #596.
+
+
+ATUALIZAÇÃO DA VERIFICAÇÃO DA PR #40 — 2026-11-22
+- Head atual consultado: b261932020dca71b14e179f3cff08af524d3545a. PR #40 segue aberta como draft, mergeable=true, sem reviews formais ou threads de revisão; não houve merge.
+- CI #596 / run 45076680204 passou integralmente no commit d00631bb899cc4390e32e2e34c1fcf29b7e0ca04: check-style/spotlessCheck, unit tests, build-debug APK, upload do artefato e final-status concluídos com sucesso.
+- Log da job confirmou execução explícita de ./gradlew testLawnWithQuickstepGithubDebugUnitTest, compilação dos testes Kotlin e execução da tarefa :testLawnWithQuickstepGithubDebugUnitTest; não foi NO-SOURCE. O Gradle terminou BUILD SUCCESSFUL. Foram observados avisos de nullability no SaveStoreTest.kt (linhas 55, 56, 69 e 181) sem falha.
+- Artefato debug ID 14775581597, 46.066.885 bytes, SHA-256 87730464f323c1c3f765267cc43afc200f3862f32d2f76071f97ed57e7f6a167, expira 2027-02-20. Link da execução: https://github.com/izzyn0okami/Tandem/actions/runs/45076680204.
+- O head atual está dois commits à frente do commit validado, mas a comparação mostrou que ambos alteram somente docs/auditorias/Auditoria_Libretro_Tandem.txt; não há diferença de código funcional entre o código testado e o atual. A CI é, portanto, válida para o código funcional atual, embora não para os commits documentais em si.
+
+PENDÊNCIAS TÉCNICAS AINDA ABERTAS
+1. SaveStore ainda constrói a pasta como <savesRoot>/<coreId>/<gameIdentity>. Para jogos RomM, gameIdentity é servidor + romId, sem accountFingerprint. Duas contas no mesmo servidor/mesmo jogo podem compartilhar os mesmos arquivos físicos. As chaves SaveSyncPolicy.metadataKey também não recebem conta. O status visual é separado por conta, mas armazenamento e metadados de sync não estão totalmente isolados.
+2. RomMConnectionSnapshot.accountFingerprint continua sendo SHA-256(server + token). Rotação do token altera a identidade da conta e pode exigir reassociação; não foi implementado GET /api/users/me nem um ID estável de usuário.
+3. RomMSaveSyncWorker persiste romPath/core/gameIdentity/accountFingerprint, mas não um snapshot imutável dos bytes. pushFromWorker lê o SaveStore atual quando o worker executa; alterações posteriores do arquivo podem mudar o conteúdo enviado pelo job já enfileirado.
+4. Conflitos na migração: migrateLegacy preserva arquivos conflitantes na origem e mantém o conteúdo do destino no diretório ativo, registrando o conflito. Não há diálogo de resolução; o usuário pode iniciar com o conteúdo do destino enquanto a origem mantém outra versão. Isso evita apagar a origem, mas não é resolução explícita do conflito.
+5. Jobs antigos sem gameIdentity/accountFingerprint permanecem em retry, preservando a segurança contra envio cruzado, mas sem uma experiência de recuperação/limpeza definida.
+
+RESULTADO
+- A CI está aprovada para o código funcional da PR #40 e o APK debug está disponível para teste.
+- Ainda não recomendo concluir a revisão nem mesclar: isolamento físico/metadados por conta, identidade estável da conta e payload imutável da fila seguem como pendências de arquitetura; teste funcional no telefone também não foi realizado.
+- Próximo passo: corrigir as pendências 1–3 e decidir a resolução visual/operacional de conflitos antes de solicitar teste funcional e autorização de merge.
+
+
+IMPLEMENTAÇÃO DA PR #40 — IDENTIDADE DE CONTA, SNAPSHOTS E MIGRAÇÃO SEGURA
+Data: 2026-11-22
+Head de código observado antes desta atualização documental: 639693024ae9f094da498ef04fdbb492db0a5b12
+
+IDENTIDADE ESTÁVEL ROMM
+- RomMClient.currentUserId consulta GET /api/users/me e exige resposta com ID de usuário positivo; o escopo OAuth me.read já faz parte dos escopos solicitados no pareamento.
+- RomMSettings salva account_server + user_id. isConnected e connectionSnapshot recusam uma conexão sem esses dados; não há fallback para identidade baseada no token.
+- accountFingerprint passa a ser SHA-256(server + user ID). Renovação do token da mesma conta mantém a identidade.
+- GameIdentityResolver.rommGameIdentity usa servidor + accountFingerprint + romId. Como gameIdentity compõe o caminho SaveStore e as chaves SaveSyncPolicy.metadataKey/remoteHashKey, arquivos e metadados SRAM/state ficam separados por conta; states continuam isolados por coreId.
+- Vínculos antigos só têm seu fingerprint migrado se a conta anterior for comprovadamente a mesma: mesmo user_id ou, para instalações antigas sem user_id, exatamente o mesmo token e servidor. Troca de conta não migra vínculos.
+- Instalações existentes sem user_id passam a aparecer como desconectadas e precisam refazer o pareamento/autorização para registrar o ID estável.
+
+UPLOADS PERSISTENTES
+- Novo SaveSnapshotStore captura SRAM/state uma vez por ID de Worker, quando o Worker pode operar sem sessão ativa.
+- O manifesto registra SHA-256 de cada arquivo. Em retries, o Worker valida e reutiliza os mesmos bytes; não lê uma versão diferente do SaveStore vivo para o mesmo job.
+- A captura é promovida atomicamente de staging para diretório final. Manifesto ou arquivo alterado/incompleto bloqueia upload em vez de enviar bytes não verificados.
+- O snapshot é apagado somente depois de o upload terminar e o status SYNCED ser persistido. Falhas de rede/conta/sessão mantêm o snapshot para retry.
+- O snapshot é capturado no primeiro processamento seguro do Worker, não no instante de enqueue; enquanto a sessão estiver ativa o Worker aguarda e então captura o progresso persistido mais recente.
+
+MIGRAÇÃO E CONFLITOS
+- Saves RomM antigos em diretório sem namespace de conta ou em pasta legada por basename não são atribuídos automaticamente à conta atual. O jogo é bloqueado e os arquivos permanecem intactos até uma decisão explícita.
+- Migração de identidade local para RomM continua possível quando a origem é conhecida e não há outro candidato.
+- Planos de migração verificam conflitos de bytes no destino. Se dois arquivos do mesmo caminho relativo diferirem, a migração é recusada; source e destination permanecem intactos.
+- migrateLegacy também recusa conflitos no momento da cópia, protegendo contra mudança entre pré-verificação e promoção.
+- Ainda não existe diálogo visual para confirmar a atribuição de um save legado compartilhado à conta atualmente vinculada. O estado atual é bloqueio seguro com mensagem; a experiência de resolução explícita precisa ser definida antes de teste de migração antiga.
+
+TESTES ADICIONADOS/ALTERADOS
+- Identidade de conta estável para o mesmo user ID e distinta entre usuários.
+- Migração de vínculo legado permitida somente com mesma conta comprovada.
+- Identidade física RomM diferente entre contas.
+- Snapshot imutável entre retries, captura nova para novo Worker e rejeição de snapshot adulterado.
+- Migração de arquivos conflitantes agora deve retornar false e preservar ambos os diretórios.
+
+CI E ESTADO
+- Run #609 (ID 45078799154): falhou por import ausente de java.io.IOException em SaveStore.kt; corrigido no commit bb30876ef1fe6095528e9b02201ff9d140bb63ea.
+- Run #612 (ID 45078924723): mesma falha de import no head anterior à correção.
+- Run #613 (ID 45079120078), head bb30876ef1fe6095528e9b02201ff9d140bb63ea: check-style passou; testes/build ainda estavam em andamento na última consulta.
+- Run #614 (ID 45079241494), head 639693024ae9f094da498ef04fdbb492db0a5b12: check-style passou; testes/build ainda estavam em andamento na última consulta.
+- Portanto, ainda não registrar CI final aprovada para esta implementação. Confirmar que os testes unitários foram executados (sem NO-SOURCE), build APK e upload do artefato concluíram.
+- Teste funcional no telefone ainda não realizado. Nenhum merge autorizado ou executado.
+- Jobs WorkManager legados sem identidade/conta ou com fingerprint anterior permanecem bloqueados em retry; não são reassociados automaticamente à conta atualmente conectada.
+
+PRÓXIMAS PENDÊNCIAS
+1. Confirmar CI no head final e corrigir qualquer falha.
+2. Definir o diálogo de resolução: permitir ao usuário atribuir explicitamente um save legado compartilhado à conta vinculada, copiando e validando os bytes e mantendo a origem, ou manter o bloqueio sem atribuição.
+3. Projetar recuperação/re-enqueue segura dos jobs WorkManager legados sem identidade estável, sem cancelar nem enviar dados para outra conta.
+4. Após CI, validar no telefone pareamento com me.read, isolamento entre contas, retry offline com snapshot, SRAM/state cross-core e comportamento de bloqueio/recuperação de saves legados.
+5. PR #40 continua draft; não mesclar sem autorização explícita.
+
+
+RESULTADO DE CI INTERMEDIÁRIA — RUN #608
+- Run ID 45078703305; HEAD 1752f1e6c400388c6c807cef22aa2ba9ff86e7bc; concluída com success.
+- check-style: success.
+- A tarefa testLawnWithQuickstepGithubDebugUnitTest foi executada explicitamente e terminou BUILD SUCCESSFUL em 5m25s. NO-SOURCE apareceu somente em tarefas auxiliares/módulos sem fontes próprias, não na tarefa principal de testes.
+- assembleLawnWithQuickstepGithubDebug terminou BUILD SUCCESSFUL em 1m43s; upload do artefato concluído.
+- Artefato Actions ID 14776836251; 46.075.712 bytes; digest do arquivo ZIP SHA-256 b54aee8456a6a450d6c5ec164b83a5bf3d56319accb85f379c21bf75469f342a; expira em 2027-02-20.
+- Esta execução valida identidade estável de conta e snapshots imutáveis, mas antecede as últimas alterações de bloqueio de migrações ambíguas/conflitantes. Não usar como CI final da PR.
+- A CI #614 (head de código 639693024ae9f094da498ef04fdbb492db0a5b12) continua sendo a validação necessária para o conjunto de migração mais recente; check-style passou, testes/build ainda estavam em andamento na última consulta.
+
+
+IMPLEMENTAÇÃO — CONFIRMAÇÃO EXPLÍCITA DE SAVES LEGADOS ROMM (PR #40)
+Data: 2026-11-22
+Branch: feat/stable-game-save-identity
+Head de código: bc48b7b54bb43164ee17f48066bdd775a304f079
+
+OBJETIVO
+Permitir que o usuário atribua conscientemente saves antigos sem proprietário de conta comprovado à conta RomM atualmente vinculada, sem apagar a origem ou escolher silenciosamente entre progressos conflitantes.
+
+IMPLEMENTADO
+1. LegacyMigrationPlan agora distingue:
+   - migração segura sem confirmação;
+   - confirmação explícita necessária;
+   - ambiguidade/conflito que permanece bloqueado.
+2. O diálogo aparece somente quando:
+   - existe vínculo RomM estável e atual para a ROM;
+   - o jogo é identificado de forma única na biblioteca quando a origem é a pasta legada por basename;
+   - a conta vinculada ao jogo corresponde à conta RomM atualmente configurada;
+   - não há conflito de conteúdo entre origem e destino.
+3. A confirmação do usuário:
+   - copia os arquivos para o diretório estável da conta e do jogo;
+   - usa staging/renomeação atômica da migração existente;
+   - confere os hashes SHA-256 e tamanhos dos arquivos copiados;
+   - mantém a pasta original integralmente preservada;
+   - revalida servidor, conta e vínculo no momento da confirmação, impedindo que uma troca de conta enquanto o diálogo está aberto copie os dados para o namespace errado.
+4. Cancelar mantém o save sem atribuição e não inicia o jogo.
+5. Destinos com bytes conflitantes continuam bloqueados; não há opção de sobrescrita silenciosa.
+6. RomMSaveSyncWorker também retorna retry quando a migração exige confirmação; não pode capturar nem enviar save legado antes da autorização.
+7. O núcleo só é instalado depois que a verificação da migração e a eventual confirmação forem resolvidas.
+
+TESTES AUTOMATIZADOS ADICIONADOS
+- Cópia legada verificada por hash/tamanho preserva integralmente a origem.
+- Destino com conteúdo diferente não é considerado cópia válida e a migração é recusada sem alterar origem/destino.
+- Os testes unitários existentes de identidade, isolamento de conta, snapshots e migração permanecem no conjunto.
+
+VALIDAÇÃO
+- PR #40 permanece aberta em draft; nenhum merge realizado.
+- Branch comparada com game-mode-m2-dev: behind_by=0 na última comparação.
+- CI #626 / run ID 45081324533, HEAD bc48b7b54bb43164ee17f48066bdd775a304f079: em andamento na última consulta. check-style e testes/build ainda não concluídos.
+- CI anterior #623 / run ID 45081080615: check-style passou; testes/build ainda em andamento, e não valida as últimas verificações de conta.
+- Teste funcional no telefone: pendente. A CI não comprova a interação do diálogo, o comportamento ao trocar contas nem a cópia real dos saves.
+- Não mesclar nem publicar APK até CI final aprovada, teste funcional no telefone e autorização explícita do usuário.
+
+PRÓXIMAS AÇÕES
+1. Aguardar CI #626; corrigir qualquer falha e validar novamente o HEAD final.
+2. Após CI completa, disponibilizar o APK para teste no aparelho.
+3. Testar: confirmação, cancelamento, troca de conta com diálogo aberto, cópia com origem preservada, retry do Worker e conflito entre bytes.
+4. Atualizar este log com o resultado completo da CI e dos testes confirmados pelo usuário.
+
+
+VALIDAÇÃO DE CI — PR #40 / IDENTIDADE ESTÁVEL E MIGRAÇÃO DE SAVES
+Data: 2026-11-22
+Branch: feat/stable-game-save-identity
+Base: game-mode-m2-dev
+Estado da PR: aberta, draft, sem merge.
+Comparação com a base: 155 commits à frente; 0 commits atrás.
+
+CI #626
+- Run ID: 45081324533
+- Commit validado: bc48b7b54bb43164ee17f48066bdd775a304f079 (head com as alterações de código da confirmação explícita).
+- check-style / spotlessCheck: sucesso.
+- build-debug-apk / testes unitários: sucesso.
+- Build APK: sucesso.
+- Upload artifact: sucesso.
+- final-status: sucesso.
+- Resultado global: CI concluída com sucesso.
+
+CI #627
+- Run ID: 45081445838
+- Commit validado: 683ffac74453b1140dd1bcc7c182943cd8dff401 (inclui a atualização documental posterior; código funcional igual ao validado na CI #626).
+- check-style / spotlessCheck: sucesso.
+- build-debug-apk / testes unitários: sucesso.
+- Build APK: sucesso.
+- Upload artifact: sucesso.
+- final-status: sucesso.
+- Resultado global: CI concluída com sucesso.
+- Artefato: assembleLawnWithQuickstepGithubDebug, ID 14778190424, 46.090.686 bytes.
+- SHA-256 do ZIP do artefato: e857a7ea687f1563efaca83c511ff2b169910689a712157745de05970b1e1f16.
+- Disponível até 2027-02-20T23:06:50Z.
+- Execução: https://github.com/izzyn0okami/Tandem/actions/runs/45081445838
+
+PENDÊNCIAS APÓS CI
+- Testar no telefone o diálogo de atribuição de saves legados: confirmar e cancelar.
+- Confirmar que a origem permanece intacta após a cópia.
+- Verificar revalidação da conta se a conta RomM for alterada com o diálogo aberto.
+- Verificar que o Worker não envia saves enquanto a confirmação estiver pendente e que retoma/re tenta corretamente depois.
+- Verificar conflito de conteúdo entre origem e destino: nenhum conjunto deve ser sobrescrito ou descartado.
+- Não considerar o teste no telefone concluído sem confirmação do usuário.
+- Não mesclar a PR #40 sem autorização explícita.

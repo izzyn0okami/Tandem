@@ -137,6 +137,16 @@ private data class PendingSaveSync(
     val localSaveAvailable: Boolean,
 )
 
+private data class PendingLegacySaveClaim(
+    val coreId: String,
+    val romPath: String,
+    val title: String,
+    val loadState: Boolean,
+    val platform: GamePlatform?,
+    val gameIdentity: String,
+    val sources: Map<String, File>,
+)
+
 private enum class GameTab(val label: Int) {
     Library(R.string.game_tab_library),
     Achievements(R.string.game_tab_achievements),
@@ -154,6 +164,7 @@ private fun GameModeRoot(refreshKey: Int, onExit: () -> Unit) {
     var detailKey by remember { mutableStateOf<String?>(null) }
     var status by remember { mutableStateOf("") }
     var pendingSaveSync by remember { mutableStateOf<PendingSaveSync?>(null) }
+    var pendingLegacySaveClaim by remember { mutableStateOf<PendingLegacySaveClaim?>(null) }
     var busy by remember { mutableStateOf(false) }
     var rootPath by remember { mutableStateOf(GameLibrarySettings.rootPath(context)) }
     var games by remember { mutableStateOf(emptyList<LocalGame>()) }
@@ -228,6 +239,43 @@ private fun GameModeRoot(refreshKey: Int, onExit: () -> Unit) {
         if (platform != null && !BiosManager.isReady(context, platform)) {
             error(context.getString(R.string.game_bios_missing, platform.name))
         }
+        // Fingerprint e descoberta de saves legados podem ler arquivos grandes/varrer a biblioteca.
+        // Faça tudo fora da interface e entregue o resultado pronto à sessão.
+        val (gameIdentity, migrationPlan, siblings) = withContext(Dispatchers.IO) {
+            val identity = GameIdentityResolver.resolve(context, File(romPath), platform?.slug)
+            val siblings = platform?.let { selectedPlatform ->
+                CoreRegistry.cores(selectedPlatform)
+            }.orEmpty().map { it.id }
+            val plan = GameIdentityResolver.planLegacyMigration(
+                context,
+                GameFolders.dir(context, FolderKind.Saves),
+                File(romPath),
+                platform?.slug,
+                listOf(coreId) + siblings,
+                identity,
+            )
+            Triple(identity, plan, siblings)
+        }
+        if (migrationPlan.ambiguous) {
+            error(
+                "Não foi possível confirmar a qual jogo pertence o save antigo ou se dois conjuntos de progresso são diferentes. " +
+                    "Os arquivos foram preservados e o jogo não será iniciado. Conflitos ou jogos com identificação ambígua exigem revisão separada.",
+            )
+        }
+        if (migrationPlan.confirmationSources.isNotEmpty()) {
+            pendingLegacySaveClaim = PendingLegacySaveClaim(
+                coreId = coreId,
+                romPath = romPath,
+                title = title,
+                loadState = loadState,
+                platform = platform,
+                gameIdentity = gameIdentity,
+                sources = migrationPlan.confirmationSources,
+            )
+            status = ""
+            return
+        }
+        val migrationSources = migrationPlan.sources
         val core = CoreInstaller.ensureInstalled(context, coreId) { bytes ->
             status = context.getString(R.string.game_mode_status_downloading, coreId, bytes / 1024)
         }.getOrThrow()
@@ -235,11 +283,11 @@ private fun GameModeRoot(refreshKey: Int, onExit: () -> Unit) {
             status = context.getString(R.string.game_mode_status_syncing)
             try {
                 // A partida só começa depois que o pull terminou de verdade.
-                withContext(Dispatchers.IO) { SaveSync.pull(context, romPath, coreId) }
+                withContext(Dispatchers.IO) { SaveSync.pull(context, romPath, coreId, platform?.slug, gameIdentity, migrationSources) }
             } catch (error: Exception) {
                 if (error is kotlinx.coroutines.CancellationException) throw error
                 GameLog.error("saves", "falha ao sincronizar antes de abrir ${File(romPath).name}", error)
-                SaveSync.markSyncPending(context, romPath)
+                SaveSync.markSyncPending(context, romPath, coreId, platform?.slug, gameIdentity)
                 pendingSaveSync = PendingSaveSync(
                     coreId = coreId,
                     romPath = romPath,
@@ -247,15 +295,62 @@ private fun GameModeRoot(refreshKey: Int, onExit: () -> Unit) {
                     loadState = loadState,
                     platform = platform,
                     error = error.message ?: error.toString(),
-                    localSaveAvailable = error !is SaveRollbackException,
+                    localSaveAvailable = error !is SaveRollbackException && withContext(Dispatchers.IO) {
+                        val store = SaveStore(
+                            context,
+                            coreId,
+                            File(romPath),
+                            siblings,
+                            platform?.slug,
+                            gameIdentity,
+                            migrationSources,
+                        )
+                        store.readSram() != null || store.hasState()
+                    },
                 )
                 status = ""
                 return
             }
         }
         status = context.getString(R.string.game_mode_status_starting, title)
-        context.startActivity(GameSessionActivity.intent(context, core.absolutePath, romPath, loadState, platform?.slug))
+        context.startActivity(GameSessionActivity.intent(context, core.absolutePath, romPath, loadState, platform?.slug, gameIdentity, migrationSources))
         status = ""
+    }
+
+    fun confirmLegacySaveClaim(pending: PendingLegacySaveClaim) {
+        if (busy) return
+        scope.launch {
+            busy = true
+            runCatching {
+                val copied = withContext(Dispatchers.IO) {
+                    GameIdentityResolver.claimLegacySaves(
+                        context,
+                        File(pending.romPath),
+                        pending.gameIdentity,
+                        pending.sources,
+                    )
+                }
+                check(copied) {
+                    "Não foi possível copiar e validar todos os arquivos. As pastas originais foram preservadas e o jogo continua bloqueado."
+                }
+                GameLog.log(
+                    "saves",
+                    "usuário confirmou associação de save legado à conta RomM atual; cópia verificada e origem preservada",
+                )
+                pendingLegacySaveClaim = null
+                startGame(
+                    pending.coreId,
+                    pending.romPath,
+                    pending.title,
+                    pending.loadState,
+                    pending.platform,
+                )
+            }.onFailure {
+                GameLog.error("saves", "falha ao associar save legado à conta atual", it)
+                status = context.getString(R.string.game_mode_status_error, it.message ?: it.toString())
+            }
+            busy = false
+        }
     }
 
     fun continueAfterSyncFailure(pending: PendingSaveSync, useLocalSave: Boolean) {
@@ -482,6 +577,17 @@ private fun GameModeRoot(refreshKey: Int, onExit: () -> Unit) {
             onUseLocal = { continueAfterSyncFailure(pending, useLocalSave = true) },
         )
     }
+    pendingLegacySaveClaim?.let { pending ->
+        LegacySaveClaimDialog(
+            title = pending.title,
+            busy = busy,
+            onConfirm = { confirmLegacySaveClaim(pending) },
+            onCancel = {
+                pendingLegacySaveClaim = null
+                status = "Os saves antigos foram preservados. O jogo não foi iniciado."
+            },
+        )
+    }
 }
 
 @Composable
@@ -534,6 +640,53 @@ private fun SaveSyncFailureDialog(
                     enabled = !busy,
                 )
             }
+        }
+    }
+}
+
+@Composable
+private fun LegacySaveClaimDialog(
+    title: String,
+    busy: Boolean,
+    onConfirm: () -> Unit,
+    onCancel: () -> Unit,
+) {
+    val safeFocus = remember { FocusRequester() }
+    LaunchedEffect(Unit) { runCatching { safeFocus.requestFocus() } }
+    Box(
+        modifier = Modifier.fillMaxSize().background(GameColors.scrim),
+        contentAlignment = Alignment.Center,
+    ) {
+        Column(
+            modifier = Modifier
+                .width(520.dp)
+                .background(GameColors.backgroundTop, RoundedCornerShape(14.dp))
+                .padding(28.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Text(
+                stringResource(R.string.game_save_claim_title),
+                color = GameColors.text,
+                fontSize = 22.sp,
+                fontWeight = FontWeight.Bold,
+            )
+            Text(
+                stringResource(R.string.game_save_claim_body, title),
+                color = GameColors.textDim,
+                fontSize = 15.sp,
+            )
+            GameButton(
+                stringResource(R.string.game_save_claim_cancel),
+                onCancel,
+                primary = true,
+                enabled = !busy,
+                modifier = Modifier.focusRequester(safeFocus),
+            )
+            GameButton(
+                stringResource(R.string.game_save_claim_confirm),
+                onConfirm,
+                enabled = !busy,
+            )
         }
     }
 }

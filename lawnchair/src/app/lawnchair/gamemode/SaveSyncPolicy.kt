@@ -4,18 +4,42 @@ package app.lawnchair.gamemode
 internal object SaveSyncPolicy {
     const val SESSION_TIMEOUT_MS = 120_000L
 
+    /** A identidade da conta depende do usuário RomM, nunca do token que pode ser rotacionado. */
+    fun accountFingerprint(server: String, userId: Long): String = sha256("$server|user:$userId")
+
+    /** Migra vínculos antigos somente quando a mesma conta é comprovada. */
+    fun canMigrateAccountLinks(
+        sameServer: Boolean,
+        previousUserId: Long,
+        currentUserId: Long,
+        previousToken: String?,
+        currentToken: String,
+    ): Boolean = sameServer && when {
+        previousUserId > 0L -> previousUserId == currentUserId
+        else -> !previousToken.isNullOrBlank() && previousToken == currentToken
+    }
+
+    /** Namespace físico/metadados de um jogo RomM: instância + conta + ID remoto. */
+    fun rommGameIdentity(server: String, accountFingerprint: String, romId: Long): String = "romm-${sha256("$server|$accountFingerprint|$romId")}"
+
+    private fun sha256(value: String): String = java.security.MessageDigest.getInstance("SHA-256").digest(value.toByteArray(Charsets.UTF_8)).joinToString("") { "%02x".format(it.toInt() and 0xff) }
+
     internal data class StatusResolution(
         val status: SaveSyncStatus,
         val resetStartedAt: Boolean = false,
     )
 
     /** SRAM mantém metadados compartilhados entre núcleos; estados rápidos isolam tudo por coreId. */
-    fun metadataKey(kind: RemoteFileKind, romPath: String, coreId: String): String = when (kind) {
-        RemoteFileKind.Save -> "${kind.path}:$romPath"
-        RemoteFileKind.State -> "${kind.path}:$romPath:$coreId"
+    fun metadataKey(kind: RemoteFileKind, gameIdentity: String, coreId: String): String = when (kind) {
+        RemoteFileKind.Save -> "${kind.path}:$gameIdentity"
+        RemoteFileKind.State -> "${kind.path}:$gameIdentity:$coreId"
     }
 
-    fun remoteHashKey(kind: RemoteFileKind, romPath: String, coreId: String): String = "${metadataKey(kind, romPath, coreId)}:remote_hash"
+    fun remoteHashKey(
+        kind: RemoteFileKind,
+        gameIdentity: String,
+        coreId: String,
+    ): String = "${metadataKey(kind, gameIdentity, coreId)}:remote_hash"
 
     fun resolveStatus(
         storedStatus: String?,
@@ -57,7 +81,12 @@ internal object SaveSyncPolicy {
         RemoteFileKind.State -> emulator == "tandem_$coreId"
     }
 
-    fun newestCompatibleRemote(kind: RemoteFileKind, remotes: List<RemoteFile>, coreId: String): RemoteFile? = remotes.filter { isCompatibleRemote(kind, it.emulator, coreId) }
+    fun newestCompatibleRemote(
+        kind: RemoteFileKind,
+        remotes: List<RemoteFile>,
+        coreId: String,
+    ): RemoteFile? = remotes
+        .filter { isCompatibleRemote(kind, it.emulator, coreId) }
         .maxWithOrNull(compareBy<RemoteFile> { it.updatedAtMs }.thenBy { it.id })
 
     /** SRAM sem hash remoto anterior precisa ser baixado para estabelecer uma comparação confiável. */
@@ -69,10 +98,21 @@ internal object SaveSyncPolicy {
         (remoteContentHash.isNullOrBlank() || lastRemoteContentHash.isNullOrBlank())
 
     /** Um núcleo ainda sem baseline recebe o head remoto; ausência local também pede restauração. */
-    fun shouldApplyRemote(remoteChanged: Boolean, localExists: Boolean, appliedHash: String?): Boolean = remoteChanged || !localExists || appliedHash == null
+    fun shouldApplyRemote(
+        remoteChanged: Boolean,
+        localExists: Boolean,
+        appliedHash: String?,
+    ): Boolean = remoteChanged || !localExists || appliedHash == null
 
     /** Só preserva local quando ele não é a versão que já havia sido aplicada neste núcleo. */
-    fun shouldBackupLocal(localExists: Boolean, localHash: String?, appliedHash: String?): Boolean = localExists && (appliedHash == null || localHash != appliedHash)
+    fun shouldBackupLocal(
+        localExists: Boolean,
+        localHash: String?,
+        appliedHash: String?,
+    ): Boolean = localExists && (appliedHash == null || localHash != appliedHash)
+
+    /** A tarefa só pode usar as credenciais da mesma conta/servidor que a criou. */
+    fun isSameSyncAccount(expectedFingerprint: String?, currentFingerprint: String?): Boolean = !expectedFingerprint.isNullOrBlank() && expectedFingerprint == currentFingerprint
 
     /** Um trabalho adiado porque a sessão ainda está ativa deve permanecer na fila do WorkManager. */
     fun shouldRetryWorker(syncCompleted: Boolean): Boolean = !syncCompleted

@@ -105,8 +105,8 @@ private fun ConnectForm(onConnect: () -> Unit) {
     if (pending != null) {
         PairingWait(
             pairing = pending,
-            onApprove = { token ->
-                RomMSettings.save(context, pending.baseUrl, token)
+            onApprove = { token, accountId ->
+                RomMSettings.save(context, pending.baseUrl, token, accountId)
                 onConnect()
             },
             onFail = { reason ->
@@ -159,8 +159,8 @@ private fun ConnectForm(onConnect: () -> Unit) {
                         message = context.getString(R.string.game_romm_connecting)
                         if (manual) {
                             val result = withContext(Dispatchers.IO) { connect(address, code) }
-                            result.onSuccess { (url, token) ->
-                                RomMSettings.save(context, url, token)
+                            result.onSuccess { (url, token, accountId) ->
+                                RomMSettings.save(context, url, token, accountId)
                                 onConnect()
                             }.onFailure { message = it.message ?: it.toString() }
                         } else {
@@ -186,7 +186,7 @@ private fun ConnectForm(onConnect: () -> Unit) {
 
 /** Mostra o código e espera a aprovação no navegador; avisa quando aprovado, negado ou expirado. */
 @Composable
-private fun PairingWait(pairing: DevicePairing, onApprove: (String) -> Unit, onFail: (String) -> Unit, onCancel: () -> Unit) {
+private fun PairingWait(pairing: DevicePairing, onApprove: (String, Long) -> Unit, onFail: (String) -> Unit, onCancel: () -> Unit) {
     val context = LocalContext.current
     val latestApprove by rememberUpdatedState(onApprove)
     val latestFail by rememberUpdatedState(onFail)
@@ -197,11 +197,26 @@ private fun PairingWait(pairing: DevicePairing, onApprove: (String) -> Unit, onF
         while (System.currentTimeMillis() < deadline) {
             delay(intervalMs)
             when (val result = withContext(Dispatchers.IO) { client.pollDevicePairing(pairing.deviceCode) }) {
-                is DevicePoll.Approved -> return@LaunchedEffect latestApprove(result.token)
+                is DevicePoll.Approved -> {
+                    val accountId = runCatching {
+                        withContext(Dispatchers.IO) {
+                            RomMClient(pairing.baseUrl, result.token).currentUserId()
+                        }
+                    }.getOrElse {
+                        latestFail(it.message ?: "Não foi possível identificar a conta RomM")
+                        return@LaunchedEffect
+                    }
+                    return@LaunchedEffect latestApprove(result.token, accountId)
+                }
+
                 DevicePoll.Denied -> return@LaunchedEffect latestFail(context.getString(R.string.game_romm_pair_denied))
+
                 DevicePoll.Expired -> return@LaunchedEffect latestFail(context.getString(R.string.game_romm_pair_expired))
+
                 is DevicePoll.Failed -> return@LaunchedEffect latestFail(result.message)
+
                 DevicePoll.SlowDown -> intervalMs = (intervalMs + 5_000L).coerceAtMost(30_000L)
+
                 DevicePoll.Pending -> Unit
             }
         }
@@ -270,9 +285,11 @@ private fun beginPairing(context: Context, address: String): Result<DevicePairin
 }
 
 /** Acha o servidor e troca o código de pareamento por um token; devolve (endereço, token). */
-private fun connect(address: String, code: String): Result<Pair<String, String>> = runCatching {
+private fun connect(address: String, code: String): Result<Triple<String, String, Long>> = runCatching {
     val client = reachable(address)
-    client.baseAddress to client.exchangePairingCode(code)
+    val token = client.exchangePairingCode(code)
+    val accountId = RomMClient(client.baseAddress, token).currentUserId()
+    Triple(client.baseAddress, token, accountId)
 }
 
 /** Conexão com o servidor já feita: mostra o endereço, o estado da lista e os botões de atualizar, log e desconectar. */
