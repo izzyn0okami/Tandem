@@ -1609,3 +1609,30 @@ Arquivo inspecionado: lawnchair/src/app/lawnchair/gamemode/BiosManager.kt.
 - Próxima etapa técnica: avaliar substituição com backup/rollback e validação segura do arquivo importado, sem sobrescrever uma BIOS válida antes de concluir a gravação; conferir também os requisitos de cada núcleo sem reabrir a correção AND/OR já integrada.
 - Testes funcionais no aparelho permanecem pendentes apenas para os cenários BIOS ainda não confirmados; a confirmação consolidada anterior de firmware RomM e prontidão AND/OR não deve ser confundida com teste de falha na importação manual.
 
+
+
+ATUALIZAÇÃO — CI #435 CONCLUÍDA E PR #27 ABERTA
+Data: 2026-11-22
+
+- CI #435 / run ID 44984294349: CONCLUÍDA COM SUCESSO.
+- Commit validado: b1690ddc99ac1ca04d7c441e4a17571667658a0b.
+- URL: https://github.com/izzyn0okami/Tandem/actions/runs/44984294349
+- Jobs check-style, build-debug-apk / assembleLawnWithQuickstepGithubDebug, final-status e tandem-release: sucesso.
+- Jobs crowdin-auto-merge, send-notifications e nightly-release: ignorados conforme condições do workflow.
+- Resultado: CI #435 aprovada e publicação tandem-latest concluída.
+
+PR #27 — PRESERVE EXISTING BIOS DURING MANUAL IMPORT
+- URL: https://github.com/izzyn0okami/Tandem/pull/27
+- Branch: fix/bios-safe-import; destino: game-mode-m2-dev.
+- Head inicial: 3567263bc76ad7a88e79491f96a6024332978f22.
+- Escopo: substituição segura em BiosManager.import(), com gravação temporária, preservação/restauração do arquivo anterior e recuperação de backup deixado por interrupção.
+- Estado: aberta, não mesclada. A revisão inicial indicou mergeable=true.
+- CI PR #440 / run ID 44984832056: em execução; check-style e build-debug-apk ainda sem conclusão.
+- Teste no Motorola: pendente. Não marcar importação ou recuperação de falha como validadas até confirmação do usuário.
+
+STATUS DAS OUTRAS CIs
+- #436 / 44984462877: check-style sucesso; build-debug-apk em execução.
+- #437 / 44984600627: check-style sucesso; build-debug-apk em execução.
+- #438 / 44984612588: check-style sucesso; build-debug-apk em execução.
+- #439 / 44984761191: check-style e build-debug-apk em execução.
+- Essas execuções permanecem pendentes até conclusão global; não inferir sucesso a partir do check-style isolado.
