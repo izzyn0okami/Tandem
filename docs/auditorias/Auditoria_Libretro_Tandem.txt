@@ -2008,6 +2008,7 @@ Data: 2026-11-22
 - Merge commit: c4de00f5d2e8f031b8d53d888e35d1351fa0329c.
 - Head integrado: 161c604ab3815936dca5b438fe610e5e6c0ee2cf.
 - CI #479 / run ID 45042061410: sucesso no head integrado; check-style, build-debug-apk e final-status concluídos com sucesso. Jobs de release foram skipped; nenhuma publicação de release foi realizada nesta execução.
+- CI pós-merge #480 / run ID 45042684614: CONCLUÍDA COM SUCESSO no merge commit c4de00f5d2e8f031b8d53d888e35d1351fa0329c. check-style, build-debug-apk e final-status passaram; tandem-release também passou e publicou/atualizou a release permanente `tandem-latest` com `Tandem.apk`, alinhando a tag ao commit do merge. nightly-release foi skipped.
 - CI #477 / run ID 45033906969: sucesso no commit original de código, conforme registro anterior.
 - Testes funcionais no Motorola Edge 30 Fusion: aprovados pelo usuário ("Tudo ok"), cobrindo ciclo de vida da sessão, callbacks RetroAchievements pendentes, eventos GL enfileirados e reabertura de outro jogo com controles, áudio, saves e RetroAchievements.
 - O histórico do log foi reconciliado com a base atual antes do merge, preservando os registros da PR #31 e da PR #32. A integração foi feita sem force push.
