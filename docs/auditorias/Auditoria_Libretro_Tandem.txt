@@ -1311,3 +1311,58 @@ Data: 2026-11-22
 - O usuário confirmou que os jogos continuam iniciando normalmente após a atualização do núcleo Libretro.
 - Com isso, ficam validados no Motorola Edge 30 Fusion: detecção de nova versão, download, atualização e inicialização normal dos jogos após a atualização.
 - Ainda pendente: teste de falha durante download/substituição e confirmação de preservação/recuperação do núcleo anterior; revisão de cobertura e catálogo de núcleos/plataformas; avaliação de robustez da sessão e demais itens gerais da auditoria.
+
+
+AUDITORIA DE COBERTURA — CATÁLOGO DE PLATAFORMAS E NÚCLEOS ARM64
+Data: 2026-11-21
+Branch analisada: game-mode-m2-dev
+Arquivos analisados:
+- lawnchair/src/app/lawnchair/gamemode/GamePlatforms.kt
+- lawnchair/src/app/lawnchair/gamemode/CoreRegistry.kt
+- lawnchair/src/app/lawnchair/gamemode/CoresScreen.kt
+- lawnchair/src/app/lawnchair/gamemode/CoreInstaller.kt
+
+FONTES E MÉTODO
+- Catálogo oficial Libretro: https://docs.libretro.com/guides/core-list/
+- Diretório oficial Android ARM64 do Buildbot: https://buildbot.libretro.com/nightly/android/latest/arm64-v8a/
+- A documentação oficial confirma o caminho Android por ABI e o formato ZIP que contém a biblioteca .so.
+- A listagem do Buildbot foi consultada ao vivo. A presença de um ZIP confirma que há um artefato publicado para ARM64; não confirma compatibilidade funcional com todos os jogos nem desempenho no Edge 30 Fusion.
+
+RESULTADO GERAL
+- GamePlatforms.kt contém plataformas Libretro e também plataformas encaminhadas a emuladores externos (LaunchMode.EMULATOR/GAMENATIVE). Estas últimas não devem ser classificadas como ausência de suporte Libretro sem uma decisão de arquitetura.
+- CoreRegistry.kt cadastra alternativas para um subconjunto das plataformas. As demais usam apenas o coreId padrão.
+- As alternativas atualmente cadastradas foram conferidas contra o diretório Android ARM64 do Buildbot em amostra abrangente; os identificadores centrais examinados (incluindo FCEUmm, Nestopia, Mesen, QuickNES, Snes9x, bsnes, mGBA, gpSP, VBA-M, VBA Next, Genesis Plus GX, PicoDrive, BlastEm, SMS Plus GX, Gearsystem, Mupen64Plus-Next GLES2/GLES3, ParaLLEl N64, PCSX ReARMed, SwanStation, Beetle PCE/PCE Fast, Geargrafx, Stella, Atari800, Handy, Beetle Lynx, Gearlynx, Beetle NeoPop, RACE, Beetle Saturn, YabaSanshiro, Yabause, melonDS, DeSmuME, NooDS, Gearcoleco, blueMSX e FreeIntv) aparecem no diretório consultado.
+- A lista é um retrato do Buildbot no momento da auditoria e pode mudar; o app não consulta automaticamente o diretório para validar todos os itens do catálogo antes de mostrá-los.
+
+ACHADOS DE COBERTURA — ALTERNATIVAS COM BOM CANDIDATO PARA AVALIAÇÃO
+1. Game Boy / Game Boy Color: TGB Dual está publicado para Android ARM64, mas não consta nas alternativas do CoreRegistry.
+2. NES: há outros cores publicados, incluindo opções modernas/alternativas, que não constam no catálogo atual. Avaliar apenas os que tragam benefício real frente a FCEUmm/Nestopia/Mesen/QuickNES.
+3. SNES: o Buildbot publica versões adicionais Snes9x (2002/2005/2005 Plus) e variações bsnes; o catálogo atual mantém apenas Snes9x, Snes9x 2010 e bsnes. Evitar adicionar variantes antigas sem justificativa de desempenho/compatibilidade.
+4. Mega Drive / Sega CD / 32X / Master System / Game Gear / SG-1000: BlastEm e outros cores publicados cobrem mais sistemas Sega do que os atualmente expostos por plataforma. BlastEm não está cadastrado no CoreRegistry, embora exista no Buildbot ARM64. Avaliar sua inclusão nas plataformas que ele efetivamente suporta, sem presumir compatibilidade total.
+5. Sega Saturn: Ymir está publicado para Android ARM64 e não consta no catálogo. É candidato a avaliação; não substituir o padrão sem testes comparativos.
+6. PlayStation: Beetle PSX e Beetle PSX HW estão publicados para Android ARM64 e não constam no catálogo; podem ampliar opções frente a PCSX ReARMed/SwanStation, mas precisam de avaliação de desempenho, renderer e requisitos de BIOS.
+7. Nintendo DS: melonDS DS está publicado além de melonDS e DeSmuME; avaliar se oferece vantagem relevante antes de expor.
+8. Atari 2600: Stella 2023 está publicado e não consta no catálogo; comparar com Stella/Stella 2014 antes de adicionar.
+9. MSX: fMSX e openMSX estão publicados; atualmente só blueMSX está cadastrado. openMSX pode exigir um conjunto de firmware/base de sistema diferente e precisa de revisão específica de BIOS.
+10. Neo Geo: Geolith e variantes FBAlpha 2012 estão publicadas além de FBNeo. Não adicionar automaticamente: validar compatibilidade de ROM sets/BIOS e evitar confundir core alternativo com suporte equivalente.
+11. Dreamcast: Parallel DC aparece no Buildbot, além de Flycast; candidato experimental, sem recomendação de troca sem teste.
+12. Plataformas externas: o Buildbot também publica cores para alguns sistemas que o Tandem atualmente encaminha a emuladores externos (por exemplo Dolphin para GameCube/Wii, Azahar/Citra para 3DS e cores de PS2). Isso é uma possível expansão arquitetural, não uma lacuna funcional atual; manter o fluxo externo até decisão e testes próprios.
+
+ACHADOS DE INTERFACE E INSTALAÇÃO
+- CoresScreen filtra apenas plataformas para as quais CoreRegistry.cores(platform).size > 1. Portanto, plataformas com um único core não aparecem nessa tela, mesmo quando são suportadas pelo Libretro. O comportamento é coerente com uma tela exclusiva de escolha de alternativas, mas o texto/escopo da tela deve deixar isso claro.
+- A tela apresenta alternativas cadastradas sem uma checagem prévia de disponibilidade do ZIP no Buildbot. Os IDs atualmente cadastrados foram conferidos na listagem, mas uma remoção futura no Buildbot faria o download falhar apenas quando o usuário selecionasse a opção.
+- CoreInstaller valida a arquitetura ELF64/AArch64, mas não verifica assinatura .sig nem hash publicado. A validação confirma formato/arquitetura, não autenticidade criptográfica.
+- Ponto de robustez já identificado em leitura estática: após promover o arquivo .part para target, falha em setExecutable/validação final não executa rollback do backup. O arquivo anterior pode permanecer como .backup e o target novo pode estar inválido. Recomenda-se corrigir o bloco de promoção para que toda falha após mover o target antigo restaure o backup antes de concluir o fluxo.
+- A atualização de núcleo é compartilhada pelo ID do núcleo e afeta todos os jogos que o utilizam; não é uma cópia por jogo.
+
+PENDÊNCIAS / RECOMENDAÇÕES
+Prioridade alta:
+- Corrigir rollback completo de CoreInstaller para falhas após a promoção, incluindo validação final e ajuste de permissões.
+- Avaliar se a tela Cores deve comunicar que lista apenas plataformas com alternativas; não é necessário listar todos os cores únicos se a tela mantiver esse propósito.
+Prioridade média:
+- Avaliar inclusão de BlastEm, Ymir, Beetle PSX/PSX HW, TGB Dual, melonDS DS, Stella 2023, fMSX/openMSX e opções adicionais de Neo Geo/Dreamcast, sempre com análise de requisitos e benefício.
+- Avaliar manifesto local/remoto de núcleos para evitar opções quebradas quando o Buildbot retirar um ZIP; não depender apenas de nomes hardcoded.
+Prioridade posterior:
+- Separar suporte declarado, artefato ARM64 publicado, instalação, inicialização e teste real no telefone para cada core.
+- Não declarar um núcleo como validado só porque aparece no diretório oficial.
+- Não criar PR nesta etapa de auditoria; não houve alteração de código. Nenhuma PR estava aberta na consulta.
