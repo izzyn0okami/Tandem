@@ -1968,3 +1968,14 @@ Data: 2026-11-22
 - Teste funcional no Motorola Edge 30 Fusion: PENDENTE. A CI não substitui a validação de ciclo de vida, callbacks tardios, áudio, controles, saves e RetroAchievements.
 - Estado da PR na consulta: aberta; GitHub retornou mergeable=false / mergeable_state=dirty. A comparação com a base indicou 7 commits à frente e 0 atrás; a condição de mergeabilidade precisa ser reavaliada antes de qualquer merge.
 - Não mesclar sem validação funcional e autorização explícita do usuário.
+
+VALIDAÇÃO FUNCIONAL NO APARELHO — PR #32 / TEARDOWN JNI
+Data: 2026-11-22
+- O usuário confirmou: "Tudo ok".
+- Interpretação registrada: os testes funcionais solicitados para a PR #32 foram concluídos e aprovados no Motorola Edge 30 Fusion.
+- Itens cobertos conforme checklist: abertura/pausa/retomada/fechamento normal; encerramento com respostas de rede RetroAchievements pendentes; encerramento com eventos de shader/filtro ou Rewind enfileirados; reabertura de outro jogo com controles, áudio, saves e RetroAchievements funcionando.
+- Resultado: validação funcional aprovada pelo usuário.
+- CI #477 / run ID 45033906969 passou para o commit de código 0a11a7b366b0d84e518558e8a88c40952047cf01.
+- O log já havia sido atualizado em commit 7e16c5d43886158a4fe36f061336f4d69cff2252; esta entrada registra o teste funcional posterior.
+- PR #32 permanece aberta. GitHub ainda informa mergeable=false / mergeable_state=dirty; não presumir que está apta para merge.
+- Não houve autorização explícita de merge nesta confirmação; aguardar solicitação específica antes de mesclar.
