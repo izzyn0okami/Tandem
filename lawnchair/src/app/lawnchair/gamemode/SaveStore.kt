@@ -367,7 +367,7 @@ class SaveStore internal constructor(
             romFile,
             platformSlug,
             listOf(coreId) + siblingCores,
-            GameIdentityResolver.resolve(context, romFile, platformSlug),
+            gameIdentity ?: GameIdentityResolver.resolve(context, romFile, platformSlug),
         ),
     )
 
