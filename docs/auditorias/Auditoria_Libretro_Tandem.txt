@@ -2066,3 +2066,20 @@ Data: 2026-11-22
 - A execução anterior #488 no commit 33b4c5e9d1172962a234fa72d9092307f022d37a falhou em Spotless e na compilação Java por ausência de três classes KSP geradas (FullWidgetsCatalogViewModel_Factory_Impl, LandingScreenViewModel_Factory_Impl e SearchScreenViewModel_Factory_Impl). A correção de formatação foi aplicada em GameSessionActivity.kt no commit f863a925; a CI #489 no novo head passou integralmente, sem repetição do erro de compilação.
 - Resultado: CI do head f863a925 aprovada. Testes funcionais no Motorola Edge 30 Fusion continuam PENDENTES; não considerar a persistência do upload validada até o usuário concluir o checklist no aparelho.
 - PR #33 permanece aberta e não mesclada. Não mesclar sem autorização explícita do usuário.
+
+
+ATUALIZAÇÃO PÓS-MERGE — PR #33 / SINCRONIZAÇÃO PERSISTENTE DE SAVES ROMM
+Data: 2026-11-22
+- PR #33 — “Persist RomM save uploads with WorkManager”.
+- URL: https://github.com/izzyn0okami/Tandem/pull/33
+- Merge concluído com sucesso em 2026-11-22T17:28:45Z.
+- Merge commit: 7e67b4e19c86291fe6726fca24c121009d594af5.
+- Head integrado: 783911a6e439a0e3bea7f6651f85626268488169.
+- CI #489 / run ID 45047911535: sucesso no commit de código f863a9251579ed0c96f31132e53b2ae1f03d68c0; check-style/Spotless, build-debug APK, upload do artefato e final-status aprovados.
+- CI #490 / run ID 45049339452: executada no head documental 783911a6e439a0e3bea7f6651f85626268488169; check-style passou. A compilação do APK ainda estava em andamento no momento do merge; registrar o resultado final em atualização posterior.
+- A CI #489 valida o código funcional da PR; o commit posterior 783911a atualizou somente este documento de auditoria.
+- A implementação usa WorkManager persistente para uploads RomM, requisito de rede conectada, backoff, fila por ROM, Mutex compartilhado com pull, bloqueio de envio durante sessão ativa e recuperação após encerramento do processo.
+- Testes funcionais no aparelho: PENDENTES. Não marcar como validado até confirmação explícita do usuário.
+- Checklist pendente: sair do jogo com rede disponível e conferir Pendente → Enviando → Sync OK; sair sem rede e reconectar; encerrar/reabrir launcher com envio pendente; reabrir a mesma ROM antes do worker iniciar e confirmar que não há upload durante a partida; desconectar RomM com trabalho pendente; verificar ausência de duplicatas remotas e avaliar duração de uploads grandes.
+- Nenhuma outra PR aberta foi encontrada após o merge.
+- Próxima etapa: concluir CI #490, registrar seu resultado e fornecer APK atualizado se disponível; depois executar a validação funcional no telefone. Próxima auditoria: ampliar testes automatizados de SaveStore/SaveSync/lifecycle/GL e avaliar isolamento de processo contra crash nativo.
