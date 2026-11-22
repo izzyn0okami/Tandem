@@ -1999,3 +1999,17 @@ Data: 2026-11-22
 - A CI #477 e os testes funcionais no Motorola Edge 30 Fusion estão aprovados conforme registros anteriores. A atualização atual altera somente o log, não o código funcional já testado.
 - A divergência de histórico será resolvida por um commit de integração com os dois pais (head da PR e commit atualizado da base), sem force push e sem descartar commits.
 - A aptidão para merge ainda depende da confirmação de mergeabilidade, CI aplicável ao novo head e revisão final do diff.
+
+ATUALIZAÇÃO PÓS-MERGE — PR #32
+Data: 2026-11-22
+- PR: #32 — Prevent Libretro JNI calls after GL session teardown.
+- URL: https://github.com/izzyn0okami/Tandem/pull/32
+- Merge concluído com sucesso pelo GitHub em 2026-11-22T16:14:13Z.
+- Merge commit: c4de00f5d2e8f031b8d53d888e35d1351fa0329c.
+- Head integrado: 161c604ab3815936dca5b438fe610e5e6c0ee2cf.
+- CI #479 / run ID 45042061410: sucesso no head integrado; check-style, build-debug-apk e final-status concluídos com sucesso. Jobs de release foram skipped; nenhuma publicação de release foi realizada nesta execução.
+- CI #477 / run ID 45033906969: sucesso no commit original de código, conforme registro anterior.
+- Testes funcionais no Motorola Edge 30 Fusion: aprovados pelo usuário ("Tudo ok"), cobrindo ciclo de vida da sessão, callbacks RetroAchievements pendentes, eventos GL enfileirados e reabertura de outro jogo com controles, áudio, saves e RetroAchievements.
+- O histórico do log foi reconciliado com a base atual antes do merge, preservando os registros da PR #31 e da PR #32. A integração foi feita sem force push.
+- Estado final verificado: PR #32 fechada e merged=true. Nenhuma outra PR aberta foi encontrada na consulta posterior.
+- Pendências específicas desta auditoria: nenhuma pendência bloqueante para a proteção JNI após teardown. Riscos arquiteturais já identificados para auditorias futuras permanecem registrados separadamente: persistência do sync RomM com WorkManager, ampliação de testes automatizados de SaveStore/SaveSync/lifecycle/GL e isolamento de processo para crashes nativos.
