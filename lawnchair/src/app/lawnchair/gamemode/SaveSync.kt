@@ -37,6 +37,7 @@ object SaveSync {
         val prefs = prefs(context)
         return when (prefs.getString(statusKey(romPath), null)) {
             "synced" -> SaveSyncStatus.SYNCED
+
             "syncing" -> {
                 val started = prefs.getLong("${statusKey(romPath)}:started", 0L)
                 if (started > 0L && System.currentTimeMillis() - started > 120_000L) {
