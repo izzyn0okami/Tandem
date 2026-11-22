@@ -616,7 +616,6 @@ class GameSessionActivity : ComponentActivity() {
     override fun onPause() {
         // Antes do super: a superfície de vídeo ainda está ativa e consegue entregar o save.
         persistSram()
-        romPath?.let { SaveSync.markSessionInactive(this, it) }
         romPath?.let {
             val elapsed = SystemClock.elapsedRealtime() - resumedAtMs
             if (resumedAtMs > 0) PlayHistory.addSession(this, it, elapsed, System.currentTimeMillis())
@@ -632,6 +631,8 @@ class GameSessionActivity : ComponentActivity() {
             nativeDestroyed = true
         }
         super.onPause()
+        // Só libere o upload depois que o GL foi pausado e o save local persistido.
+        romPath?.let { SaveSync.markSessionInactive(this, it) }
         // Em uma pausa comum, o idle é retomado em onResume; respostas de rede aguardam o GL.
         stopRaIdleLoop()
     }
