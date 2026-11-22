@@ -1496,3 +1496,16 @@ VALIDAÇÃO PENDENTE
 - Inicialização de jogos PlayStation com e sem BIOS regional quando aplicável.
 - Verificação de desempenho, áudio, controles, saves de bateria, estados, RetroAchievements e retorno ao launcher.
 - A inclusão é opcional; o padrão PCSX ReARMed não será alterado.
+
+
+RESULTADO — PR #26 MESCLADA
+Data: 2026-11-22
+PR: https://github.com/izzyn0okami/Tandem/pull/26
+Título: Add Beetle PSX as an optional PlayStation core
+Branch de destino: game-mode-m2-dev
+Commit de merge: 0431e7a8b5371608001b2137a5f3a69c74d71ff0
+Commit da alteração: 5caea487180752c7079a3981aa0c8e06cb432a79
+CI da PR #432 / ID 44980599097: sucesso (build-debug-apk e check-style).
+Resultado: Beetle PSX (mednafen_psx) cadastrado como alternativa opcional de PlayStation. PCSX ReARMed permanece como padrão e SwanStation continua disponível. Nenhuma alteração de BIOS, formatos, controles ou configuração padrão.
+CI pós-merge #433 / ID 44983501786: em execução no momento deste registro; verificar conclusão antes de encerrar a validação.
+PENDENTE: teste no Motorola do download/instalação, inicialização de jogos, BIOS, desempenho, áudio, controles, saves de bateria, estados rápidos, RetroAchievements e retorno ao launcher. O merge não equivale à aprovação funcional no dispositivo.
