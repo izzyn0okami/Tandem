@@ -1137,3 +1137,47 @@ Data: 2026-11-22
 - A PR #6, descrita em trecho anterior deste documento como aberta/draft, está fechada e mesclada desde 2026-11-21. Merge commit b35b01e651249f18f9cfaaa6ed54504a4d0a2f95. O status histórico foi corrigido acima.
 - Testes funcionais da seleção de ZIP no telefone permanecem pendentes: ZIP com uma ROM; ZIP com múltiplas ROMs; ZIP sem ROM compatível/corrompido; ROM fora de ZIP; ZIP discBased. A CI não substitui esses testes.
 - Pendências funcionais já registradas para firmware, retomada de downloads, espaço de armazenamento e Intellivision continuam em aberto; não foram marcadas como concluídas por esta CI.
+
+
+AUDITORIA ESTÁTICA — INSTALAÇÃO E CATÁLOGO DE NÚCLEOS LIBRETRO
+Data: 2026-11-22
+Arquivos inspecionados:
+- lawnchair/src/app/lawnchair/gamemode/CoreInstaller.kt
+- lawnchair/src/app/lawnchair/gamemode/CoreRegistry.kt
+- lawnchair/src/app/lawnchair/gamemode/CoresScreen.kt
+- lawnchair/src/app/lawnchair/gamemode/GamePlatforms.kt
+- lawnchair/src/app/lawnchair/gamemode/GameModeActivity.kt
+- lawnchair/src/app/lawnchair/gamemode/GameSessionActivity.kt
+- lawnchair/src/app/lawnchair/gamemode/RomLauncher.kt
+
+VERIFICAÇÃO DO CATÁLOGO NO BUILD BOT OFICIAL
+- A pasta oficial Android arm64-v8a foi consultada em https://buildbot.libretro.com/nightly/android/latest/arm64-v8a/.
+- Foram encontrados os arquivos ZIP de vários núcleos usados no catálogo e nas alternativas do Tandem, incluindo Mesen, QuickNES, Snes9x 2010, VBA Next, SwanStation, Mupen64Plus-Next GLES2/GLES3, ParaLLEl N64, Beetle PCE Fast/normal, Beetle Lynx, melonDS, mGBA, PCSX ReARMed, PPSSPP, Opera, ProSystem, Virtual Jaguar, FreeIntv e outros.
+- Resultado limitado ao conjunto consultado: não foi identificada ausência de binários para esses IDs na pasta oficial durante a consulta. Isso confirma disponibilidade de download, não funcionamento real de cada núcleo no Edge 30 Fusion.
+- A documentação oficial Libretro confirma que os núcleos Android são distribuídos como ZIPs contendo arquivos .so e que a arquitetura deve corresponder ao ABI do dispositivo: https://docs.libretro.com/guides/download-cores/.
+
+ACHADOS CONFIRMADOS NO INSTALADOR
+1. Núcleo instalado não é atualizado:
+   - CoreInstaller.ensureInstalled() retorna imediatamente quando encontra um arquivo de destino que passa em isElf().
+   - Não existe verificação de versão, data, hash ou atualização de um núcleo já instalado.
+   - Portanto, um núcleo antigo válido permanece instalado indefinidamente, mesmo quando o Buildbot publica uma versão mais recente.
+2. Verificação de integridade limitada:
+   - isElf() verifica somente os quatro bytes mágicos ELF.
+   - Não verifica classe ELF, arquitetura AArch64, tamanho esperado nem hash criptográfico do arquivo extraído.
+   - A leitura do ZIP pode detectar problemas estruturais/CRC, mas o instalador não compara explicitamente metadados de versão ou hash publicados por uma fonte independente.
+3. Espaço de armazenamento:
+   - O instalador não consulta o espaço livre antes de baixar e extrair o ZIP do núcleo.
+   - O arquivo .part é removido no bloco finally após falha; não há retomada de download de núcleo interrompido.
+4. Substituição:
+   - O instalador apaga o destino existente antes de renomear o .part para o nome final. A operação não preserva uma cópia de segurança se a substituição falhar.
+   - Como o fluxo atual normalmente só chega aqui quando o destino não existe ou não passa no teste ELF, o risco principal é perder um arquivo inválido já existente; a melhoria deve ainda assim usar substituição segura.
+5. Interface e fluxo:
+   - A tela Cores mostra plataformas com mais de um núcleo alternativo. Plataformas com um único núcleo não aparecem nessa lista, mas o fluxo normal de iniciar um jogo chama ensureInstalled() e baixa automaticamente o núcleo padrão ausente.
+   - A escolha do núcleo é persistida por plataforma; opções do núcleo são persistidas separadamente.
+   - Não foi identificada necessidade de alterar esse comportamento apenas por a plataforma ter um único núcleo.
+
+RECOMENDAÇÃO / DECISÃO DE PRODUTO PENDENTE
+- Implementar atualização segura de núcleos com verificação de integridade e substituição atômica, preservando o núcleo atual até o novo arquivo ser validado.
+- Recomendação de experiência: atualização manual sob comando explícito, em vez de substituir silenciosamente um núcleo funcional ao iniciar um jogo; isso evita mudanças inesperadas de compatibilidade/performance. A decisão entre atualização manual e automática precisa ser confirmada antes de alterar o fluxo da interface.
+- Não foi criada PR nesta etapa. Nenhuma PR aberta foi encontrada antes do início desta auditoria.
+- Não confundir disponibilidade no Buildbot ou aprovação de CI com teste funcional dos núcleos no telefone.
