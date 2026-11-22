@@ -2320,3 +2320,18 @@ Status: análise estática concluída; correção/testes dedicados ainda não im
 - Próxima correção recomendada: fazer o Worker retornar Result.retry() quando pushFromWorker() informar adiamento por sessão ativa; manter Result.success() apenas quando o sync for concluído ou não houver mais trabalho aplicável. Adicionar teste que comprove a decisão de retry e um teste de integração WorkManager em ambiente Android apropriado, cobrindo restrição de rede, reexecução após sessão ativa, fila única por ROM e cancelamento de trabalhos.
 - Critério de segurança: nunca marcar SYNCED quando o envio não foi confirmado; manter PENDING durante adiamento/falha. Não alterar o mutex, a política de conflito ou a sincronização durante jogo nesta etapa.
 - Próximas etapas gerais já registradas: depois dos testes WorkManager, avaliar cobertura instrumentada/lifecycle/GL e manter separada a avaliação arquitetural de isolamento de processo contra crashes nativos.
+
+
+CORREÇÃO — RETENTATIVA DE SAVE SYNC ADIADO POR SESSÃO ATIVA
+Data: 2026-11-22
+Status: implementação em branch isolada; CI pendente; PR ainda não criada.
+- A auditoria anterior identificou que pushFromWorker() retorna false quando uma sessão de jogo ainda está ativa, mas o Worker ignorava o retorno e respondia Result.success().
+- Correção: RomMSaveSyncWorker agora converte syncCompleted=false em Result.retry(), mantendo o trabalho persistente elegível para nova tentativa com o backoff configurado. Result.success() fica reservado para conclusão confirmada ou ausência de trabalho aplicável.
+- SaveSyncPolicy ganhou shouldRetryWorker(syncCompleted), função pura usada pelo Worker.
+- SaveSyncPolicyTest ganhou teste para garantir retry quando o sync foi adiado e sucesso quando foi concluído.
+- Não foram alterados endpoints RomM, mutex, regra de conflito, restrições de rede, fila por ROM, estado visual ou fluxo de sessão.
+- Branch: fix/romm-worker-retry-active-session.
+- Commits atuais: 876aa65955114e6badca2c1deccf305aab2603bb (Worker), 66e0be250816cfa6aed37e32fe4998486ac208f7 (policy), 34e2a625940fbe8466c86254e2649d27a72bfade (teste).
+- A dependência androidx.work:work-testing ainda não foi adicionada; a suíte nova cobre a decisão pura de retry, não a integração completa do WorkManager. Uma suíte de integração Android/Robolectric permanece como etapa separada, pois a configuração atual só declara JUnit 4 para testes JVM.
+- Critério de validação: CI deve executar o teste novo, Spotless e build APK; não considerar a cobertura como teste integral do agendador WorkManager.
+- Não mesclar sem autorização explícita do usuário.

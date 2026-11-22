@@ -145,6 +145,12 @@ class SaveSyncPolicyTest {
     }
 
     @Test
+    fun deferredWorkerSyncIsRetriedUntilItCanComplete() {
+        assertTrue(SaveSyncPolicy.shouldRetryWorker(syncCompleted = false))
+        assertFalse(SaveSyncPolicy.shouldRetryWorker(syncCompleted = true))
+    }
+
+    @Test
     fun uploadRequiresExistingNonEmptyChangedFile() {
         assertFalse(SaveSyncPolicy.shouldUpload(false, 10L, "new", "old"))
         assertFalse(SaveSyncPolicy.shouldUpload(true, 0L, "new", "old"))

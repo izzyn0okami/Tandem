@@ -66,6 +66,9 @@ internal object SaveSyncPolicy {
     /** Só preserva local quando ele não é a versão que já havia sido aplicada neste núcleo. */
     fun shouldBackupLocal(localExists: Boolean, localHash: String?, appliedHash: String?): Boolean = localExists && (appliedHash == null || localHash != appliedHash)
 
+    /** Um trabalho adiado porque a sessão ainda está ativa deve permanecer na fila do WorkManager. */
+    fun shouldRetryWorker(syncCompleted: Boolean): Boolean = !syncCompleted
+
     fun shouldUpload(
         fileExists: Boolean,
         fileLength: Long,

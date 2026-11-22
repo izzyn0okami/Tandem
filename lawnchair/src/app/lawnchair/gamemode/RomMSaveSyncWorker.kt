@@ -15,8 +15,8 @@ class RomMSaveSyncWorker(
         val romPath = inputData.getString(KEY_ROM_PATH) ?: return Result.failure()
         val coreId = inputData.getString(KEY_CORE_ID) ?: return Result.failure()
         return try {
-            SaveSync.pushFromWorker(applicationContext, romPath, coreId)
-            Result.success()
+            val completed = SaveSync.pushFromWorker(applicationContext, romPath, coreId)
+            if (SaveSyncPolicy.shouldRetryWorker(completed)) Result.retry() else Result.success()
         } catch (cancelled: CancellationException) {
             throw cancelled
         } catch (error: Exception) {
