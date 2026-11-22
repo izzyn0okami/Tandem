@@ -102,7 +102,13 @@ object BiosManager {
             check(temp.isFile && temp.length() > 0L) { "Arquivo de BIOS vazio ou inválido" }
             val importedLength = temp.length()
 
-            if (backup.exists()) check(backup.delete()) { "Não foi possível limpar o backup antigo da BIOS" }
+            if (backup.exists()) {
+                if (!target.exists()) {
+                    check(backup.renameTo(target)) { "Não foi possível recuperar o backup anterior da BIOS" }
+                } else {
+                    check(backup.delete()) { "Não foi possível limpar o backup antigo da BIOS" }
+                }
+            }
             val hadPrevious = target.exists()
             if (hadPrevious) check(target.renameTo(backup)) { "Não foi possível preservar a BIOS anterior" }
 
@@ -122,7 +128,12 @@ object BiosManager {
                         installFailure,
                     )
                 }
-                throw IllegalStateException("Nova BIOS rejeitada; arquivo anterior restaurado", installFailure)
+                val message = if (hadPrevious) {
+                    "Nova BIOS rejeitada; arquivo anterior restaurado"
+                } else {
+                    "Nova BIOS rejeitada; não havia arquivo anterior para restaurar"
+                }
+                throw IllegalStateException(message, installFailure)
             }
 
             if (backup.exists() && !backup.delete()) {
