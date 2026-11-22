@@ -323,7 +323,12 @@ private fun GameModeRoot(refreshKey: Int, onExit: () -> Unit) {
             busy = true
             runCatching {
                 val copied = withContext(Dispatchers.IO) {
-                    GameIdentityResolver.claimLegacySaves(context, pending.gameIdentity, pending.sources)
+                    GameIdentityResolver.claimLegacySaves(
+                        context,
+                        File(pending.romPath),
+                        pending.gameIdentity,
+                        pending.sources,
+                    )
                 }
                 check(copied) {
                     "Não foi possível copiar e validar todos os arquivos. As pastas originais foram preservadas e o jogo continua bloqueado."
