@@ -115,6 +115,22 @@ object SaveSync {
         RemoteFileKind.State to store.stateFile,
     )
 
+    /** Registra que a ROM está em uma sessão ativa, impedindo upload enquanto ela pode mudar. */
+    fun markSessionActive(context: Context, romPath: String) {
+        prefs(context).edit { putLong(sessionKey(romPath), System.currentTimeMillis()) }
+    }
+
+    fun markSessionInactive(context: Context, romPath: String) {
+        prefs(context).edit { remove(sessionKey(romPath)) }
+    }
+
+    private fun sessionKey(romPath: String) = "session_active:$romPath"
+
+    private fun isSessionActive(context: Context, romPath: String): Boolean {
+        val lastActive = prefs(context).getLong(sessionKey(romPath), 0L)
+        return lastActive > 0L && System.currentTimeMillis() - lastActive < 120_000L
+    }
+
     /** Marca a falha do pull como pendente sem confundi-la com sincronização confirmada. */
     fun markSyncPending(context: Context, romPath: String) {
         if (romId(context, romPath) == null) return
@@ -265,10 +281,13 @@ object SaveSync {
     }
 
     /** Chamado somente pelo Worker; o mesmo Mutex protege pull e push contra concorrência. */
-    internal suspend fun pushFromWorker(context: Context, romPath: String, coreId: String) {
+    internal suspend fun pushFromWorker(context: Context, romPath: String, coreId: String): Boolean {
         val app = context.applicationContext
         lock.withLock {
-            if (romId(app, romPath) == null) return
+            if (romId(app, romPath) == null) return true
+            // A sessão pode ter sido reaberta enquanto o trabalho aguardava rede.
+            // Não envie arquivos enquanto o núcleo puder estar atualizando o save.
+            if (isSessionActive(app, romPath)) return false
             prefs(app).edit {
                 putString(statusKey(romPath), "syncing")
                 putLong("${statusKey(romPath)}:started", System.currentTimeMillis())
@@ -279,6 +298,7 @@ object SaveSync {
                     putString(statusKey(romPath), "synced")
                     remove("${statusKey(romPath)}:started")
                 }
+                return true
             } catch (error: Exception) {
                 markSyncPending(app, romPath)
                 throw error
@@ -305,7 +325,13 @@ object SaveSync {
             val key = "${kind.path}:$romPath"
             val current = hash(file)
             if (current == prefs.getString("$key:hash", null)) continue
-            val existing = prefs.getLong("$key:id", -1L).takeIf { it >= 0 }
+            val storedId = prefs.getLong("$key:id", -1L).takeIf { it >= 0 }
+            // A recuperação do Worker é "at least once": se o servidor aceitou um POST
+            // antes de o processo morrer, encontre o registro antes de tentar criar outro.
+            val existing = storedId ?: client.listRemoteFiles(kind, romId)
+                .filter { it.emulator == emulatorTag(coreId) }
+                .maxByOrNull { it.updatedAtMs }
+                ?.id
             val extension = if (kind == RemoteFileKind.Save) "srm" else "state"
             val uploadName = "${File(romPath).nameWithoutExtension}.$extension"
             val uploaded = try {
