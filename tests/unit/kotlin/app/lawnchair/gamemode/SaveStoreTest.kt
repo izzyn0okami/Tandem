@@ -227,4 +227,25 @@ class SaveStoreTest {
         assertArrayEquals(byteArrayOf(9, 9, 9), File(target, "sram.srm").readBytes())
     }
 
+    @Test
+    fun migrationRecoversWhenStableDirectoryWasCreatedEmpty() {
+        val legacy = File(root, "melonds/Pokemon")
+        legacy.mkdirs()
+        File(legacy, "sram.srm").writeBytes(byteArrayOf(5, 4, 3, 2, 1))
+        val stable = File(root, "melonds/local-game-id")
+        assertTrue(stable.mkdirs())
+
+        val store = SaveStore(
+            root,
+            "melonds",
+            File("Pokemon.nds"),
+            gameIdentity = "local-game-id",
+            migrationSources = mapOf("melonds" to legacy),
+        )
+
+        assertArrayEquals(byteArrayOf(5, 4, 3, 2, 1), store.readSram())
+        assertTrue(legacy.isDirectory)
+        assertTrue(File(stable, "sram.srm").isFile)
+    }
+
 }
