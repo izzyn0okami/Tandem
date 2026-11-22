@@ -3002,3 +3002,93 @@ PENDÊNCIA
 - A auditoria não autoriza remover o bloqueio atual, descartar arquivos ou escolher um conjunto automaticamente.
 - Nenhuma PR foi criada nesta etapa; não havia PR aberta no momento da verificação.
 
+AUDITORIA DE COMPATIBILIDADE — PROTOCOLO DE SINCRONIZAÇÃO ROMM 5.4.1
+Data: 2026-11-22
+Versão de referência: tag oficial RomM 5.4.1 (código-fonte conferido diretamente).
+Branch Tandem inspecionada: game-mode-m2-dev.
+PR aberta identificada: #41 — feat: add explicit save conflict resolution (draft; não mesclada).
+Nenhuma nova PR criada nesta auditoria.
+
+FONTES OFICIAIS ROMM 5.4.1 INSPECIONADAS
+- backend/endpoints/sync/__init__.py
+  https://github.com/rommapp/romm/blob/5.4.1/backend/endpoints/sync/__init__.py
+- backend/endpoints/device/__init__.py
+  https://github.com/rommapp/romm/blob/5.4.1/backend/endpoints/device/__init__.py
+- backend/endpoints/responses/sync.py
+  https://github.com/rommapp/romm/blob/5.4.1/backend/endpoints/responses/sync.py
+- backend/endpoints/saves.py
+  https://github.com/rommapp/romm/blob/5.4.1/backend/endpoints/saves.py
+- backend/endpoints/states.py
+  https://github.com/rommapp/romm/blob/5.4.1/backend/endpoints/states.py
+- backend/handler/sync/comparison.py
+  https://github.com/rommapp/romm/blob/5.4.1/backend/handler/sync/comparison.py
+- backend/models/device.py
+  https://github.com/rommapp/romm/blob/5.4.1/backend/models/device.py
+- backend/models/device_save_sync.py
+  https://github.com/rommapp/romm/blob/5.4.1/backend/models/device_save_sync.py
+- Documentação do protocolo 5.4.0 (referência documental da mesma família de API):
+  https://docs.romm.app/5.4.0/developers/device-sync-protocol/
+
+ACHADO PRINCIPAL
+RomM 5.4.1 possui protocolo oficial de sincronização por dispositivo:
+1. POST /api/devices registra o dispositivo (Scope.DEVICES_WRITE), retornando device_id UUID.
+2. POST /api/sync/negotiate recebe o inventário local e abre uma sessão; requer assets.read + devices.read.
+3. O servidor compara as versões usando histórico individual por dispositivo e retorna operações upload, download, conflict, delete ou no_op.
+4. POST /api/sync/sessions/{session_id}/complete encerra a sessão e registra operações concluídas/falhas.
+5. Downloads podem usar optimistic=false e POST /api/saves/{id}/downloaded para confirmar que os bytes foram gravados.
+6. Uploads negociados usam POST /api/saves com device_id, session_id, content_hash, slot e overwrite=false. O servidor pode responder HTTP 409 se a versão remota mudou desde a última sincronização desse dispositivo.
+7. O protocolo associa saves por (rom_id, slot). Slots nulos são arquivos de arquivo/manual e não participam do pareamento normal.
+
+COMPARAÇÃO COM O TANDEM ATUAL
+Arquivos inspecionados:
+- lawnchair/src/app/lawnchair/gamemode/RomMClient.kt
+- lawnchair/src/app/lawnchair/gamemode/SaveSync.kt
+- lawnchair/src/app/lawnchair/gamemode/RomMSaveSyncWorker.kt
+
+1. O Tandem NÃO registra atualmente um dispositivo RomM via POST /api/devices.
+2. O Tandem NÃO chama /api/sync/negotiate nem cria/fecha sessões de sincronização RomM.
+3. A implementação atual consulta diretamente GET /api/saves e GET /api/states, escolhe registros localmente e mantém metadados próprios no aparelho.
+4. O Tandem envia saves e states por endpoints separados. O protocolo oficial /api/sync/negotiate de 5.4.1 negocia SAVES; não inclui states nessa negociação.
+5. A rotina atual usa PUT /api/saves/{id} para atualizar um save remoto existente. No código 5.4.1, PUT é uma atualização direta e não possui a proteção de conflito da negociação. O próprio protocolo recomenda PUT somente para substituir uma versão criada pelo próprio dispositivo. Para uploads negociados e protegidos, deve-se usar POST /api/saves com device_id, session_id, content_hash e overwrite=false.
+6. A API oficial utiliza content_hash MD5 como identificador de conteúdo para o protocolo de sincronização. O Tandem usa SHA-256 para integridade/migração local. Os dois podem coexistir: manter SHA-256 local e calcular MD5 adicional apenas para o contrato RomM.
+7. O RomM mantém baseline por dispositivo/save (last_sync_hash e last_sync_server_hash), permitindo diferenciar alteração local, alteração remota e alteração simultânea. O Tandem hoje mantém baseline/metadados próprios, sem registrar essa história no servidor.
+8. O protocolo permite que o servidor identifique conflito, mas não escolhe automaticamente o vencedor. O cliente continua responsável pela resolução; uma alternativa segura documentada é arquivar a cópia local como save de slot nulo antes de adotar a versão remota.
+9. Estados Libretro não são equivalentes a SRAM. Devem continuar isolados por core e não podem ser enviados para o fluxo de SRAM/slot sem uma política específica.
+
+PERMISSÕES / PAREAMENTO
+- O fluxo atual já solicita devices.read e devices.write, além de assets.read/assets.write e outros escopos relevantes no pareamento por dispositivo.
+- O endpoint de registro existe na versão 5.4.1 e usa fingerprint para reaproveitar dispositivo existente (mac_address ou hostname + platform); o ID devolvido é UUID.
+- A autenticação por token não substitui o registro do dispositivo: o Tandem precisa persistir o device_id RomM e enviá-lo nas operações. Não foi encontrada chamada de registro no cliente atual.
+- Para o fluxo recomendado, conferir os escopos do token já pareado e tratar 403 de forma explicativa, sem apagar metadados locais ou recriar dispositivos em loop.
+
+CONCLUSÃO DE COMPATIBILIDADE
+- A versão RomM 5.4.1 CONFIRMADAMENTE contém os endpoints e o contrato-base necessários para migrar a sincronização de SAVES para o protocolo oficial.
+- A hipótese de que o Tandem está usando uma API incompatível estava incorreta: os endpoints diretos atuais existem, mas o Tandem não utiliza a camada de negociação por dispositivo.
+- A migração é tecnicamente viável para SRAM/saves, mas NÃO substitui por completo a sincronização de states, porque states não fazem parte do payload de negociação oficial.
+- A integração deve ser híbrida: protocolo oficial para SRAM/saves; mecanismo próprio protegido e separado para states por core.
+- A PR #41 está aberta e trata resolução de conflitos de migração local; não deve ser sobreposta. A migração do protocolo RomM afeta SaveSync.kt/RomMClient.kt e deve aguardar a conclusão/integração da PR #41 ou ser coordenada explicitamente com ela.
+
+PLANO RECOMENDADO — AINDA NÃO IMPLEMENTADO
+1. Preservar a PR #41 e seu fluxo de resolução de conflitos locais.
+2. Adicionar registro idempotente do dispositivo RomM e persistência segura do device_id por servidor/conta. Não reutilizar o ID entre contas.
+3. Definir slots estáveis para SRAM por jogo (ex.: autosave) e enviar inventário local com rom_id, file_name, slot, emulator, content_hash MD5, updated_at e file_size_bytes.
+4. Negociar uma sessão por ciclo de jogo, não uma chamada por arquivo; concluir a sessão com contadores de sucesso/falha.
+5. Executar operações conforme ação do servidor:
+   - upload: POST /api/saves com overwrite=false, device_id, session_id e content_hash;
+   - download: GET /api/saves/{id}/content com optimistic=false; gravar em staging, validar e confirmar via /downloaded;
+   - conflict: manter bloqueio e apresentar resolução explícita; não sobrescrever automaticamente;
+   - delete: aplicar somente após validar a semântica e o baseline do dispositivo; nunca interpretar ausência de ROM no inventário parcial como exclusão;
+   - no_op: atualizar baseline sem transferir bytes quando hashes confirmarem igualdade.
+6. Preservar SHA-256, staging, backups, snapshots imutáveis, isolamento de conta e revalidação de identidade já implementados no Tandem.
+7. Manter states em fluxo separado, com isolamento por core e detecção de conflito própria; não aplicar delete/restore_unlisted de SRAM a states.
+8. Adicionar testes de contrato para HTTP 200/201/400/403/404/409, sessão interrompida, retry, conta alternada, download incompleto e confirmação de baseline.
+9. Testar primeiro com uma ROM e uma SRAM descartável; depois testar conflito entre dois dispositivos e estados de dois cores.
+10. Não remover o sincronizador antigo até a migração estar validada. Usar migração gradual ou fallback controlado para contas/dispositivos sem registro.
+
+PENDÊNCIAS
+- Implementação do registro de dispositivo e negociação oficial para saves.
+- Definir mapeamento estável de slot SRAM para os núcleos usados.
+- Definir política e interface separadas para conflitos de states.
+- Confirmar no servidor real do usuário que a versão reportada é efetivamente 5.4.1 e que os escopos do token estão ativos; a inspeção de código confirma o contrato da versão, não o estado/configuração da instância em execução.
+- Não houve alteração funcional nem execução de CI nesta auditoria.
+
