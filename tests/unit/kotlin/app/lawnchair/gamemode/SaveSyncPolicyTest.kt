@@ -59,6 +59,44 @@ class SaveSyncPolicyTest {
     }
 
     @Test
+    fun remoteContentHashDetectsReplacementEvenWhenIdAndTimestampMatch() {
+        assertTrue(SaveSyncPolicy.isRemoteVersionChanged(1_000L, 23L, 1_000L, 23L, "hash-b", "hash-a"))
+    }
+
+    @Test
+    fun matchingRemoteContentHashIsStableAcrossTimestampChanges() {
+        assertFalse(SaveSyncPolicy.isRemoteVersionChanged(1_001L, 23L, 1_000L, 23L, "same-hash", "same-hash"))
+    }
+
+    @Test
+    fun aCoreWithoutAnAppliedBaselineReceivesTheRemoteSave() {
+        assertTrue(SaveSyncPolicy.shouldApplyRemote(false, true, null))
+    }
+
+    @Test
+    fun aMissingLocalSaveIsRestoredEvenWhenTheRemoteVersionIsKnown() {
+        assertTrue(SaveSyncPolicy.shouldApplyRemote(false, false, "known-hash"))
+    }
+
+    @Test
+    fun aChangedLocalSaveIsKeptWhenTheRemoteHeadDidNotChange() {
+        assertFalse(SaveSyncPolicy.shouldApplyRemote(false, true, "previously-applied-hash"))
+    }
+
+    @Test
+    fun aChangedRemoteHeadIsApplied() {
+        assertTrue(SaveSyncPolicy.shouldApplyRemote(true, true, "previously-applied-hash"))
+    }
+
+    @Test
+    fun localFileIsBackedUpWhenItHasNoBaselineOrDiffersFromAppliedVersion() {
+        assertTrue(SaveSyncPolicy.shouldBackupLocal(true, "local", null))
+        assertTrue(SaveSyncPolicy.shouldBackupLocal(true, "local-new", "local-old"))
+        assertFalse(SaveSyncPolicy.shouldBackupLocal(true, "same", "same"))
+        assertFalse(SaveSyncPolicy.shouldBackupLocal(false, null, null))
+    }
+
+    @Test
     fun uploadRequiresExistingNonEmptyChangedFile() {
         assertFalse(SaveSyncPolicy.shouldUpload(false, 10L, "new", "old"))
         assertFalse(SaveSyncPolicy.shouldUpload(true, 0L, "new", "old"))
