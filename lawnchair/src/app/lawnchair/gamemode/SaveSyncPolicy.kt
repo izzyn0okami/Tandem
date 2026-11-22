@@ -29,6 +29,13 @@ internal object SaveSyncPolicy {
 
     fun isSessionActive(lastActiveAt: Long, now: Long): Boolean = lastActiveAt > 0L && now - lastActiveAt < SESSION_TIMEOUT_MS
 
+    fun isRemoteVersionChanged(
+        remoteUpdatedAtMs: Long,
+        remoteId: Long,
+        lastRemoteUpdatedAtMs: Long,
+        lastRemoteId: Long,
+    ): Boolean = remoteUpdatedAtMs != lastRemoteUpdatedAtMs || remoteId != lastRemoteId
+
     fun shouldUpload(
         fileExists: Boolean,
         fileLength: Long,

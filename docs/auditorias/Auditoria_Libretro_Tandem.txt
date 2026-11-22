@@ -2216,3 +2216,23 @@ Data: 2026-11-22
 - Testes funcionais adicionais no telefone não são necessários para esta PR de testes unitários; não houve alteração de comportamento de rede, WorkManager, concorrência, pull/push ou interface.
 - Próxima etapa da auditoria: avaliar testes de integração WorkManager em ambiente apropriado e, posteriormente, cobertura instrumentada para lifecycle/GL; manter como pendência a avaliação de isolamento de processo contra crashes nativos.
 - Consultar a CI pós-merge no merge commit e registrar seu resultado quando concluída.
+
+
+AUDITORIA — CORREÇÃO DA SELEÇÃO DO SAVE REMOTO MAIS RECENTE
+Data: 2026-11-22
+Status: implementação preparada em branch isolada; CI pendente.
+- Sintoma relatado: o Tandem recebia HTTP 200 e baixava um save RomM, mas aparentemente não selecionava/ativava a versão mais recente do servidor.
+- Auditoria de SaveSync.kt confirmou dois pontos frágeis:
+  1. A seleção do registro remoto usava apenas updated_at; registros com o mesmo timestamp podiam empatar e a escolha não tinha desempate determinístico.
+  2. A detecção de mudança comparava somente updated_at e ignorava o ID do registro remoto já armazenado localmente.
+- A comparação entre relógio local do arquivo e updated_at do servidor também podia escolher incorretamente devido a relógios divergentes.
+- Correção preparada na branch fix/romm-latest-save-pull:
+  - Selecionar o registro por updated_at e, em empate, pelo maior ID.
+  - Considerar a versão remota alterada quando timestamp OU ID diferirem dos metadados confirmados.
+  - Quando a versão remota mudou e o arquivo local também divergiu do último hash confirmado, preservar o local no diretório de backups e aplicar a versão atual do RomM; a decisão não depende mais de comparar relógios do aparelho e servidor.
+  - Manter download temporário, validação de arquivo não vazio e substituição protegida já existentes.
+  - Adicionar três testes JVM para mudança de ID com timestamp igual, mudança de timestamp com mesmo ID e igualdade completa dos metadados.
+- Limite conhecido: a API usada pelo cliente não fornece hash remoto no objeto listado. A comparação de conteúdo local continua baseada no hash SHA-1 confirmado; a detecção de versão remota usa ID + updated_at.
+- Risco/decisão: em conflito, o save local divergente é preservado em backup, mas a versão remota passa a ser a ativa, conforme a prioridade solicitada de carregar a versão atual do servidor. O usuário ainda deve validar no telefone antes de merge.
+- PR ainda não criada; aguardar validação da CI da branch e revisar o diff completo antes de abrir PR.
+- Teste funcional no Motorola Edge 30 Fusion: PENDENTE.

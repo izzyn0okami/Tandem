@@ -44,6 +44,21 @@ class SaveSyncPolicyTest {
     }
 
     @Test
+    fun remoteVersionChangesWhenRecordIdChangesEvenIfTimestampMatches() {
+        assertTrue(SaveSyncPolicy.isRemoteVersionChanged(1_000L, 24L, 1_000L, 23L))
+    }
+
+    @Test
+    fun remoteVersionChangesWhenTimestampChangesForSameRecord() {
+        assertTrue(SaveSyncPolicy.isRemoteVersionChanged(1_001L, 23L, 1_000L, 23L))
+    }
+
+    @Test
+    fun remoteVersionIsUnchangedOnlyWhenTimestampAndRecordIdMatch() {
+        assertFalse(SaveSyncPolicy.isRemoteVersionChanged(1_000L, 23L, 1_000L, 23L))
+    }
+
+    @Test
     fun uploadRequiresExistingNonEmptyChangedFile() {
         assertFalse(SaveSyncPolicy.shouldUpload(false, 10L, "new", "old"))
         assertFalse(SaveSyncPolicy.shouldUpload(true, 0L, "new", "old"))
