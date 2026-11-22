@@ -326,7 +326,7 @@ internal object GameIdentityResolver {
                 uri.port == 443 && scheme == "https" -> -1
                 else -> uri.port
             }
-            java.net.URI(scheme, uri.userInfo, host, port, uri.path?.trimEnd('/').orEmpty(), null, null).toASCIIString().trimEnd('/')
+            java.net.URI(scheme, null, host, port, uri.path?.trimEnd('/').orEmpty(), null, null).toASCIIString().trimEnd('/')
         }.getOrNull()
     }
 
