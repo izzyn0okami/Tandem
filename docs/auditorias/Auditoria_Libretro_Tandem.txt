@@ -2613,3 +2613,63 @@ REPOSITÓRIO
 - PRs abertas verificadas em 2026-11-22: nenhuma.
 - Nenhuma alteração funcional foi feita nesta auditoria.
 - Não foi criada PR #40 nesta etapa; a implementação deve começar somente depois de a política de namespace da conta e a preservação da fila estarem definidas.
+
+IMPLEMENTAÇÃO EM ANDAMENTO — IDENTIDADE ESTÁVEL DE JOGOS (PR #40)
+Data: 2026-11-22
+Branch: feat/stable-game-save-identity
+Status: implementação em revisão técnica; ainda sem PR aberta e sem CI executada. Não mesclar.
+
+ESCOPO IMPLEMENTADO NA BRANCH
+1. Identidade de jogo:
+   - Jogos RomM vinculados usam hash do servidor normalizado + ID remoto.
+   - Jogos locais usam plataforma + SHA-256 do conteúdo.
+   - ROM única permanece com identidade após renomear/mover o arquivo.
+   - Playlists M3U incluem o conteúdo dos discos referenciados; CUE normaliza o nome do arquivo de disco para que renomeações não alterem a identidade.
+   - Cache de fingerprint usa caminho como chave de cache e assinatura de tamanho/data de modificação para evitar reler ROMs em toda abertura.
+2. Vínculo RomM:
+   - Vínculo por conteúdo permite localizar uma ROM movida dentro da biblioteca configurada.
+   - O vínculo direto por caminho registra também fingerprint do conteúdo; conteúdo diferente no mesmo caminho não herda o vínculo antigo.
+   - Associação por conteúdo é marcada ambígua se o mesmo fingerprint for associado a registros RomM diferentes; nesse caso, não se escolhe silenciosamente um registro.
+   - A validação da sincronização exige servidor e fingerprint de credenciais correspondentes ao vínculo original.
+   - Vínculos antigos que não possuem fingerprint/namespace suficiente falham de forma segura e exigem reassociação; não se deve enviar saves por um vínculo antigo não verificável.
+3. SaveStore e migração:
+   - Diretório novo usa identidade estável separada de coreId.
+   - SRAM pode continuar sendo lida entre núcleos explicitamente compatíveis; estado rápido continua isolado por núcleo.
+   - Migração legada só é proposta quando a biblioteca configurada identifica exatamente um jogo com basename sanitizado correspondente e o arquivo aberto é esse jogo.
+   - Migração copia para diretório temporário, valida comprimento e SHA-256 de cada arquivo, confere a lista de arquivos e promove por rename.
+   - Diretório de origem é preservado; destino existente nunca é sobrescrito.
+   - Se a migração falhar, SaveStore continua usando a origem legada em vez de abrir silenciosamente um diretório vazio.
+   - Descoberta das fontes legadas e fingerprint são preparados em Dispatchers.IO antes de abrir a sessão; identidade e fontes são passadas à Activity. Consultas de status na interface usam apenas identidade já cacheada, evitando hashing integral no thread principal.
+4. WorkManager/RomM:
+   - Nome do trabalho único usa identidade do jogo + coreId, não o caminho.
+   - A tarefa guarda identidade do jogo, plataforma e fingerprint das credenciais de origem.
+   - O Worker procura novamente o arquivo pelo conteúdo na biblioteca configurada, valida a mesma conta/servidor e só então envia.
+   - Se a sessão estiver ativa, o arquivo tiver sido movido sem ser encontrado, ou a conta não corresponder, o Worker retorna retry; não marca SYNCED.
+   - Desconectar RomM não cancela os uploads pendentes. Eles permanecem aguardando reconexão da conta original; credenciais diferentes não são usadas.
+5. Testes adicionados em SaveStoreTest:
+   - separação de dois jogos com mesmo basename usando identidades distintas;
+   - SRAM compartilhada somente com core irmão explicitamente informado e estado rápido não compartilhado;
+   - migração validada preservando origem;
+   - fingerprint multidisco muda quando o conteúdo do disco muda;
+   - fingerprint de ROM única permanece após renomeação;
+   - fingerprint CUE permanece após renomear cue e disco;
+   - vínculo direto exige fingerprint correspondente;
+   - migração não sobrescreve diretório estável já existente.
+   - Total de testes no arquivo: 13. Ainda precisam ser executados pela CI.
+
+PONTOS DE REVISÃO OBRIGATÓRIA ANTES DE APROVAR
+- Confirmar compilação e execução real dos testes; não aceitar NO-SOURCE.
+- Confirmar que as rotas de download RomM e abertura de sessão passam a identidade correta.
+- Verificar comportamento de vínculos antigos sem fingerprint: mensagem deve orientar reassociação sem bloquear o uso do save local.
+- Verificar que o fingerprint de playlists CUE/M3U não cria colisões nem deixa de considerar arquivos referenciados.
+- Verificar a recuperação de uploads antigos na fila WorkManager. Tarefas antigas sem fingerprint de conta não podem ser enviadas com credenciais presumidas; definir tratamento explícito para elas.
+- Verificar que a reconexão com token renovado da mesma conta não deixa a fila permanentemente bloqueada. Atualmente a impressão digital da conta deriva do token; é conservadora contra envio cruzado, mas pode exigir nova associação se o token mudar.
+- Verificar custo de fingerprint em bibliotecas grandes e ausência de leitura integral no thread principal.
+
+ESTADO DE GIT/CI
+- PRs abertas verificadas antes da preparação: nenhuma.
+- Branch de implementação: feat/stable-game-save-identity.
+- CI: ainda não iniciada nesta etapa.
+- Testes funcionais no telefone: ainda não solicitados; aguardam CI e revisão.
+- PR #40: ainda não criada.
+- Nenhuma alteração foi mesclada.
