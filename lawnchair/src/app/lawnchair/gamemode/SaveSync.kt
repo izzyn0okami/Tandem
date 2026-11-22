@@ -167,7 +167,13 @@ object SaveSync {
 
     /** Antes de jogar: aguarda o pull terminar e restaura os saves locais se qualquer etapa falhar. */
     suspend fun pull(context: Context, romPath: String, coreId: String, platformSlug: String? = null) {
-        val romId = romId(context, romPath) ?: return
+        val linkedRomId = romId(context, romPath)
+        if (linkedRomId == null) {
+            if (GameIdentityResolver.hasDirectRomMLink(context, File(romPath))) {
+                throw IOException("Este jogo está vinculado a outra conta ou servidor RomM. Reconecte a conta original para sincronizar os saves.")
+            }
+            return
+        }
         val gameIdentity = GameIdentityResolver.resolve(context, File(romPath), platformSlug)
         val client = client(context) ?: throw IOException("RomM está conectado, mas não foi possível criar o cliente")
         val store = SaveStore(context, coreId, File(romPath), platformSlug = platformSlug)
@@ -201,7 +207,7 @@ object SaveSync {
             var preserveSnapshots = false
             try {
                 for ((kind, file) in files(store)) {
-                    val remotes = client.listRemoteFiles(kind, romId)
+                    val remotes = client.listRemoteFiles(kind, linkedRomId)
                     val remote = newestRemoteFile(kind, remotes, coreId) ?: continue
                     GameLog.log(
                         "saves",
