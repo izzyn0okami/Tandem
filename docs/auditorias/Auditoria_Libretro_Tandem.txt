@@ -2471,3 +2471,64 @@ Diretrizes:
 ATUALIZAÇÃO CI
 - Workflow pós-merge da PR #38, run 45065462643: concluído com sucesso em 2026-11-22.
 - PRs abertas verificadas após a conclusão: nenhuma.
+
+FASE 1 — APROFUNDAMENTO TÉCNICO: IDENTIDADE E ISOLAMENTO
+Data: 2026-11-22
+Status: inspeção estática concluída; nenhuma alteração funcional realizada.
+
+VERIFICAÇÃO DETALHADA
+1. Colisão de diretórios locais confirmada:
+- SaveStore.kt constrói o diretório como <savesRoot>/<coreId>/<romFile.nameWithoutExtension sanitizado>.
+- O nome é reduzido ao basename; diretórios de origem e identidade RomM não entram no caminho.
+- Caracteres fora de [A-Za-z0-9._ -] viram "_", permitindo colisões adicionais após sanitização.
+- Portanto, duas ROMs distintas com mesmo basename no mesmo núcleo, ou nomes que sanitizam para o mesmo texto, compartilham sram.srm, state1.state e backups. É risco real de sobrescrita/cruzamento de progresso.
+- O romPath separa algumas preferências RomM, mas não impede a colisão física no SaveStore.
+
+2. Isolamento incompleto dos metadados de estados rápidos confirmado:
+- appliedHashKey inclui kind + romPath + coreId.
+- Porém key = kind + romPath é usado para hash legado, remote timestamp, remote ID e outras referências; remoteHashKey também não inclui coreId.
+- push() lê storedId de "$key:id" para qualquer núcleo. Para State, isso permite reutilizar ID remoto que foi gravado anteriormente por outro núcleo.
+- pullOne() lê e atualiza remote timestamp/ID/hash por kind + romPath, mesmo que o estado remoto seja selecionado exclusivamente para um coreId.
+- Consequência: estados rápidos de núcleos diferentes não têm isolamento completo de metadados. A SRAM pode continuar com metadados compartilhados, mas State precisa de escopo por coreId em todas as chaves relevantes, inclusive ID remoto usado no upload.
+
+3. Identidade RomM e caminho:
+- SaveSync.link armazena vínculo por romPath (rom:<caminho>), e fila WorkManager usa hash de romPath.
+- Mover ou renomear a ROM altera a chave local de vínculo e o nome-base do save; a auditoria não encontrou uma identidade local estável independente do caminho.
+- RemoteGame já contém ID RomM, plataforma, nomes/arquivos e fileIds; estes dados podem participar da identidade, mas o fluxo completo de importação/vínculo precisa ser mapeado antes da implementação para não supor que toda ROM local tenha ID remoto.
+
+4. Fronteiras de compatibilidade:
+- SaveStore recebe siblingCores e só usa esses núcleos como fallback de SRAM; estado rápido é sempre do core atual.
+- A regra é uma boa base, mas a identidade do jogo precisa ser independente da identidade do núcleo. A compatibilidade SRAM deve continuar explícita por grupo de núcleos comprovadamente compatíveis, nunca por simples igualdade de basename.
+
+MODELO TÉCNICO RECOMENDADO PARA A PRÓXIMA PROPOSTA
+- Game identity: ID estável por jogo, com namespace da instância RomM + romId quando houver vínculo. Para jogos locais sem RomM, identidade por plataforma + fingerprint de conteúdo/manifesto do jogo; evitar basename como chave primária.
+- Core identity: dimensão separada, usada para states e metadados de núcleo.
+- Slot identity: ID próprio estável dentro do jogo; o slot padrão legado deve ser preservado como slot principal/default durante migração.
+- Artifact identity: tipo (SRAM ou state) e núcleo quando aplicável.
+- SRAM: pode compartilhar slot entre núcleos apenas se a compatibilidade for explicitamente declarada.
+- State: sempre por slot + coreId, com IDs/timestamps/hashes remotos separados por coreId.
+- RomM: cada slot precisa de uma decisão de canal/identificador remoto antes de sincronizar; não associar todos os slots ao mesmo registro remoto por acidente.
+
+MIGRAÇÃO SEGURA PROPOSTA
+- Detectar o diretório legado <coreId>/<basename> e tratá-lo como fonte do slot principal/default.
+- Criar o novo destino sem apagar o antigo; copiar primeiro, validar tamanho/hash e registrar migração concluída.
+- Se houver mais de um diretório legado candidato para a mesma identidade, ou se a nova identidade colidir com dados existentes, interromper migração automática e manter ambas as fontes intactas para resolução explícita.
+- Manter rollback/backup recuperável; nunca substituir arquivo de destino não vazio sem snapshot validado.
+- Atualizar vínculo RomM e fila de trabalho para a identidade estável sem descartar trabalhos pendentes.
+
+TESTES NECESSÁRIOS ANTES DE LIBERAR
+- Dois jogos de pastas distintas com mesmo basename no mesmo core permanecem isolados.
+- Dois nomes diferentes que sanitizam para o mesmo nome permanecem isolados.
+- ROM movida/renomeada mantém vínculo e save pela identidade, sem criar progresso vazio.
+- States de dois cores nunca reutilizam ID, timestamp ou baseline remoto um do outro.
+- SRAM compartilhada apenas entre cores explicitamente compatíveis.
+- Migração de diretório legado preserva bytes, backups e RA progress; migração interrompida retoma sem perda.
+- Jobs WorkManager pendentes continuam associados ao jogo/slot correto após migração.
+
+CI / REPOSITÓRIO
+- PR #38 pós-merge run 45065462643: concluída com sucesso (check-style e build-debug APK).
+- Nenhuma PR aberta na última consulta.
+- Log atualizado para registrar estes achados e a proposta; sem código funcional alterado.
+
+DECISÃO AINDA NECESSÁRIA ANTES DA IMPLEMENTAÇÃO DOS SLOTS
+- Definir se cada slot representa um progresso completo (SRAM + estado rápido opcional) ou se o usuário quer slots separados para SRAM e estados rápidos. Recomendação técnica: slot de progresso completo, com SRAM compartilhável conforme compatibilidade e estado rápido específico por núcleo.
