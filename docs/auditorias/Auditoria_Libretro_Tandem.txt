@@ -2123,3 +2123,23 @@ Data: 2026-11-22
 - A dependência `testImplementation libs.junit` e a tarefa CI `testLawnWithQuickstepGithubDebugUnitTest` foram mantidas.
 - Commits de correção: 06597c3b6dbf47395bbb3b32faa4507a5ffaab76 (novo caminho do teste), 659921231136fc11eaa82501d51b1d6cc0288158 (remoção do caminho antigo), 1e1ca8fdb2c8b4d04575088bc5e849ab24c4104d (source set).
 - Validação após correção: PENDENTE. A nova CI precisa confirmar que o arquivo de teste é compilado no source set de testes e que os cinco casos são executados. Não considerar a falha resolvida até a execução completa.
+
+
+ATUALIZAÇÃO PÓS-MERGE — PR #34 / TESTES AUTOMATIZADOS DE SAVESTORE
+Data: 2026-11-22
+- PR #34 — “Add automated tests for Libretro save storage”.
+- URL: https://github.com/izzyn0okami/Tandem/pull/34
+- Merge concluído com sucesso após autorização explícita do usuário.
+- Merge commit: 84dbb5d603898b595df46439133792ac58bbe209.
+- Head integrado: 99a02595c49976f499f07f4f662ca69c9e59b030.
+- CI #498 / run ID 45051948735: CONCLUÍDA COM SUCESSO no head final da PR.
+- check-style / Spotless: sucesso.
+- build-debug-apk / assembleLawnWithQuickstepGithubDebug: sucesso.
+- Etapa “Run unit tests” / testLawnWithQuickstepGithubDebugUnitTest: sucesso; os cinco testes JVM foram executados.
+- Build APK e Upload artifact: sucesso.
+- final-status: sucesso.
+- tandem-release e nightly-release: skipped nesta execução; não registrar publicação de APK.
+- A correção do source set foi validada: os testes em tests/unit/kotlin ficaram fora das raízes amplas do código principal e passaram a ser compilados/executados pelo source set Android test.
+- Resultado da etapa: cobertura automatizada inicial de SaveStore integrada. Não houve teste funcional adicional exigido no telefone para esta PR de testes unitários.
+- Pendências futuras: ampliar a cobertura para regras de estado/elegibilidade de SaveSync e integração WorkManager; lifecycle/GL deve usar testes instrumentados apropriados, sem invocar JNI real em JVM.
+- A CI pós-merge no commit 84dbb5d603898b595df46439133792ac58bbe209 ainda deve ser consultada e registrada após conclusão.
