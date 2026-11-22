@@ -112,7 +112,8 @@ object SaveSync {
         val store = SaveStore(context, coreId, File(romPath))
         // Compartilha o mesmo bloqueio do push: nunca permita pull e push simultâneos.
         lock.withLock {
-            val snapshots = files(store).map { (_, file) ->
+            val prefs = prefs(context)
+            val snapshots = files(store).map { (kind, file) ->
                 val existed = file.isFile
                 val backup = if (existed) {
                     File(file.parentFile, "${file.name}.pre-pull-${System.nanoTime()}").also {
@@ -121,7 +122,11 @@ object SaveSync {
                 } else {
                     null
                 }
-                Triple(file, backup, existed)
+                val key = "${kind.path}:$romPath"
+                val hash = prefs.getString("$key:hash", null)
+                val remote = prefs.getLong("$key:remote", Long.MIN_VALUE)
+                val id = prefs.getLong("$key:id", Long.MIN_VALUE)
+                listOf(file, backup, existed, key, hash, remote, id)
             }
             try {
                 for ((kind, file) in files(store)) {
@@ -131,18 +136,30 @@ object SaveSync {
                     pullOne(context, client, store, kind, file, remote, romPath)
                 }
             } catch (error: Exception) {
-                snapshots.forEach { (file, backup, existed) ->
+                snapshots.forEach { snapshot ->
+                    val file = snapshot[0] as File
+                    val backup = snapshot[1] as File?
+                    val existed = snapshot[2] as Boolean
+                    val key = snapshot[3] as String
+                    val savedHash = snapshot[4] as String?
+                    val savedRemote = snapshot[5] as Long
+                    val savedId = snapshot[6] as Long
                     runCatching {
                         if (backup != null && backup.isFile) {
                             RomMFileReplacement.replaceFile(backup, file)
                         } else if (!existed) {
                             file.delete()
                         }
+                        prefs.edit {
+                            if (savedHash == null) remove("$key:hash") else putString("$key:hash", savedHash)
+                            if (savedRemote == Long.MIN_VALUE) remove("$key:remote") else putLong("$key:remote", savedRemote)
+                            if (savedId == Long.MIN_VALUE) remove("$key:id") else putLong("$key:id", savedId)
+                        }
                     }.onFailure { GameLog.error("saves", "falha ao restaurar save local após erro no pull", it) }
                 }
                 throw error
             } finally {
-                snapshots.forEach { (_, backup, _) -> backup?.delete() }
+                snapshots.forEach { (it[1] as File?)?.delete() }
             }
         }
     }
