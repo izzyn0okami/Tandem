@@ -1366,3 +1366,35 @@ Prioridade posterior:
 - Separar suporte declarado, artefato ARM64 publicado, instalação, inicialização e teste real no telefone para cada core.
 - Não declarar um núcleo como validado só porque aparece no diretório oficial.
 - Não criar PR nesta etapa de auditoria; não houve alteração de código. Nenhuma PR estava aberta na consulta.
+
+
+CORREÇÃO PREPARADA — ROLLBACK DO ATUALIZADOR DE NÚCLEOS
+Data: 2026-11-21
+Branch: fix/libretro-core-update-rollback
+Commit de código: aee9b4af3222152f5779a2edc9c420c1410a50e6
+
+ALTERAÇÕES
+- A permissão de execução é aplicada ao arquivo temporário antes de mover o núcleo atual.
+- O arquivo temporário é validado novamente antes da promoção.
+- Após preservar o núcleo anterior, qualquer falha ao promover ou validar o novo arquivo entra no bloco de rollback.
+- O rollback remove o arquivo novo rejeitado e restaura o backup anterior.
+- Se não for possível remover o arquivo rejeitado ou restaurar o backup, a exceção informa que o backup foi preservado, evitando apagar silenciosamente a única cópia anterior.
+- A remoção do backup passa a ocorrer somente depois da instalação validada e do registro dos metadados; falha de limpeza é registrada sem invalidar a instalação.
+
+VALIDAÇÃO E LIMITES
+- Revisão estática do fluxo realizada; ainda não foi executado teste automatizado nem teste real de falha de armazenamento/download.
+- A CI da PR ainda precisa confirmar compilação e estilo.
+- Teste real no telefone deve validar atualização normal e, se possível, simular falha após preservação do núcleo anterior sem colocar a instalação funcional em risco.
+- Não mesclar sem autorização explícita do usuário.
+
+
+CORREÇÃO DE COMPILAÇÃO — PR #25
+Data: 2026-11-22
+- CI run #425 / run ID 44978284885 falhou na tarefa :compileLawnWithQuickstepGithubDebugKotlin.
+- Erro exato: CoreInstaller.kt:176:29 — "No value passed for parameter 'error'".
+- Causa: chamada a GameLog.error com dois argumentos, embora GameLog.kt exija categoria, mensagem e Throwable.
+- Correção aplicada na mesma branch/PR: fornecido IllegalStateException como terceiro argumento ao registrar falha na remoção do backup pós-atualização.
+- Commit da correção: b9d61d9b6fe6258bd15be99d9d76d960af0d2cfc.
+- A correção é localizada e não altera o fluxo de instalação/rollback; apenas completa o diagnóstico de uma falha de limpeza do backup.
+- Nova CI após o commit: pendente de confirmação.
+- Não mesclar até a CI passar e a PR ser revisada; teste de falha real no aparelho continua pendente.

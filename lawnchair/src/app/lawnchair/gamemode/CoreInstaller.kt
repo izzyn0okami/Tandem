@@ -130,16 +130,39 @@ object CoreInstaller {
                     "${target.name} não é uma biblioteca ELF ARM64 válida"
                 }
 
+                // Ajusta permissões antes de tocar na instalação atual. Uma falha aqui
+                // descarta apenas o arquivo temporário e mantém o núcleo anterior intacto.
+                check(part.setExecutable(true, false)) { "Não foi possível definir permissão de execução no novo núcleo" }
+                check(isArm64Elf(part)) { "Núcleo temporário falhou na validação antes da instalação" }
+
                 if (backup.exists()) check(backup.delete()) { "Não foi possível limpar backup antigo" }
-                if (target.exists()) {
+                val hadPrevious = target.exists()
+                if (hadPrevious) {
                     check(target.renameTo(backup)) { "Não foi possível preservar o núcleo anterior" }
                 }
-                if (!part.renameTo(target)) {
-                    if (backup.exists()) backup.renameTo(target)
-                    error("Não foi possível instalar o novo núcleo; versão anterior restaurada quando disponível")
+
+                try {
+                    check(part.renameTo(target)) { "Não foi possível promover o novo núcleo" }
+                    check(isArm64Elf(target)) { "Núcleo instalado falhou na validação final" }
+                } catch (installFailure: Throwable) {
+                    // Qualquer falha após mover o arquivo anterior aciona rollback.
+                    if (target.exists() && !target.delete()) {
+                        throw IllegalStateException(
+                            "Falha na instalação e não foi possível remover o novo arquivo; backup preservado em ${backup.name}",
+                            installFailure,
+                        )
+                    }
+                    if (hadPrevious && backup.exists() && !backup.renameTo(target)) {
+                        throw IllegalStateException(
+                            "Falha na instalação e restauração automática não concluída; backup preservado em ${backup.name}",
+                            installFailure,
+                        )
+                    }
+                    throw IllegalStateException(
+                        "Novo núcleo rejeitado; versão anterior restaurada",
+                        installFailure,
+                    )
                 }
-                target.setExecutable(true, false)
-                check(isArm64Elf(target)) { "Núcleo instalado falhou na validação final" }
 
                 val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
                 prefs.edit()
@@ -148,7 +171,14 @@ object CoreInstaller {
                         if (remoteEtag != null) putString("etag_$coreId", remoteEtag)
                     }
                     .apply()
-                backup.delete()
+                // A limpeza do backup é pós-commit: sua falha não invalida a instalação.
+                if (backup.exists() && !backup.delete()) {
+                    GameLog.error(
+                        "núcleos",
+                        "núcleo $coreId atualizado, mas não foi possível remover ${backup.name}",
+                        IllegalStateException("Falha ao excluir o backup após a atualização"),
+                    )
+                }
                 GameLog.log("núcleos", "$coreId instalado/atualizado (${target.length() / 1024} KB)")
                 target
             } finally {
