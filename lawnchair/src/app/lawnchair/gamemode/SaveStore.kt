@@ -10,6 +10,13 @@ import java.util.Locale
  * Resolves a stable game identity without using the ROM filename as the primary key.
  * RomM-linked games use server + RomM game ID; local games use platform + content fingerprint.
  */
+internal data class RomMConnectionSnapshot(
+    val url: String,
+    val token: String,
+    val server: String,
+    val accountFingerprint: String,
+)
+
 internal object GameIdentityResolver {
     private const val LINK_PREFIX = "game_link:"
 
@@ -18,9 +25,9 @@ internal object GameIdentityResolver {
         val prefs = context.getSharedPreferences("romm_sync", Context.MODE_PRIVATE)
         val directId = prefs.getLong("rom:${romFile.absolutePath}", -1L)
         val storedServer = prefs.getString("rom_server:${romFile.absolutePath}", null)
-        val currentServer = normalizedServer(RomMSettings.url(context))
+        val currentServer = connectionSnapshot(context)?.server
         val server = if (directId >= 0L) storedServer else currentServer
-        val account = connectionFingerprint(context)
+        val account = connectionSnapshot(context)?.accountFingerprint
         val linkedId = when {
             directId >= 0L -> directId
             server != null && account != null -> prefs.getLong(linkKey(server, account, fingerprint), -1L)
@@ -42,8 +49,9 @@ internal object GameIdentityResolver {
     fun linkedRomId(context: Context, romFile: File): Long? {
         val prefs = context.getSharedPreferences("romm_sync", Context.MODE_PRIVATE)
         val direct = prefs.getLong("rom:${romFile.absolutePath}", -1L)
-        val server = normalizedServer(RomMSettings.url(context)) ?: return null
-        val account = connectionFingerprint(context) ?: return null
+        val connection = connectionSnapshot(context) ?: return null
+        val server = connection.server
+        val account = connection.accountFingerprint
         if (direct >= 0L) {
             val storedServer = prefs.getString("rom_server:${romFile.absolutePath}", null)
             val storedAccount = prefs.getString("rom_account:${romFile.absolutePath}", null)
@@ -52,19 +60,23 @@ internal object GameIdentityResolver {
         return prefs.getLong(linkKey(server, account, fingerprint(romFile)), -1L).takeIf { it >= 0L }
     }
 
-    fun connectionFingerprint(context: Context): String? {
-        val server = normalizedServer(RomMSettings.url(context)) ?: return null
+    fun connectionSnapshot(context: Context): RomMConnectionSnapshot? {
+        val url = RomMSettings.url(context)?.takeIf { it.isNotBlank() } ?: return null
         val token = RomMSettings.token(context)?.takeIf { it.isNotBlank() } ?: return null
-        return digest("$server|$token")
+        val server = normalizedServer(url) ?: return null
+        return RomMConnectionSnapshot(url, token, server, digest("$server|$token"))
     }
+
+    fun connectionFingerprint(context: Context): String? = connectionSnapshot(context)?.accountFingerprint
 
     /** Fingerprint of the credentials that originally linked this game, even while disconnected. */
     fun originAccountFingerprint(context: Context, romFile: File): String? {
         val prefs = context.getSharedPreferences("romm_sync", Context.MODE_PRIVATE)
         val direct = prefs.getLong("rom:${romFile.absolutePath}", -1L)
         if (direct >= 0L) return prefs.getString("rom_account:${romFile.absolutePath}", null)
-        val currentAccount = connectionFingerprint(context) ?: return null
-        val server = normalizedServer(RomMSettings.url(context)) ?: return null
+        val connection = connectionSnapshot(context) ?: return null
+        val currentAccount = connection.accountFingerprint
+        val server = connection.server
         val linked = prefs.getLong(linkKey(server, currentAccount, fingerprint(romFile)), -1L)
         return currentAccount.takeIf { linked >= 0L }
     }
