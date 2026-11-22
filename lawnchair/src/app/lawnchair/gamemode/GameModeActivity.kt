@@ -239,9 +239,6 @@ private fun GameModeRoot(refreshKey: Int, onExit: () -> Unit) {
         if (platform != null && !BiosManager.isReady(context, platform)) {
             error(context.getString(R.string.game_bios_missing, platform.name))
         }
-        val core = CoreInstaller.ensureInstalled(context, coreId) { bytes ->
-            status = context.getString(R.string.game_mode_status_downloading, coreId, bytes / 1024)
-        }.getOrThrow()
         // Fingerprint e descoberta de saves legados podem ler arquivos grandes/varrer a biblioteca.
         // Faça tudo fora da interface e entregue o resultado pronto à sessão.
         val (gameIdentity, migrationPlan, siblings) = withContext(Dispatchers.IO) {
@@ -279,6 +276,9 @@ private fun GameModeRoot(refreshKey: Int, onExit: () -> Unit) {
             return
         }
         val migrationSources = migrationPlan.sources
+        val core = CoreInstaller.ensureInstalled(context, coreId) { bytes ->
+            status = context.getString(R.string.game_mode_status_downloading, coreId, bytes / 1024)
+        }.getOrThrow()
         if (RomMSettings.isConnected(context) && !useLocalSave) {
             status = context.getString(R.string.game_mode_status_syncing)
             try {
