@@ -304,14 +304,20 @@ object SaveSync {
     ) {
         val connection = GameIdentityResolver.connectionSnapshot(context)
         if (connection == null) {
-            if (GameIdentityResolver.hasRomMLink(context, File(romPath))) {
+            if (
+                GameIdentityResolver.hasRomMLink(context, File(romPath)) ||
+                GameIdentityResolver.hasAmbiguousContentLink(context, File(romPath))
+            ) {
                 throw IOException(INVALID_LINK_MESSAGE)
             }
             return
         }
         val linkedRomId = GameIdentityResolver.linkedRomId(context, File(romPath), connection)
         if (linkedRomId == null) {
-            if (GameIdentityResolver.hasRomMLink(context, File(romPath))) {
+            if (
+                GameIdentityResolver.hasRomMLink(context, File(romPath)) ||
+                GameIdentityResolver.hasAmbiguousContentLink(context, File(romPath))
+            ) {
                 throw IOException(INVALID_LINK_MESSAGE)
             }
             return
