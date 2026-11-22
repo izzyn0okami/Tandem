@@ -23,6 +23,7 @@ internal object SaveSyncPolicy {
                 StatusResolution(SaveSyncStatus.SYNCING)
             }
         }
+
         else -> StatusResolution(SaveSyncStatus.PENDING)
     }
 
