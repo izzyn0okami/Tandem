@@ -10,12 +10,12 @@ internal object SaveSyncPolicy {
     )
 
     /** SRAM mantém metadados compartilhados entre núcleos; estados rápidos isolam tudo por coreId. */
-    fun metadataKey(kind: RemoteFileKind, romPath: String, coreId: String): String = when (kind) {
-        RemoteFileKind.Save -> "${kind.path}:$romPath"
-        RemoteFileKind.State -> "${kind.path}:$romPath:$coreId"
+    fun metadataKey(kind: RemoteFileKind, gameIdentity: String, coreId: String): String = when (kind) {
+        RemoteFileKind.Save -> "${kind.path}:$gameIdentity"
+        RemoteFileKind.State -> "${kind.path}:$gameIdentity:$coreId"
     }
 
-    fun remoteHashKey(kind: RemoteFileKind, romPath: String, coreId: String): String = "${metadataKey(kind, romPath, coreId)}:remote_hash"
+    fun remoteHashKey(kind: RemoteFileKind, gameIdentity: String, coreId: String): String = "${metadataKey(kind, gameIdentity, coreId)}:remote_hash"
 
     fun resolveStatus(
         storedStatus: String?,
