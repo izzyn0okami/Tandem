@@ -143,7 +143,18 @@ class GameSessionActivity : ComponentActivity() {
         val coreId = File(corePath).name.removeSuffix("_libretro_android.so")
         val platformSlug = intent.getStringExtra(EXTRA_PLATFORM)
         val siblings = platformSlug?.let(GamePlatforms::bySlug)?.let { CoreRegistry.cores(it) }.orEmpty().map { it.id }
-        val store = SaveStore(this, coreId, File(romPath), siblings, platformSlug, stableIdentity)
+        val legacyCores = intent.getStringArrayListExtra(EXTRA_MIGRATION_CORES).orEmpty()
+        val legacyPaths = intent.getStringArrayListExtra(EXTRA_MIGRATION_PATHS).orEmpty()
+        val migrationSources = legacyCores.zip(legacyPaths).associate { (core, path) -> core to File(path) }
+        val store = SaveStore(
+            this,
+            coreId,
+            File(romPath),
+            siblings,
+            platformSlug,
+            stableIdentity,
+            migrationSources,
+        )
         saveStore = store
         coreIdForOptions = coreId
         SessionDiagnostics.sessionStarted(this, coreId, romPath, platformSlug)
@@ -689,6 +700,8 @@ class GameSessionActivity : ComponentActivity() {
         private const val EXTRA_LOAD_STATE = "load_state"
         private const val EXTRA_PLATFORM = "platform"
         private const val EXTRA_GAME_IDENTITY = "game_identity"
+        private const val EXTRA_MIGRATION_CORES = "migration_cores"
+        private const val EXTRA_MIGRATION_PATHS = "migration_paths"
         private const val RA_TOAST_MS = 4_000L
         private const val SRAM_AUTOSAVE_MS = 60_000L
 
@@ -699,12 +712,15 @@ class GameSessionActivity : ComponentActivity() {
             loadState: Boolean = false,
             platformSlug: String? = null,
             gameIdentity: String,
+            migrationSources: Map<String, File>,
         ): Intent = Intent(context, GameSessionActivity::class.java)
             .putExtra(EXTRA_CORE_PATH, corePath)
             .putExtra(EXTRA_ROM_PATH, romPath)
             .putExtra(EXTRA_LOAD_STATE, loadState)
             .putExtra(EXTRA_PLATFORM, platformSlug)
             .putExtra(EXTRA_GAME_IDENTITY, gameIdentity)
+            .putStringArrayListExtra(EXTRA_MIGRATION_CORES, ArrayList(migrationSources.keys))
+            .putStringArrayListExtra(EXTRA_MIGRATION_PATHS, ArrayList(migrationSources.values.map(File::getAbsolutePath)))
     }
 }
 
