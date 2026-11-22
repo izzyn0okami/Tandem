@@ -1953,8 +1953,6 @@ Data: 2026-11-22
 - A CI confirma compilação e estilo; não substitui os testes funcionais no Motorola Edge 30 Fusion.
 - PENDENTE: testar sincronização rápida, sincronização demorada, falha de conexão com as opções "Tentar novamente" e "Iniciar com save local", preservação do save local e insígnia Pendente após fallback local.
 - Não marcar a auditoria funcional como concluída até receber confirmação dos testes no aparelho.
-
-
 AUDITORIA — PROTEÇÃO DO CICLO DE VIDA DA SESSÃO LIBRETRO / THREAD OPENGL
 Data: 2026-11-22
 Branch: fix/libretro-gl-session-teardown
@@ -1992,3 +1990,12 @@ Data: 2026-11-22
 - O log já havia sido atualizado em commit 7e16c5d43886158a4fe36f061336f4d69cff2252; esta entrada registra o teste funcional posterior.
 - PR #32 permanece aberta. GitHub ainda informa mergeable=false / mergeable_state=dirty; não presumir que está apta para merge.
 - Não houve autorização explícita de merge nesta confirmação; aguardar solicitação específica antes de mesclar.
+
+RECONCILIAÇÃO DO HISTÓRICO E AUTORIZAÇÃO DE MERGE — PR #32
+Data: 2026-11-22
+- O log foi reconstruído a partir da versão atual da branch base game-mode-m2-dev, preservando integralmente o histórico e a atualização pós-merge da PR #31.
+- As três seções da PR #32 (auditoria, CI #477 e validação funcional) foram preservadas integralmente e anexadas após o histórico da base.
+- O usuário autorizou explicitamente o merge da PR #32 com a solicitação “Faça o merge”; essa autorização permanece válida após a reconciliação.
+- A CI #477 e os testes funcionais no Motorola Edge 30 Fusion estão aprovados conforme registros anteriores. A atualização atual altera somente o log, não o código funcional já testado.
+- A divergência de histórico será resolvida por um commit de integração com os dois pais (head da PR e commit atualizado da base), sem force push e sem descartar commits.
+- A aptidão para merge ainda depende da confirmação de mergeabilidade, CI aplicável ao novo head e revisão final do diff.
