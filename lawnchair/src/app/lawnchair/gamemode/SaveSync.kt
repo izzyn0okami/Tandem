@@ -55,21 +55,18 @@ object SaveSync {
         val store = SaveStore(context, coreId, File(romPath))
         if (files(store).none { (_, file) -> file.isFile && file.length() > 0L }) return null
         val prefs = prefs(context)
-        return when (prefs.getString(statusKey(romPath), null)) {
-            "synced" -> SaveSyncStatus.SYNCED
-
-            "syncing" -> {
-                val started = prefs.getLong("${statusKey(romPath)}:started", 0L)
-                if (started > 0L && System.currentTimeMillis() - started > 120_000L) {
-                    prefs.edit { putString(statusKey(romPath), "pending") }
-                    SaveSyncStatus.PENDING
-                } else {
-                    SaveSyncStatus.SYNCING
-                }
+        val resolution = SaveSyncPolicy.resolveStatus(
+            prefs.getString(statusKey(romPath), null),
+            prefs.getLong("${statusKey(romPath)}:started", 0L),
+            System.currentTimeMillis(),
+        )
+        if (resolution.resetStartedAt) {
+            prefs.edit {
+                putString(statusKey(romPath), "pending")
+                remove("${statusKey(romPath)}:started")
             }
-
-            else -> SaveSyncStatus.PENDING
         }
+        return resolution.status
     }
 
     /** Marca pendência apenas quando há arquivo local diferente da última versão confirmada. */
@@ -78,7 +75,15 @@ object SaveSync {
         val store = SaveStore(context, coreId, File(romPath))
         val prefs = prefs(context)
         val changed = files(store).any { (kind, file) ->
-            file.isFile && file.length() > 0L && hash(file) != prefs.getString("${kind.path}:$romPath:hash", null)
+            val exists = file.isFile
+            val length = if (exists) file.length() else 0L
+            val currentHash = if (length > 0L) hash(file) else null
+            SaveSyncPolicy.shouldUpload(
+                exists,
+                length,
+                currentHash,
+                prefs.getString("${kind.path}:$romPath:hash", null),
+            )
         }
         if (changed) prefs.edit { putString(statusKey(romPath), "pending") }
     }
@@ -128,7 +133,7 @@ object SaveSync {
 
     private fun isSessionActive(context: Context, romPath: String): Boolean {
         val lastActive = prefs(context).getLong(sessionKey(romPath), 0L)
-        return lastActive > 0L && System.currentTimeMillis() - lastActive < 120_000L
+        return SaveSyncPolicy.isSessionActive(lastActive, System.currentTimeMillis())
     }
 
     /** Marca a falha do pull como pendente sem confundi-la com sincronização confirmada. */
