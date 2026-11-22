@@ -51,7 +51,8 @@ internal object GameIdentityResolver {
             val stored = prefs.getString("rom_fingerprint:${romFile.absolutePath}", null)
             if (stored == null) return true // vínculo antigo: exige reassociação explícita, sem sincronizar às cegas
             val current = cachedFingerprintIfAvailable(context, romFile) ?: return false
-            return isSameGameFingerprint(stored, current)
+            if (isSameGameFingerprint(stored, current)) return true
+            // O caminho pode ter sido reutilizado por outro jogo que já tenha vínculo por conteúdo.
         }
         val fingerprint = cachedFingerprintIfAvailable(context, romFile) ?: return false
         return parseContentLink(prefs.getString(contentLinkKey(fingerprint), null)) != null
