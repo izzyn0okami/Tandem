@@ -407,4 +407,42 @@ class SaveStoreTest {
         assertTrue(target.isDirectory)
     }
 
+    @Test
+    fun conflictStagingUsesExplicitChoiceAndMergesNonConflictingFiles() {
+        val source = File(root, "legacy/Pokemon").apply { mkdirs() }
+        val target = File(root, "stable/Pokemon").apply { mkdirs() }
+        File(source, "sram.srm").writeBytes(byteArrayOf(1, 1, 1))
+        File(target, "sram.srm").writeBytes(byteArrayOf(2, 2, 2))
+        File(source, "legacy-only.bin").writeBytes(byteArrayOf(3, 3))
+        File(target, "current-only.bin").writeBytes(byteArrayOf(4, 4))
+
+        val sourceChoice = File(root, "staged/source")
+        assertTrue(
+            GameIdentityResolver.stageLegacyConflictResolution(
+                source,
+                target,
+                sourceChoice,
+                preferSource = true,
+            ),
+        )
+        assertArrayEquals(byteArrayOf(1, 1, 1), File(sourceChoice, "sram.srm").readBytes())
+        assertArrayEquals(byteArrayOf(3, 3), File(sourceChoice, "legacy-only.bin").readBytes())
+        assertArrayEquals(byteArrayOf(4, 4), File(sourceChoice, "current-only.bin").readBytes())
+
+        val currentChoice = File(root, "staged/current")
+        assertTrue(
+            GameIdentityResolver.stageLegacyConflictResolution(
+                source,
+                target,
+                currentChoice,
+                preferSource = false,
+            ),
+        )
+        assertArrayEquals(byteArrayOf(2, 2, 2), File(currentChoice, "sram.srm").readBytes())
+        assertArrayEquals(byteArrayOf(3, 3), File(currentChoice, "legacy-only.bin").readBytes())
+        assertArrayEquals(byteArrayOf(4, 4), File(currentChoice, "current-only.bin").readBytes())
+        assertArrayEquals(byteArrayOf(1, 1, 1), File(source, "sram.srm").readBytes())
+        assertArrayEquals(byteArrayOf(2, 2, 2), File(target, "sram.srm").readBytes())
+    }
+
 }
