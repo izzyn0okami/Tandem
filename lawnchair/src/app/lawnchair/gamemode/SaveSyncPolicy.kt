@@ -9,7 +9,11 @@ internal object SaveSyncPolicy {
         val resetStartedAt: Boolean = false,
     )
 
-    fun resolveStatus(storedStatus: String?, startedAt: Long, now: Long): StatusResolution =
+    fun resolveStatus(
+        storedStatus: String?,
+        startedAt: Long,
+        now: Long,
+    ): StatusResolution =
         when (storedStatus) {
             "synced" -> StatusResolution(SaveSyncStatus.SYNCED)
             "syncing" -> {
@@ -25,6 +29,10 @@ internal object SaveSyncPolicy {
     fun isSessionActive(lastActiveAt: Long, now: Long): Boolean =
         lastActiveAt > 0L && now - lastActiveAt < SESSION_TIMEOUT_MS
 
-    fun shouldUpload(fileExists: Boolean, fileLength: Long, currentHash: String?, confirmedHash: String?): Boolean =
-        fileExists && fileLength > 0L && currentHash != confirmedHash
+    fun shouldUpload(
+        fileExists: Boolean,
+        fileLength: Long,
+        currentHash: String?,
+        confirmedHash: String?,
+    ): Boolean = fileExists && fileLength > 0L && currentHash != confirmedHash
 }
