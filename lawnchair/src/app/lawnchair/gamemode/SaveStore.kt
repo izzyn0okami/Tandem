@@ -250,8 +250,6 @@ internal object GameIdentityResolver {
         stableDirectoryName: String,
     ): LegacyMigrationPlan {
         val legacyName = sanitize(romFile.nameWithoutExtension)
-        val currentCore = coreIds.firstOrNull()
-        val currentStable = currentCore?.let { File(File(savesRoot, it), stableDirectoryName) }
         // A user may have played with the local identity while an old RomM link was unverified.
         // When the same content is linked again, move that known local progress to the RomM identity.
         if (stableDirectoryName.startsWith("romm-")) {
