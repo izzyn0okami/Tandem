@@ -1814,6 +1814,6 @@ Branch: feat/romm-save-sync-badges
 - GameModeActivity atualiza a leitura dos estados quando retorna à tela do Modo Jogos.
 - GameScreens exibe insígnia compacta na grade (Sync OK / Enviando… / Pendente) e texto completo nos detalhes do jogo.
 - A insígnia não confunde gravação local com envio remoto; SRAM e save state são enviados pelo fluxo já existente ao sair/colocar o jogo em segundo plano. O estado agregado permanece pendente se qualquer envio falhar.
-- Alterações ainda não foram validadas por CI nem por teste funcional no Motorola. A PR será aberta após nova consulta de PRs abertas; não mesclar sem autorização explícita.
+- PR #30 aberta após consulta que não encontrou outras PRs abertas: https://github.com/izzyn0okami/Tandem/pull/30. CI inicial #455 / run ID 45024537548 foi iniciada; resultado ainda pendente. A atualização deste próprio log pode disparar nova execução para o head atualizado. Não mesclar sem autorização explícita.
 - Testes funcionais pendentes: confirmar Sync OK após upload confirmado; desligar/desconectar RomM durante envio e confirmar Pendente; verificar que jogos sem vínculo RomM não exibem insígnia; confirmar estados distintos na grade e nos detalhes.
 
