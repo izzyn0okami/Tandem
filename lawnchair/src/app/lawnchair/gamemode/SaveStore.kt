@@ -147,6 +147,12 @@ internal object GameIdentityResolver {
 
     internal fun accountFingerprint(server: String, userId: Long): String = SaveSyncPolicy.accountFingerprint(server, userId)
 
+    private fun isCurrentAccountGameIdentity(context: Context, romFile: File, gameIdentity: String): Boolean {
+        val connection = connectionSnapshot(context) ?: return false
+        val romId = linkedRomId(context, romFile, connection) ?: return false
+        return SaveSyncPolicy.rommGameIdentity(connection.server, connection.accountFingerprint, romId) == gameIdentity
+    }
+
     internal fun migrateAccountFingerprint(
         context: Context,
         server: String,
@@ -280,6 +286,9 @@ internal object GameIdentityResolver {
                         directory.walkTopDown().any { it.isFile && it.length() > 0L }
                     }
                     if (preAccountSources.isNotEmpty()) {
+                        if (!isCurrentAccountGameIdentity(context, romFile, stableDirectoryName)) {
+                            return LegacyMigrationPlan(emptyMap(), ambiguous = true)
+                        }
                         if (legacyDataExists) {
                             return LegacyMigrationPlan(emptyMap(), ambiguous = true)
                         }
@@ -326,7 +335,16 @@ internal object GameIdentityResolver {
             }
         }
 
-        if (stableDirectoryName.startsWith("romm-") && legacyDataExists) {
+        if (stableDirectoryName.startsWith("romm-legacy-") && legacyDataExists) {
+            return LegacyMigrationPlan(emptyMap(), ambiguous = true)
+        }
+        if (stableDirectoryName.startsWith("romm-") &&
+            !stableDirectoryName.startsWith("romm-legacy-") &&
+            legacyDataExists
+        ) {
+            if (!isCurrentAccountGameIdentity(context, romFile, stableDirectoryName)) {
+                return LegacyMigrationPlan(emptyMap(), ambiguous = true)
+            }
             val libraryRoot = File(GameLibrarySettings.rootPath(context))
             val canonicalRom = runCatching { romFile.canonicalFile }.getOrNull()
                 ?: return LegacyMigrationPlan(emptyMap(), ambiguous = true)
@@ -432,8 +450,13 @@ internal object GameIdentityResolver {
     }
 
     /** Copy an explicitly approved legacy set into the current account namespace, keeping its source. */
-    fun claimLegacySaves(context: Context, gameIdentity: String, sources: Map<String, File>): Boolean {
-        if (sources.isEmpty()) return false
+    fun claimLegacySaves(
+        context: Context,
+        romFile: File,
+                gameIdentity: String,
+        sources: Map<String, File>,
+    ): Boolean {
+        if (sources.isEmpty() || !isCurrentAccountGameIdentity(context, romFile, gameIdentity)) return false
         val savesRoot = GameFolders.dir(context, FolderKind.Saves)
         return sources.all { (coreId, source) ->
             val target = File(File(savesRoot, coreId), gameIdentity)
