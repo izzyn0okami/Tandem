@@ -1203,3 +1203,19 @@ Data: 2026-11-21
 - A implementação principal RomM está concluída para o escopo atualmente definido; não há PR aberta no repositório na consulta desta data.
 - Melhoria técnica não bloqueante identificada em revisão estática: alguns fluxos substituem arquivos/pastas existentes apagando o destino antes de renomear o temporário validado (incluindo firmware e conteúdo multidisco; há padrão semelhante em outros fluxos de arquivo). Uma falha de rename após a exclusão pode deixar o usuário sem a versão anterior. Recomenda-se uma PR futura de substituição transacional/segura, preservando o destino válido até a troca ser concluída. Isso é endurecimento de segurança de arquivos, não uma pendência funcional RomM reportada pelo usuário.
 - Próximo passo recomendado: se o usuário aprovar, implementar a substituição segura em todos os fluxos de download/importação afetados, com testes automatizados de falha de substituição. Não iniciar sem aprovação.
+
+
+MELHORIA DE SEGURANÇA — SUBSTITUIÇÃO PROTEGIDA DE ARQUIVOS ROMM
+Data: 2026-11-21
+Status: implementação em PR; CI pendente; não mesclada.
+
+- Aprovada pelo usuário após a conclusão funcional da integração RomM.
+- Arquivos baixados agora são movidos do temporário validado ao destino por rename no mesmo diretório, permitindo substituição atômica no filesystem Android quando suportada.
+- Se o rename direto não for possível, a versão anterior é movida para backup; qualquer falha ao instalar o novo arquivo tenta restaurar a versão anterior. O backup só é removido após a troca concluir.
+- Pastas de jogos multidisco usam backup + rollback: a pasta anterior não é apagada antes da nova estar instalada. Backups deixados por encerramento inesperado são recuperados antes de resolver o caminho do jogo; backups obsoletos são limpos quando o destino já existe.
+- Aplicado aos downloads de ROM individual, pastas multidisco, firmware, saves/states, capas e à substituição do ZIP temporário durante extração.
+- Não altera endpoints, autenticação, retomada HTTP Range, validação de firmware, nomes, estrutura de destino ou comportamento funcional validado.
+- A revisão confirmou que os antigos padrões target.delete() antes de renameTo(target) e dir.deleteRecursively() antes da troca foram removidos desses fluxos.
+- Arquivo alterado: lawnchair/src/app/lawnchair/gamemode/RomMClient.kt.
+- Branch: fix/romm-safe-file-replacement; PR #23 (https://github.com/izzyn0okami/Tandem/pull/23). CI e revisão de PR ainda pendentes; merge não autorizado nem realizado.
+- Limitação técnica: troca de arquivo é atômica quando o filesystem aceita rename sobre o destino; troca de pasta não pode substituir atomicamente uma pasta não vazia, portanto usa backup e rollback com recuperação na próxima operação caso o processo seja encerrado no intervalo.

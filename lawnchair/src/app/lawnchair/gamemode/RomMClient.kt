@@ -51,7 +51,13 @@ data class RemoteGame(
     /** Destino dentro da pasta de jogos: uma subpasta por plataforma (e uma pasta por jogo, se for de vários arquivos). */
     fun destination(root: File): File {
         val platformDir = File(root, platform.slug)
-        return if (folder) File(File(platformDir, serverName), fileName) else File(platformDir, fileName)
+        val target = if (folder) File(File(platformDir, serverName), fileName) else File(platformDir, fileName)
+        if (folder) {
+            RomMFileReplacement.recoverDirectory(checkNotNull(target.parentFile))
+        } else {
+            RomMFileReplacement.recoverFile(target)
+        }
+        return target
     }
 }
 
@@ -675,8 +681,7 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
                 throw error
             }
         }
-        target.delete()
-        check(temp.renameTo(target)) { "Não consegui gravar ${target.name}" }
+        RomMFileReplacement.replaceFile(temp, target)
         File(temp.parentFile, "${temp.name}.range").delete()
     }
 
@@ -837,9 +842,8 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
                 }
             }
 
-            // Só substitui uma pasta já existente depois de validar todo o pacote.
-            dir.deleteRecursively()
-            check(content.renameTo(dir)) { "Não consegui gravar ${dir.name}" }
+            // Mantém a pasta anterior recuperável até a nova pasta estar no destino.
+            RomMFileReplacement.replaceDirectory(content, dir)
             temp.deleteRecursively()
             archive.delete()
             File(archive.parentFile, "${archive.name}.range").delete()
@@ -915,8 +919,7 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
             File(temp.parentFile, "${temp.name}.range").delete()
             throw error
         }
-        target.delete()
-        check(temp.renameTo(target)) { "Não consegui gravar ${target.name}" }
+        RomMFileReplacement.replaceFile(temp, target)
         File(temp.parentFile, "${temp.name}.range").delete()
     }
 
@@ -973,8 +976,7 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
                 estimateRequiredSpace = { it },
                 onProgress = {},
             )
-            target.delete()
-            check(temp.renameTo(target)) { "Não consegui gravar ${target.name}" }
+            RomMFileReplacement.replaceFile(temp, target)
             File(temp.parentFile, "${temp.name}.range").delete()
         } catch (error: Exception) {
             throw error
@@ -1002,8 +1004,7 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
                 }
             }
         }
-        zip.delete()
-        check(out.renameTo(zip)) { "Não consegui extrair ${target.name}" }
+        RomMFileReplacement.replaceFile(out, zip)
     }
 
     /** Baixa a capa para o cache e devolve o arquivo (ou nulo se falhar). */
@@ -1014,7 +1015,15 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
         // Grava num arquivo temporário e só então renomeia: outra tela nunca lê uma capa pela metade.
         val temp = File(file.parentFile, "${file.name}.${Thread.currentThread().id}.part")
         return runCatching {
-            if (listOfNotNull(game.coverPath, game.coverUrl).flatMap { coverUrls(it) }.any { downloadCover(it, temp) } && temp.renameTo(file)) file else null
+            val downloaded = listOfNotNull(game.coverPath, game.coverUrl)
+                .flatMap { coverUrls(it) }
+                .any { downloadCover(it, temp) }
+            if (!downloaded) {
+                null
+            } else {
+                RomMFileReplacement.replaceFile(temp, file)
+                file
+            }
         }.also { temp.delete() }.getOrNull()
     }
 
@@ -1109,4 +1118,125 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
             "devices.write",
         )
     }
+}
+
+/**
+ * Substitui arquivos por rename no mesmo diretório (atômico no filesystem Android).
+ * Para diretórios, usa backup + rollback porque um diretório não vazio não pode ser
+ * sobrescrito por rename; a cópia anterior só é removida depois que a nova está no lugar.
+ */
+private object RomMFileReplacement {
+
+    @Synchronized
+    fun replaceFile(staged: File, target: File) {
+        require(staged.isFile) { "Arquivo temporário ausente: ${staged.name}" }
+        requireSameParent(staged, target)
+        recoverBackups(target, directory = false, cleanupIfTargetExists = true)
+        if (staged.renameTo(target)) return
+
+        if (!target.exists()) {
+            throw IOException("Não consegui gravar ${target.name}")
+        }
+        val backup = backupFor(target)
+        if (!target.renameTo(backup)) {
+            throw IOException("Não consegui preservar o arquivo anterior ${target.name}")
+        }
+        try {
+            if (!staged.renameTo(target)) {
+                throw IOException("Não consegui gravar ${target.name}")
+            }
+        } catch (error: Exception) {
+            if (!backup.renameTo(target)) {
+                error.addSuppressed(IOException("A versão anterior foi preservada em ${backup.name}, mas não pôde ser restaurada automaticamente"))
+            }
+            throw IOException("Falha ao substituir ${target.name}; a versão anterior foi preservada", error)
+        }
+        if (!backup.delete()) {
+            GameLog.log("romm", "substituição concluída; backup antigo não pôde ser removido: ${backup.name}")
+        }
+    }
+
+    @Synchronized
+    fun replaceDirectory(staged: File, target: File) {
+        require(staged.isDirectory) { "Pasta temporária ausente: ${staged.name}" }
+        requireSameParent(staged, target)
+        recoverBackups(target, directory = true, cleanupIfTargetExists = true)
+        if (!target.exists()) {
+            if (!staged.renameTo(target)) throw IOException("Não consegui gravar ${target.name}")
+            return
+        }
+        if (!target.isDirectory) {
+            throw IOException("O destino ${target.name} existe, mas não é uma pasta")
+        }
+
+        val backup = backupFor(target)
+        if (!target.renameTo(backup)) {
+            throw IOException("Não consegui preservar a pasta anterior ${target.name}")
+        }
+        try {
+            if (!staged.renameTo(target)) {
+                throw IOException("Não consegui gravar ${target.name}")
+            }
+        } catch (error: Exception) {
+            if (!backup.renameTo(target)) {
+                error.addSuppressed(IOException("A pasta anterior foi preservada em ${backup.name}, mas não pôde ser restaurada automaticamente"))
+            }
+            throw IOException("Falha ao substituir ${target.name}; a pasta anterior foi preservada", error)
+        }
+        if (!backup.deleteRecursively()) {
+            GameLog.log("romm", "substituição concluída; backup antigo não pôde ser removido: ${backup.name}")
+        }
+    }
+
+    @Synchronized
+    fun recoverFile(target: File) {
+        recoverBackups(target, directory = false, cleanupIfTargetExists = false)
+    }
+
+    @Synchronized
+    fun recoverDirectory(target: File) {
+        recoverBackups(target, directory = true, cleanupIfTargetExists = false)
+    }
+
+    /**
+     * Recupera uma cópia anterior deixada por encerramento inesperado entre os dois renames
+     * de uma troca de diretório, ou limpa backups após uma troca que já chegou ao destino.
+     */
+    private fun recoverBackups(target: File, directory: Boolean, cleanupIfTargetExists: Boolean) {
+        val parent = checkNotNull(target.parentFile)
+        val prefix = ".${target.name}.backup-"
+        val backups = parent.listFiles { file ->
+            file.name.startsWith(prefix) && (if (directory) file.isDirectory else file.isFile)
+        }.orEmpty()
+        if (backups.isEmpty()) return
+
+        if (!target.exists()) {
+            val backup = backups.maxByOrNull { it.name } ?: return
+            if (!backup.renameTo(target)) {
+                throw IOException("Não consegui recuperar a versão anterior de ${target.name} em ${backup.name}")
+            }
+            GameLog.log("romm", "versão anterior recuperada após interrupção: ${target.name}")
+            backups.filter { it != backup }.forEach(::deleteBackup)
+        } else if (cleanupIfTargetExists) {
+            backups.forEach(::deleteBackup)
+        }
+    }
+
+    private fun deleteBackup(backup: File) {
+        val deleted = if (backup.isDirectory) backup.deleteRecursively() else backup.delete()
+        if (!deleted) GameLog.log("romm", "backup antigo não pôde ser removido: ${backup.name}")
+    }
+
+    private fun requireSameParent(staged: File, target: File) {
+        val stagedParent = staged.canonicalFile.parentFile
+        val targetParent = target.canonicalFile.parentFile
+        require(stagedParent != null && stagedParent == targetParent) {
+            "O arquivo temporário e o destino precisam estar no mesmo diretório"
+        }
+    }
+
+    private fun backupFor(target: File): File = File(
+        checkNotNull(target.parentFile),
+        ".${target.name}.backup-${SystemClock.elapsedRealtimeNanos()}",
+    )
 }
