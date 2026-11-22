@@ -496,7 +496,7 @@ class GameSessionActivity : ComponentActivity() {
                 emuState
             }
             store.writeState(payload)
-            romPath?.let { path -> coreIdOf()?.let { SaveSync.markPending(this, path, it, intent.getStringExtra(EXTRA_PLATFORM)) } }
+            romPath?.let { path -> coreIdOf()?.let { SaveSync.markPending(this, path, it, intent.getStringExtra(EXTRA_PLATFORM), gameIdentity) } }
             true
         }.getOrDefault(false)
         toast(if (saved) R.string.game_session_state_saved else R.string.game_session_state_save_failed)
