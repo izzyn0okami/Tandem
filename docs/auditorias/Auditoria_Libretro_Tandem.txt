@@ -1817,3 +1817,4 @@ Branch: feat/romm-save-sync-badges
 - PR #30 aberta após consulta que não encontrou outras PRs abertas: https://github.com/izzyn0okami/Tandem/pull/30. CI inicial #455 / run ID 45024537548 foi iniciada; resultado ainda pendente. A atualização deste próprio log pode disparar nova execução para o head atualizado. Não mesclar sem autorização explícita.
 - Testes funcionais pendentes: confirmar Sync OK após upload confirmado; desligar/desconectar RomM durante envio e confirmar Pendente; verificar que jogos sem vínculo RomM não exibem insígnia; confirmar estados distintos na grade e nos detalhes.
 
+- CI #456 / run ID 45024573217: FALHOU exclusivamente em `spotlessKotlinCheck` por duas violações de formatação em `GameScreens.kt` e `SaveSync.kt`. A compilação do APK terminou com sucesso. Correções de formatação aplicadas nos commits c0fe864b4bb35cb85f362c867477ab223eae63b8 e acb7d119082ebd60e47601ad16e2b434ef19e4b2; nova CI aguardada.
