@@ -39,8 +39,7 @@ internal object SaveSyncPolicy {
         else -> StatusResolution(SaveSyncStatus.PENDING)
     }
 
-    fun isSessionActive(lastActiveAt: Long, now: Long): Boolean =
-        lastActiveAt > 0L && now - lastActiveAt < SESSION_TIMEOUT_MS
+    fun isSessionActive(lastActiveAt: Long, now: Long): Boolean = lastActiveAt > 0L && now - lastActiveAt < SESSION_TIMEOUT_MS
 
     fun isRemoteVersionChanged(
         remoteUpdatedAtMs: Long,
@@ -93,8 +92,7 @@ internal object SaveSyncPolicy {
     ): Boolean = localExists && (appliedHash == null || localHash != appliedHash)
 
     /** A tarefa só pode usar as credenciais da mesma conta/servidor que a criou. */
-    fun isSameSyncAccount(expectedFingerprint: String?, currentFingerprint: String?): Boolean =
-        !expectedFingerprint.isNullOrBlank() && expectedFingerprint == currentFingerprint
+    fun isSameSyncAccount(expectedFingerprint: String?, currentFingerprint: String?): Boolean = !expectedFingerprint.isNullOrBlank() && expectedFingerprint == currentFingerprint
 
     /** Um trabalho adiado porque a sessão ainda está ativa deve permanecer na fila do WorkManager. */
     fun shouldRetryWorker(syncCompleted: Boolean): Boolean = !syncCompleted
