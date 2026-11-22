@@ -604,7 +604,6 @@ class GameSessionActivity : ComponentActivity() {
         GameLog.log("núcleos", "$coreIdForOptions: ${option.key} = $value")
     }
 
-
     private fun coreIdOf(): String? = intent.getStringExtra(EXTRA_CORE_PATH)?.let { File(it).name.removeSuffix("_libretro_android.so") }
 
     override fun onPause() {
