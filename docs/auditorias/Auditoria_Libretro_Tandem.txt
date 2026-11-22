@@ -1082,3 +1082,25 @@ Data: 2026-11-22
 - tandem-latest publicado com sucesso.
 - Jobs send-notifications, crowdin-auto-merge e nightly-release foram ignorados conforme as condições do workflow.
 - A integração da PR #21 está validada pela CI. Testes funcionais de retomada no aparelho permanecem pendentes; não confundir aprovação de CI com validação funcional.
+
+AUDITORIA — INTEGRIDADE DE DOWNLOADS DE FIRMWARE ROMM
+Data: 2026-11-22
+
+RESULTADO DA INSPEÇÃO
+- O endpoint RomM 5.4.1 lista firmware dentro de /api/platforms e os objetos FirmwareSchema fornecem file_size_bytes, crc_hash, md5_hash e sha1_hash.
+- A implementação anterior do Tandem ignorava esses metadados: guardava apenas ID e nome e aceitava o arquivo após o download, sem comparar hash/tamanho anunciado pelo servidor.
+- Referência do contrato de API: FirmwareSchema documenta tamanho, CRC32, MD5 e SHA-1. A rota de conteúdo é GET /api/firmware/{id}/content/{file_name}.
+- Fontes consultadas: documentação OpenAPI do RomM e esquema FirmwareSchema publicado para a API 5.4.x.
+
+CORREÇÃO PREPARADA — fix/romm-firmware-integrity
+- RemoteFirmware agora retém tamanho e hashes retornados pelo RomM.
+- Após baixar para arquivo temporário, o Tandem compara tamanho quando informado e calcula CRC32, MD5 e SHA-1 quando o servidor fornece esses valores.
+- O arquivo de destino só é substituído depois das verificações. Em caso de divergência, o arquivo temporário inválido e o sidecar de retomada são descartados, e o erro é apresentado ao fluxo chamador.
+- A retomada de downloads permanece preservada para falhas de rede durante a transferência; a validação ocorre somente após o download completo.
+- Não altera arquivos BIOS existentes, regras de prontidão, nomes, autenticação ou endpoints.
+
+VALIDAÇÃO / PENDÊNCIAS
+- Branch: fix/romm-firmware-integrity.
+- Commit de implementação: 170ee38f99cad5f234c2db78ddd055926f8ce336.
+- CI e revisão da PR: pendentes.
+- Teste funcional no aparelho com firmware real: pendente; a CI não comprova correspondência dos hashes do servidor.
