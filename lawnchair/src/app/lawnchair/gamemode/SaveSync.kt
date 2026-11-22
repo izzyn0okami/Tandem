@@ -54,9 +54,17 @@ object SaveSync {
     private fun statusKey(gameIdentity: String) = "sync_status:$gameIdentity"
 
     /** Estado persistente exibido na biblioteca. Só existe para ROM vinculada ao RomM e com saves locais. */
-    fun status(context: Context, romPath: String, coreId: String, platformSlug: String? = null): SaveSyncStatus? {
+    fun status(
+        context: Context,
+        romPath: String,
+        coreId: String,
+        platformSlug: String? = null,
+        gameIdentityOverride: String? = null,
+    ): SaveSyncStatus? {
         if (!GameIdentityResolver.hasRomMLink(context, File(romPath))) return null
-        val gameIdentity = GameIdentityResolver.resolve(context, File(romPath), platformSlug)
+        val gameIdentity = gameIdentityOverride
+            ?: GameIdentityResolver.cachedIdentity(context, File(romPath), platformSlug)
+            ?: return null
         val store = SaveStore(context, coreId, File(romPath), platformSlug = platformSlug)
         if (files(store).none { (_, file) -> file.isFile && file.length() > 0L }) return null
         val prefs = prefs(context)
@@ -75,9 +83,15 @@ object SaveSync {
     }
 
     /** Marca pendência apenas quando há arquivo local diferente da última versão confirmada. */
-    fun markPending(context: Context, romPath: String, coreId: String, platformSlug: String? = null) {
+    fun markPending(
+        context: Context,
+        romPath: String,
+        coreId: String,
+        platformSlug: String? = null,
+        gameIdentityOverride: String? = null,
+    ) {
         if (!GameIdentityResolver.hasRomMLink(context, File(romPath))) return
-        val gameIdentity = GameIdentityResolver.resolve(context, File(romPath), platformSlug)
+        val gameIdentity = gameIdentityOverride ?: GameIdentityResolver.resolve(context, File(romPath), platformSlug)
         val store = SaveStore(context, coreId, File(romPath), platformSlug = platformSlug)
         val prefs = prefs(context)
         val changed = files(store).any { (kind, file) ->
@@ -130,13 +144,23 @@ object SaveSync {
     private fun newestRemoteFile(kind: RemoteFileKind, remotes: List<RemoteFile>, coreId: String): RemoteFile? = SaveSyncPolicy.newestCompatibleRemote(kind, remotes, coreId)
 
     /** Registra que a ROM está em uma sessão ativa, impedindo upload enquanto ela pode mudar. */
-    fun markSessionActive(context: Context, romPath: String, platformSlug: String? = null) {
-        val identity = GameIdentityResolver.resolve(context, File(romPath), platformSlug)
+    fun markSessionActive(
+        context: Context,
+        romPath: String,
+        platformSlug: String? = null,
+        gameIdentityOverride: String? = null,
+    ) {
+        val identity = gameIdentityOverride ?: GameIdentityResolver.resolve(context, File(romPath), platformSlug)
         prefs(context).edit { putLong(sessionKey(identity), System.currentTimeMillis()) }
     }
 
-    fun markSessionInactive(context: Context, romPath: String, platformSlug: String? = null) {
-        val identity = GameIdentityResolver.resolve(context, File(romPath), platformSlug)
+    fun markSessionInactive(
+        context: Context,
+        romPath: String,
+        platformSlug: String? = null,
+        gameIdentityOverride: String? = null,
+    ) {
+        val identity = gameIdentityOverride ?: GameIdentityResolver.resolve(context, File(romPath), platformSlug)
         prefs(context).edit { remove(sessionKey(identity)) }
     }
 
@@ -148,9 +172,15 @@ object SaveSync {
     }
 
     /** Marca a falha do pull como pendente sem confundi-la com sincronização confirmada. */
-    fun markSyncPending(context: Context, romPath: String, coreId: String, platformSlug: String? = null) {
+    fun markSyncPending(
+        context: Context,
+        romPath: String,
+        coreId: String,
+        platformSlug: String? = null,
+        gameIdentityOverride: String? = null,
+    ) {
         if (!GameIdentityResolver.hasRomMLink(context, File(romPath))) return
-        val gameIdentity = GameIdentityResolver.resolve(context, File(romPath), platformSlug)
+        val gameIdentity = gameIdentityOverride ?: GameIdentityResolver.resolve(context, File(romPath), platformSlug)
         prefs(context).edit {
             putString(statusKey(gameIdentity), "pending")
             remove("${statusKey(gameIdentity)}:started")
@@ -158,7 +188,13 @@ object SaveSync {
     }
 
     /** Antes de jogar: aguarda o pull terminar e restaura os saves locais se qualquer etapa falhar. */
-    suspend fun pull(context: Context, romPath: String, coreId: String, platformSlug: String? = null) {
+    suspend fun pull(
+        context: Context,
+        romPath: String,
+        coreId: String,
+        platformSlug: String? = null,
+        gameIdentityOverride: String? = null,
+    ) {
         val connection = GameIdentityResolver.connectionSnapshot(context)
         if (connection == null) {
             if (GameIdentityResolver.hasRomMLink(context, File(romPath))) {
@@ -173,9 +209,9 @@ object SaveSync {
             }
             return
         }
-        val gameIdentity = GameIdentityResolver.resolve(context, File(romPath), platformSlug)
+        val gameIdentity = gameIdentityOverride ?: GameIdentityResolver.resolve(context, File(romPath), platformSlug)
         val client = RomMClient(connection.url, connection.token)
-        val store = SaveStore(context, coreId, File(romPath), platformSlug = platformSlug)
+        val store = SaveStore(context, coreId, File(romPath), platformSlug = platformSlug, gameIdentity = gameIdentity)
         // Compartilha o mesmo bloqueio do push: nunca permita pull e push simultâneos.
         lock.withLock {
             val prefs = prefs(context)
@@ -391,11 +427,17 @@ object SaveSync {
     }
 
     /** Ao sair do jogo: agenda um envio persistente, retomável após encerramento do processo. */
-    fun pushAsync(context: Context, romPath: String, coreId: String, platformSlug: String? = null) {
+    fun pushAsync(
+        context: Context,
+        romPath: String,
+        coreId: String,
+        platformSlug: String? = null,
+        gameIdentityOverride: String? = null,
+    ) {
         val app = context.applicationContext
         val gameFile = File(romPath)
         if (!gameFile.isFile) return
-        val gameIdentity = GameIdentityResolver.resolve(app, gameFile, platformSlug)
+        val gameIdentity = gameIdentityOverride ?: GameIdentityResolver.resolve(app, gameFile, platformSlug)
         val accountFingerprint = GameIdentityResolver.originAccountFingerprint(app, gameFile) ?: return
         val constraints = Constraints.Builder()
             .setRequiredNetworkType(NetworkType.CONNECTED)
@@ -475,7 +517,7 @@ object SaveSync {
         gameIdentity: String,
         romId: Long,
     ) {
-        val store = SaveStore(context, coreId, File(romPath), platformSlug = platformSlug)
+        val store = SaveStore(context, coreId, File(romPath), platformSlug = platformSlug, gameIdentity = gameIdentity)
         val prefs = prefs(context)
         for ((kind, file) in files(store)) {
             if (!file.isFile || file.length() == 0L) continue
