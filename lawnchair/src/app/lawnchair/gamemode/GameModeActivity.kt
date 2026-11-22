@@ -233,12 +233,12 @@ private fun GameModeRoot(refreshKey: Int, onExit: () -> Unit) {
         }.getOrThrow()
         // Fingerprint e descoberta de saves legados podem ler arquivos grandes/varrer a biblioteca.
         // Faça tudo fora da interface e entregue o resultado pronto à sessão.
-        val (gameIdentity, migrationSources) = withContext(Dispatchers.IO) {
+        val (gameIdentity, migrationPlan) = withContext(Dispatchers.IO) {
             val identity = GameIdentityResolver.resolve(context, File(romPath), platform?.slug)
             val siblings = platform?.let { selectedPlatform ->
                 CoreRegistry.cores(selectedPlatform)
             }.orEmpty().map { it.id }
-            val sources = GameIdentityResolver.legacySources(
+            val plan = GameIdentityResolver.planLegacyMigration(
                 context,
                 GameFolders.dir(context, FolderKind.Saves),
                 File(romPath),
@@ -246,8 +246,16 @@ private fun GameModeRoot(refreshKey: Int, onExit: () -> Unit) {
                 listOf(coreId) + siblings,
                 identity,
             )
-            identity to sources
+            identity to plan
         }
+        if (migrationPlan.ambiguous) {
+            error(
+                "O save antigo deste jogo pode pertencer a mais de uma ROM com o mesmo nome. " +
+                    "Os arquivos foram preservados e o jogo não será iniciado com um progresso vazio. " +
+                    "É necessário resolver essa associação antes de continuar.",
+            )
+        }
+        val migrationSources = migrationPlan.sources
         if (RomMSettings.isConnected(context) && !useLocalSave) {
             status = context.getString(R.string.game_mode_status_syncing)
             try {
