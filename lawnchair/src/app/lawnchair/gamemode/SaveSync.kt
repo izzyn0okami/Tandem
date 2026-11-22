@@ -2,9 +2,6 @@ package app.lawnchair.gamemode
 
 import android.content.Context
 import androidx.core.content.edit
-import java.io.File
-import java.io.IOException
-import java.security.MessageDigest
 import androidx.work.BackoffPolicy
 import androidx.work.Constraints
 import androidx.work.ExistingWorkPolicy
@@ -12,11 +9,14 @@ import androidx.work.NetworkType
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.workDataOf
+import java.io.File
+import java.io.IOException
+import java.security.MessageDigest
 import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
 
 /**
  * Sincroniza saves de bateria e o estado rápido com o RomM, só para jogos baixados do servidor.
