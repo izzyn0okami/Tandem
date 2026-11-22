@@ -2837,3 +2837,13 @@ PRÓXIMAS PENDÊNCIAS
 3. Projetar recuperação/re-enqueue segura dos jobs WorkManager legados sem identidade estável, sem cancelar nem enviar dados para outra conta.
 4. Após CI, validar no telefone pareamento com me.read, isolamento entre contas, retry offline com snapshot, SRAM/state cross-core e comportamento de bloqueio/recuperação de saves legados.
 5. PR #40 continua draft; não mesclar sem autorização explícita.
+
+
+RESULTADO DE CI INTERMEDIÁRIA — RUN #608
+- Run ID 45078703305; HEAD 1752f1e6c400388c6c807cef22aa2ba9ff86e7bc; concluída com success.
+- check-style: success.
+- A tarefa testLawnWithQuickstepGithubDebugUnitTest foi executada explicitamente e terminou BUILD SUCCESSFUL em 5m25s. NO-SOURCE apareceu somente em tarefas auxiliares/módulos sem fontes próprias, não na tarefa principal de testes.
+- assembleLawnWithQuickstepGithubDebug terminou BUILD SUCCESSFUL em 1m43s; upload do artefato concluído.
+- Artefato Actions ID 14776836251; 46.075.712 bytes; digest do arquivo ZIP SHA-256 b54aee8456a6a450d6c5ec164b83a5bf3d56319accb85f379c21bf75469f342a; expira em 2027-02-20.
+- Esta execução valida identidade estável de conta e snapshots imutáveis, mas antecede as últimas alterações de bloqueio de migrações ambíguas/conflitantes. Não usar como CI final da PR.
+- A CI #614 (head de código 639693024ae9f094da498ef04fdbb492db0a5b12) continua sendo a validação necessária para o conjunto de migração mais recente; check-style passou, testes/build ainda estavam em andamento na última consulta.
