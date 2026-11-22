@@ -388,9 +388,10 @@ object SaveSync {
     /** Ao sair do jogo: agenda um envio persistente, retomável após encerramento do processo. */
     fun pushAsync(context: Context, romPath: String, coreId: String, platformSlug: String? = null) {
         val app = context.applicationContext
-        if (romId(app, romPath) == null) return
-        val gameIdentity = GameIdentityResolver.resolve(app, File(romPath), platformSlug)
-        val accountFingerprint = GameIdentityResolver.connectionFingerprint(app) ?: return
+        val gameFile = File(romPath)
+        if (!gameFile.isFile) return
+        val gameIdentity = GameIdentityResolver.resolve(app, gameFile, platformSlug)
+        val accountFingerprint = GameIdentityResolver.originAccountFingerprint(app, gameFile) ?: return
         val constraints = Constraints.Builder()
             .setRequiredNetworkType(NetworkType.CONNECTED)
             .build()
