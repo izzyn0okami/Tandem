@@ -151,7 +151,7 @@ class SaveStoreTest {
         val playlist = File(folder, "Game.m3u")
         val cue = File(folder, "Disc 1.cue")
         val disc = File(folder, "Disc 1.bin")
-        playlist.writeText("Disc 1.cue\\n")
+        playlist.writeText("Disc 1.cue\n")
         cue.writeText(
             """FILE "Disc 1.bin" BINARY
                 TRACK 01 MODE1/2352
