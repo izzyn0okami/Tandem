@@ -1122,9 +1122,11 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
  */
 private object RomMFileReplacement {
 
+    @Synchronized
     fun replaceFile(staged: File, target: File) {
         require(staged.isFile) { "Arquivo temporário ausente: ${staged.name}" }
         requireSameParent(staged, target)
+        recoverBackups(target, directory = false)
         if (staged.renameTo(target)) return
 
         if (!target.exists()) {
@@ -1149,9 +1151,11 @@ private object RomMFileReplacement {
         }
     }
 
+    @Synchronized
     fun replaceDirectory(staged: File, target: File) {
         require(staged.isDirectory) { "Pasta temporária ausente: ${staged.name}" }
         requireSameParent(staged, target)
+        recoverBackups(target, directory = true)
         if (!target.exists()) {
             if (!staged.renameTo(target)) throw IOException("Não consegui gravar ${target.name}")
             return
@@ -1177,6 +1181,35 @@ private object RomMFileReplacement {
         if (!backup.deleteRecursively()) {
             GameLog.log("romm", "substituição concluída; backup antigo não pôde ser removido: ${backup.name}")
         }
+    }
+
+    /**
+     * Recupera uma cópia anterior deixada por encerramento inesperado entre os dois renames
+     * de uma troca de diretório, ou limpa backups após uma troca que já chegou ao destino.
+     */
+    private fun recoverBackups(target: File, directory: Boolean) {
+        val parent = checkNotNull(target.parentFile)
+        val prefix = ".${target.name}.backup-"
+        val backups = parent.listFiles { file ->
+            file.name.startsWith(prefix) && if (directory) file.isDirectory else file.isFile
+        }.orEmpty()
+        if (backups.isEmpty()) return
+
+        if (!target.exists()) {
+            val backup = backups.maxByOrNull { it.name } ?: return
+            if (!backup.renameTo(target)) {
+                throw IOException("Não consegui recuperar a versão anterior de ${target.name} em ${backup.name}")
+            }
+            GameLog.log("romm", "versão anterior recuperada após interrupção: ${target.name}")
+            backups.filter { it != backup }.forEach(::deleteBackup)
+        } else {
+            backups.forEach(::deleteBackup)
+        }
+    }
+
+    private fun deleteBackup(backup: File) {
+        val deleted = if (backup.isDirectory) backup.deleteRecursively() else backup.delete()
+        if (!deleted) GameLog.log("romm", "backup antigo não pôde ser removido: ${backup.name}")
     }
 
     private fun requireSameParent(staged: File, target: File) {
