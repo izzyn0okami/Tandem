@@ -307,6 +307,15 @@ internal object GameIdentityResolver {
             }
         }
 
+        if (stableDirectoryName.startsWith("romm-") && legacyDataExists) {
+            runCatching {
+                GameLog.log(
+                    "saves",
+                    "save legado por nome de ROM sem dono de conta comprovado; exige associação explícita",
+                )
+            }
+            return LegacyMigrationPlan(emptyMap(), ambiguous = true)
+        }
         if (!legacyDataExists) return LegacyMigrationPlan(emptyMap(), ambiguous = false)
 
         val libraryRoot = File(GameLibrarySettings.rootPath(context))
