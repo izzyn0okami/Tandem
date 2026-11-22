@@ -1132,7 +1132,7 @@ private object RomMFileReplacement {
     fun replaceFile(staged: File, target: File) {
         require(staged.isFile) { "Arquivo temporário ausente: ${staged.name}" }
         requireSameParent(staged, target)
-        recoverFile(target)
+        recoverBackups(target, directory = false, cleanupIfTargetExists = true)
         if (staged.renameTo(target)) return
 
         if (!target.exists()) {
@@ -1161,7 +1161,7 @@ private object RomMFileReplacement {
     fun replaceDirectory(staged: File, target: File) {
         require(staged.isDirectory) { "Pasta temporária ausente: ${staged.name}" }
         requireSameParent(staged, target)
-        recoverDirectory(target)
+        recoverBackups(target, directory = true, cleanupIfTargetExists = true)
         if (!target.exists()) {
             if (!staged.renameTo(target)) throw IOException("Não consegui gravar ${target.name}")
             return
@@ -1191,19 +1191,19 @@ private object RomMFileReplacement {
 
     @Synchronized
     fun recoverFile(target: File) {
-        recoverBackups(target, directory = false)
+        recoverBackups(target, directory = false, cleanupIfTargetExists = false)
     }
 
     @Synchronized
     fun recoverDirectory(target: File) {
-        recoverBackups(target, directory = true)
+        recoverBackups(target, directory = true, cleanupIfTargetExists = false)
     }
 
     /**
      * Recupera uma cópia anterior deixada por encerramento inesperado entre os dois renames
      * de uma troca de diretório, ou limpa backups após uma troca que já chegou ao destino.
      */
-    private fun recoverBackups(target: File, directory: Boolean) {
+    private fun recoverBackups(target: File, directory: Boolean, cleanupIfTargetExists: Boolean) {
         val parent = checkNotNull(target.parentFile)
         val prefix = ".${target.name}.backup-"
         val backups = parent.listFiles { file ->
@@ -1218,7 +1218,7 @@ private object RomMFileReplacement {
             }
             GameLog.log("romm", "versão anterior recuperada após interrupção: ${target.name}")
             backups.filter { it != backup }.forEach(::deleteBackup)
-        } else {
+        } else if (cleanupIfTargetExists) {
             backups.forEach(::deleteBackup)
         }
     }
