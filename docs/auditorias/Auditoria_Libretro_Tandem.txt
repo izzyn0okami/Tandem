@@ -1073,3 +1073,12 @@ Data: 2026-11-21
 - Teste funcional no aparelho permanece pendente: interromper e retomar um download grande e validar também uma ROM multidisco, confirmando que o arquivo final funciona.
 - Não marcar a retomada como funcionalmente validada até confirmação do usuário.
 - Testes de armazenamento da PR #20 permanecem adiados a pedido do usuário.
+
+ATUALIZAÇÃO DE CI — PR #21
+Data: 2026-11-22
+
+- CI pós-merge #400, run ID 44966328607, commit fce658742927f70fbdd5141f69583af73a819a90: concluída com sucesso.
+- Jobs check-style, build-debug-apk, final-status e tandem-release: success.
+- tandem-latest publicado com sucesso.
+- Jobs send-notifications, crowdin-auto-merge e nightly-release foram ignorados conforme as condições do workflow.
+- A integração da PR #21 está validada pela CI. Testes funcionais de retomada no aparelho permanecem pendentes; não confundir aprovação de CI com validação funcional.
