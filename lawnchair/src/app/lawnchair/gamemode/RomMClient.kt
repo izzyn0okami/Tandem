@@ -440,7 +440,6 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
 
     /**
      * Instrumentação de download: registra rota, resposta e duração sem expor o token.
-     * Não altera os prazos, cabeçalhos ou a estratégia de transferência.
      */
     private fun <T> withDownloadResponse(
         url: HttpUrl,
@@ -526,6 +525,11 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
     ): Long {
         val validatorFile = File(temp.parentFile, "${temp.name}.range")
         var offset = temp.length().takeIf { temp.isFile } ?: 0L
+        if (offset > 0L && !validatorFile.isFile) {
+            GameLog.log("romm", "sem validador HTTP salvo; descartando parcial para evitar juntar versões diferentes: $description")
+            temp.delete()
+            offset = 0L
+        }
         var restartedAfter416 = false
 
         while (true) {
@@ -580,6 +584,7 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
                         description,
                     )
 
+                    var downloaded = writeOffset
                     response.body.byteStream().use { input ->
                         FileOutputStream(temp, append).use { output ->
                             val buffer = ByteArray(64 * 1024)
@@ -587,7 +592,8 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
                                 val read = input.read(buffer)
                                 if (read < 0) break
                                 output.write(buffer, 0, read)
-                                onProgress(temp.length() + (output.channel.position() - temp.length()))
+                                downloaded += read
+                                onProgress(downloaded)
                             }
                         }
                     }
