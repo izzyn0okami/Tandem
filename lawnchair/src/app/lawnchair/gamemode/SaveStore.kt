@@ -451,7 +451,14 @@ internal object GameIdentityResolver {
         }
         if (hasConflict) {
             runCatching { GameLog.log("saves", "migração legada com arquivos conflitantes; ambos os diretórios foram preservados") }
-            return LegacyMigrationPlan(emptyMap(), ambiguous = true, conflictSources = sources)
+            return LegacyMigrationPlan(
+                emptyMap(),
+                ambiguous = true,
+                conflictSources = sources.filter { (coreId, source) ->
+                    val target = File(File(savesRoot, coreId), stableDirectoryName)
+                    source.isDirectory && target.isDirectory && hasConflictingFiles(source, target)
+                },
+            )
         }
         return LegacyMigrationPlan(sources, ambiguous = false)
     }
