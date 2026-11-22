@@ -1898,3 +1898,14 @@ Data: 2026-11-22
 - Não foi observado relato de perda de save pelo usuário; este é um risco deduzido do fluxo e precisa de correção preventiva.
 - Correção recomendada: tornar as chamadas de rede do pull canceláveis de verdade (OkHttp Call.cancel ligado ao cancelamento da coroutine) e garantir exclusão mútua entre pull e push. Ao atingir o prazo, a requisição deve estar efetivamente encerrada antes de iniciar o núcleo; falha/timeout deve preservar o save local e registrar PENDING, sem bloquear indefinidamente a partida.
 - Não alterar ainda: a política de UX (iniciar imediatamente com save local após timeout ou aguardar uma sincronização mais longa) precisa ser definida antes da implementação.
+
+
+DECISÃO DE PRODUTO — ESPERAR SINCRONIZAÇÃO DE SAVE ANTES DE INICIAR O JOGO
+Data: 2026-11-22
+- Decisão explícita do usuário: opção 2 — aguardar a sincronização terminar antes de iniciar o jogo, mesmo que ultrapasse os 15 segundos atuais.
+- Segurança/integridade do save tem prioridade sobre rapidez de inicialização.
+- O núcleo não deve iniciar enquanto pull/push relevante para a ROM estiver ativo.
+- O timeout de 15 segundos não pode permitir que uma requisição bloqueante continue em segundo plano enquanto o jogo inicia.
+- Falha de rede/sincronização deve preservar o save local e informar claramente o usuário; não iniciar com uma transferência anterior ainda ativa.
+- A implementação deve usar cancelamento real das chamadas HTTP quando houver cancelamento, ou aguardar a conclusão segura sem permitir corrida; manter feedback de progresso e evitar bloqueio infinito por falha.
+- Esta é uma decisão de comportamento aprovada, ainda não implementada nem validada. Não registrar como concluída até CI e teste funcional.
