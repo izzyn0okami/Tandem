@@ -1718,3 +1718,35 @@ LIMITES DA ETAPA
 - O tratamento de plataforma nula ou sem extensões foi identificado como caminho que precisa ser exercitado: ZIP sem contexto de plataforma é recusado por não haver extensão segura para selecionar; não inferir plataforma pelo conteúdo.
 - Não há testes unitários dedicados encontrados para RomUnzipper.kt na árvore consultada.
 - Próxima etapa após CI: avaliar cobertura de testes automatizados e continuar a auditoria de robustez da sessão, sem reabrir BIOS já aprovada.
+
+
+ATUALIZAÇÃO — PR #28 MESCLADA E CI PR APROVADA
+Data: 2026-11-22
+
+PR #28 — Validate cached ROMs extracted from ZIP archives
+- URL: https://github.com/izzyn0okami/Tandem/pull/28
+- Estado: MESCLADA E FECHADA após autorização explícita do usuário.
+- Branch de origem: fix/rom-zip-cache-validation.
+- Branch de destino: game-mode-m2-dev.
+- Commit da alteração: 567f7795fa8931f9dd123293b84d1f0fff866533.
+- Merge commit: 73d0e08aec70b203b287180f2f14dfae74cea901.
+- Arquivo alterado: lawnchair/src/app/lawnchair/gamemode/RomUnzipper.kt.
+- A correção associa o cache aos metadados do ZIP e da entrada e verifica quantidade de bytes e CRC32 antes de promover a ROM extraída.
+- CI da PR #28 / run ID 44986156397: CONCLUÍDA COM SUCESSO. check-style (spotlessCheck), build-debug-apk (assembleLawnWithQuickstepGithubDebug, Build APK e Upload artifact) e final-status aprovados. Jobs condicionais de release/notificação foram ignorados conforme esperado.
+  URL: https://github.com/izzyn0okami/Tandem/actions/runs/44986156397
+- CI #444 / run ID 44985997353, disparada pela atualização anterior do log: CONCLUÍDA COM SUCESSO. check-style, build-debug-apk, final-status e tandem-release aprovados; publicação tandem-latest concluída.
+  URL: https://github.com/izzyn0okami/Tandem/actions/runs/44985997353
+- A comparação antes do merge indicava a branch da PR um commit atrás da base devido à atualização do próprio log, mas o GitHub confirmou mergeable=true e concluiu o merge com sucesso.
+- Nenhuma outra PR aberta foi encontrada imediatamente após o merge.
+- Não foi localizada execução pós-merge associada diretamente ao merge commit na consulta feita; não registrar CI pós-merge como aprovada sem confirmação posterior.
+
+VALIDAÇÃO FUNCIONAL AINDA PENDENTE NO APARELHO
+A autorização de merge não equivale a aprovação funcional. O usuário ainda precisa testar no Motorola:
+1. ZIP com uma ROM compatível: abrir normalmente.
+2. ZIP com duas ou mais ROMs compatíveis: recusar sem seleção arbitrária.
+3. ZIP sem ROM compatível e ZIP corrompido: apresentar erro claro sem travar a sessão.
+4. Substituir o conteúdo de um ZIP por outra ROM de mesmo tamanho: abrir o conteúdo novo, sem reutilizar cache antigo.
+5. ROM fora de ZIP, ZIP nativo Neo Geo e jogo multidisco: confirmar que continuam funcionando.
+6. Fluxo RomM 5.4.1 (multidisco/M3U, CHD individual, saves/states e firmware): validar separadamente quando possível.
+
+As anotações anteriores desta seção que descreviam PR #28 como aberta, CI #445 em execução e merge aguardando validação ficam superadas por esta atualização. Os testes funcionais permanecem pendentes; não os marcar como concluídos até confirmação explícita do usuário.
