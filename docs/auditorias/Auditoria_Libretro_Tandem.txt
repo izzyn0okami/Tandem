@@ -1192,3 +1192,14 @@ Decisão aprovada pelo usuário:
 - A atualização deve validar o novo arquivo antes de substituir o núcleo atual; em caso de falha, preservar a versão instalada.
 - O núcleo é compartilhado por plataforma/seleção do usuário: atualizar a partir dos detalhes de um jogo atualiza o mesmo arquivo de núcleo usado por outros jogos que selecionem aquele núcleo. A interface deve deixar isso claro para evitar a impressão de que a atualização é exclusiva daquela ROM.
 - A implementação ainda precisa definir e testar um mecanismo confiável de detecção de versão remota (não presumir atualização apenas por data local). Não criar PR até a detecção de versão e a substituição segura estarem definidas.
+
+
+VALIDAÇÃO FUNCIONAL CONSOLIDADA — INTEGRAÇÃO ROMM
+Data: 2026-11-21
+
+- O usuário confirmou que todos os pontos funcionais anteriormente listados para a integração RomM estão OK.
+- Considerar validados, conforme confirmação consolidada do usuário: fluxos de ROM individual e ZIP/multidisco; jogos e registros separados; geração/abertura dos conjuntos de disco; retomada de downloads; proteção de espaço; firmware com verificação de integridade; saves/states; requisitos de BIOS do Intellivision.
+- As pendências funcionais da integração RomM listadas nas auditorias anteriores ficam encerradas por confirmação do usuário. Não solicitar repetição desses testes nem reabrir as correções sem regressão ou nova evidência.
+- A implementação principal RomM está concluída para o escopo atualmente definido; não há PR aberta no repositório na consulta desta data.
+- Melhoria técnica não bloqueante identificada em revisão estática: alguns fluxos substituem arquivos/pastas existentes apagando o destino antes de renomear o temporário validado (incluindo firmware e conteúdo multidisco; há padrão semelhante em outros fluxos de arquivo). Uma falha de rename após a exclusão pode deixar o usuário sem a versão anterior. Recomenda-se uma PR futura de substituição transacional/segura, preservando o destino válido até a troca ser concluída. Isso é endurecimento de segurança de arquivos, não uma pendência funcional RomM reportada pelo usuário.
+- Próximo passo recomendado: se o usuário aprovar, implementar a substituição segura em todos os fluxos de download/importação afetados, com testes automatizados de falha de substituição. Não iniciar sem aprovação.
