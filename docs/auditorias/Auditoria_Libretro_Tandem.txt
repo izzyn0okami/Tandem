@@ -2184,3 +2184,14 @@ Data: 2026-11-22
 - Commit da correção: 26d6f0fc44e4576b79dccdfd1b551cd9f652806e.
 - Validação após a correção: PENDENTE; aguardar nova CI e confirmar Spotless, os seis testes JVM, build-debug APK, upload do artefato e final-status.
 - PR #35 permanece aberta e não mesclada. Não mesclar sem autorização explícita.
+
+
+SEGUNDA FALHA SPOTLESS — PR #35 / CI #504
+Data: 2026-11-22
+- CI #504 / run ID 45054252420, head 92f2c3025c470c750e5a03daebbe972aafd953fb: `spotlessKotlinCheck` voltou a falhar no mesmo arquivo `SaveSyncPolicy.kt`.
+- O diff do Spotless isolou a causa remanescente: linha em branco necessária entre o fechamento do bloco `"syncing"` e o ramo `else` do `when`.
+- Correção aplicada: inclusão da linha em branco exigida, sem alteração de lógica.
+- Commit da correção: e97a0fa24148675e1ed22f87fe574a5686fc6dda.
+- CI #504: o job de testes unitários ainda estava em andamento na última consulta; resultado dos testes não deve ser considerado aprovado até confirmação final.
+- Próxima validação pendente: nova CI no commit de correção, incluindo Spotless, seis testes JVM, build-debug APK, upload do artefato e final-status.
+- PR #35 permanece aberta e não mesclada; merge depende de autorização explícita.
