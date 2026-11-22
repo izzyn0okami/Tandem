@@ -69,6 +69,34 @@ class SaveSyncPolicyTest {
     }
 
     @Test
+    fun sramAcceptsTheLatestSaveFromAnotherTandemCore() {
+        val remotes = listOf(
+            RemoteFile(10L, "tandem_pcsx_rearmed", 1_000L),
+            RemoteFile(11L, "tandem_swanstation", 900L),
+            RemoteFile(12L, "duckstation", 2_000L),
+        )
+
+        assertEquals(10L, SaveSyncPolicy.newestCompatibleRemote(RemoteFileKind.Save, remotes, "swanstation")?.id)
+    }
+
+    @Test
+    fun quickStatesRemainRestrictedToTheirOriginalCore() {
+        val remotes = listOf(
+            RemoteFile(10L, "tandem_pcsx_rearmed", 2_000L),
+            RemoteFile(11L, "tandem_swanstation", 1_000L),
+        )
+
+        assertEquals(11L, SaveSyncPolicy.newestCompatibleRemote(RemoteFileKind.State, remotes, "swanstation")?.id)
+    }
+
+    @Test
+    fun unrelatedEmulatorSavesAreNotImported() {
+        val remotes = listOf(RemoteFile(10L, "duckstation", 2_000L))
+
+        assertEquals(null, SaveSyncPolicy.newestCompatibleRemote(RemoteFileKind.Save, remotes, "swanstation"))
+    }
+
+    @Test
     fun aCoreWithoutAnAppliedBaselineReceivesTheRemoteSave() {
         assertTrue(SaveSyncPolicy.shouldApplyRemote(false, true, null))
     }
