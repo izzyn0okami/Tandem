@@ -129,6 +129,7 @@ class GameSessionActivity : ComponentActivity() {
             finish()
             return
         }
+        SaveSync.markSessionActive(this, romPath)
 
         WindowCompat.setDecorFitsSystemWindows(window, false)
         WindowInsetsControllerCompat(window, window.decorView).apply {
@@ -376,6 +377,7 @@ class GameSessionActivity : ComponentActivity() {
             repeatOnLifecycle(Lifecycle.State.RESUMED) {
                 while (true) {
                     delay(SRAM_AUTOSAVE_MS)
+                    romPath?.let { SaveSync.markSessionActive(this@GameSessionActivity, it) }
                     withContext(Dispatchers.Default) { persistSram() }
                 }
             }
@@ -540,6 +542,7 @@ class GameSessionActivity : ComponentActivity() {
     override fun onResume() {
         // A Activity restaura o estado do ciclo de vida automaticamente; preserve o menu pausado
         // antes que o observer do GLRetroView tente retomar a emulação.
+        romPath?.let { SaveSync.markSessionActive(this, it) }
         retroView?.suppressAutoResume = menuOpen
         super.onResume()
         retroView?.suppressAutoResume = false
@@ -601,13 +604,6 @@ class GameSessionActivity : ComponentActivity() {
         GameLog.log("núcleos", "$coreIdForOptions: ${option.key} = $value")
     }
 
-    override fun onStop() {
-        super.onStop()
-        val rom = romPath ?: return
-        val core = saveStore?.let { coreIdOf() } ?: return
-        SaveSync.pushAsync(this, rom, core)
-    }
-
     private fun coreIdOf(): String? = intent.getStringExtra(EXTRA_CORE_PATH)?.let { File(it).name.removeSuffix("_libretro_android.so") }
 
     override fun onPause() {
@@ -628,6 +624,11 @@ class GameSessionActivity : ComponentActivity() {
             nativeDestroyed = true
         }
         super.onPause()
+        // Só libere e agende o upload depois que o GL foi pausado e o save local persistido.
+        romPath?.let { path ->
+            SaveSync.markSessionInactive(this, path)
+            coreIdOf()?.let { SaveSync.pushAsync(this, path, it) }
+        }
         // Em uma pausa comum, o idle é retomado em onResume; respostas de rede aguardam o GL.
         stopRaIdleLoop()
     }

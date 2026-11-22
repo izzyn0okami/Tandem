@@ -2,15 +2,21 @@ package app.lawnchair.gamemode
 
 import android.content.Context
 import androidx.core.content.edit
+import androidx.work.BackoffPolicy
+import androidx.work.Constraints
+import androidx.work.ExistingWorkPolicy
+import androidx.work.NetworkType
+import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.WorkManager
+import androidx.work.workDataOf
 import java.io.File
 import java.io.IOException
 import java.security.MessageDigest
-import kotlinx.coroutines.CoroutineScope
+import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
 
 /**
  * Sincroniza saves de bateria e o estado rápido com o RomM, só para jogos baixados do servidor.
@@ -35,8 +41,9 @@ private data class SaveFileSnapshot(
 
 object SaveSync {
 
-    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val lock = Mutex()
+
+    internal const val WORK_TAG = "romm-save-sync"
 
     private fun prefs(context: Context) = context.getSharedPreferences("romm_sync", Context.MODE_PRIVATE)
 
@@ -107,6 +114,22 @@ object SaveSync {
         RemoteFileKind.Save to store.sramFile,
         RemoteFileKind.State to store.stateFile,
     )
+
+    /** Registra que a ROM está em uma sessão ativa, impedindo upload enquanto ela pode mudar. */
+    fun markSessionActive(context: Context, romPath: String) {
+        prefs(context).edit { putLong(sessionKey(romPath), System.currentTimeMillis()) }
+    }
+
+    fun markSessionInactive(context: Context, romPath: String) {
+        prefs(context).edit { remove(sessionKey(romPath)) }
+    }
+
+    private fun sessionKey(romPath: String) = "session_active:$romPath"
+
+    private fun isSessionActive(context: Context, romPath: String): Boolean {
+        val lastActive = prefs(context).getLong(sessionKey(romPath), 0L)
+        return lastActive > 0L && System.currentTimeMillis() - lastActive < 120_000L
+    }
 
     /** Marca a falha do pull como pendente sem confundi-la com sincronização confirmada. */
     fun markSyncPending(context: Context, romPath: String) {
@@ -233,34 +256,65 @@ object SaveSync {
         file.copyTo(File(store.backupDir, "${System.currentTimeMillis()}-${file.name}"), overwrite = true)
     }
 
-    /** Ao sair do jogo: envia em segundo plano o que mudou. */
+    /** Ao sair do jogo: agenda um envio persistente, retomável após encerramento do processo. */
     fun pushAsync(context: Context, romPath: String, coreId: String) {
         val app = context.applicationContext
         if (romId(app, romPath) == null) return
+        val constraints = Constraints.Builder()
+            .setRequiredNetworkType(NetworkType.CONNECTED)
+            .build()
+        val request = OneTimeWorkRequestBuilder<RomMSaveSyncWorker>()
+            .setInputData(workDataOf(RomMSaveSyncWorker.KEY_ROM_PATH to romPath, RomMSaveSyncWorker.KEY_CORE_ID to coreId))
+            .setConstraints(constraints)
+            .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 30, TimeUnit.SECONDS)
+            .addTag(WORK_TAG)
+            .build()
         prefs(app).edit {
-            putString(statusKey(romPath), "syncing")
-            putLong("${statusKey(romPath)}:started", System.currentTimeMillis())
+            putString(statusKey(romPath), "pending")
+            remove("${statusKey(romPath)}:started")
         }
-        scope.launch {
-            lock.withLock {
-                runCatching { push(app, romPath, coreId) }
-                    .onSuccess {
-                        prefs(app).edit {
-                            putString(statusKey(romPath), "synced")
-                            remove("${statusKey(romPath)}:started")
-                        }
-                    }
-                    .onFailure {
-                        prefs(app).edit {
-                            putString(statusKey(romPath), "pending")
-                            remove("${statusKey(romPath)}:started")
-                        }
-                        GameLog.error("saves", "falha ao enviar saves de ${File(romPath).name}", it)
-                    }
+        WorkManager.getInstance(app).enqueueUniqueWork(
+            workName(romPath),
+            ExistingWorkPolicy.APPEND_OR_REPLACE,
+            request,
+        )
+    }
+
+    /** Chamado somente pelo Worker; o mesmo Mutex protege pull e push contra concorrência. */
+    internal suspend fun pushFromWorker(context: Context, romPath: String, coreId: String): Boolean {
+        val app = context.applicationContext
+        lock.withLock {
+            if (romId(app, romPath) == null) return true
+            // A sessão pode ter sido reaberta enquanto o trabalho aguardava rede.
+            // Não envie arquivos enquanto o núcleo puder estar atualizando o save.
+            if (isSessionActive(app, romPath)) return false
+            prefs(app).edit {
+                putString(statusKey(romPath), "syncing")
+                putLong("${statusKey(romPath)}:started", System.currentTimeMillis())
+            }
+            try {
+                withContext(Dispatchers.IO) { push(app, romPath, coreId) }
+                prefs(app).edit {
+                    putString(statusKey(romPath), "synced")
+                    remove("${statusKey(romPath)}:started")
+                }
+                return true
+            } catch (error: Exception) {
+                markSyncPending(app, romPath)
+                throw error
             }
         }
     }
 
+    internal fun cancelPending(context: Context) {
+        WorkManager.getInstance(context.applicationContext).cancelAllWorkByTag(WORK_TAG)
+    }
+
+    private fun workName(romPath: String): String {
+        val digest = MessageDigest.getInstance("SHA-256").digest(romPath.toByteArray(Charsets.UTF_8))
+        val key = digest.joinToString("") { "%02x".format(it) }
+        return "romm-save-sync:$key"
+    }
     private fun push(context: Context, romPath: String, coreId: String) {
         val romId = romId(context, romPath) ?: return
         val client = client(context) ?: error("RomM não está configurado para enviar saves")
@@ -271,7 +325,13 @@ object SaveSync {
             val key = "${kind.path}:$romPath"
             val current = hash(file)
             if (current == prefs.getString("$key:hash", null)) continue
-            val existing = prefs.getLong("$key:id", -1L).takeIf { it >= 0 }
+            val storedId = prefs.getLong("$key:id", -1L).takeIf { it >= 0 }
+            // A recuperação do Worker é "at least once": se o servidor aceitou um POST
+            // antes de o processo morrer, encontre o registro antes de tentar criar outro.
+            val existing = storedId ?: client.listRemoteFiles(kind, romId)
+                .filter { it.emulator == emulatorTag(coreId) }
+                .maxByOrNull { it.updatedAtMs }
+                ?.id
             val extension = if (kind == RemoteFileKind.Save) "srm" else "state"
             val uploadName = "${File(romPath).nameWithoutExtension}.$extension"
             val uploaded = try {

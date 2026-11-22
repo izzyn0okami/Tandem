@@ -5,6 +5,7 @@ agp = "9.5.1"
 kotlin = "2.4.21"
 androidx-room = "2.8.5"
 androidx-lifecycle = "2.11.0"
+androidx-work = "2.12.0"
 accompanist = "0.37.3"
 opto = "1.0.18"
 protobuf = "4.36.2"
@@ -64,6 +65,7 @@ androidx-test-rules = { group = "androidx.test", name = "rules", version.ref = "
 androidx-test-runner = { group = "androidx.test", name = "runner", version.ref = "testRunner" }
 androidx-uiautomator = "androidx.test.uiautomator:uiautomator:2.4.1"
 androidx-window = "androidx.window:window:1.5.1"
+androidx-work-runtime-ktx = { module = "androidx.work:work-runtime-ktx", version.ref = "androidx-work" }
 
 # Compose
 compose-bom = "androidx.compose:compose-bom:2026.09.00"
