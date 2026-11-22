@@ -131,7 +131,6 @@ object SaveSync {
 
     private fun appliedHashKey(kind: RemoteFileKind, romPath: String, coreId: String) = "${kind.path}:$romPath:$coreId:applied_hash"
 
-
     private fun newestRemoteFile(kind: RemoteFileKind, remotes: List<RemoteFile>, coreId: String): RemoteFile? = SaveSyncPolicy.newestCompatibleRemote(kind, remotes, coreId)
 
     /** Registra que a ROM está em uma sessão ativa, impedindo upload enquanto ela pode mudar. */
