@@ -2950,3 +2950,13 @@ Data: 2026-11-22
 - Decisão de validação: testes funcionais serão realizados na release, conforme orientação do usuário.
 - Pendências para a release: testar isolamento entre contas RomM, renovação de token, snapshots/retries offline, compatibilidade SRAM/state, confirmação/cancelamento de saves legados, preservação da origem e bloqueio de conflitos.
 - Não marcar testes funcionais como concluídos antes do retorno do usuário.
+
+VALIDAÇÃO FUNCIONAL NA RELEASE — PR #40 / SAVES ROMM
+Data: 2026-11-22
+- O usuário confirmou que os testes funcionais da implementação foram concluídos.
+- Testes de conflitos de saves: confirmados como concluídos com sucesso.
+- Comportamento confirmado: jogos com conflito de saves permanecem bloqueados para inicialização; os conjuntos conflitantes são preservados, sem resolução ou sobrescrita automática.
+- Resultado: o bloqueio de segurança e a preservação dos dois conjuntos foram validados funcionalmente pelo usuário.
+- Não confundir esse resultado com uma interface de resolução: a escolha/recuperação interativa entre conjuntos conflitantes continua sendo uma pendência de produto, salvo implementação posterior.
+- Atualizar este registro não altera os dados de saves nem o comportamento da aplicação.
+
