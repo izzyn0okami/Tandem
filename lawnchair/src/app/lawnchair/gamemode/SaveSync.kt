@@ -42,8 +42,11 @@ object SaveSync {
                 if (started > 0L && System.currentTimeMillis() - started > 120_000L) {
                     prefs.edit { putString(statusKey(romPath), "pending") }
                     SaveSyncStatus.PENDING
-                } else SaveSyncStatus.SYNCING
+                } else {
+                    SaveSyncStatus.SYNCING
+                }
             }
+
             else -> SaveSyncStatus.PENDING
         }
     }
