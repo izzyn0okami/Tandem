@@ -219,6 +219,22 @@ internal object GameIdentityResolver {
         } == true
         if (currentHasSave) return LegacyMigrationPlan(emptyMap(), ambiguous = false)
 
+        // A user may have played with the local identity while an old RomM link was unverified.
+        // When the same content is linked again, move that known local progress to the RomM identity.
+        if (stableDirectoryName.startsWith("romm-")) {
+            val localIdentity = "local-${digest("${platformSlug.orEmpty()}|${cachedFingerprint(context, romFile)}")}"
+            if (localIdentity != stableDirectoryName) {
+                val localSources = coreIds.distinct().associateWith { coreId ->
+                    File(File(savesRoot, coreId), localIdentity)
+                }.filterValues { directory ->
+                    directory.walkTopDown().any { it.isFile && it.length() > 0L }
+                }
+                if (localSources.isNotEmpty()) {
+                    return LegacyMigrationPlan(localSources, ambiguous = false)
+                }
+            }
+        }
+
         val legacyDataExists = coreIds.distinct().any { coreId ->
             File(File(savesRoot, coreId), legacyName)
                 .walkTopDown()
