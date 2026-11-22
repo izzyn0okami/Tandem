@@ -6,6 +6,7 @@ import org.junit.After
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -98,4 +99,66 @@ class SaveStoreTest {
 
         assertNull(store.readRaProgress("player"))
     }
+    @Test
+    fun stableGameIdentitiesPreventSameBasenameCollisions() {
+        val first = SaveStore(root, "melonds", File("folder-one/Pokemon.nds"), gameIdentity = "local-game-one")
+        val second = SaveStore(root, "melonds", File("folder-two/Pokemon.nds"), gameIdentity = "local-game-two")
+
+        first.writeSram(byteArrayOf(1, 2, 3))
+
+        assertArrayEquals(byteArrayOf(1, 2, 3), first.readSram())
+        assertNull(second.readSram())
+        assertNotEquals(first.sramFile.parentFile, second.sramFile.parentFile)
+    }
+
+    @Test
+    fun stableIdentityAllowsOnlyExplicitSiblingCoreSramFallback() {
+        val source = SaveStore(root, "core-a", File("Pokemon.nds"), gameIdentity = "romm-game-123")
+        source.writeSram(byteArrayOf(7, 8, 9))
+
+        val sibling = SaveStore(
+            root,
+            "core-b",
+            File("Renamed-Pokemon.nds"),
+            listOf("core-a"),
+            gameIdentity = "romm-game-123",
+        )
+
+        assertArrayEquals(byteArrayOf(7, 8, 9), sibling.readSram())
+        assertNull(sibling.readState())
+    }
+
+    @Test
+    fun verifiedLegacyMigrationCopiesBytesAndKeepsOriginalDirectory() {
+        val legacy = File(root, "melonds/Pokemon")
+        legacy.mkdirs()
+        File(legacy, "sram.srm").writeBytes(byteArrayOf(3, 1, 4, 1, 5))
+        File(legacy, "state1.state").writeBytes(byteArrayOf(9, 2, 6))
+
+        val target = File(root, "melonds/local-stable-identity")
+
+        assertTrue(GameIdentityResolver.migrateLegacy(legacy, target))
+        assertArrayEquals(byteArrayOf(3, 1, 4, 1, 5), File(target, "sram.srm").readBytes())
+        assertArrayEquals(byteArrayOf(9, 2, 6), File(target, "state1.state").readBytes())
+        assertTrue(legacy.isDirectory)
+        assertArrayEquals(byteArrayOf(3, 1, 4, 1, 5), File(legacy, "sram.srm").readBytes())
+    }
+
+    @Test
+    fun gameFingerprintIncludesReferencedDiscContent() {
+        val folder = File(root, "multidisc").apply { mkdirs() }
+        val playlist = File(folder, "Game.m3u")
+        val cue = File(folder, "Disc 1.cue")
+        val disc = File(folder, "Disc 1.bin")
+        playlist.writeText("Disc 1.cue\\n")
+        cue.writeText("""FILE "Disc 1.bin" BINARY\\n  TRACK 01 MODE1/2352\\n""")
+        disc.writeBytes(byteArrayOf(1, 2, 3))
+
+        val before = GameIdentityResolver.fingerprint(playlist)
+        disc.writeBytes(byteArrayOf(1, 2, 4))
+        val after = GameIdentityResolver.fingerprint(playlist)
+
+        assertNotEquals(before, after)
+    }
+
 }
