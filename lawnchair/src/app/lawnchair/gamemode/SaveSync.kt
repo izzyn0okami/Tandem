@@ -152,7 +152,7 @@ object SaveSync {
 
     /** Marca a falha do pull como pendente sem confundi-la com sincronização confirmada. */
     fun markSyncPending(context: Context, romPath: String, coreId: String, platformSlug: String? = null) {
-        if (romId(context, romPath) == null) return
+        if (!GameIdentityResolver.hasRomMLink(context, File(romPath))) return
         val gameIdentity = GameIdentityResolver.resolve(context, File(romPath), platformSlug)
         prefs(context).edit {
             putString(statusKey(gameIdentity), "pending")
