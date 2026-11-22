@@ -1235,3 +1235,37 @@ Data: 2026-11-22
 - Não altera endpoints, autenticação, retomada HTTP Range, validação de integridade ou nomes/caminhos de destino.
 - CI pós-merge: ainda não identificada nesta consulta; verificar execuções da branch game-mode-m2-dev e registrar quando concluídas.
 - Teste funcional específico de falha durante substituição/rollback no aparelho: não realizado; a CI comprova estilo e compilação, não o comportamento diante de falha real do filesystem.
+
+AUDITORIA E IMPLEMENTAÇÃO — ATUALIZADOR DE NÚCLEOS LIBRETRO
+Data: 2026-11-21
+Branch: feature/libretro-core-updater
+Base: game-mode-m2-dev @ be7430fde75e3dec698dcb925d041899ad0d834e
+
+ACHADOS QUE MOTIVARAM A IMPLEMENTAÇÃO
+- O CoreInstaller anterior só instalava quando o arquivo não existia ou não passava por uma verificação ELF superficial.
+- A validação anterior conferia apenas os quatro bytes mágicos ELF; não distinguia ELF32/ELF64 nem arquitetura ARM64.
+- A substituição apagava o núcleo existente antes de confirmar que o arquivo novo podia ocupar seu lugar.
+- Não existia consulta de metadados remotos nem ação de atualização nos detalhes do jogo.
+
+ALTERAÇÕES IMPLEMENTADAS NA BRANCH
+1. CoreInstaller:
+   - Consulta HTTP HEAD ao Buildbot oficial para obter Last-Modified e ETag.
+   - Compara os metadados remotos com a versão registrada localmente (ou a data do arquivo legado quando ainda não há registro).
+   - Distingue atualização confirmada (true), ausência de atualização (false) e estado inconclusivo/servidor indisponível (null); não apresenta botão quando não há confirmação.
+   - A instalação e atualização baixam o ZIP para arquivo temporário e validam ELF64 little-endian AArch64 (e_machine 183).
+   - O núcleo anterior é renomeado para backup somente depois de validar o novo arquivo; em falha na promoção, tenta restaurar o anterior.
+   - Registra Last-Modified/ETag após instalação concluída.
+2. GameScreens:
+   - Nos detalhes de jogo local executado via Libretro, consulta se o núcleo selecionado tem atualização confirmada.
+   - Mostra “Atualizar núcleo” somente quando a consulta confirma versão mais nova.
+   - A atualização ocorre em segundo plano e informa sucesso/falha sem bloquear a tela inteira.
+   - Não altera seleção do núcleo nem opções salvas.
+3. Limites ainda não validados:
+   - O Buildbot precisa responder HEAD com Last-Modified ou ETag estável. Se não fornecer metadados suficientes, a interface oculta o botão (estado inconclusivo).
+   - A atualização real, a preservação/recuperação de backup e o carregamento do núcleo novo precisam passar por CI e teste no telefone.
+   - O atualizador ainda não valida assinatura criptográfica; ELF/arquitetura não provam origem/confiabilidade por si sós.
+
+ESTADO
+- Código preparado na branch feature/libretro-core-updater.
+- Ainda não submetido a PR; CI pendente.
+- Nenhuma alteração mesclada em game-mode-m2-dev.
