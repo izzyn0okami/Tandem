@@ -1931,3 +1931,9 @@ Data: 2026-11-22
 - Para permitir fallback seguro, SaveSync.pull cria snapshots dos arquivos locais e dos metadados de sincronização antes de aplicar saves remotos. Se qualquer etapa do pull falhar, restaura os arquivos e metadados anteriores, evitando que um pull parcial deixe SRAM/estado ou hashes remotos inconsistentes.
 - O aviso informa o erro e esclarece que os arquivos locais foram preservados. "Tentar novamente" repete o pull; "Iniciar com save local" abre o núcleo sem nova tentativa de pull.
 - Implementação enviada na PR #31; CI após atualização e teste funcional no aparelho pendentes.
+
+
+SALVAGUARDA DO FALLBACK LOCAL — CONDIÇÃO DE SEGURANÇA
+Data: 2026-11-22
+- A opção "Iniciar com save local" só é oferecida quando o rollback do pull confirma que arquivos e metadados locais foram restaurados.
+- Se a restauração falhar, o Tandem desativa o fallback local e oferece apenas nova tentativa, evitando iniciar com um save cuja integridade não pôde ser confirmada.
