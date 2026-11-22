@@ -1886,3 +1886,15 @@ NÃO ALTERADO NESTA ETAPA
 - Nenhum teste funcional adicional foi executado no telefone.
 - Não reabrir testes aprovados pelo usuário de BIOS, ZIP/cache, núcleos confirmados ou insígnias de sincronização.
 - Próximo passo: aprofundar o fluxo de chamadas GL e os limites de cancelamento da sincronização; escolher correção pequena, isolada e coberta por testes antes de criar PR. Verificar novamente PRs abertas antes de qualquer PR nova.
+
+
+ACHADO PRIORITÁRIO — TIMEOUT DO DOWNLOAD DE SAVE ANTES DE INICIAR A SESSÃO
+Data: 2026-11-22
+- GameModeActivity.startGame() envolve SaveSync.pull() em withTimeoutOrNull(SYNC_TIMEOUT_MS), com SYNC_TIMEOUT_MS = 15 segundos.
+- SaveSync.pull() executa chamadas síncronas/bloqueantes do RomMClient em Dispatchers.IO.
+- RomMClient usa OkHttp execute() síncrono. O cliente padrão tem connectTimeout de 30 s e readTimeout de 60 s; o cliente de transferências longas amplia read/write timeout para 15 minutos. Não há adaptação explícita de cancelamento da coroutine para Call.cancel() neste fluxo.
+- Portanto, o timeout da coroutine não comprova que a requisição HTTP bloqueante foi cancelada. Se o limite de 15 s for atingido durante listagem/download, startGame() pode continuar e abrir o jogo enquanto o pull anterior ainda está ativo.
+- Consequência possível: SaveSync.pullOne() pode promover um save remoto depois de SaveStore.readSram() já ter carregado o save local na memória do novo núcleo. Isso cria uma corrida entre sincronização remota e sessão em andamento; dependendo da ordem, o jogo pode iniciar com uma versão antiga em memória e depois gravar sobre a versão recém-baixada.
+- Não foi observado relato de perda de save pelo usuário; este é um risco deduzido do fluxo e precisa de correção preventiva.
+- Correção recomendada: tornar as chamadas de rede do pull canceláveis de verdade (OkHttp Call.cancel ligado ao cancelamento da coroutine) e garantir exclusão mútua entre pull e push. Ao atingir o prazo, a requisição deve estar efetivamente encerrada antes de iniciar o núcleo; falha/timeout deve preservar o save local e registrar PENDING, sem bloquear indefinidamente a partida.
+- Não alterar ainda: a política de UX (iniciar imediatamente com save local após timeout ou aguardar uma sincronização mais longa) precisa ser definida antes da implementação.
