@@ -2220,7 +2220,7 @@ Data: 2026-11-22
 
 AUDITORIA — CORREÇÃO DA SELEÇÃO DO SAVE REMOTO MAIS RECENTE
 Data: 2026-11-22
-Status: implementação preparada em branch isolada; CI pendente.
+Status: IMPLEMENTADA E MESCLADA na branch game-mode-m2-dev.
 - Sintoma relatado: o Tandem recebia HTTP 200 e baixava um save RomM, mas aparentemente não selecionava/ativava a versão mais recente do servidor.
 - Auditoria de SaveSync.kt confirmou dois pontos frágeis:
   1. A seleção do registro remoto usava apenas updated_at; registros com o mesmo timestamp podiam empatar e a escolha não tinha desempate determinístico.
@@ -2234,5 +2234,12 @@ Status: implementação preparada em branch isolada; CI pendente.
   - Adicionar três testes JVM para mudança de ID com timestamp igual, mudança de timestamp com mesmo ID e igualdade completa dos metadados.
 - Limite conhecido: a API usada pelo cliente não fornece hash remoto no objeto listado. A comparação de conteúdo local continua baseada no hash SHA-1 confirmado; a detecção de versão remota usa ID + updated_at.
 - Risco/decisão: em conflito, o save local divergente é preservado em backup, mas a versão remota passa a ser a ativa, conforme a prioridade solicitada de carregar a versão atual do servidor. O usuário ainda deve validar no telefone antes de merge.
-- PR #36 criada: https://github.com/izzyn0okami/Tandem/pull/36. Branch isolada `fix/romm-latest-save-pull`; head `baf2b70ce6b2099419951026de1bfdcc42ab57c1`. A PR está aberta e não mesclada.
-- Teste funcional no Motorola Edge 30 Fusion: PENDENTE.
+- PR #36: https://github.com/izzyn0okami/Tandem/pull/36. Branch `fix/romm-latest-save-pull`; head final `d860de6fc2c71de999fc255245c615acc19e7e1e`.
+- CI #508 / run ID 45057232883: sucesso na validação inicial do código; check-style, testes unitários, build-debug APK, upload do artefato e final-status aprovados.
+- CI #509 / run ID 45057250386: CONCLUÍDA COM SUCESSO no head final `d860de6fc2c71de999fc255245c615acc19e7e1e`. URL: https://github.com/izzyn0okami/Tandem/actions/runs/45057250386
+- CI #509: spotlessCheck, testes unitários, build-debug APK, upload do artefato e final-status aprovados. tandem-release/nightly-release foram skipped na CI da PR.
+- Merge autorizado pelo usuário e concluído em 2026-11-22.
+- Merge commit: `0cf42c4da92e3ae7004a154fc874a86850b0b090`.
+- A PR #36 está fechada e mesclada em `game-mode-m2-dev`.
+- Teste funcional no Motorola Edge 30 Fusion: PENDENTE. A CI comprova compilação e testes automatizados, mas não comprova que o jogo carregue a versão correta do save no aparelho nem que o backup do save local divergente seja recuperável.
+- CI pós-merge no merge commit: PENDENTE; registrar quando a execução aparecer e concluir.
