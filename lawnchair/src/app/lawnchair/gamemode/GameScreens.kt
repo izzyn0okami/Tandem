@@ -392,6 +392,17 @@ internal fun GameDetailScreen(
     val firstFocus = remember { FocusRequester() }
     val manyVersions = (group?.versions?.size ?: 0) > 1
     val summary = remember(entry.key) { group?.versions?.firstOrNull()?.summary }
+    val chosenCoreId = remember(entry.platform.slug) { CoreRegistry.chosen(context, entry.platform) }
+    val coreUpdateAvailable by produceState<Boolean?>(null, local?.path, chosenCoreId) {
+        value = if (local != null && entry.platform.launch == LaunchMode.LIBRETRO && chosenCoreId.isNotBlank()) {
+            CoreInstaller.updateAvailable(context, chosenCoreId)
+        } else {
+            false
+        }
+    }
+    var coreUpdating by remember(entry.key) { mutableStateOf(false) }
+    var coreUpdateMessage by remember(entry.key) { mutableStateOf<String?>(null) }
+    val detailScope = rememberCoroutineScope()
     var showAchievements by remember(entry.key) { mutableStateOf(false) }
     val achievements by produceState<List<RaEntry>?>(null, entry.key) {
         value = if (local != null) withContext(Dispatchers.IO) { loadAchievementPreview(context, local.path) } else null
@@ -469,6 +480,30 @@ internal fun GameDetailScreen(
                     }
                     GameButton(label = stringResource(R.string.game_hint_back), onClick = onBack, modifier = Modifier.width(100.dp))
                 }
+                if (local != null && coreUpdateAvailable == true) {
+                    GameButton(
+                        label = if (coreUpdating) "Atualizando núcleo…" else "Atualizar núcleo",
+                        onClick = {
+                            if (!coreUpdating) {
+                                coreUpdating = true
+                                coreUpdateMessage = "Baixando e validando a atualização…"
+                                detailScope.launch {
+                                    val result = withContext(Dispatchers.IO) { CoreInstaller.update(context, chosenCoreId) }
+                                    coreUpdating = false
+                                    if (result.isSuccess) {
+                                        coreUpdateMessage = "Núcleo atualizado com sucesso."
+                                        GameLog.log("núcleos", "atualização manual concluída: $chosenCoreId")
+                                    } else {
+                                        coreUpdateMessage = "Falha na atualização. O núcleo anterior foi preservado quando possível."
+                                        result.exceptionOrNull()?.let { GameLog.error("núcleos", "atualização manual falhou: $chosenCoreId", it) }
+                                    }
+                                }
+                            }
+                        },
+                        enabled = !coreUpdating && !busy,
+                        modifier = Modifier.width(190.dp),
+                    )
+                }
                 if (manyVersions) {
                     VersionList(
                         entry = entry,
@@ -489,6 +524,9 @@ internal fun GameDetailScreen(
                         },
                     )
                     Stat(stringResource(R.string.game_stat_origin), stringResource(if (group != null) R.string.game_origin_server else R.string.game_origin_local))
+                }
+                coreUpdateMessage?.let { message ->
+                    Text(text = message, color = GameColors.textDim, fontSize = 12.sp)
                 }
                 if (!summary.isNullOrBlank()) {
                     Text(
