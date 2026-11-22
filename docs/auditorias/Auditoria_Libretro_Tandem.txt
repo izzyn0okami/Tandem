@@ -1219,3 +1219,19 @@ Status: implementação em PR; CI pendente; não mesclada.
 - Arquivo alterado: lawnchair/src/app/lawnchair/gamemode/RomMClient.kt.
 - Branch: fix/romm-safe-file-replacement; PR #23 (https://github.com/izzyn0okami/Tandem/pull/23). CI e revisão de PR ainda pendentes; merge não autorizado nem realizado.
 - Limitação técnica: troca de arquivo é atômica quando o filesystem aceita rename sobre o destino; troca de pasta não pode substituir atomicamente uma pasta não vazia, portanto usa backup e rollback com recuperação na próxima operação caso o processo seja encerrado no intervalo.
+
+
+CONCLUSÃO — PR #23 / SUBSTITUIÇÃO SEGURA DE ARQUIVOS ROMM
+Data: 2026-11-22
+
+- PR #23 mesclada por merge normal após autorização explícita do usuário.
+- PR: https://github.com/izzyn0okami/Tandem/pull/23
+- Branch: fix/romm-safe-file-replacement.
+- Head aprovado: 1b76cc9ffd749306172e9c2f588460f04798cabe.
+- Merge commit: 997413e88cf2012df148d2c52af50161f3cb3936.
+- CI da PR (run 44975180207): check-style / spotlessCheck, build-debug-apk / assembleLawnWithQuickstepGithubDebug e final-status concluídos com sucesso. Upload artifact também concluído com sucesso; jobs condicionais de release/notificações foram ignorados.
+- Implementação integrada em RomMClient.kt: substituição segura de arquivos por rename no mesmo diretório quando suportado; fallback com backup e restauração em caso de falha; substituição de pastas multidisco com backup/rollback e recuperação de backup após interrupção inesperada.
+- Aplicada aos fluxos de ROM individual, pastas multidisco, firmware, saves/states, capas e ZIP temporário de extração.
+- Não altera endpoints, autenticação, retomada HTTP Range, validação de integridade ou nomes/caminhos de destino.
+- CI pós-merge: ainda não identificada nesta consulta; verificar execuções da branch game-mode-m2-dev e registrar quando concluídas.
+- Teste funcional específico de falha durante substituição/rollback no aparelho: não realizado; a CI comprova estilo e compilação, não o comportamento diante de falha real do filesystem.
