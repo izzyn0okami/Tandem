@@ -1021,7 +1021,8 @@ class GLRetroView(
         }
     }
 
-    /** Queue JNI work only while this native session is alive. The second check closes the
+    /**
+     * Queue JNI work only while this native session is alive. The second check closes the
      * race where teardown starts after an event is enqueued but before the GL thread runs it.
      */
     private fun queueNativeEvent(block: () -> Unit) {
