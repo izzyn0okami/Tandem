@@ -2760,3 +2760,10 @@ SITUAÇÃO ATUAL
 - PR #40 continua aberta em draft; não mesclada.
 - Teste funcional no telefone ainda pendente.
 - Próximo passo: disponibilizar ao usuário o artefato da run #596 e aguardar validação no dispositivo antes de qualquer merge.
+
+ARTEFATO EXTRAÍDO PARA TESTE FUNCIONAL
+- APK extraído da execução #596: Tandem-PR40-debug.apk.
+- Tamanho do APK: 52.461.511 bytes.
+- SHA-256 do APK: 664de26a1b1a645ead5fe3fb6db95157bc4b12f01e83566af2d049aa12674fa4.
+- O tamanho/hash do artefato ZIP reportado pela API do GitHub refere-se ao pacote de Actions; não confundir com o hash do APK extraído acima.
+- O APK permanece fora do repositório; o artefato original de Actions pode ser baixado pela execução #596.
