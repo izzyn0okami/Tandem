@@ -1059,3 +1059,17 @@ VALIDAÇÃO / PENDÊNCIAS
 - Teste funcional no aparelho pendente: interromper e retomar um download de ROM grande; verificar também uma ROM multidisco. Confirmar que o progresso continua do ponto parcial e que o arquivo final abre normalmente.
 - Testes de armazenamento da PR #20 permanecem adiados a pedido do usuário; não misturar esses testes com a validação de retomada.
 - Não marcar retomada como concluída até CI aprovada e confirmação funcional do usuário.
+
+CONCLUSÃO — PR #21 / RETOMADA DE DOWNLOADS ROMM
+Data: 2026-11-21
+
+- PR #21 mesclada por merge normal após autorização explícita do usuário.
+- PR: https://github.com/izzyn0okami/Tandem/pull/21
+- Head aprovado: 7b48f4046b35e65e54e039c5ac63a2bc5a00272a.
+- Merge commit: fce658742927f70fbdd5141f69583af73a819a90.
+- CI da PR #21 (run 44965158895): check-style, build-debug-apk, upload artifact e final-status concluídos com sucesso.
+- CI da atualização documental no branch base (run 44965187711): check-style, build-debug-apk, final-status e tandem-release concluídos com sucesso; tandem-latest publicado.
+- Implementação integrada: retomada segura via HTTP Range/If-Range para ROMs individuais, ZIPs multidisco, firmware, saves e states; valida Content-Range, reinicia com segurança em HTTP 200 e trata HTTP 416 sem anexar conteúdo incorreto.
+- Teste funcional no aparelho permanece pendente: interromper e retomar um download grande e validar também uma ROM multidisco, confirmando que o arquivo final funciona.
+- Não marcar a retomada como funcionalmente validada até confirmação do usuário.
+- Testes de armazenamento da PR #20 permanecem adiados a pedido do usuário.
