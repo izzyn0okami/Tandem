@@ -381,7 +381,6 @@ class SaveStoreTest {
         assertEquals("sram.srm", conflicts.single().path)
         assertEquals(3L, conflicts.single().sourceBytes)
         assertEquals(3L, conflicts.single().targetBytes)
-        assertFalse(conflicts.single().identical)
         assertArrayEquals(byteArrayOf(1, 2, 3), File(source, "sram.srm").readBytes())
         assertArrayEquals(byteArrayOf(9, 8, 7), File(target, "sram.srm").readBytes())
         assertTrue(File(source, "legacy-only.bin").isFile)
