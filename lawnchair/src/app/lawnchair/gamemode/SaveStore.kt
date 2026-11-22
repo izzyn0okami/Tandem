@@ -349,7 +349,8 @@ internal object GameIdentityResolver {
         if (!target.isDirectory) return true
         return source.walkTopDown().filter { it.isFile }.any { sourceFile ->
             val existing = File(target, sourceFile.relativeTo(source).path)
-            existing.exists() && (!existing.isFile || fileHash(existing) != fileHash(sourceFile))
+            existing.exists() &&
+                (!existing.isFile || (existing.length() > 0L && fileHash(existing) != fileHash(sourceFile)))
         }
     }
 

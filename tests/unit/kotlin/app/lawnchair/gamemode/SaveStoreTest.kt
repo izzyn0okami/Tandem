@@ -243,14 +243,14 @@ class SaveStoreTest {
     }
 
     @Test
-    fun legacyMigrationNeverOverwritesAnExistingStableDirectory() {
+    fun legacyMigrationRejectsConflictingBytesAndKeepsBothDirectories() {
         val legacy = File(root, "legacy/Pokemon")
         legacy.mkdirs()
         File(legacy, "sram.srm").writeBytes(byteArrayOf(1, 2, 3))
         val target = File(root, "stable/Pokemon").apply { mkdirs() }
         File(target, "sram.srm").writeBytes(byteArrayOf(9, 9, 9))
 
-        assertTrue(GameIdentityResolver.migrateLegacy(legacy, target))
+        assertFalse(GameIdentityResolver.migrateLegacy(legacy, target))
         assertArrayEquals(byteArrayOf(1, 2, 3), File(legacy, "sram.srm").readBytes())
         assertArrayEquals(byteArrayOf(9, 9, 9), File(target, "sram.srm").readBytes())
     }
