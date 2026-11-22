@@ -2743,3 +2743,20 @@ VALIDAÇÃO E ESTADO
 - Nenhuma execução CI foi associada ao head atual na consulta. A CI final precisa ser disparada/concluída depois das correções e confirmar execução real dos testes, sem NO-SOURCE.
 - Comentário de revisão foi enviado à conversa da PR com os bloqueios acima. Nenhuma alteração funcional adicional foi feita nesta revisão.
 - Teste funcional no telefone continua pendente.
+
+RESULTADO DA CI FINAL — 2026-11-22
+- Workflow run: #596 / ID 45076680204.
+- HEAD validado: d00631bb899cc4390e32e2e34c1fcf29b7e0ca04.
+- check-style / spotlessCheck: SUCCESS.
+- Run unit tests: SUCCESS. A tarefa testLawnWithQuickstepGithubDebugUnitTest foi executada e terminou BUILD SUCCESSFUL em 3m54s; não houve NO-SOURCE nessa tarefa (há NO-SOURCE apenas em módulos/tarefas auxiliares sem fontes próprias).
+- Build APK: SUCCESS; assembleLawnWithQuickstepGithubDebug terminou BUILD SUCCESSFUL em 1m02s.
+- Upload artifact: SUCCESS.
+- Artefato debug: ID 14775581597; nome assembleLawnWithQuickstepGithubDebug; 46.066.885 bytes; SHA-256 87730464f323c1c3f765267cc43afc200f3862f32d2f76071f97ed57e7f6a167; expira em 2027-02-20.
+- Runs #593 e #594 falharam antes do teste por duas referências de compilação no status de sincronização (connectionFingerprint e SaveSyncStatus.Pending). Corrigidas para usar connectionSnapshot(...).accountFingerprint e SaveSyncStatus.PENDING; a execução #596 confirmou o código corrigido.
+- O APK é artefato de PR e não foi publicado em tandem-latest, pois a PR ainda não foi mesclada.
+
+SITUAÇÃO ATUAL
+- CI final aprovada no HEAD acima.
+- PR #40 continua aberta em draft; não mesclada.
+- Teste funcional no telefone ainda pendente.
+- Próximo passo: disponibilizar ao usuário o artefato da run #596 e aguardar validação no dispositivo antes de qualquer merge.
