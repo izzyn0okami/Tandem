@@ -51,7 +51,13 @@ data class RemoteGame(
     /** Destino dentro da pasta de jogos: uma subpasta por plataforma (e uma pasta por jogo, se for de vários arquivos). */
     fun destination(root: File): File {
         val platformDir = File(root, platform.slug)
-        return if (folder) File(File(platformDir, serverName), fileName) else File(platformDir, fileName)
+        val target = if (folder) File(File(platformDir, serverName), fileName) else File(platformDir, fileName)
+        if (folder) {
+            RomMFileReplacement.recoverDirectory(checkNotNull(target.parentFile))
+        } else {
+            RomMFileReplacement.recoverFile(target)
+        }
+        return target
     }
 }
 
@@ -1126,7 +1132,7 @@ private object RomMFileReplacement {
     fun replaceFile(staged: File, target: File) {
         require(staged.isFile) { "Arquivo temporário ausente: ${staged.name}" }
         requireSameParent(staged, target)
-        recoverBackups(target, directory = false)
+        recoverFile(target)
         if (staged.renameTo(target)) return
 
         if (!target.exists()) {
@@ -1155,7 +1161,7 @@ private object RomMFileReplacement {
     fun replaceDirectory(staged: File, target: File) {
         require(staged.isDirectory) { "Pasta temporária ausente: ${staged.name}" }
         requireSameParent(staged, target)
-        recoverBackups(target, directory = true)
+        recoverDirectory(target)
         if (!target.exists()) {
             if (!staged.renameTo(target)) throw IOException("Não consegui gravar ${target.name}")
             return
@@ -1181,6 +1187,16 @@ private object RomMFileReplacement {
         if (!backup.deleteRecursively()) {
             GameLog.log("romm", "substituição concluída; backup antigo não pôde ser removido: ${backup.name}")
         }
+    }
+
+    @Synchronized
+    fun recoverFile(target: File) {
+        recoverBackups(target, directory = false)
+    }
+
+    @Synchronized
+    fun recoverDirectory(target: File) {
+        recoverBackups(target, directory = true)
     }
 
     /**
