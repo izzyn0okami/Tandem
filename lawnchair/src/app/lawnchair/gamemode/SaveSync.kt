@@ -21,6 +21,16 @@ import kotlinx.coroutines.sync.withLock
  */
 enum class SaveSyncStatus { PENDING, SYNCING, SYNCED }
 
+private data class SaveFileSnapshot(
+    val file: File,
+    val backup: File?,
+    val existed: Boolean,
+    val key: String,
+    val hash: String?,
+    val remote: Long,
+    val id: Long,
+)
+
 object SaveSync {
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
@@ -123,10 +133,15 @@ object SaveSync {
                     null
                 }
                 val key = "${kind.path}:$romPath"
-                val hash = prefs.getString("$key:hash", null)
-                val remote = prefs.getLong("$key:remote", Long.MIN_VALUE)
-                val id = prefs.getLong("$key:id", Long.MIN_VALUE)
-                listOf(file, backup, existed, key, hash, remote, id)
+                SaveFileSnapshot(
+                    file = file,
+                    backup = backup,
+                    existed = existed,
+                    key = key,
+                    hash = prefs.getString("$key:hash", null),
+                    remote = prefs.getLong("$key:remote", Long.MIN_VALUE),
+                    id = prefs.getLong("$key:id", Long.MIN_VALUE),
+                )
             }
             try {
                 for ((kind, file) in files(store)) {
@@ -137,29 +152,22 @@ object SaveSync {
                 }
             } catch (error: Exception) {
                 snapshots.forEach { snapshot ->
-                    val file = snapshot[0] as File
-                    val backup = snapshot[1] as File?
-                    val existed = snapshot[2] as Boolean
-                    val key = snapshot[3] as String
-                    val savedHash = snapshot[4] as String?
-                    val savedRemote = snapshot[5] as Long
-                    val savedId = snapshot[6] as Long
                     runCatching {
-                        if (backup != null && backup.isFile) {
-                            RomMFileReplacement.replaceFile(backup, file)
-                        } else if (!existed) {
-                            file.delete()
+                        if (snapshot.backup != null && snapshot.backup.isFile) {
+                            RomMFileReplacement.replaceFile(snapshot.backup, snapshot.file)
+                        } else if (!snapshot.existed) {
+                            snapshot.file.delete()
                         }
                         prefs.edit {
-                            if (savedHash == null) remove("$key:hash") else putString("$key:hash", savedHash)
-                            if (savedRemote == Long.MIN_VALUE) remove("$key:remote") else putLong("$key:remote", savedRemote)
-                            if (savedId == Long.MIN_VALUE) remove("$key:id") else putLong("$key:id", savedId)
+                            if (snapshot.hash == null) remove("${snapshot.key}:hash") else putString("${snapshot.key}:hash", snapshot.hash)
+                            if (snapshot.remote == Long.MIN_VALUE) remove("${snapshot.key}:remote") else putLong("${snapshot.key}:remote", snapshot.remote)
+                            if (snapshot.id == Long.MIN_VALUE) remove("${snapshot.key}:id") else putLong("${snapshot.key}:id", snapshot.id)
                         }
                     }.onFailure { GameLog.error("saves", "falha ao restaurar save local após erro no pull", it) }
                 }
                 throw error
             } finally {
-                snapshots.forEach { (it[1] as File?)?.delete() }
+                snapshots.forEach { it.backup?.delete() }
             }
         }
     }
