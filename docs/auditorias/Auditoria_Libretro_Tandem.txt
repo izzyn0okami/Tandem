@@ -2937,3 +2937,16 @@ PENDÊNCIAS APÓS CI
 - Verificar conflito de conteúdo entre origem e destino: nenhum conjunto deve ser sobrescrito ou descartado.
 - Não considerar o teste no telefone concluído sem confirmação do usuário.
 - Não mesclar a PR #40 sem autorização explícita.
+
+
+MERGE CONCLUÍDO — PR #40 / IDENTIDADE ESTÁVEL E MIGRAÇÃO SEGURA DE SAVES
+Data: 2026-11-22
+- PR: https://github.com/izzyn0okami/Tandem/pull/40
+- Estado: mesclada com sucesso na branch game-mode-m2-dev.
+- Método: squash.
+- Commit de merge: a11245472dceb98cd63905ed97f5642e4b2e23f8.
+- Head integrado: f81980f55312bab9e7400e7de93693d01934c4dc.
+- CI #626, #627 e #628: todas concluídas com sucesso; testes unitários, estilo, build e upload de APK aprovados.
+- Decisão de validação: testes funcionais serão realizados na release, conforme orientação do usuário.
+- Pendências para a release: testar isolamento entre contas RomM, renovação de token, snapshots/retries offline, compatibilidade SRAM/state, confirmação/cancelamento de saves legados, preservação da origem e bloqueio de conflitos.
+- Não marcar testes funcionais como concluídos antes do retorno do usuário.
