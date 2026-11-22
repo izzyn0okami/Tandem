@@ -339,32 +339,34 @@ class GLRetroView(
 
     override fun onCreate(owner: LifecycleOwner) = catchExceptions {
         lifecycle = owner.lifecycle
-        LibretroDroid.setVulkanConfig(
-            data.preferVulkan,
-            data.vulkanDriver?.directory,
-            data.vulkanDriver?.libraryName,
-            context.applicationInfo.nativeLibraryDir,
-            context.cacheDir.absolutePath
-        )
-        updateCoreSensorAccess()
-        LibretroDroid.setCoreAccelerometerScale(data.coreAccelerometerScale)
-        LibretroDroid.create(
-            openGLESVersion,
-            data.coreFilePath,
-            data.systemDirectory,
-            data.savesDirectory,
-            data.variables,
-            buildShader(data.shader),
-            getDefaultRefreshRate(),
-            data.preferLowLatencyAudio,
-            data.forceSoftwareTiming,
-            data.enableMicrophone,
-            data.skipDuplicateFrames,
-            data.timingFollowsGeometry,
-            data.immersiveMode,
-            getDeviceLanguage()
-        )
-        LibretroDroid.setRumbleEnabled(data.rumbleEventsEnabled)
+        runNativeIfAlive {
+            LibretroDroid.setVulkanConfig(
+                data.preferVulkan,
+                data.vulkanDriver?.directory,
+                data.vulkanDriver?.libraryName,
+                context.applicationInfo.nativeLibraryDir,
+                context.cacheDir.absolutePath
+            )
+            updateCoreSensorAccess()
+            LibretroDroid.setCoreAccelerometerScale(data.coreAccelerometerScale)
+            LibretroDroid.create(
+                openGLESVersion,
+                data.coreFilePath,
+                data.systemDirectory,
+                data.savesDirectory,
+                data.variables,
+                buildShader(data.shader),
+                getDefaultRefreshRate(),
+                data.preferLowLatencyAudio,
+                data.forceSoftwareTiming,
+                data.enableMicrophone,
+                data.skipDuplicateFrames,
+                data.timingFollowsGeometry,
+                data.immersiveMode,
+                getDeviceLanguage()
+            )
+            LibretroDroid.setRumbleEnabled(data.rumbleEventsEnabled)
+        }
     }
 
     override fun onDestroy(owner: LifecycleOwner) {
