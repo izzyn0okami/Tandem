@@ -67,8 +67,6 @@ internal object GameIdentityResolver {
         return RomMConnectionSnapshot(url, token, server, digest("$server|$token"))
     }
 
-    fun connectionFingerprint(context: Context): String? = connectionSnapshot(context)?.accountFingerprint
-
     /** Fingerprint of the credentials that originally linked this game, even while disconnected. */
     fun originAccountFingerprint(context: Context, romFile: File): String? {
         val prefs = context.getSharedPreferences("romm_sync", Context.MODE_PRIVATE)
