@@ -233,6 +233,7 @@ internal object GameIdentityResolver {
         return LegacyMigrationPlan(sources, ambiguous = false)
     }
 
+    @Synchronized
     fun migrateLegacy(source: File, target: File): Boolean {
         if (!source.isDirectory || target.exists()) return false
         val parent = target.parentFile ?: return false
