@@ -174,6 +174,52 @@ object SaveSync {
         coreId: String,
     ): RemoteFile? = SaveSyncPolicy.newestCompatibleRemote(kind, remotes, coreId)
 
+    /** Move path-keyed metadata only when its old remote ID is proven to belong to this RomM game. */
+    private fun migrateLegacyMetadata(
+        context: Context,
+        romPath: String,
+        gameIdentity: String,
+        coreId: String,
+        kind: RemoteFileKind,
+        remotes: List<RemoteFile>,
+    ) {
+        val preferences = prefs(context)
+        val oldKey = SaveSyncPolicy.metadataKey(kind, romPath, coreId)
+        val newKey = SaveSyncPolicy.metadataKey(kind, gameIdentity, coreId)
+        if (preferences.contains("$newKey:id")) return
+
+        val oldId = preferences.getLong("$oldKey:id", -1L)
+        if (oldId < 0L || remotes.none {
+                it.id == oldId && SaveSyncPolicy.isCompatibleRemote(kind, it.emulator, coreId)
+            }
+        ) return
+
+        val oldAppliedKey = appliedHashKey(kind, romPath, coreId)
+        val newAppliedKey = appliedHashKey(kind, gameIdentity, coreId)
+        val oldRemoteHashKey = SaveSyncPolicy.remoteHashKey(kind, romPath, coreId)
+        val newRemoteHashKey = SaveSyncPolicy.remoteHashKey(kind, gameIdentity, coreId)
+        val values = preferences.all
+        preferences.edit {
+            (values["$oldKey:hash"] as? String)?.let {
+                if (!preferences.contains("$newKey:hash")) putString("$newKey:hash", it)
+            }
+            (values["$oldKey:remote"] as? Long)?.let {
+                if (!preferences.contains("$newKey:remote")) putLong("$newKey:remote", it)
+            }
+            if (!preferences.contains("$newKey:id")) putLong("$newKey:id", oldId)
+            (values[oldAppliedKey] as? String)?.let {
+                if (!preferences.contains(newAppliedKey)) putString(newAppliedKey, it)
+            }
+            (values[oldRemoteHashKey] as? String)?.let {
+                if (!preferences.contains(newRemoteHashKey)) putString(newRemoteHashKey, it)
+            }
+        }
+        GameLog.log(
+            "saves",
+            "metadados legados migrados para identidade estável: tipo=${kind.path}, jogo=$gameIdentity",
+        )
+    }
+
     /** Registra que a ROM está em uma sessão ativa, impedindo upload enquanto ela pode mudar. */
     fun markSessionActive(
         context: Context,
@@ -284,6 +330,7 @@ object SaveSync {
             try {
                 for ((kind, file) in files(store)) {
                     val remotes = client.listRemoteFiles(kind, linkedRomId)
+                    migrateLegacyMetadata(context, romPath, gameIdentity, coreId, kind, remotes)
                     val remote = newestRemoteFile(kind, remotes, coreId) ?: continue
                     val compatibleCount = remotes.count {
                         SaveSyncPolicy.isCompatibleRemote(kind, it.emulator, coreId)
@@ -617,10 +664,21 @@ object SaveSync {
             )
             if (current == confirmedHash) continue
             val storedId = prefs.getLong("$key:id", -1L).takeIf { it >= 0 }
+            val legacyKey = SaveSyncPolicy.metadataKey(kind, romPath, coreId)
+            val hasLegacyMetadata = storedId == null && prefs.contains("$legacyKey:id")
+            val remotes = if (storedId == null || hasLegacyMetadata) {
+                client.listRemoteFiles(kind, romId)
+            } else {
+                emptyList()
+            }
+            if (hasLegacyMetadata) {
+                migrateLegacyMetadata(context, romPath, gameIdentity, coreId, kind, remotes)
+            }
             // A recuperação do Worker é "at least once": se o servidor aceitou um POST
             // antes de o processo morrer, encontre o head atual de qualquer núcleo Tandem
             // para SRAM; estados rápidos continuam vinculados ao núcleo de origem.
-            val existing = storedId ?: newestRemoteFile(kind, client.listRemoteFiles(kind, romId), coreId)?.id
+            val existing = prefs.getLong("$key:id", -1L).takeIf { it >= 0 }
+                ?: newestRemoteFile(kind, remotes, coreId)?.id
             val extension = if (kind == RemoteFileKind.Save) "srm" else "state"
             val uploadName = "${File(romPath).nameWithoutExtension}.$extension"
             val uploaded = try {
