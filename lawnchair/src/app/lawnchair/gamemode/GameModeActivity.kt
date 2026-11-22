@@ -250,10 +250,9 @@ private fun GameModeRoot(refreshKey: Int, onExit: () -> Unit) {
         }
         if (migrationPlan.ambiguous) {
             error(
-                "Não foi possível confirmar a qual jogo pertence o save antigo. Isso pode ocorrer " +
-                    "quando há ROMs com nomes repetidos ou quando o jogo está fora da biblioteca configurada. " +
-                    "Os arquivos foram preservados e o jogo não será iniciado com progresso vazio. " +
-                    "Ajuste a biblioteca ou resolva a associação antes de continuar.",
+                "Não foi possível confirmar a qual jogo pertence o save antigo ou se dois conjuntos de progresso são diferentes. " +
+                    "Isso também pode ocorrer com saves RomM antigos que ainda não eram separados por conta. " +
+                    "Os arquivos foram preservados e o jogo não será iniciado até que a associação seja resolvida.",
             )
         }
         val migrationSources = migrationPlan.sources

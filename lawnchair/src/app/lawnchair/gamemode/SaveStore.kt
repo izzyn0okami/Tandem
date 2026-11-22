@@ -252,13 +252,6 @@ internal object GameIdentityResolver {
         val legacyName = sanitize(romFile.nameWithoutExtension)
         val currentCore = coreIds.firstOrNull()
         val currentStable = currentCore?.let { File(File(savesRoot, it), stableDirectoryName) }
-        val currentHasSave = currentStable?.let { stable ->
-            listOf("sram.srm", "state1.state").any { name ->
-                File(stable, name).let { it.isFile && it.length() > 0L }
-            }
-        } == true
-        if (currentHasSave) return LegacyMigrationPlan(emptyMap(), ambiguous = false)
-
         // A user may have played with the local identity while an old RomM link was unverified.
         // When the same content is linked again, move that known local progress to the RomM identity.
         if (stableDirectoryName.startsWith("romm-")) {
@@ -282,7 +275,13 @@ internal object GameIdentityResolver {
                         directory.walkTopDown().any { it.isFile && it.length() > 0L }
                     }
                     if (preAccountSources.isNotEmpty()) {
-                        return LegacyMigrationPlan(preAccountSources, ambiguous = false)
+                        runCatching {
+                            GameLog.log(
+                                "saves",
+                                "save RomM legado sem isolamento por conta encontrado; exige associação explícita",
+                            )
+                        }
+                        return LegacyMigrationPlan(emptyMap(), ambiguous = true)
                     }
                 }
             }
@@ -294,6 +293,10 @@ internal object GameIdentityResolver {
                     directory.walkTopDown().any { it.isFile && it.length() > 0L }
                 }
                 if (localSources.isNotEmpty()) {
+                    val hasConflict = localSources.any { (coreId, source) ->
+                        hasConflictingFiles(source, File(File(savesRoot, coreId), stableDirectoryName))
+                    }
+                    if (hasConflict) return LegacyMigrationPlan(emptyMap(), ambiguous = true)
                     return LegacyMigrationPlan(localSources, ambiguous = false)
                 }
             }
@@ -332,7 +335,23 @@ internal object GameIdentityResolver {
         val sources = coreIds.distinct().associateWith { coreId ->
             File(File(savesRoot, coreId), legacyName)
         }.filterValues { it.isDirectory }
+        val hasConflict = sources.any { (coreId, source) ->
+            hasConflictingFiles(source, File(File(savesRoot, coreId), stableDirectoryName))
+        }
+        if (hasConflict) {
+            runCatching { GameLog.log("saves", "migração legada com arquivos conflitantes; ambos os diretórios foram preservados") }
+            return LegacyMigrationPlan(emptyMap(), ambiguous = true)
+        }
         return LegacyMigrationPlan(sources, ambiguous = false)
+    }
+
+    private fun hasConflictingFiles(source: File, target: File): Boolean {
+        if (!target.exists()) return false
+        if (!target.isDirectory) return true
+        return source.walkTopDown().filter { it.isFile }.any { sourceFile ->
+            val existing = File(target, sourceFile.relativeTo(source).path)
+            existing.exists() && (!existing.isFile || fileHash(existing) != fileHash(sourceFile))
+        }
     }
 
     @Synchronized
@@ -398,12 +417,9 @@ internal object GameIdentityResolver {
                 },
             )
             if (conflictingFiles.isNotEmpty()) {
-                runCatching {
-                    GameLog.log(
-                        "saves",
-                        "arquivos legados conflitantes preservados na origem: ${conflictingFiles.joinToString()}",
-                    )
-                }
+                throw IOException(
+                    "Arquivos de save conflitantes preservados sem substituição: ${conflictingFiles.joinToString()}",
+                )
             }
 
             if (target.exists()) {
@@ -636,12 +652,12 @@ class SaveStore internal constructor(
         val hasPrimarySave = listOf("sram.srm", "state1.state").any { name ->
             File(stable, name).let { it.isFile && it.length() > 0L }
         }
-        if (hasPrimarySave) return stable
         val legacy = migrationSources[targetCoreId]
         if (legacy != null && legacy.isDirectory) {
             if (!GameIdentityResolver.migrateLegacy(legacy, stable)) return legacy
             return stable
         }
+        if (hasPrimarySave) return stable
         if (stable.isDirectory) return stable
         stable.mkdirs()
         return stable
