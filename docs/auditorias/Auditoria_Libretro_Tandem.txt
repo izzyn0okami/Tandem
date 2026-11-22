@@ -1838,3 +1838,16 @@ Data: 2026-11-22
 - Funcionalidade implementada: estados Pendente, Enviando… e Sync OK; confirmação positiva só após push() concluir sem erro; insígnias na grade e nos detalhes; jogos sem vínculo RomM ou sem save local não exibem estado.
 - Testes funcionais no Motorola Edge 30 Fusion permanecem PENDENTES: confirmar Enviando… e Sync OK após upload real; falha/desconexão deve resultar em Pendente; jogos sem vínculo RomM sem insígnia; conferir grade e detalhes.
 - Não confundir gravação local periódica com upload remoto: a insígnia representa a sincronização remota confirmada, não apenas o save local.
+
+
+VALIDAÇÃO FUNCIONAL APROVADA — PR #30 / INSÍGNIAS DE SINCRONIZAÇÃO DE SAVES
+Data: 2026-11-22
+- O usuário confirmou: “Tudo funcionando”.
+- Considerar aprovados os testes funcionais da insígnia de sincronização de saves RomM no Motorola Edge 30 Fusion.
+- A validação abrange o comportamento esperado dos estados Enviando… / Sync OK / Pendente, a distinção entre gravação local e confirmação de envio remoto, e a apresentação da insígnia na grade e nos detalhes, conforme os cenários de teste previamente combinados.
+- A auditoria funcional da PR #30 fica encerrada; não reabrir estes testes sem nova evidência ou solicitação do usuário.
+- PR #30 permanece mesclada; merge commit: 52eb1300ea4860a51095664fde7be7f52affc13f.
+- CI da PR #30 / run #460 (ID 45026956050), no head 961ec54ec7f2b3c5bc02c1357d969ba011cd7bee: sucesso em check-style, build-debug-apk, upload do artefato e final-status. URL: https://github.com/izzyn0okami/Tandem/actions/runs/45026956050
+- A consulta de workflows associadas ao merge commit e ao commit anterior de atualização do log não retornou execuções; não afirmar CI pós-merge aprovada.
+- Consulta atual de PRs abertas: nenhuma encontrada.
+- Próxima etapa da auditoria Libretro: continuar a avaliação de robustez da sessão e cobertura de testes automatizados, sem repetir validações já aprovadas de BIOS, ZIP/cache, núcleos confirmados e insígnias de sincronização.
