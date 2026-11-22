@@ -91,7 +91,7 @@ internal object GameIdentityResolver {
     fun link(context: Context, romFile: File, romId: Long) {
         val connection = connectionSnapshot(context) ?: return
         if (!romFile.isFile) return
-        val fingerprint = fingerprint(romFile)
+        val fingerprint = cachedFingerprint(context, romFile)
         val prefs = context.getSharedPreferences("romm_sync", Context.MODE_PRIVATE)
         val key = contentLinkKey(fingerprint)
         val encoded = "${connection.server}|${connection.accountFingerprint}|$romId"
