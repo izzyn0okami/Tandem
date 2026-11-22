@@ -1191,7 +1191,7 @@ private object RomMFileReplacement {
         val parent = checkNotNull(target.parentFile)
         val prefix = ".${target.name}.backup-"
         val backups = parent.listFiles { file ->
-            file.name.startsWith(prefix) && if (directory) file.isDirectory else file.isFile
+            file.name.startsWith(prefix) && (if (directory) file.isDirectory else file.isFile)
         }.orEmpty()
         if (backups.isEmpty()) return
 
