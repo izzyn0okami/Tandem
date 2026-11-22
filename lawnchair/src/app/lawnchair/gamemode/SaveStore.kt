@@ -176,17 +176,36 @@ internal object GameIdentityResolver {
         fun addFile(file: File, depth: Int) {
             val canonical = runCatching { file.canonicalPath }.getOrDefault(file.absolutePath)
             if (depth > 4 || !file.isFile || !visited.add(canonical)) return
-            digest.update(file.name.toByteArray(Charsets.UTF_8))
-            digest.update(fileHash(file).toByteArray(Charsets.UTF_8))
-            val references = when (file.extension.lowercase(Locale.ROOT)) {
-                "m3u" -> file.readLines().map(String::trim).filter { it.isNotEmpty() && !it.startsWith("#") }
-                "cue" -> file.readLines().mapNotNull { line ->
-                    Regex("""(?i)^\\s*FILE\\s+"([^"]+)"""").find(line)?.groupValues?.getOrNull(1)
+            when (file.extension.lowercase(Locale.ROOT)) {
+                "m3u" -> {
+                    digest.update("playlist".toByteArray(Charsets.UTF_8))
+                    file.readLines().map(String::trim)
+                        .filter { it.isNotEmpty() && !it.startsWith("#") }
+                        .forEachIndexed { index, reference ->
+                            digest.update(index.toString().toByteArray(Charsets.UTF_8))
+                            addFile(File(file.parentFile, reference), depth + 1)
+                        }
                 }
-                else -> emptyList()
-            }
-            references.forEach { reference ->
-                addFile(File(file.parentFile, reference), depth + 1)
+                "cue" -> {
+                    digest.update("cue".toByteArray(Charsets.UTF_8))
+                    val lines = file.readLines()
+                    val references = mutableListOf<String>()
+                    val normalizedLines = lines.map { line ->
+                        val match = Regex("""(?i)^\\s*FILE\\s+"([^"]+)"""").find(line)
+                        if (match != null) {
+                            references += match.groupValues[1]
+                            Regex("""(?i)^\\s*FILE\\s+"[^"]+"""").replace(line, "FILE <DISC>")
+                        } else {
+                            line.trim()
+                        }
+                    }
+                    digest.update(normalizedLines.joinToString("\\n").toByteArray(Charsets.UTF_8))
+                    references.forEachIndexed { index, reference ->
+                        digest.update(index.toString().toByteArray(Charsets.UTF_8))
+                        addFile(File(file.parentFile, reference), depth + 1)
+                    }
+                }
+                else -> digest.update(fileHash(file).toByteArray(Charsets.UTF_8))
             }
         }
         addFile(romFile, 0)
