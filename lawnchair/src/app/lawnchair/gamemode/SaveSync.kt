@@ -438,7 +438,7 @@ object SaveSync {
         val app = context.applicationContext
         if (expectedAccountFingerprint.isNullOrBlank()) return false
         val connection = GameIdentityResolver.connectionSnapshot(app) ?: return false
-        if (connection.accountFingerprint != expectedAccountFingerprint) return false
+        if (!SaveSyncPolicy.isSameSyncAccount(expectedAccountFingerprint, connection.accountFingerprint)) return false
         val activeRomPath = GameIdentityResolver.findRomPath(app, gameIdentity, romPath, platformSlug) ?: return false
         val linkedRomId = GameIdentityResolver.linkedRomId(app, File(activeRomPath), connection) ?: return false
         val syncClient = RomMClient(connection.url, connection.token)
