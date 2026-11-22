@@ -14,6 +14,7 @@ import java.util.Locale
 internal data class LegacyMigrationPlan(
     val sources: Map<String, File>,
     val ambiguous: Boolean,
+    val confirmationSources: Map<String, File> = emptyMap(),
 )
 
 internal data class RomMConnectionSnapshot(
@@ -279,13 +280,31 @@ internal object GameIdentityResolver {
                         directory.walkTopDown().any { it.isFile && it.length() > 0L }
                     }
                     if (preAccountSources.isNotEmpty()) {
+                        if (legacyDataExists) {
+                            return LegacyMigrationPlan(emptyMap(), ambiguous = true)
+                        }
+                        val hasConflict = preAccountSources.any { (coreId, source) ->
+                            hasConflictingFiles(source, File(File(savesRoot, coreId), stableDirectoryName))
+                        }
+                        if (hasConflict) return LegacyMigrationPlan(emptyMap(), ambiguous = true)
+                        val alreadyClaimed = preAccountSources.all { (coreId, source) ->
+                            isVerifiedLegacyCopy(source, File(File(savesRoot, coreId), stableDirectoryName))
+                        }
                         runCatching {
                             GameLog.log(
                                 "saves",
-                                "save RomM legado sem isolamento por conta encontrado; exige associação explícita",
+                                if (alreadyClaimed) {
+                                    "save RomM legado já copiado e validado para a conta atual; origem preservada"
+                                } else {
+                                    "save RomM legado aguarda confirmação explícita para associação à conta atual"
+                                },
                             )
                         }
-                        return LegacyMigrationPlan(emptyMap(), ambiguous = true)
+                        return if (alreadyClaimed) {
+                            LegacyMigrationPlan(preAccountSources, ambiguous = false)
+                        } else {
+                            LegacyMigrationPlan(emptyMap(), ambiguous = false, confirmationSources = preAccountSources)
+                        }
                     }
                 }
             }
@@ -308,13 +327,49 @@ internal object GameIdentityResolver {
         }
 
         if (stableDirectoryName.startsWith("romm-") && legacyDataExists) {
+            val libraryRoot = File(GameLibrarySettings.rootPath(context))
+            val canonicalRom = runCatching { romFile.canonicalFile }.getOrNull()
+                ?: return LegacyMigrationPlan(emptyMap(), ambiguous = true)
+            val canonicalRoot = runCatching { libraryRoot.canonicalFile }.getOrNull()
+                ?: return LegacyMigrationPlan(emptyMap(), ambiguous = true)
+            if (!canonicalRom.toPath().startsWith(canonicalRoot.toPath())) {
+                return LegacyMigrationPlan(emptyMap(), ambiguous = true)
+            }
+            val candidates = runCatching { GameLibraryScanner.scan(libraryRoot) }.getOrNull().orEmpty()
+                .filter { sanitize(File(it.path).nameWithoutExtension) == legacyName }
+            val uniqueCandidate = candidates.singleOrNull()
+            val candidatePath = uniqueCandidate?.let { runCatching { File(it.path).canonicalFile }.getOrNull() }
+            if (uniqueCandidate?.platform?.slug != platformSlug || candidatePath != canonicalRom) {
+                return LegacyMigrationPlan(emptyMap(), ambiguous = true)
+            }
+            val sources = coreIds.distinct().associateWith { coreId ->
+                File(File(savesRoot, coreId), legacyName)
+            }.filterValues { directory ->
+                directory.isDirectory && directory.walkTopDown().any { it.isFile && it.length() > 0L }
+            }
+            if (sources.isEmpty()) return LegacyMigrationPlan(emptyMap(), ambiguous = true)
+            val hasConflict = sources.any { (coreId, source) ->
+                hasConflictingFiles(source, File(File(savesRoot, coreId), stableDirectoryName))
+            }
+            if (hasConflict) return LegacyMigrationPlan(emptyMap(), ambiguous = true)
+            val alreadyClaimed = sources.all { (coreId, source) ->
+                isVerifiedLegacyCopy(source, File(File(savesRoot, coreId), stableDirectoryName))
+            }
             runCatching {
                 GameLog.log(
                     "saves",
-                    "save legado por nome de ROM sem dono de conta comprovado; exige associação explícita",
+                    if (alreadyClaimed) {
+                        "save legado por nome já copiado e validado para a conta atual; origem preservada"
+                    } else {
+                        "save legado por nome aguarda confirmação explícita para associação à conta atual"
+                    },
                 )
             }
-            return LegacyMigrationPlan(emptyMap(), ambiguous = true)
+            return if (alreadyClaimed) {
+                LegacyMigrationPlan(sources, ambiguous = false)
+            } else {
+                LegacyMigrationPlan(emptyMap(), ambiguous = false, confirmationSources = sources)
+            }
         }
         if (!legacyDataExists) return LegacyMigrationPlan(emptyMap(), ambiguous = false)
 
@@ -361,6 +416,28 @@ internal object GameIdentityResolver {
             val existing = File(target, sourceFile.relativeTo(source).path)
             existing.exists() &&
                 (!existing.isFile || (existing.length() > 0L && fileHash(existing) != fileHash(sourceFile)))
+        }
+    }
+
+    /** True only when every legacy byte is already present and hash-verified in the stable target. */
+    internal fun isVerifiedLegacyCopy(source: File, target: File): Boolean {
+        if (!source.isDirectory || !target.isDirectory) return false
+        val files = source.walkTopDown().filter { it.isFile }.toList()
+        return files.isNotEmpty() && files.all { sourceFile ->
+            val destination = File(target, sourceFile.relativeTo(source).path)
+            destination.isFile &&
+                destination.length() == sourceFile.length() &&
+                fileHash(destination) == fileHash(sourceFile)
+        }
+    }
+
+    /** Copy an explicitly approved legacy set into the current account namespace, keeping its source. */
+    fun claimLegacySaves(context: Context, gameIdentity: String, sources: Map<String, File>): Boolean {
+        if (sources.isEmpty()) return false
+        val savesRoot = GameFolders.dir(context, FolderKind.Saves)
+        return sources.all { (coreId, source) ->
+            val target = File(File(savesRoot, coreId), gameIdentity)
+            migrateLegacy(source, target) && isVerifiedLegacyCopy(source, target)
         }
     }
 
