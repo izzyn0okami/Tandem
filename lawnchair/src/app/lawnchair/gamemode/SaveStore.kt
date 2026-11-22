@@ -26,7 +26,12 @@ internal object GameIdentityResolver {
         return resolveWithFingerprint(context, romFile, platformSlug, fingerprint)
     }
 
-    private fun resolveWithFingerprint(context: Context, romFile: File, platformSlug: String?, fingerprint: String): String {
+    private fun resolveWithFingerprint(
+        context: Context,
+        romFile: File,
+        platformSlug: String?,
+        fingerprint: String,
+    ): String {
         val prefs = context.getSharedPreferences("romm_sync", Context.MODE_PRIVATE)
         val storedDirectId = prefs.getLong("rom:${romFile.absolutePath}", -1L)
         val directFingerprint = prefs.getString("rom_fingerprint:${romFile.absolutePath}", null)
@@ -161,7 +166,12 @@ internal object GameIdentityResolver {
             .filter { sanitize(File(it.path).nameWithoutExtension) == legacyName }
         if (candidates.size != 1 || candidates.single().platform.slug != platformSlug) {
             if (candidates.size > 1) {
-                runCatching { GameLog.log("saves", "migração legada ambígua para $legacyName; diretórios antigos preservados") }
+                runCatching {
+                    GameLog.log(
+                        "saves",
+                        "migração legada ambígua para $legacyName; diretórios antigos preservados",
+                    )
+                }
             }
             return emptyMap()
         }
@@ -192,7 +202,9 @@ internal object GameIdentityResolver {
             val copiedFiles = temp.walkTopDown().filter { it.isFile }.map { it.relativeTo(temp).path }.toSet()
             check(sourceFiles == copiedFiles)
             check(temp.renameTo(target))
-            runCatching { GameLog.log("saves", "save legado migrado e validado para identidade estável; origem preservada") }
+            runCatching {
+                GameLog.log("saves", "save legado migrado e validado para identidade estável; origem preservada")
+            }
             true
         }.getOrElse {
             temp.deleteRecursively()
@@ -327,7 +339,15 @@ internal object GameIdentityResolver {
                 uri.port == 443 && scheme == "https" -> -1
                 else -> uri.port
             }
-            java.net.URI(scheme, null, host, port, uri.path?.trimEnd('/').orEmpty(), null, null).toASCIIString().trimEnd('/')
+            java.net.URI(
+                scheme,
+                null,
+                host,
+                port,
+                uri.path?.trimEnd('/').orEmpty(),
+                null,
+                null,
+            ).toASCIIString().trimEnd('/')
         }.getOrNull()
     }
 
