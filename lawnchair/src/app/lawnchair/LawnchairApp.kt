@@ -42,6 +42,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.core.content.FileProvider
 import androidx.profileinstaller.ProfileInstaller
+import androidx.work.Configuration
+import androidx.work.WorkManager
 import app.lawnchair.backup.LawnchairBackup
 import app.lawnchair.flowerpot.Flowerpot
 import app.lawnchair.preferences.PreferenceManager
@@ -71,6 +73,7 @@ class LawnchairApp : LauncherApplication() {
 
     override fun onCreate() {
         super.onCreate()
+        initializeWorkManager()
         instance = this
         QuickStepContract.sRecentsDisabled = !recentsEnabled
         Flowerpot.Manager.getInstance(this)
@@ -78,6 +81,21 @@ class LawnchairApp : LauncherApplication() {
         scheduleBaselineProfileInstall()
     }
 
+    /**
+     * The common manifest removes AndroidX Startup initialization; initialize WorkManager
+     * explicitly in the launcher process only (the bug-report uploader has its own process).
+     */
+    private fun initializeWorkManager() {
+        val isMainProcess = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            Application.getProcessName() == packageName
+        } else {
+            getSystemService(ActivityManager::class.java)?.runningAppProcesses
+                ?.any { it.pid == Process.myPid() && it.processName == packageName } == true
+        }
+        if (isMainProcess) {
+            WorkManager.initialize(this, Configuration.Builder().build())
+        }
+    }
     /**
      * Writes the bundled baseline profile so ART can use it on sideloaded installs. The manifest
      * removes androidx.startup's InitializationProvider, which also drops
