@@ -2143,3 +2143,18 @@ Data: 2026-11-22
 - Resultado da etapa: cobertura automatizada inicial de SaveStore integrada. Não houve teste funcional adicional exigido no telefone para esta PR de testes unitários.
 - Pendências futuras: ampliar a cobertura para regras de estado/elegibilidade de SaveSync e integração WorkManager; lifecycle/GL deve usar testes instrumentados apropriados, sem invocar JNI real em JVM.
 - A CI pós-merge no commit 84dbb5d603898b595df46439133792ac58bbe209 ainda deve ser consultada e registrada após conclusão.
+
+
+AUDITORIA — COBERTURA AUTOMATIZADA DAS REGRAS DE SAVE SYNC
+Data: 2026-11-22
+Status: implementação preparada; CI pendente.
+- Após o merge da PR #34, a base foi atualizada e nenhuma PR aberta foi encontrada antes de iniciar esta etapa.
+- A implementação anterior mantém a sincronização de saves em SaveSync/WorkManager e já foi validada funcionalmente pelo usuário na PR #33.
+- Para ampliar a cobertura sem depender de Android Context, SharedPreferences, rede ou WorkManager real em testes JVM, as decisões determinísticas foram extraídas para SaveSyncPolicy.
+- A política extraída cobre: interpretação de estados SYNCED/SYNCING/PENDING; expiração do estado SYNCING após 120 segundos; janela de sessão ativa baseada no heartbeat de 120 segundos; e elegibilidade de upload apenas para arquivo existente, não vazio e diferente do hash confirmado.
+- SaveSync passou a usar a política extraída nos pontos correspondentes; o comportamento esperado e os limites de tempo foram preservados.
+- Adicionados seis testes unitários JVM em tests/unit/kotlin/app/lawnchair/gamemode/SaveSyncPolicyTest.kt: estado confirmado; estado ausente/desconhecido; SYNCING no limite exato; SYNCING expirado; janela de sessão ativa; elegibilidade de upload para arquivos ausentes/vazios/inalterados/alterados.
+- Não foram alteradas as regras de rede, endpoints RomM, concorrência pull/push, política de conflito de saves, WorkManager ou interface.
+- Branch: test/libretro-save-sync-policy.
+- Validação CI e compilação: PENDENTES. Confirmar execução dos seis testes, Spotless e build APK antes de considerar esta etapa aprovada.
+- Próximas etapas, condicionadas à CI: avaliar testes de integração WorkManager com ambiente de teste apropriado; depois cobrir lifecycle/GL por testes instrumentados ou abstrações, sem chamar JNI real em JVM.
