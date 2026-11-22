@@ -1941,3 +1941,15 @@ Data: 2026-11-22
 - Último reforço: se o rollback não conseguir restaurar integralmente os arquivos/metadados, o Tandem desativa a ação "Iniciar com save local" e mantém os snapshots restantes como arquivos de recuperação; oferece apenas nova tentativa. Isso evita apagar a única cópia de recuperação.
 - Commit mais recente da implementação: dd4fb29ece8722a6087357de22125c6ad6eef7fb.
 - CI do commit mais recente e teste funcional no aparelho ainda pendentes.
+
+
+ATUALIZAÇÃO PÓS-MERGE — PR #31
+Data: 2026-11-22
+- PR #31 ("Wait for RomM save sync before launching games") mesclada em game-mode-m2-dev.
+- Merge commit: 474013d77d6474697b709d055a3959e08481dc8a.
+- Commit final da PR: a56bc55a34bbd95f9af662a75b0222929d0ff7ce.
+- CI da PR #475 (run 45029502451): sucesso no commit final; build-debug-apk, check-style e final-status aprovados.
+- CI pós-merge #476 (run 45030920654): sucesso no merge commit.
+- A CI confirma compilação e estilo; não substitui os testes funcionais no Motorola Edge 30 Fusion.
+- PENDENTE: testar sincronização rápida, sincronização demorada, falha de conexão com as opções "Tentar novamente" e "Iniciar com save local", preservação do save local e insígnia Pendente após fallback local.
+- Não marcar a auditoria funcional como concluída até receber confirmação dos testes no aparelho.
