@@ -98,13 +98,22 @@ class SaveSyncPolicyTest {
 
     @Test
     fun sramWithoutServerContentHashIsDownloadedForVerification() {
-        assertTrue(SaveSyncPolicy.shouldVerifyRemoteContent(RemoteFileKind.Save, null))
-        assertFalse(SaveSyncPolicy.shouldVerifyRemoteContent(RemoteFileKind.Save, "server-hash"))
+        assertTrue(SaveSyncPolicy.shouldVerifyRemoteContent(RemoteFileKind.Save, null, "old-hash"))
+    }
+
+    @Test
+    fun sramWithoutStoredRemoteBaselineIsDownloadedEvenWhenServerProvidesHash() {
+        assertTrue(SaveSyncPolicy.shouldVerifyRemoteContent(RemoteFileKind.Save, "server-hash", null))
+    }
+
+    @Test
+    fun sramWithKnownServerHashDoesNotNeedContentDownload() {
+        assertFalse(SaveSyncPolicy.shouldVerifyRemoteContent(RemoteFileKind.Save, "server-hash", "server-hash"))
     }
 
     @Test
     fun quickStateWithoutServerContentHashUsesItsVersionMetadata() {
-        assertFalse(SaveSyncPolicy.shouldVerifyRemoteContent(RemoteFileKind.State, null))
+        assertFalse(SaveSyncPolicy.shouldVerifyRemoteContent(RemoteFileKind.State, null, null))
     }
 
     @Test
