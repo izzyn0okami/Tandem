@@ -96,18 +96,53 @@ object SaveSync {
         RemoteFileKind.State to store.stateFile,
     )
 
-    /** Antes de jogar: aguarda o pull terminar e propaga falhas para impedir início inseguro. */
+    /** Marca a falha do pull como pendente sem confundi-la com sincronização confirmada. */
+    fun markSyncPending(context: Context, romPath: String) {
+        if (romId(context, romPath) == null) return
+        prefs(context).edit {
+            putString(statusKey(romPath), "pending")
+            remove("${statusKey(romPath)}:started")
+        }
+    }
+
+    /** Antes de jogar: aguarda o pull terminar e restaura os saves locais se qualquer etapa falhar. */
     suspend fun pull(context: Context, romPath: String, coreId: String) {
         val romId = romId(context, romPath) ?: return
         val client = client(context) ?: throw IOException("RomM está conectado, mas não foi possível criar o cliente")
         val store = SaveStore(context, coreId, File(romPath))
         // Compartilha o mesmo bloqueio do push: nunca permita pull e push simultâneos.
         lock.withLock {
-            for ((kind, file) in files(store)) {
-                val remote = client.listRemoteFiles(kind, romId)
-                    .filter { it.emulator == emulatorTag(coreId) }
-                    .maxByOrNull { it.updatedAtMs } ?: continue
-                pullOne(context, client, store, kind, file, remote, romPath)
+            val snapshots = files(store).map { (_, file) ->
+                val existed = file.isFile
+                val backup = if (existed) {
+                    File(file.parentFile, "${file.name}.pre-pull-${System.nanoTime()}").also {
+                        file.copyTo(it, overwrite = true)
+                    }
+                } else {
+                    null
+                }
+                Triple(file, backup, existed)
+            }
+            try {
+                for ((kind, file) in files(store)) {
+                    val remote = client.listRemoteFiles(kind, romId)
+                        .filter { it.emulator == emulatorTag(coreId) }
+                        .maxByOrNull { it.updatedAtMs } ?: continue
+                    pullOne(context, client, store, kind, file, remote, romPath)
+                }
+            } catch (error: Exception) {
+                snapshots.forEach { (file, backup, existed) ->
+                    runCatching {
+                        if (backup != null && backup.isFile) {
+                            RomMFileReplacement.replaceFile(backup, file)
+                        } else if (!existed) {
+                            file.delete()
+                        }
+                    }.onFailure { GameLog.error("saves", "falha ao restaurar save local após erro no pull", it) }
+                }
+                throw error
+            } finally {
+                snapshots.forEach { (_, backup, _) -> backup?.delete() }
             }
         }
     }
