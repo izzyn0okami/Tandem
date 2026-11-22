@@ -134,6 +134,7 @@ private data class PendingSaveSync(
     val loadState: Boolean,
     val platform: GamePlatform?,
     val error: String,
+    val localSaveAvailable: Boolean,
 )
 
 private enum class GameTab(val label: Int) {
@@ -246,6 +247,7 @@ private fun GameModeRoot(refreshKey: Int, onExit: () -> Unit) {
                     loadState = loadState,
                     platform = platform,
                     error = error.message ?: error.toString(),
+                    localSaveAvailable = error !is SaveRollbackException,
                 )
                 status = ""
                 return
@@ -474,6 +476,7 @@ private fun GameModeRoot(refreshKey: Int, onExit: () -> Unit) {
     pendingSaveSync?.let { pending ->
         SaveSyncFailureDialog(
             error = pending.error,
+            localSaveAvailable = pending.localSaveAvailable,
             busy = busy,
             onRetry = { continueAfterSyncFailure(pending, useLocalSave = false) },
             onUseLocal = { continueAfterSyncFailure(pending, useLocalSave = true) },
@@ -484,6 +487,7 @@ private fun GameModeRoot(refreshKey: Int, onExit: () -> Unit) {
 @Composable
 private fun SaveSyncFailureDialog(
     error: String,
+    localSaveAvailable: Boolean,
     busy: Boolean,
     onRetry: () -> Unit,
     onUseLocal: () -> Unit,
@@ -508,7 +512,11 @@ private fun SaveSyncFailureDialog(
                 fontWeight = FontWeight.Bold,
             )
             Text(
-                stringResource(R.string.game_save_sync_failed_body, error),
+                if (localSaveAvailable) {
+                    stringResource(R.string.game_save_sync_failed_body, error)
+                } else {
+                    stringResource(R.string.game_save_sync_unsafe_body)
+                },
                 color = GameColors.textDim,
                 fontSize = 15.sp,
             )
@@ -519,11 +527,13 @@ private fun SaveSyncFailureDialog(
                 enabled = !busy,
                 modifier = Modifier.focusRequester(retryFocus),
             )
-            GameButton(
-                stringResource(R.string.game_save_sync_use_local),
-                onUseLocal,
-                enabled = !busy,
-            )
+            if (localSaveAvailable) {
+                GameButton(
+                    stringResource(R.string.game_save_sync_use_local),
+                    onUseLocal,
+                    enabled = !busy,
+                )
+            }
         }
     }
 }
