@@ -178,7 +178,7 @@ object SaveSync {
 
     private fun push(context: Context, romPath: String, coreId: String) {
         val romId = romId(context, romPath) ?: return
-        val client = client(context) ?: return
+        val client = client(context) ?: error("RomM não está configurado para enviar saves")
         val store = SaveStore(context, coreId, File(romPath))
         val prefs = prefs(context)
         for ((kind, file) in files(store)) {
