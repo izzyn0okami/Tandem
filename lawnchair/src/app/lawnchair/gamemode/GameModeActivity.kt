@@ -235,7 +235,9 @@ private fun GameModeRoot(refreshKey: Int, onExit: () -> Unit) {
         // Faça tudo fora da interface e entregue o resultado pronto à sessão.
         val (gameIdentity, migrationSources) = withContext(Dispatchers.IO) {
             val identity = GameIdentityResolver.resolve(context, File(romPath), platform?.slug)
-            val siblings = platform?.let(GamePlatforms::bySlug)?.let { CoreRegistry.cores(it) }.orEmpty().map { it.id }
+            val siblings = platform?.let { selectedPlatform ->
+                CoreRegistry.cores(selectedPlatform)
+            }.orEmpty().map { it.id }
             val sources = GameIdentityResolver.legacySources(
                 context,
                 GameFolders.dir(context, FolderKind.Saves),
