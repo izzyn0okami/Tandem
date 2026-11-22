@@ -15,12 +15,10 @@ class RomMSaveSyncWorker(
         val romPath = inputData.getString(KEY_ROM_PATH) ?: return Result.failure()
         val coreId = inputData.getString(KEY_CORE_ID) ?: return Result.failure()
         val platformSlug = inputData.getString(KEY_PLATFORM)
-        val gameFile = java.io.File(romPath)
-        val gameIdentity = inputData.getString(KEY_GAME_IDENTITY)
-            ?: GameIdentityResolver.resolve(applicationContext, gameFile, platformSlug)
-        val accountFingerprint = inputData.getString(KEY_ACCOUNT_FINGERPRINT)
-            ?: GameIdentityResolver.originAccountFingerprint(applicationContext, gameFile, allowHash = true)
-            ?: return Result.retry()
+        // Jobs created before stable identity/account metadata cannot safely infer ownership.
+        // Keep them queued rather than adopting whichever RomM account is currently connected.
+        val gameIdentity = inputData.getString(KEY_GAME_IDENTITY) ?: return Result.retry()
+        val accountFingerprint = inputData.getString(KEY_ACCOUNT_FINGERPRINT) ?: return Result.retry()
         return try {
             val completed = SaveSync.pushFromWorker(
                 applicationContext,
