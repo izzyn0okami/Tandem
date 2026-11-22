@@ -657,7 +657,15 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
             },
             onProgress = onProgress,
         )
-        if (game.fileId != null && isZip(temp) && target.extension.lowercase() != "zip") unzipSingle(temp, target)
+        if (game.fileId != null && isZip(temp) && target.extension.lowercase() != "zip") {
+            try {
+                unzipSingle(temp, target)
+            } catch (error: Exception) {
+                temp.delete()
+                File(temp.parentFile, "${temp.name}.range").delete()
+                throw error
+            }
+        }
         target.delete()
         check(temp.renameTo(target)) { "Não consegui gravar ${target.name}" }
         File(temp.parentFile, "${temp.name}.range").delete()
@@ -694,9 +702,13 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
                 onProgress = onProgress,
             )
             GameLog.log("romm", "pacote ZIP recebido: ${game.title}; bytes=$archiveBytes")
-            check(isZip(archive)) {
-                "O RomM não entregou um ZIP válido para ${game.title} " +
-                    "(assinatura inicial inválida; tamanho=${archive.length()} bytes)"
+            if (!isZip(archive)) {
+                archive.delete()
+                File(archive.parentFile, "${archive.name}.range").delete()
+                throw IOException(
+                    "O RomM não entregou um ZIP válido para ${game.title} " +
+                        "(assinatura inicial inválida; tamanho=${archive.length()} bytes)",
+                )
             }
 
             var archiveEntries = 0
