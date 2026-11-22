@@ -2043,3 +2043,10 @@ VALIDAÇÃO PENDENTE
 PENDÊNCIAS FUTURAS MANTIDAS
 - Ampliar testes automatizados de SaveStore/SaveSync/lifecycle/GL.
 - Avaliar isolamento de processo para proteger o launcher contra crashes nativos Libretro.
+
+RECONCILIAÇÃO DA BASE — PR #33
+Data: 2026-11-22
+- A branch da PR #33 foi integrada com o commit mais recente da base `game-mode-m2-dev` (`cab92f23bc6bd7857de023f9150f2d514169040b`) por commit de dois pais, sem force push.
+- O log combinado preserva o registro pós-merge da PR #32 e a auditoria da PR #33; a comparação confirma 0 commits atrás da base.
+- A CI pós-merge #480 da PR #32 terminou com sucesso, incluindo tandem-release, que publicou/atualizou `tandem-latest` com `Tandem.apk`.
+- O commit de integração não altera código funcional; a CI da PR #33 precisa validar o head final após esta reconciliação.
