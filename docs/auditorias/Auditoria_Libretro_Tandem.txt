@@ -697,7 +697,8 @@ Data: 2026-11-21
 - Método: merge normal (não squash).
 - Branch: fix/romm-5-4-integration-audit.
 - Head validado pela CI: 000007c6ee43c324fb722231592c7dc94810f4cc.
-- Merge commit na branch game-mode-m2-dev: f3f139b79e510ec28db31cd381e1b74b28f6547c.- CI pré-merge #370: https://github.com/izzyn0okami/Tandem/actions/runs/44954314685 — completed / success.
+- Merge commit na branch game-mode-m2-dev: f3f139b79e510ec28db31cd381e1b74b28f6547c.
+- CI pré-merge #370: https://github.com/izzyn0okami/Tandem/actions/runs/44954314685 — completed / success.
 - Jobs obrigatórios aprovados: check-style (Spotless), build-debug-apk (assembleLawnWithQuickstepGithubDebug) e final-status.
 - Jobs opcionais tandem-release, nightly-release, crowdin-auto-merge e send-notifications foram ignorados pelas condições do workflow; não representam falha.
 - A CI validou estilo e compilação do APK Debug. Não confirma ainda o funcionamento real do ZIP transmitido por nginx/mod_zip.
@@ -1398,6 +1399,7 @@ Data: 2026-11-22
 - Nova CI após o commit: pendente de confirmação.
 - Não mesclar até a CI passar e a PR ser revisada; teste de falha real no aparelho continua pendente.
 
+
 RESULTADO — PR #25 MESCLADA
 Data: 2026-11-22
 PR: https://github.com/izzyn0okami/Tandem/pull/25
@@ -1940,6 +1942,17 @@ Data: 2026-11-22
 - Commit mais recente da implementação: dd4fb29ece8722a6087357de22125c6ad6eef7fb.
 - CI do commit mais recente e teste funcional no aparelho ainda pendentes.
 
+
+ATUALIZAÇÃO PÓS-MERGE — PR #31
+Data: 2026-11-22
+- PR #31 ("Wait for RomM save sync before launching games") mesclada em game-mode-m2-dev.
+- Merge commit: 474013d77d6474697b709d055a3959e08481dc8a.
+- Commit final da PR: a56bc55a34bbd95f9af662a75b0222929d0ff7ce.
+- CI da PR #475 (run 45029502451): sucesso no commit final; build-debug-apk, check-style e final-status aprovados.
+- CI pós-merge #476 (run 45030920654): sucesso no merge commit.
+- A CI confirma compilação e estilo; não substitui os testes funcionais no Motorola Edge 30 Fusion.
+- PENDENTE: testar sincronização rápida, sincronização demorada, falha de conexão com as opções "Tentar novamente" e "Iniciar com save local", preservação do save local e insígnia Pendente após fallback local.
+- Não marcar a auditoria funcional como concluída até receber confirmação dos testes no aparelho.
 
 
 AUDITORIA — PROTEÇÃO DO CICLO DE VIDA DA SESSÃO LIBRETRO / THREAD OPENGL
