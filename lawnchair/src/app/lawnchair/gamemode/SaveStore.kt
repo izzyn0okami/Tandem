@@ -83,7 +83,7 @@ internal object GameIdentityResolver {
             .filter { sanitize(File(it.path).nameWithoutExtension) == legacyName }
         if (candidates.size != 1 || candidates.single().platform.slug != platformSlug) {
             if (candidates.size > 1) {
-                GameLog.log("saves", "migração legada ambígua para $legacyName; diretórios antigos preservados")
+                runCatching { GameLog.log("saves", "migração legada ambígua para $legacyName; diretórios antigos preservados") }
             }
             return emptyMap()
         }
@@ -100,7 +100,7 @@ internal object GameIdentityResolver {
         if (!parent.exists() && !parent.mkdirs()) return false
         val temp = File(parent, ".${target.name}.migration")
         if (temp.exists()) {
-            GameLog.log("saves", "migração anterior incompleta encontrada; origem preservada em ${source.name}")
+            runCatching { GameLog.log("saves", "migração anterior incompleta encontrada; origem preservada em ${source.name}") }
             return false
         }
         return runCatching {
@@ -117,11 +117,11 @@ internal object GameIdentityResolver {
             val copiedFiles = temp.walkTopDown().filter { it.isFile }.map { it.relativeTo(temp).path }.toSet()
             check(sourceFiles == copiedFiles)
             check(temp.renameTo(target))
-            GameLog.log("saves", "save legado migrado e validado para identidade estável; origem preservada")
+            runCatching { GameLog.log("saves", "save legado migrado e validado para identidade estável; origem preservada") }
             true
         }.getOrElse {
             temp.deleteRecursively()
-            GameLog.error("saves", "falha ao migrar save legado; origem preservada", it)
+            runCatching { GameLog.error("saves", "falha ao migrar save legado; origem preservada", it) }
             false
         }
     }
