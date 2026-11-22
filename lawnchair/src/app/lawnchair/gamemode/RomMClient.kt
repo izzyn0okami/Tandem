@@ -5,6 +5,7 @@ import android.os.StatFs
 import android.os.SystemClock
 import androidx.core.content.edit
 import java.io.File
+import java.io.FileOutputStream
 import java.io.IOException
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
@@ -441,12 +442,19 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
      * Instrumentação de download: registra rota, resposta e duração sem expor o token.
      * Não altera os prazos, cabeçalhos ou a estratégia de transferência.
      */
-    private fun <T> withDownloadResponse(url: HttpUrl, description: String, consume: (Response) -> T): T {
+    private fun <T> withDownloadResponse(
+        url: HttpUrl,
+        description: String,
+        headers: Map<String, String> = emptyMap(),
+        consume: (Response) -> T,
+    ): T {
         val startedAt = SystemClock.elapsedRealtime()
         val path = url.encodedPath + (url.encodedQuery?.let { "?$it" } ?: "")
         GameLog.log("romm", "download início: $description; caminho=$path")
         try {
-            return longHttp.newCall(request(url).build()).execute().use { response ->
+            val requestBuilder = request(url)
+            headers.forEach { (name, value) -> requestBuilder.header(name, value) }
+            return longHttp.newCall(requestBuilder.build()).execute().use { response ->
                 GameLog.log(
                     "romm",
                     "download HTTP: $description; status=${response.code}; " +
@@ -462,7 +470,7 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
                         "romm",
                         "detalhe HTTP: status=${response.code}; corpo=${safeError.ifBlank { "<vazio>" }}",
                     )
-                    throw IOException("Servidor respondeu ${response.code} ao baixar $description")
+                    throw RomMHttpException(response.code, "Servidor respondeu ${response.code} ao baixar $description")
                 }
                 consume(response)
             }
@@ -505,6 +513,113 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
         }
     }
 
+    /**
+     * Continua um arquivo parcial usando HTTP Range. Se o servidor ignorar Range, reinicia
+     * escrevendo a resposta completa; nunca concatena uma resposta 200 a um arquivo parcial.
+     */
+    private fun downloadResumable(
+        url: HttpUrl,
+        temp: File,
+        description: String,
+        estimateRequiredSpace: (Long) -> Long,
+        onProgress: (Long) -> Unit,
+    ): Long {
+        val validatorFile = File(temp.parentFile, "${temp.name}.range")
+        var offset = temp.length().takeIf { temp.isFile } ?: 0L
+        var restartedAfter416 = false
+
+        while (true) {
+            val headers = if (offset > 0L) {
+                buildMap {
+                    put("Range", "bytes=$offset-")
+                    validatorFile.takeIf { it.isFile }?.readText()?.takeIf { it.isNotBlank() }?.let {
+                        put("If-Range", it)
+                    }
+                }
+            } else {
+                emptyMap()
+            }
+
+            try {
+                return withDownloadResponse(url, description, headers) { response ->
+                    val append = offset > 0L && response.code == 206
+                    val contentRange = response.header("Content-Range")
+                    val rangeMatch = contentRange?.let {
+                        Regex("""bytes (\d+)-(\d+)/(\d+|\*)""").matchEntire(it)
+                    }
+                    if (response.code == 206) {
+                        val rangeStart = rangeMatch?.groupValues?.get(1)?.toLongOrNull()
+                        if (rangeStart != (if (offset > 0L) offset else 0L)) {
+                            temp.delete()
+                            validatorFile.delete()
+                            throw IOException("Resposta parcial inválida do RomM: Content-Range não corresponde ao trecho solicitado")
+                        }
+                    } else if (response.code != 200) {
+                        throw RomMHttpException(response.code, "Resposta inesperada ao continuar download: HTTP ${response.code}")
+                    }
+
+                    if (offset > 0L && !append) {
+                        GameLog.log("romm", "servidor não retomou o download; reiniciando desde o início: $description")
+                        validatorFile.delete()
+                    }
+
+                    val validator = response.header("ETag")
+                        ?.takeUnless { it.startsWith("W/") }
+                        ?: response.header("Last-Modified")
+                    if (validator != null) {
+                        validatorFile.writeText(validator)
+                    }
+
+                    val writeOffset = if (append) offset else 0L
+                    val rangeTotal = rangeMatch?.groupValues?.get(3)?.takeUnless { it == "*" }?.toLongOrNull()
+                    val responseLength = response.body.contentLength()
+                    val expectedTotal = rangeTotal ?: responseLength.takeIf { it >= 0L }?.let { it + writeOffset } ?: -1L
+                    requireAvailableSpace(
+                        checkNotNull(temp.parentFile),
+                        estimateRequiredSpace(expectedTotal.takeIf { it > 0L } ?: 0L),
+                        description,
+                    )
+
+                    response.body.byteStream().use { input ->
+                        FileOutputStream(temp, append).use { output ->
+                            val buffer = ByteArray(64 * 1024)
+                            while (true) {
+                                val read = input.read(buffer)
+                                if (read < 0) break
+                                output.write(buffer, 0, read)
+                                onProgress(temp.length() + (output.channel.position() - temp.length()))
+                            }
+                        }
+                    }
+
+                    val received = temp.length()
+                    check(expectedTotal <= 0L || received == expectedTotal) {
+                        "Download incompleto de $description: recebidos $received de $expectedTotal bytes"
+                    }
+                    GameLog.log(
+                        "romm",
+                        "download parcial concluído: $description; retomado=$append; bytes=$received; esperado=$expectedTotal",
+                    )
+                    received
+                }
+            } catch (error: RomMHttpException) {
+                if (error.statusCode == 416 && offset > 0L && !restartedAfter416) {
+                    GameLog.log("romm", "trecho parcial expirado no servidor; reiniciando download: $description")
+                    temp.delete()
+                    validatorFile.delete()
+                    offset = 0L
+                    restartedAfter416 = true
+                    continue
+                }
+                if (error.statusCode in setOf(401, 403, 404)) {
+                    temp.delete()
+                    validatorFile.delete()
+                }
+                throw error
+            }
+        }
+    }
+
     /** Baixa para um arquivo temporário e só renomeia no fim; [onProgress] recebe bytes baixados. */
     fun download(game: RemoteGame, target: File, onProgress: (Long) -> Unit) {
         if (game.folder) {
@@ -525,29 +640,20 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
         target.parentFile?.mkdirs()
         val temp = File(target.parentFile, "${target.name}.part")
         val description = "rom=${game.id}, título=${game.title}, arquivo=${game.serverName}, fileId=${game.fileId ?: "-"}"
-        withDownloadResponse(url, description) { response ->
-            if (!response.isSuccessful) throw IOException("Servidor respondeu ${response.code}")
-            val expectedBytes = response.body.contentLength()
-            val downloadEstimate = expectedBytes.takeIf { it > 0L } ?: game.sizeBytes
-            val extractionEstimate = if (game.fileId != null && downloadEstimate > 0L) downloadEstimate else 0L
-            requireAvailableSpace(checkNotNull(target.parentFile), estimatedBytes(downloadEstimate, extractionEstimate), game.title)
-            var total = 0L
-            response.body.byteStream().use { input ->
-                temp.outputStream().use { output ->
-                    val buffer = ByteArray(64 * 1024)
-                    while (true) {
-                        val read = input.read(buffer)
-                        if (read < 0) break
-                        output.write(buffer, 0, read)
-                        total += read
-                        onProgress(total)
-                    }
-                }
-            }
-        }
+        downloadResumable(
+            url,
+            temp,
+            description,
+            estimateRequiredSpace = { total ->
+                val estimate = total.takeIf { it > 0L } ?: game.sizeBytes
+                estimatedBytes(estimate, if (game.fileId != null) estimate else 0L)
+            },
+            onProgress = onProgress,
+        )
         if (game.fileId != null && isZip(temp) && target.extension.lowercase() != "zip") unzipSingle(temp, target)
         target.delete()
         check(temp.renameTo(target)) { "Não consegui gravar ${target.name}" }
+        File(temp.parentFile, "${temp.name}.range").delete()
     }
 
     /** Baixa o ZIP completo de uma ROM multi-arquivo, valida e extrai o conteúdo e a M3U. */
@@ -557,7 +663,6 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
         val temp = File(parent, "${dir.name}.part")
         val archive = File(parent, "${dir.name}.zip.part")
         temp.deleteRecursively()
-        archive.delete()
         temp.mkdirs()
 
         val urlBuilder = base.resolve("api/roms/${game.id}/content/")!!
@@ -570,34 +675,18 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
         val description = "rom=${game.id}, título=${game.title}, pasta=${game.serverName}, " +
             "fileIds=${game.fileIds.size}"
         try {
-            withDownloadResponse(url, description) { response ->
-                if (!response.isSuccessful) throw IOException("Servidor respondeu ${response.code}")
-                val expectedBytes = response.body.contentLength()
-                val archiveEstimate = expectedBytes.takeIf { it > 0L } ?: game.sizeBytes
-                val extractionEstimate = game.sizeBytes.takeIf { it > 0L } ?: archiveEstimate
-                requireAvailableSpace(parent, estimatedBytes(archiveEstimate, extractionEstimate), game.title)
-                var total = 0L
-                response.body.byteStream().use { input ->
-                    archive.outputStream().use { output ->
-                        val buffer = ByteArray(64 * 1024)
-                        while (true) {
-                            val read = input.read(buffer)
-                            if (read < 0) break
-                            output.write(buffer, 0, read)
-                            total += read
-                            onProgress(total)
-                        }
-                    }
-                }
-                check(expectedBytes < 0L || total == expectedBytes) {
-                    "Download incompleto de ${game.title}: recebidos $total de $expectedBytes bytes"
-                }
-                GameLog.log(
-                    "romm",
-                    "pacote ZIP recebido: ${game.title}; bytes=$total; contentLength=$expectedBytes; " +
-                        "tipo=${response.header("Content-Type") ?: "-"}",
-                )
-            }
+            val archiveBytes = downloadResumable(
+                url,
+                archive,
+                description,
+                estimateRequiredSpace = { total ->
+                    val archiveEstimate = total.takeIf { it > 0L } ?: game.sizeBytes
+                    val extractionEstimate = game.sizeBytes.takeIf { it > 0L } ?: archiveEstimate
+                    estimatedBytes(archiveEstimate, extractionEstimate)
+                },
+                onProgress = onProgress,
+            )
+            GameLog.log("romm", "pacote ZIP recebido: ${game.title}; bytes=$archiveBytes")
             check(isZip(archive)) {
                 "O RomM não entregou um ZIP válido para ${game.title} " +
                     "(assinatura inicial inválida; tamanho=${archive.length()} bytes)"
@@ -724,12 +813,24 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
             dir.deleteRecursively()
             check(content.renameTo(dir)) { "Não consegui gravar ${dir.name}" }
             temp.deleteRecursively()
+            archive.delete()
+            File(archive.parentFile, "${archive.name}.range").delete()
             GameLog.log("romm", "download multidisco concluído: ${game.title}; pasta=${dir.name}")
         } catch (error: Exception) {
             temp.deleteRecursively()
+            // Falha de rede mantém o ZIP parcial para a próxima tentativa; falha após
+            // completar o arquivo descarta um pacote inválido para não retomá-lo em loop.
+            if (isZip(archive) && archive.length() > 0L) {
+                val zipComplete = runCatching {
+                    java.util.zip.ZipFile(archive, Charsets.UTF_8).use { it.entries().hasMoreElements() }
+                }.getOrDefault(false)
+                if (zipComplete) {
+                    archive.delete()
+                    File(archive.parentFile, "${archive.name}.range").delete()
+                }
+            }
             throw error
         } finally {
-            archive.delete()
             temp.deleteRecursively()
         }
     }
@@ -768,34 +869,18 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
     private fun downloadToFile(url: HttpUrl, target: File, description: String) {
         target.parentFile?.mkdirs()
         val temp = File(target.parentFile, "${target.name}.part")
-        temp.delete()
         try {
-            longHttp.newCall(request(url).build()).execute().use { response ->
-                if (!response.isSuccessful) {
-                    throw RomMHttpException(response.code, "Servidor respondeu ${response.code} ao baixar $description")
-                }
-                val expectedBytes = response.body.contentLength()
-                requireAvailableSpace(checkNotNull(target.parentFile), expectedBytes, description)
-                var total = 0L
-                response.body.byteStream().use { input ->
-                    temp.outputStream().use { output ->
-                        val buffer = ByteArray(64 * 1024)
-                        while (true) {
-                            val read = input.read(buffer)
-                            if (read < 0) break
-                            output.write(buffer, 0, read)
-                            total += read
-                        }
-                    }
-                }
-                check(expectedBytes < 0L || total == expectedBytes) {
-                    "Download incompleto de $description: recebidos $total de $expectedBytes bytes"
-                }
-            }
+            downloadResumable(
+                url,
+                temp,
+                description,
+                estimateRequiredSpace = { it },
+                onProgress = {},
+            )
             target.delete()
             check(temp.renameTo(target)) { "Não consegui gravar ${target.name}" }
+            File(temp.parentFile, "${temp.name}.range").delete()
         } catch (error: Exception) {
-            temp.delete()
             throw error
         }
     }
