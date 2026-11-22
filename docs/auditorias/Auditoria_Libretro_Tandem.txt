@@ -2083,3 +2083,22 @@ Data: 2026-11-22
 - Checklist pendente: sair do jogo com rede disponível e conferir Pendente → Enviando → Sync OK; sair sem rede e reconectar; encerrar/reabrir launcher com envio pendente; reabrir a mesma ROM antes do worker iniciar e confirmar que não há upload durante a partida; desconectar RomM com trabalho pendente; verificar ausência de duplicatas remotas e avaliar duração de uploads grandes.
 - Nenhuma outra PR aberta foi encontrada após o merge.
 - Próxima etapa: concluir CI #490, registrar seu resultado e fornecer APK atualizado se disponível; depois executar a validação funcional no telefone. Próxima auditoria: ampliar testes automatizados de SaveStore/SaveSync/lifecycle/GL e avaliar isolamento de processo contra crash nativo.
+
+
+RESULTADO FINAL — PR #33 / TESTES FUNCIONAIS E CI PÓS-MERGE
+Data: 2026-11-22
+- O usuário concluiu os testes funcionais no aparelho e confirmou: “Testes realizados, tudo OK”. A validação funcional da sincronização persistente RomM está APROVADA.
+- Checklist funcional da PR #33 considerado aprovado pelo usuário: sincronização ao sair do jogo, retomada após indisponibilidade de rede, persistência após encerrar/reabrir o launcher, bloqueio de upload durante sessão ativa e comportamento ao desconectar RomM. Não reabrir sem evidência nova.
+- CI #490 / run ID 45049339452, no commit documental 783911a6e439a0e3bea7f6651f85626268488169: CONCLUÍDA COM SUCESSO. check-style, build-debug-apk, upload do artefato e final-status passaram. tandem-release e nightly-release foram skipped nesta execução.
+- CI pós-merge no merge commit 7e67b4e19c86291fe6726fca24c121009d594af5: run ID 45049664297. check-style, build-debug-apk, upload do artefato, final-status e tandem-release passaram; `tandem-release` publicou a release permanente `tandem-latest` com `Tandem.apk`. nightly-release foi skipped.
+- PR #33 encerrada como merged. Merge commit: 7e67b4e19c86291fe6726fca24c121009d594af5.
+
+AUDITORIA DE COBERTURA AUTOMATIZADA — RESULTADO INICIAL
+Data: 2026-11-22
+- Revisada a árvore completa da branch `game-mode-m2-dev` e os arquivos SaveStore.kt, SaveSync.kt, RomMSaveSyncWorker.kt, GameSessionActivity.kt, GLRetroView.kt, GameFolders.kt e SessionDiagnostics.kt.
+- Testes existentes encontrados: apenas `libretrodroid/src/test/kotlin/com/swordfish/libretrodroid/MotionSensorCalibrationTest.kt` no módulo LibretroDroid. Não foram encontrados testes específicos de SaveStore, SaveSync, RomMSaveSyncWorker, GameSessionActivity ou lifecycle/teardown de GLRetroView.
+- O módulo LibretroDroid declara JUnit 4.13.2, mas o módulo principal Android não declara atualmente dependência `testImplementation` para JUnit nem uma suíte dedicada ao modo jogo.
+- Cobertura manual no telefone é aprovada, mas não substitui testes automatizados reproduzíveis para regressões.
+- Riscos prioritários para cobertura: escrita temporária/rename e leitura/fallback de SRAM; separação por usuário do progresso RA; estados PENDING/SYNCING/SYNCED e recuperação de timeout; exclusão mútua pull/push; worker não enviar com sessão ativa e retomar após pausa; tratamento de cancelamento/falha; eventos GL enfileirados após destroy e liberação de operações síncronas em corridas de teardown.
+- Estratégia recomendada: começar por testes unitários puros e determinísticos de SaveStore e regras de estado/eligibilidade do sync, sem rede real nem inicialização do motor nativo; em seguida adicionar testes de integração com WorkManager e testes instrumentados específicos para lifecycle/GL. Não simular JNI real em teste unitário JVM.
+- Nenhuma alteração funcional foi feita nesta etapa de auditoria. Próximo trabalho será uma PR isolada de cobertura automatizada, com verificação das PRs abertas antes da criação.
