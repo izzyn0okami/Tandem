@@ -25,7 +25,6 @@ internal data class SaveConflictFileInfo(
     val targetBytes: Long,
     val sourceModified: Long,
     val targetModified: Long,
-    val identical: Boolean,
 )
 
 internal data class RomMConnectionSnapshot(
@@ -522,7 +521,6 @@ internal object GameIdentityResolver {
                 targetBytes = right.length(),
                 sourceModified = left.lastModified(),
                 targetModified = right.lastModified(),
-                identical = false,
             )
         }
     }
