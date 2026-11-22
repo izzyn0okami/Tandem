@@ -15,8 +15,7 @@ internal object SaveSyncPolicy {
         RemoteFileKind.State -> "${kind.path}:$romPath:$coreId"
     }
 
-    fun remoteHashKey(kind: RemoteFileKind, romPath: String, coreId: String): String =
-        "${metadataKey(kind, romPath, coreId)}:remote_hash"
+    fun remoteHashKey(kind: RemoteFileKind, romPath: String, coreId: String): String = "${metadataKey(kind, romPath, coreId)}:remote_hash"
 
     fun resolveStatus(
         storedStatus: String?,
