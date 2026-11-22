@@ -309,7 +309,7 @@ object SaveSync {
                 prefs.edit {
                     putLong("$key:remote", remote.updatedAtMs)
                     putLong("$key:id", remote.id)
-                    if (remoteContentHash == null) remove(remoteKey) else putString(remoteKey, remoteContentHash)
+                    remoteContentHash?.let { putString(remoteKey, it) } ?: remove(remoteKey)
                 }
                 if (localHash != appliedHash) {
                     GameLog.log(
@@ -348,7 +348,7 @@ object SaveSync {
                 putString(appliedKey, downloadedHash)
                 putLong("$key:remote", remote.updatedAtMs)
                 putLong("$key:id", remote.id)
-                if (remoteContentHash == null) remove(remoteKey) else putString(remoteKey, remoteContentHash)
+                remoteContentHash?.let { putString(remoteKey, it) } ?: remove(remoteKey)
             }
             GameLog.log(
                 "saves",
