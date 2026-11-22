@@ -19,17 +19,27 @@ internal object GameIdentityResolver {
         val directId = prefs.getLong("rom:${romFile.absolutePath}", -1L)
         val storedServer = prefs.getString("rom_server:${romFile.absolutePath}", null)
         val currentServer = normalizedServer(RomMSettings.url(context))
-        val server = if (directId >= 0L) storedServer ?: currentServer else currentServer
+        val server = if (directId >= 0L) storedServer else currentServer
         val linkedId = when {
             directId >= 0L -> directId
             server != null -> prefs.getLong(linkKey(server, fingerprint), -1L)
             else -> -1L
         }
-        return if (linkedId >= 0L && server != null) {
-            "romm-${digest("$server|$linkedId")}"
-        } else {
-            "local-${digest("${platformSlug.orEmpty()}|$fingerprint")}"
+        return when {
+            linkedId >= 0L && server != null -> "romm-${digest("$server|$linkedId")}"
+            directId >= 0L -> "romm-legacy-${digest("${platformSlug.orEmpty()}|$directId")}"
+            else -> {
+                "local-${digest("${platformSlug.orEmpty()}|$fingerprint")}"
+            }
         }
+    }
+
+    fun linkedRomId(context: Context, romFile: File): Long? {
+        val prefs = context.getSharedPreferences("romm_sync", Context.MODE_PRIVATE)
+        val direct = prefs.getLong("rom:${romFile.absolutePath}", -1L)
+        if (direct >= 0L) return direct
+        val server = normalizedServer(RomMSettings.url(context)) ?: return null
+        return prefs.getLong(linkKey(server, fingerprint(romFile)), -1L).takeIf { it >= 0L }
     }
 
     /** Adds a content-based association so a moved or renamed downloaded ROM keeps its RomM link. */
