@@ -202,7 +202,9 @@ object SaveSync {
         }
         val oldPath = when {
             romPath in verifiedPaths -> romPath
+
             verifiedPaths.size == 1 -> verifiedPaths.single()
+
             else -> {
                 if (verifiedPaths.size > 1) {
                     GameLog.log(
