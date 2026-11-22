@@ -273,9 +273,9 @@ private fun EntryCard(entry: LibraryEntry, progress: Map<Long, Long>, syncVersio
         if (syncStatus != null) {
             CardBadge(
                 when (syncStatus) {
-                    SaveSyncStatus.SYNCED -> "Saves sincronizados"
-                    SaveSyncStatus.SYNCING -> "Sincronizando…"
-                    SaveSyncStatus.PENDING -> "Sync pendente"
+                    SaveSyncStatus.SYNCED -> "Sync OK"
+                    SaveSyncStatus.SYNCING -> "Enviando…"
+                    SaveSyncStatus.PENDING -> "Pendente"
                 },
                 GameColors.scrim,
                 GameColors.text,
