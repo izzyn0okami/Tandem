@@ -129,7 +129,7 @@ class GameSessionActivity : ComponentActivity() {
             finish()
             return
         }
-        SaveSync.markSessionActive(this, romPath)
+        SaveSync.markSessionActive(this, romPath, intent.getStringExtra(EXTRA_PLATFORM))
 
         WindowCompat.setDecorFitsSystemWindows(window, false)
         WindowInsetsControllerCompat(window, window.decorView).apply {
@@ -542,7 +542,7 @@ class GameSessionActivity : ComponentActivity() {
     override fun onResume() {
         // A Activity restaura o estado do ciclo de vida automaticamente; preserve o menu pausado
         // antes que o observer do GLRetroView tente retomar a emulação.
-        romPath?.let { SaveSync.markSessionActive(this, it) }
+        romPath?.let { SaveSync.markSessionActive(this, it, intent.getStringExtra(EXTRA_PLATFORM)) }
         retroView?.suppressAutoResume = menuOpen
         super.onResume()
         retroView?.suppressAutoResume = false
@@ -626,7 +626,7 @@ class GameSessionActivity : ComponentActivity() {
         super.onPause()
         // Só libere e agende o upload depois que o GL foi pausado e o save local persistido.
         romPath?.let { path ->
-            SaveSync.markSessionInactive(this, path)
+            SaveSync.markSessionInactive(this, path, intent.getStringExtra(EXTRA_PLATFORM))
             coreIdOf()?.let { SaveSync.pushAsync(this, path, it, intent.getStringExtra(EXTRA_PLATFORM)) }
         }
         // Em uma pausa comum, o idle é retomado em onResume; respostas de rede aguardam o GL.
