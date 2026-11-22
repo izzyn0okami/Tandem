@@ -1,8 +1,179 @@
 package app.lawnchair.gamemode
 
 import android.content.Context
+import androidx.core.content.edit
 import java.io.File
 import java.security.MessageDigest
+import java.util.Locale
+
+/**
+ * Resolves a stable game identity without using the ROM filename as the primary key.
+ * RomM-linked games use server + RomM game ID; local games use platform + content fingerprint.
+ */
+internal object GameIdentityResolver {
+    private const val LINK_PREFIX = "game_link:"
+
+    fun resolve(context: Context, romFile: File, platformSlug: String?): String {
+        val fingerprint = fingerprint(romFile)
+        val prefs = context.getSharedPreferences("romm_sync", Context.MODE_PRIVATE)
+        val server = normalizedServer(RomMSettings.url(context))
+        val directId = prefs.getLong("rom:${romFile.absolutePath}", -1L)
+        val linkedId = when {
+            directId >= 0L -> directId
+            server != null -> prefs.getLong(linkKey(server, fingerprint), -1L)
+            else -> -1L
+        }
+        return if (linkedId >= 0L && server != null) {
+            "romm-${digest("$server|$linkedId")}"
+        } else {
+            "local-${digest("${platformSlug.orEmpty()}|$fingerprint")}"
+        }
+    }
+
+    /** Adds a content-based association so a moved or renamed downloaded ROM keeps its RomM link. */
+    fun link(context: Context, romFile: File, romId: Long) {
+        val server = normalizedServer(RomMSettings.url(context)) ?: return
+        if (!romFile.isFile) return
+        val key = linkKey(server, fingerprint(romFile))
+        val prefs = context.getSharedPreferences("romm_sync", Context.MODE_PRIVATE)
+        val existing = prefs.getLong(key, -1L)
+        prefs.edit {
+            // Identical content linked to two different RomM records is ambiguous. Fail closed:
+            // keep the conflict marker rather than silently assigning one game's identity.
+            if (existing == -1L || existing == romId) putLong(key, romId)
+            else putLong(key, -2L)
+        }
+    }
+
+    /**
+     * Legacy directories are migrated only when the configured library contains exactly one
+     * recognized game with the same sanitized basename, and it is the ROM being opened.
+     * All source directories are retained after a verified copy.
+     */
+    fun legacySources(
+        context: Context,
+        savesRoot: File,
+        romFile: File,
+        platformSlug: String?,
+        coreIds: List<String>,
+        stableDirectoryName: String,
+    ): Map<String, File> {
+        val targetExists = coreIds.any { File(File(savesRoot, it), stableDirectoryName).exists() }
+        if (targetExists) return emptyMap()
+
+        val libraryRoot = File(GameLibrarySettings.rootPath(context))
+        val canonicalRom = runCatching { romFile.canonicalFile }.getOrNull() ?: return emptyMap()
+        val canonicalRoot = runCatching { libraryRoot.canonicalFile }.getOrNull() ?: return emptyMap()
+        if (!canonicalRom.toPath().startsWith(canonicalRoot.toPath())) return emptyMap()
+
+        val legacyName = sanitize(romFile.nameWithoutExtension)
+        val candidates = runCatching { GameLibraryScanner.scan(libraryRoot) }.getOrNull().orEmpty()
+            .filter { sanitize(File(it.path).nameWithoutExtension) == legacyName }
+        if (candidates.size != 1 || candidates.single().platform.slug != platformSlug) {
+            if (candidates.size > 1) {
+                GameLog.log("saves", "migração legada ambígua para $legacyName; diretórios antigos preservados")
+            }
+            return emptyMap()
+        }
+        if (runCatching { File(candidates.single().path).canonicalFile }.getOrNull() != canonicalRom) return emptyMap()
+
+        return coreIds.distinct().associateWith { coreId ->
+            File(File(savesRoot, coreId), legacyName)
+        }.filterValues { it.isDirectory }
+    }
+
+    fun migrateLegacy(source: File, target: File): Boolean {
+        if (!source.isDirectory || target.exists()) return false
+        val parent = target.parentFile ?: return false
+        if (!parent.exists() && !parent.mkdirs()) return false
+        val temp = File(parent, ".${target.name}.migration")
+        if (temp.exists()) {
+            GameLog.log("saves", "migração anterior incompleta encontrada; origem preservada em ${source.name}")
+            return false
+        }
+        return runCatching {
+            check(temp.mkdirs())
+            source.walkTopDown().filter { it.isFile }.forEach { file ->
+                val relative = file.relativeTo(source)
+                val copy = File(temp, relative.path)
+                check(copy.parentFile?.exists() == true || copy.parentFile?.mkdirs() == true)
+                file.copyTo(copy, overwrite = false)
+                check(file.length() == copy.length())
+                check(fileHash(file) == fileHash(copy))
+            }
+            val sourceFiles = source.walkTopDown().filter { it.isFile }.map { it.relativeTo(source).path }.toSet()
+            val copiedFiles = temp.walkTopDown().filter { it.isFile }.map { it.relativeTo(temp).path }.toSet()
+            check(sourceFiles == copiedFiles)
+            check(temp.renameTo(target))
+            GameLog.log("saves", "save legado migrado e validado para identidade estável; origem preservada")
+            true
+        }.getOrElse {
+            temp.deleteRecursively()
+            GameLog.error("saves", "falha ao migrar save legado; origem preservada", it)
+            false
+        }
+    }
+
+    fun fingerprint(romFile: File): String {
+        val digest = MessageDigest.getInstance("SHA-256")
+        val visited = mutableSetOf<String>()
+        fun addFile(file: File, depth: Int) {
+            val canonical = runCatching { file.canonicalPath }.getOrDefault(file.absolutePath)
+            if (depth > 4 || !file.isFile || !visited.add(canonical)) return
+            digest.update(file.name.toByteArray(Charsets.UTF_8))
+            digest.update(fileHash(file).toByteArray(Charsets.UTF_8))
+            val references = when (file.extension.lowercase(Locale.ROOT)) {
+                "m3u" -> file.readLines().map(String::trim).filter { it.isNotEmpty() && !it.startsWith("#") }
+                "cue" -> file.readLines().mapNotNull { line ->
+                    Regex("""(?i)^\\s*FILE\\s+"([^"]+)"""").find(line)?.groupValues?.getOrNull(1)
+                }
+                else -> emptyList()
+            }
+            references.forEach { reference ->
+                addFile(File(file.parentFile, reference), depth + 1)
+            }
+        }
+        addFile(romFile, 0)
+        return digest.digest().toHex()
+    }
+
+    private fun fileHash(file: File): String {
+        val digest = MessageDigest.getInstance("SHA-256")
+        file.inputStream().buffered().use { input ->
+            val buffer = ByteArray(64 * 1024)
+            while (true) {
+                val count = input.read(buffer)
+                if (count < 0) break
+                digest.update(buffer, 0, count)
+            }
+        }
+        return digest.digest().toHex()
+    }
+
+    private fun linkKey(server: String, fingerprint: String) = LINK_PREFIX + digest("$server|$fingerprint")
+
+    private fun normalizedServer(value: String?): String? {
+        if (value.isNullOrBlank()) return null
+        return runCatching {
+            val uri = java.net.URI(value.trim().trimEnd('/'))
+            val scheme = uri.scheme?.lowercase(Locale.ROOT) ?: return@runCatching null
+            val host = uri.host?.lowercase(Locale.ROOT) ?: return@runCatching null
+            val port = when {
+                uri.port == 80 && scheme == "http" -> -1
+                uri.port == 443 && scheme == "https" -> -1
+                else -> uri.port
+            }
+            java.net.URI(scheme, uri.userInfo, host, port, uri.path?.trimEnd('/').orEmpty(), null, null).toASCIIString().trimEnd('/')
+        }.getOrNull()
+    }
+
+    private fun sanitize(value: String) = value.replace(Regex("[^A-Za-z0-9._ -]"), "_")
+
+    private fun digest(value: String): String =
+        MessageDigest.getInstance("SHA-256").digest(value.toByteArray(Charsets.UTF_8)).toHex()
+
+    private fun ByteArray.toHex(): String = joinToString("") { "%02x".format(it.toInt() and 0xFF) }
+}
 
 /**
  * Saves por jogo, na pasta de saves escolhida (padrão: dentro do app) em `<núcleo>/<jogo>/` com `sram.srm`
@@ -14,16 +185,44 @@ class SaveStore internal constructor(
     romFile: File,
     /** Outros núcleos da mesma plataforma: o save de bateria deles serve como ponto de partida. */
     private val siblingCores: List<String> = emptyList(),
+    gameIdentity: String? = null,
+    private val migrationSources: Map<String, File> = emptyMap(),
 ) {
     constructor(
         context: Context,
         coreId: String,
         romFile: File,
         siblingCores: List<String> = emptyList(),
-    ) : this(GameFolders.dir(context, FolderKind.Saves), coreId, romFile, siblingCores)
+        platformSlug: String? = null,
+    ) : this(
+        GameFolders.dir(context, FolderKind.Saves),
+        coreId,
+        romFile,
+        siblingCores,
+        GameIdentityResolver.resolve(context, romFile, platformSlug),
+        GameIdentityResolver.legacySources(
+            context,
+            GameFolders.dir(context, FolderKind.Saves),
+            romFile,
+            platformSlug,
+            listOf(coreId) + siblingCores,
+            GameIdentityResolver.resolve(context, romFile, platformSlug),
+        ),
+    )
 
-    private val gameDirName: String = romFile.nameWithoutExtension.replace(Regex("[^A-Za-z0-9._ -]"), "_")
-    private val dir: File = File(File(savesRoot, coreId), gameDirName).apply { mkdirs() }
+    private val legacyGameDirName: String = romFile.nameWithoutExtension.replace(Regex("[^A-Za-z0-9._ -]"), "_")
+    private val gameDirName: String = gameIdentity?.takeIf { it.matches(Regex("[A-Za-z0-9._-]+")) } ?: legacyGameDirName
+    private val dir: File = File(File(savesRoot, coreId), gameDirName).apply {
+        if (!exists()) migrationSources[coreId]?.let { GameIdentityResolver.migrateLegacy(it, this) }
+        mkdirs()
+    }
+
+    init {
+        siblingCores.filter { it != coreId }.forEach { sibling ->
+            val target = File(File(savesRoot, sibling), gameDirName)
+            if (!target.exists()) migrationSources[sibling]?.let { GameIdentityResolver.migrateLegacy(it, target) }
+        }
+    }
 
     val sramFile = File(dir, "sram.srm")
     val stateFile = File(dir, "state1.state")
