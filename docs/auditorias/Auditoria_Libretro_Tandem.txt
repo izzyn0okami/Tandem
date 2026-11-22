@@ -2673,3 +2673,55 @@ ESTADO DE GIT/CI
 - Testes funcionais no telefone: ainda não solicitados; aguardam CI e revisão.
 - PR #40: ainda não criada.
 - Nenhuma alteração foi mesclada.
+
+ATUALIZAÇÃO DA IMPLEMENTAÇÃO — 2026-11-22 (PR #40)
+Branch: feat/stable-game-save-identity
+PR: https://github.com/izzyn0okami/Tandem/pull/40
+Estado: draft aberta; não mesclar sem autorização explícita.
+
+COMPLEMENTOS IMPLEMENTADOS DESDE A REVISÃO ANTERIOR
+1. Identidade e movimentação:
+   - A identidade local é derivada de plataforma + SHA-256 do conteúdo; a identidade RomM usa servidor normalizado + ID remoto.
+   - M3U considera a ordem e o conteúdo dos discos referenciados. CUE normaliza referências de arquivos de disco, aceita nomes entre aspas ou sem aspas e normaliza separadores Windows.
+   - Ao mover uma ROM vinculada, a associação por conteúdo permite reencontrá-la na biblioteca. O vínculo direto por caminho só é aceito quando o fingerprint corresponde.
+   - Se o mesmo conteúdo for associado a registros RomM diferentes, o mapa por conteúdo fica ambíguo. A sincronização não escolhe um registro silenciosamente; um vínculo direto explicitamente confirmado continua válido para aquele caminho.
+2. Migração e colisões:
+   - Se houver um diretório estável local anterior e o mesmo conteúdo passar a ter identidade RomM, a migração transfere os artefatos locais para a nova identidade.
+   - A migração pode mesclar arquivos não conflitantes com um diretório estável já existente. Um arquivo de destino diferente não é sobrescrito; o arquivo legado conflitante permanece na origem e é registrado no log.
+   - A promoção usa diretório temporário, valida hashes e conteúdo, rename no mesmo diretório e recuperação de backup em caso de interrupção. A origem legada não é apagada.
+   - Se não for possível provar a qual ROM pertence um save legado, a abertura do jogo é bloqueada com mensagem explicativa. Isso evita iniciar com progresso vazio ou atribuir bytes ao jogo errado. Os dados antigos permanecem intactos.
+   - A opção de iniciar com save local só aparece quando existe SRAM recuperável (inclusive de núcleo irmão) ou estado rápido válido; falha de rollback continua sem fallback.
+3. Metadados RomM:
+   - Metadados antigos indexados por caminho podem ser migrados para a identidade estável quando o ID remoto antigo é encontrado e validado na lista do mesmo jogo e núcleo compatível.
+   - Para ROMs movidas depois da adoção do novo vínculo, caminhos anteriores são encontrados apenas quando servidor, conta e ID remoto coincidem. Candidatos múltiplos sem prova única não são migrados.
+   - Os metadados antigos não são apagados. Estados rápidos continuam com IDs, timestamps e hashes isolados por core; SRAM mantém o escopo compartilhado entre núcleos compatíveis.
+4. Conta e fila persistente:
+   - O fingerprint da conta é derivado do servidor + hash do token; o token em si não é colocado na fila.
+   - Nome único do WorkManager inclui identidade do jogo, core e fingerprint da conta. O status visual também é separado por conta; se outra conta estiver conectada, não mostra SYNCED como se fosse a conta original.
+   - Desconectar RomM mantém trabalhos pendentes. Credenciais diferentes não são usadas.
+   - Trabalhos antigos sem identidade/fingerprint de conta não inferem credenciais atuais: permanecem em retry, sem envio cruzado. Uma nova associação pode criar um trabalho novo, isolado por conta.
+   - Rotação de token exige reassociação para atualizar a impressão digital; não existe ainda um ID de conta estável persistido no cliente.
+5. Interface e thread principal:
+   - Identidade, fingerprint e descoberta/migração são preparados em IO antes de iniciar a sessão.
+   - A Activity recebe identidade e fontes já preparadas; heartbeat de sessão usa identidade recebida, sem recalcular fingerprint.
+   - Consulta de status usa cache e não faz hash integral da ROM na interface.
+6. Testes:
+   - SaveStoreTest contém 17 testes, incluindo colisões por basename, SRAM entre núcleos explicitamente relacionados, isolamento de states, migração validada e merge, preservação da origem, identidade após renomeação, M3U/CUE e transição de identidade local para RomM.
+   - Os testes da política de sincronização também continuam no conjunto JVM.
+
+CI DIAGNÓSTICA INTERMEDIÁRIA
+- Run 45075705072: SpotlessApply executou com sucesso; a tarefa testLawnWithQuickstepGithubDebugUnitTest foi executada (não NO-SOURCE) e terminou BUILD SUCCESSFUL; Build APK também terminou BUILD SUCCESSFUL.
+- Essa execução foi feita em commit intermediário, antes dos últimos ajustes de conta, fallback local e detecção de vínculo ambíguo. Não é a validação final da branch atual.
+- CI final com spotlessCheck, testes e APK ainda pendente para o HEAD atual.
+
+PENDÊNCIAS
+- Aguardar CI final no HEAD atual e confirmar que a tarefa de testes JVM executa os 17 testes de SaveStoreTest.
+- Depois da CI, solicitar teste funcional no telefone: ROMs diferentes com mesmo basename; mover/renomear ROM local e RomM; migração local→RomM; upload pendente e troca/desconexão de conta; SRAM cross-core compatível e state por core.
+- Definir a experiência visual de resolução de saves legados ambíguos: atualmente a abertura é bloqueada e os arquivos ficam preservados; ainda não há diálogo para escolher explicitamente qual jogo deve receber o save.
+- Jobs antigos sem metadados de identidade/conta permanecem em retry; não são descartados nem enviados com credenciais presumidas.
+- Rotação de token pode exigir reassociação. A impressão digital de conta é conservadora e não substitui um identificador estável de usuário do servidor.
+
+GIT
+- PR #40 é a única PR aberta relevante e permanece em draft.
+- Nenhum merge foi realizado.
+- Não iniciar PR concorrente enquanto #40 estiver aberta.
