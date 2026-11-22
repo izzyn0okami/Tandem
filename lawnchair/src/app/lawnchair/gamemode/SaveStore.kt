@@ -551,6 +551,7 @@ internal object GameIdentityResolver {
                 val targetParent = target.parentFile ?: return false
                 if (!sourceCanonical.toPath().startsWith(rootCanonical.toPath()) ||
                     !targetParent.canonicalFile.toPath().startsWith(rootCanonical.toPath()) ||
+                    !target.canonicalFile.toPath().startsWith(rootCanonical.toPath()) ||
                     !source.isDirectory || !target.isDirectory || !hasConflictingFiles(source, target)
                 ) return false
 
