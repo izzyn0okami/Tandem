@@ -280,4 +280,24 @@ class SaveStoreTest {
         assertTrue(legacy.isDirectory)
     }
 
+    @Test
+    fun rommIdentityMigrationPreservesProgressFromPreviousLocalIdentity() {
+        val local = File(root, "melonds/local-previous-identity")
+        local.mkdirs()
+        File(local, "sram.srm").writeBytes(byteArrayOf(8, 6, 7, 5))
+        File(local, "ra-progress-player.bin").writeBytes(byteArrayOf(3, 0, 9))
+
+        val store = SaveStore(
+            root,
+            "melonds",
+            File("Pokemon.nds"),
+            gameIdentity = "romm-current-identity",
+            migrationSources = mapOf("melonds" to local),
+        )
+
+        assertArrayEquals(byteArrayOf(8, 6, 7, 5), store.readSram())
+        assertTrue(File(store.sramFile.parentFile, "ra-progress-player.bin").isFile)
+        assertTrue(local.isDirectory)
+    }
+
 }
