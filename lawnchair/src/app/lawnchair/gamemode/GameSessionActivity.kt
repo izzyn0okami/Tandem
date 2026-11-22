@@ -129,6 +129,7 @@ class GameSessionActivity : ComponentActivity() {
             finish()
             return
         }
+        SaveSync.markSessionActive(this, romPath)
 
         WindowCompat.setDecorFitsSystemWindows(window, false)
         WindowInsetsControllerCompat(window, window.decorView).apply {
@@ -376,6 +377,7 @@ class GameSessionActivity : ComponentActivity() {
             repeatOnLifecycle(Lifecycle.State.RESUMED) {
                 while (true) {
                     delay(SRAM_AUTOSAVE_MS)
+                    romPath?.let { SaveSync.markSessionActive(this@GameSessionActivity, it) }
                     withContext(Dispatchers.Default) { persistSram() }
                 }
             }
@@ -540,6 +542,7 @@ class GameSessionActivity : ComponentActivity() {
     override fun onResume() {
         // A Activity restaura o estado do ciclo de vida automaticamente; preserve o menu pausado
         // antes que o observer do GLRetroView tente retomar a emulação.
+        romPath?.let { SaveSync.markSessionActive(this, it) }
         retroView?.suppressAutoResume = menuOpen
         super.onResume()
         retroView?.suppressAutoResume = false
@@ -613,6 +616,7 @@ class GameSessionActivity : ComponentActivity() {
     override fun onPause() {
         // Antes do super: a superfície de vídeo ainda está ativa e consegue entregar o save.
         persistSram()
+        romPath?.let { SaveSync.markSessionInactive(this, it) }
         romPath?.let {
             val elapsed = SystemClock.elapsedRealtime() - resumedAtMs
             if (resumedAtMs > 0) PlayHistory.addSession(this, it, elapsed, System.currentTimeMillis())
