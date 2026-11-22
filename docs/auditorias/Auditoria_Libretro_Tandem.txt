@@ -1181,3 +1181,14 @@ RECOMENDAÇÃO / DECISÃO DE PRODUTO PENDENTE
 - Recomendação de experiência: atualização manual sob comando explícito, em vez de substituir silenciosamente um núcleo funcional ao iniciar um jogo; isso evita mudanças inesperadas de compatibilidade/performance. A decisão entre atualização manual e automática precisa ser confirmada antes de alterar o fluxo da interface.
 - Não foi criada PR nesta etapa. Nenhuma PR aberta foi encontrada antes do início desta auditoria.
 - Não confundir disponibilidade no Buildbot ou aprovação de CI com teste funcional dos núcleos no telefone.
+
+
+DECISÃO DE INTERFACE — ATUALIZAÇÃO DE NÚCLEOS A PARTIR DOS DETALHES DO JOGO
+Data: 2026-11-22
+Decisão aprovada pelo usuário:
+- A ação para atualizar o núcleo será apresentada na tela de detalhes do jogo, e não na tela geral de núcleos.
+- A ação/aviso só deve aparecer quando o Tandem confirmar que existe uma versão mais recente disponível para o núcleo associado ao jogo.
+- Quando não houver atualização, não exibir botão, aviso ou espaço reservado.
+- A atualização deve validar o novo arquivo antes de substituir o núcleo atual; em caso de falha, preservar a versão instalada.
+- O núcleo é compartilhado por plataforma/seleção do usuário: atualizar a partir dos detalhes de um jogo atualiza o mesmo arquivo de núcleo usado por outros jogos que selecionem aquele núcleo. A interface deve deixar isso claro para evitar a impressão de que a atualização é exclusiva daquela ROM.
+- A implementação ainda precisa definir e testar um mecanismo confiável de detecção de versão remota (não presumir atualização apenas por data local). Não criar PR até a detecção de versão e a substituição segura estarem definidas.
