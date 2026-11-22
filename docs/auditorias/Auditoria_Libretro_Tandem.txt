@@ -2348,3 +2348,112 @@ Data: 2026-11-22
 - A correção faz o Worker retornar Result.retry() quando pushFromWorker() informa que o envio foi adiado porque a sessão ainda está ativa; o WorkManager pode então tentar novamente com o backoff exponencial existente. Quando o envio é concluído, retorna Result.success().
 - Limitação mantida e documentada: o teste adicionado cobre a decisão pura de retry, não a integração completa do WorkManager (restrições, persistência, fila e retomada). Essa cobertura permanece como pendência separada.
 - Próximo passo: verificar CI pós-merge, registrar o resultado e confirmar se tandem-latest foi atualizado.
+
+AUDITORIA COMPARATIVA — GERENCIAMENTO DE SAVES TANDEM x ARGOSY
+Data: 2026-11-22
+Escopo: leitura estática dos componentes de armazenamento, identidade, sincronização, recuperação e testes. Nenhum código funcional foi alterado nesta auditoria.
+
+REFERÊNCIAS INSPECIONADAS
+Tandem:
+- lawnchair/src/app/lawnchair/gamemode/SaveStore.kt
+- lawnchair/src/app/lawnchair/gamemode/SaveSync.kt
+- lawnchair/src/app/lawnchair/gamemode/SaveSyncPolicy.kt
+- lawnchair/src/app/lawnchair/gamemode/RomMSaveSyncWorker.kt
+- lawnchair/src/app/lawnchair/gamemode/GameFolders.kt
+- lawnchair/src/app/lawnchair/gamemode/GameSessionActivity.kt
+- tests/unit/kotlin/app/lawnchair/gamemode/SaveStoreTest.kt
+- tests/unit/kotlin/app/lawnchair/gamemode/SaveSyncPolicyTest.kt
+Argosy:
+- .takt/facets/policies/argosy-sync-saves.md
+- docs/save-id-to-path.md
+- SavePathResolver.kt / SavePathRegistry.kt / SaveUnitResolver.kt
+- SaveCacheManager.kt
+- SaveSyncOrchestrator.kt
+- SaveSyncConflictResolver.kt
+- SaveOwnershipTracker.kt
+- SaveCacheEntity.kt / SaveChannelEntity.kt / SaveOwnershipEntity.kt / SaveSyncEntity.kt
+
+COMO O TANDEM FUNCIONA HOJE (CONFIRMADO NO CÓDIGO)
+- Saves internos ficam em filesDir/libretro/saves/<coreId>/<nome-da-ROM>/.
+- SaveStore deriva o nome do diretório apenas de romFile.nameWithoutExtension, sanitizado. Guarda sram.srm, state1.state, backups/ e arquivos separados de progresso RetroAchievements por conta.
+- SRAM pode ser lida de outro núcleo irmão quando não existe no núcleo atual; escolhe o arquivo irmão com maior lastModified. Estado rápido não é compartilhado.
+- Escritas de SRAM/estado passam por arquivo temporário e rename.
+- SRAM tem autosave a cada 60 segundos durante a sessão; ao pausar/sair, o jogo persiste os dados e agenda upload persistente.
+- RomM pull ocorre antes do início da sessão; push usa WorkManager, rede conectada, backoff exponencial inicial de 30 segundos, trabalho único por caminho ROM e Mutex comum para pull/push.
+- A reconciliação RomM usa hash local/remoto quando disponível, ID e timestamp como fallback; SRAM pode atravessar núcleos Tandem, estados rápidos são filtrados pelo núcleo atual.
+- Ao aplicar remoto, preserva save local divergente em backups; pull usa snapshots e rollback se uma etapa falhar.
+- O status visual é PENDING/SYNCING/SYNCED; SYNCED depende do fim confirmado do push.
+
+COMO O ARGOSY ORGANIZA (REFERÊNCIA, NÃO REQUISITO DE CÓPIA)
+- Identidade de jogo/save usa IDs e regras por plataforma, não apenas o nome do arquivo ROM.
+- SavePathRegistry e handlers descrevem layouts reais de cada emulador/plataforma; SaveUnitResolver agrupa todos os arquivos que compõem uma unidade de save, inclusive estruturas com vários membros.
+- SaveCacheManager cria snapshots identificados por jogo, proprietário, canal, hash, formato e metadados; evita duplicatas por hash/identidade.
+- SaveChannelEntity mantém slots/canais nomeados e um canal ativo por jogo/conta.
+- SaveOwnershipTracker identifica qual conta é dona dos bytes que estão no caminho local e registra transições recuperáveis durante troca de conta.
+- SaveSyncOrchestrator mantém fila persistente de uploads, associa uploads a snapshots imutáveis quando há canal, e separa ausência de arquivo de diretório inacessível.
+- SaveSyncConflictResolver trata conflitos como decisões explícitas; o projeto também tem fluxo de timeline e restauração de pontos anteriores.
+- A política do Argosy exige compatibilidade com formatos de arquivo já enviados e proteção para não apagar conteúdo não presente no arquivo restaurado.
+
+ACHADOS E PENDÊNCIAS DO TANDEM
+
+1. ALTA PRIORIDADE — identidade local baseada só no nome da ROM
+- SaveStore usa apenas o basename sem extensão, com sanitização, dentro do diretório do núcleo.
+- Duas ROMs diferentes com o mesmo basename e núcleo podem apontar para o mesmo diretório; a sanitização também pode fazer nomes diferentes colidirem.
+- O vínculo RomM e os marcadores de sincronização também usam romPath como chave, então mover/renomear a ROM altera a chave de vínculo/estado.
+- Recomendação: definir identidade estável por jogo (ID RomM quando vinculado e identidade local derivada de plataforma + conteúdo/metadata confiável quando não vinculado), mantendo migração compatível dos diretórios antigos. Não alterar caminhos até haver plano de migração e prevenção de colisão.
+
+2. ALTA PRIORIDADE — metadados de estado rápido não estão isolados por núcleo
+- SaveSync restringe a descoberta de estados remotos a tandem_<coreId>, mas as chaves locais de ID, timestamp, hash remoto e status de sincronização usam apenas tipo + romPath.
+- A chave de hash aplicado é por núcleo, porém a chave de ID remoto e a baseline remota são compartilhadas entre núcleos. No push, o storedId compartilhado pode ser reutilizado ao enviar estado de outro núcleo.
+- Isso cria risco de misturar a referência remota de estados que, pela própria política do Tandem, são exclusivos de cada núcleo.
+- Recomendação: separar todas as referências remotas de estados rápidos por coreId; manter SRAM com identidade compartilhada entre núcleos compatíveis. Validar o comportamento do endpoint RomM ao atualizar um ID associado a outro emulador antes de corrigir.
+
+3. ALTA PRIORIDADE — falta de slots de estados rápidos gerenciáveis
+- SaveStore tem um único state1.state fixo. Não há slots nomeados, cópia de progresso, renomeação, timeline nem restauração escolhida pelo usuário.
+- A pasta backups/ protege substituições automáticas, mas não equivale a um histórico navegável.
+- Recomendação: considerar slots locais nomeados e snapshots com data/hora, jogo, núcleo, tipo e hash; preservar o estado rápido estritamente ligado ao núcleo. Não enviar automaticamente todos os slots ao RomM sem definir compatibilidade e convenção de nomes.
+
+4. ALTA PRIORIDADE — backups sem catálogo/gestão de retenção
+- O backup de conflito é gravado como timestamp-nome do arquivo em backups/, sem índice de versões, motivo, origem, hash ou política de retenção observada no SaveStore.
+- Snapshots .pre-pull são temporários e removidos após pull bem-sucedido; são proteção transacional, não histórico de restauração.
+- Recomendação: criar catálogo local de snapshots, deduplicação por hash, motivo/origem, restauração explícita e política de retenção configurável/segura. Nunca excluir a última cópia recuperável automaticamente.
+
+5. PRIORIDADE MÉDIA — identidade e integridade da unidade de save
+- Tandem modela dois arquivos fixos (SRAM e estado) por jogo/núcleo. Isso não representa plataformas em que o save seja composto por vários arquivos ou diretórios relacionados.
+- Argosy resolve unidades de save e regras por plataforma; essa arquitetura é uma referência útil caso Tandem amplie plataformas/formatos, mas não deve ser transplantada sem necessidade para o conjunto atual de núcleos.
+- Recomendação: documentar para cada núcleo/plataforma quais artefatos existem, se são compartilháveis entre núcleos e como formar uma unidade consistente.
+
+6. PRIORIDADE MÉDIA — gestão de conta RomM
+- O progresso RetroAchievements já é separado por conta, mas as preferências de sync RomM observadas são indexadas por caminho/tipo e, em parte, núcleo, não há dimensão explícita de conta nessas chaves.
+- A rotina de limpeza cancela trabalhos pelo tag global romm-save-sync. A auditoria não confirmou o fluxo completo de troca de conta nem se todos os metadados locais são invalidados/isolados corretamente.
+- Recomendação: auditar troca de conta antes de implementar canais ou slots, para evitar que um save local de uma conta seja enviado para outra. Definir propriedade por conta e uma transição recuperável, inspirada no SaveOwnershipTracker do Argosy.
+
+7. PRIORIDADE MÉDIA — cobertura automatizada insuficiente para o tamanho do risco
+- SaveStoreTest cobre leitura/escrita básica, fallback SRAM entre núcleos e isolamento do progresso RA.
+- SaveSyncPolicyTest cobre regras puras de comparação, compatibilidade e retentativa.
+- Não foi encontrada cobertura de integração para ciclo real do WorkManager, encerramento do processo, migração de diretórios, colisões de identidade, isolamento de metadados de estados entre núcleos, troca de conta, rollback com falha parcial ou retenção/restauração de backups.
+- Recomendação: acrescentar testes unitários para identidade e escopo das chaves, testes de integração para Worker/fila/rede e testes de recuperação/crash. Não considerar CI de compilação como validação funcional.
+
+PLANO RECOMENDADO (SEM IMPLEMENTAÇÃO NESTA AUDITORIA)
+Fase 1 — corrigir identidade e isolamento:
+- Identidade estável de jogo e prevenção de colisões de pasta.
+- Corrigir escopo de IDs/hashes/timestamps remotos de estados rápidos por núcleo.
+- Auditar troca de conta e garantir que nenhum save de outra conta seja adotado/enviado.
+Fase 2 — recuperação local:
+- Catálogo de backups/snapshots com hash, motivo, data e restauração segura.
+- Retenção com proteção da última versão recuperável.
+Fase 3 — gestão do usuário:
+- Slots locais nomeados para estados rápidos e, se tecnicamente apropriado, snapshots de SRAM.
+- Interface para visualizar, criar, renomear, copiar e restaurar slots.
+Fase 4 — sincronização:
+- Decidir explicitamente quais tipos de slots podem ser sincronizados com RomM.
+- Cobrir WorkManager, offline, conflitos, retentativas e recuperação de processo por testes.
+Fase 5 — formatos/plataformas:
+- Introduzir unidades multi-arquivo e regras por plataforma apenas onde os núcleos suportarem tais estruturas.
+
+ESTADO DA AUDITORIA
+- Auditoria estática comparativa concluída; nenhuma alteração funcional foi feita.
+- Pendências priorizadas e registradas neste arquivo.
+- CI pós-merge da PR #38 (run 45065462643): check-style passou; build-debug APK ainda estava em andamento na última consulta. Não declarar publicação de tandem-latest até confirmar conclusão do workflow.
+- PRs abertas verificadas: nenhuma.
+- Próximo passo recomendado: iniciar Fase 1 pela identidade dos saves e isolamento das referências remotas de estados rápidos, após confirmar a CI pós-merge. Antes de abrir PR, verificar novamente PRs abertas e evitar sobreposição.
