@@ -274,6 +274,7 @@ internal object GameIdentityResolver {
                     } else {
                         destination.parentFile?.let { check(it.exists() || it.mkdirs()) }
                         file.copyTo(destination)
+                        check(fileHash(destination) == sourceHash)
                     }
                     check(fileHash(file) == sourceHash)
                     val chosenHash = fileHash(destination)
