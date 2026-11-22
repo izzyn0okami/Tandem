@@ -2,6 +2,7 @@ package app.lawnchair.gamemode
 
 import android.content.Context
 import java.io.File
+import java.io.FileOutputStream
 import java.io.InputStream
 
 /**
