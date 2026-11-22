@@ -1750,3 +1750,14 @@ A autorização de merge não equivale a aprovação funcional. O usuário ainda
 6. Fluxo RomM 5.4.1 (multidisco/M3U, CHD individual, saves/states e firmware): validar separadamente quando possível.
 
 As anotações anteriores desta seção que descreviam PR #28 como aberta, CI #445 em execução e merge aguardando validação ficam superadas por esta atualização. Os testes funcionais permanecem pendentes; não os marcar como concluídos até confirmação explícita do usuário.
+
+
+VALIDAÇÃO FUNCIONAL — PR #28 APROVADA PELO USUÁRIO
+Data: 2026-11-22
+- O usuário confirmou: “Testes concluídos, tudo ok”.
+- Considerar aprovados os testes funcionais no aparelho da correção de cache de ROMs extraídas de ZIPs da PR #28.
+- Cenários cobertos conforme o plano de validação registrado: ZIP com ROM compatível, ZIP ambíguo, ZIP sem ROM compatível/corrompido, substituição por ROM diferente de mesmo tamanho, ROM fora de ZIP, ZIP nativo Neo Geo e jogo multidisco.
+- A validação funcional da PR #28 fica encerrada. As pendências específicas desses cenários não devem ser reabertas sem nova evidência ou pedido do usuário.
+- PR #28 permanece mesclada no commit 73d0e08aec70b203b287180f2f14dfae74cea901; CI da PR #28 (run 44986156397) e CI #444 (run 44985997353) foram aprovadas.
+- A confirmação do usuário é validação funcional no telefone; não equivale a uma CI pós-merge. A CI pós-merge ainda não foi localizada/confirmada.
+- Próxima etapa da auditoria: continuar a avaliação de cobertura de testes automatizados e robustez da sessão Libretro, sem repetir os testes já aprovados de ZIP/cache e sem reabrir BIOS já aprovada.
