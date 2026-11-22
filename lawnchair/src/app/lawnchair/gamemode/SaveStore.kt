@@ -191,15 +191,15 @@ internal object GameIdentityResolver {
                     val lines = file.readLines()
                     val references = mutableListOf<String>()
                     val normalizedLines = lines.map { line ->
-                        val match = Regex("""(?i)^\\s*FILE\\s+"([^"]+)"""").find(line)
+                        val match = Regex("""(?i)^\s*FILE\s+"([^"]+)"""").find(line)
                         if (match != null) {
                             references += match.groupValues[1]
-                            Regex("""(?i)^\\s*FILE\\s+"[^"]+"""").replace(line, "FILE <DISC>")
+                            Regex("""(?i)^\s*FILE\s+"[^"]+"""").replace(line, "FILE <DISC>")
                         } else {
                             line.trim()
                         }
                     }
-                    digest.update(normalizedLines.joinToString("\\n").toByteArray(Charsets.UTF_8))
+                    digest.update(normalizedLines.joinToString("\n").toByteArray(Charsets.UTF_8))
                     references.forEachIndexed { index, reference ->
                         digest.update(index.toString().toByteArray(Charsets.UTF_8))
                         addFile(File(file.parentFile, reference), depth + 1)
