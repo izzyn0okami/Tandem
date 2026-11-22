@@ -154,6 +154,7 @@ private data class PendingSaveConflict(
     val platform: GamePlatform?,
     val gameIdentity: String,
     val sources: Map<String, File>,
+    val files: List<SaveConflictFileInfo>,
 )
 
 private enum class GameTab(val label: Int) {
@@ -268,6 +269,13 @@ private fun GameModeRoot(refreshKey: Int, onExit: () -> Unit) {
         }
         if (migrationPlan.ambiguous) {
             if (migrationPlan.conflictSources.isNotEmpty()) {
+                val conflictFiles = withContext(Dispatchers.IO) {
+                    GameIdentityResolver.inspectLegacyConflicts(
+                        GameFolders.dir(context, FolderKind.Saves),
+                        gameIdentity,
+                        migrationPlan.conflictSources,
+                    )
+                }
                 pendingSaveConflict = PendingSaveConflict(
                     coreId = coreId,
                     romPath = romPath,
@@ -275,6 +283,7 @@ private fun GameModeRoot(refreshKey: Int, onExit: () -> Unit) {
                     platform = platform,
                     gameIdentity = gameIdentity,
                     sources = migrationPlan.conflictSources,
+                    files = conflictFiles,
                 )
                 status = ""
                 return
@@ -640,11 +649,7 @@ private fun GameModeRoot(refreshKey: Int, onExit: () -> Unit) {
     pendingSaveConflict?.let { pending ->
         SaveConflictDialog(
             title = pending.title,
-            files = GameIdentityResolver.inspectLegacyConflicts(
-                GameFolders.dir(context, FolderKind.Saves),
-                pending.gameIdentity,
-                pending.sources,
-            ),
+            files = pending.files,
             busy = busy,
             onKeepCurrent = { resolveSaveConflict(pending, preferSource = false) },
             onUseLegacy = { resolveSaveConflict(pending, preferSource = true) },
