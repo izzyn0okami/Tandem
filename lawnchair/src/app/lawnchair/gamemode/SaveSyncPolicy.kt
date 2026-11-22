@@ -13,21 +13,20 @@ internal object SaveSyncPolicy {
         storedStatus: String?,
         startedAt: Long,
         now: Long,
-    ): StatusResolution =
-        when (storedStatus) {
-            "synced" -> StatusResolution(SaveSyncStatus.SYNCED)
-            "syncing" -> {
-                if (startedAt > 0L && now - startedAt > SESSION_TIMEOUT_MS) {
-                    StatusResolution(SaveSyncStatus.PENDING, resetStartedAt = true)
-                } else {
-                    StatusResolution(SaveSyncStatus.SYNCING)
-                }
-            }
-            else -> StatusResolution(SaveSyncStatus.PENDING)
-        }
+    ): StatusResolution = when (storedStatus) {
+        "synced" -> StatusResolution(SaveSyncStatus.SYNCED)
 
-    fun isSessionActive(lastActiveAt: Long, now: Long): Boolean =
-        lastActiveAt > 0L && now - lastActiveAt < SESSION_TIMEOUT_MS
+        "syncing" -> {
+            if (startedAt > 0L && now - startedAt > SESSION_TIMEOUT_MS) {
+                StatusResolution(SaveSyncStatus.PENDING, resetStartedAt = true)
+            } else {
+                StatusResolution(SaveSyncStatus.SYNCING)
+            }
+        }
+        else -> StatusResolution(SaveSyncStatus.PENDING)
+    }
+
+    fun isSessionActive(lastActiveAt: Long, now: Long): Boolean = lastActiveAt > 0L && now - lastActiveAt < SESSION_TIMEOUT_MS
 
     fun shouldUpload(
         fileExists: Boolean,
