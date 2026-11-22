@@ -18,8 +18,15 @@ internal data class RomMConnectionSnapshot(
 )
 
 internal object GameIdentityResolver {
-    fun resolve(context: Context, romFile: File, platformSlug: String?): String {
-        val fingerprint = cachedFingerprint(context, romFile)
+    fun resolve(context: Context, romFile: File, platformSlug: String?): String =
+        resolveWithFingerprint(context, romFile, platformSlug, cachedFingerprint(context, romFile))
+
+    fun cachedIdentity(context: Context, romFile: File, platformSlug: String?): String? {
+        val fingerprint = cachedFingerprintIfAvailable(context, romFile) ?: return null
+        return resolveWithFingerprint(context, romFile, platformSlug, fingerprint)
+    }
+
+    private fun resolveWithFingerprint(context: Context, romFile: File, platformSlug: String?, fingerprint: String): String {
         val prefs = context.getSharedPreferences("romm_sync", Context.MODE_PRIVATE)
         val storedDirectId = prefs.getLong("rom:${romFile.absolutePath}", -1L)
         val directFingerprint = prefs.getString("rom_fingerprint:${romFile.absolutePath}", null)
@@ -39,8 +46,15 @@ internal object GameIdentityResolver {
 
     fun hasRomMLink(context: Context, romFile: File): Boolean {
         val prefs = context.getSharedPreferences("romm_sync", Context.MODE_PRIVATE)
-        return prefs.getLong("rom:${romFile.absolutePath}", -1L) >= 0L ||
-            parseContentLink(prefs.getString(contentLinkKey(cachedFingerprint(context, romFile)), null)) != null
+        val direct = prefs.getLong("rom:${romFile.absolutePath}", -1L)
+        if (direct >= 0L) {
+            val stored = prefs.getString("rom_fingerprint:${romFile.absolutePath}", null)
+            if (stored == null) return true // vínculo antigo: exige reassociação explícita, sem sincronizar às cegas
+            val current = cachedFingerprintIfAvailable(context, romFile) ?: return false
+            return isSameGameFingerprint(stored, current)
+        }
+        val fingerprint = cachedFingerprintIfAvailable(context, romFile) ?: return false
+        return parseContentLink(prefs.getString(contentLinkKey(fingerprint), null)) != null
     }
 
     internal fun isSameGameFingerprint(stored: String?, current: String): Boolean =
@@ -183,17 +197,25 @@ internal object GameIdentityResolver {
         }
     }
 
-    private fun cachedFingerprint(context: Context, romFile: File): String {
+    private fun fingerprintCacheKey(romFile: File): String {
         val canonicalPath = runCatching { romFile.canonicalPath }.getOrDefault(romFile.absolutePath)
-        val cacheKey = "fingerprint:${digest(canonicalPath)}"
+        return "fingerprint:${digest(canonicalPath)}"
+    }
+
+    private fun cachedFingerprintIfAvailable(context: Context, romFile: File): String? {
+        val cacheKey = fingerprintCacheKey(romFile)
         val signature = sourceSignature(romFile)
         val prefs = context.getSharedPreferences("game_identity_cache", Context.MODE_PRIVATE)
-        if (prefs.getString("$cacheKey:signature", null) == signature) {
-            prefs.getString("$cacheKey:value", null)?.let { return it }
-        }
+        if (prefs.getString("$cacheKey:signature", null) != signature) return null
+        return prefs.getString("$cacheKey:value", null)
+    }
+
+    private fun cachedFingerprint(context: Context, romFile: File): String {
+        cachedFingerprintIfAvailable(context, romFile)?.let { return it }
+        val cacheKey = fingerprintCacheKey(romFile)
         val value = fingerprint(romFile)
-        prefs.edit {
-            putString("$cacheKey:signature", signature)
+        context.getSharedPreferences("game_identity_cache", Context.MODE_PRIVATE).edit {
+            putString("$cacheKey:signature", sourceSignature(romFile))
             putString("$cacheKey:value", value)
         }
         return value
