@@ -1668,3 +1668,53 @@ Data: 2026-11-22
 - Validação criptográfica por hash/autenticidade de BIOS conhecida permanece apenas como melhoria futura opcional; não bloqueia a aprovação do fluxo atual.
 - Nenhuma PR aberta foi encontrada na consulta desta atualização.
 - Próxima etapa da auditoria Libretro: continuar a revisão de ROMs, núcleos e robustez da sessão sem reabrir a questão de BIOS já aprovada.
+
+
+AUDITORIA DE ROMS E ZIPs — RETOMADA
+Data: 2026-11-22
+Branch consultada: game-mode-m2-dev
+- Log oficial relido nesta retomada; PRs abertas antes da nova alteração: nenhuma.
+- PRs anteriores #6 (seleção não ambígua de ROM em ZIP), #9 (preservar ZIP nativo Neo Geo), #11/#12/#13/#15/#16 (arquivos PlayStation, downloads multidisco e integração RomM) estão mescladas. O código dessas alterações foi revisto na branch atual.
+
+REVISÃO ESTÁTICA CONFIRMADA
+1. RomUnzipper.kt:
+   - ZIPs de plataformas comuns exigem exatamente uma entrada com extensão compatível; zero ou múltiplas entradas são rejeitadas com mensagem clara.
+   - Plataformas discBased e zipIsNativeRom não passam pela extração genérica; isso preserva os conjuntos de disco e os ZIPs de ROM nativa do Neo Geo.
+   - O cache anterior reutilizava uma ROM extraída apenas comparando o tamanho da saída com o tamanho da entrada ZIP. Uma ROM substituída por outra de mesmo tamanho poderia deixar conteúdo antigo em cache.
+2. RomMClient.kt:
+   - A listagem usa os arquivos associados pelo próprio RomM àquela ROM, sem agrupar registros distintos pelo nome.
+   - Categorias de manual, walkthrough, soundtrack e screenshot são excluídas da seleção de arquivos jogáveis.
+   - Conjuntos multidisco associados à mesma ROM podem ser baixados em ZIP, extraídos em diretório temporário e abertos por M3U existente validada ou M3U gerada/reparada.
+   - A extração de ZIP de RomM verifica assinatura, valida caminhos canônicos para impedir path traversal e registra arquivos/bytes extraídos.
+   - Download retomável usa Range/If-Range e valida o tamanho final quando conhecido; há pré-verificação de espaço disponível.
+3. GameSessionActivity.kt:
+   - A preparação de ZIP acontece antes da inicialização do núcleo.
+   - Erros de ZIP inválido/ambíguo são apresentados ao usuário e a sessão é encerrada sem tentar abrir um conteúdo arbitrário.
+   - O núcleo e a sessão RetroAchievements são destruídos ao encerrar/recriar a Activity; em pausa comum, a sessão é preservada.
+
+CORREÇÃO PREPARADA — PR #28
+- Título: Validate cached ROMs extracted from ZIP archives.
+- URL: https://github.com/izzyn0okami/Tandem/pull/28
+- Branch: fix/rom-zip-cache-validation; destino: game-mode-m2-dev.
+- Commit: 567f7795fa8931f9dd123293b84d1f0fff866533.
+- Alterações: o cache registra caminho/tamanho/data de modificação do ZIP e nome/tamanho/CRC da entrada; só reutiliza o cache quando esses metadados correspondem. A extração confere número de bytes e CRC32 antes de promover o arquivo.
+- A alteração não muda a seleção de ROMs, ZIPs nativos do Neo Geo, formatos multidisco ou downloads RomM.
+- Estado na abertura da PR: aberta, mergeable=true, uma alteração em RomUnzipper.kt.
+- CI PR #28 / run ID 44986156397: EM EXECUÇÃO na última consulta. Jobs check-style e build-debug-apk ainda em execução; não declarar aprovada até conclusão.
+- Nenhum merge realizado; aguardar CI e validação funcional no aparelho.
+
+TESTES FUNCIONAIS AINDA PENDENTES NO TELEFONE
+A correção estática e a CI não substituem teste real. Após CI aprovada, validar:
+1. ZIP com uma ROM compatível: deve abrir normalmente.
+2. ZIP com duas ou mais ROMs compatíveis: deve recusar sem escolher uma arbitrariamente.
+3. ZIP sem ROM compatível e ZIP corrompido: devem apresentar erro claro sem travar a sessão.
+4. Substituir o conteúdo de um ZIP por outra ROM de mesmo tamanho e abrir novamente: deve usar o conteúdo novo, não a extração antiga em cache.
+5. ROM fora de ZIP, ZIP nativo do Neo Geo e jogo multidisco: confirmar que continuam funcionando.
+6. RomM 5.4.1 real: confirmar download de conjunto multidisco, M3U e arquivos companheiros; manter registros RomM separados e testar CHD individual.
+7. Saves/states e firmware RomM: atualizar registros existentes, verificar que falhas temporárias não criam duplicatas e confirmar integridade do firmware.
+
+LIMITES DA ETAPA
+- A inspeção de código não comprova execução funcional de todos os sistemas.
+- O tratamento de plataforma nula ou sem extensões foi identificado como caminho que precisa ser exercitado: ZIP sem contexto de plataforma é recusado por não haver extensão segura para selecionar; não inferir plataforma pelo conteúdo.
+- Não há testes unitários dedicados encontrados para RomUnzipper.kt na árvore consultada.
+- Próxima etapa após CI: avaliar cobertura de testes automatizados e continuar a auditoria de robustez da sessão, sem reabrir BIOS já aprovada.
