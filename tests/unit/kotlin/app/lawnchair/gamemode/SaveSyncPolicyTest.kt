@@ -7,6 +7,30 @@ import org.junit.Test
 
 class SaveSyncPolicyTest {
     @Test
+    fun quickStateMetadataIsIsolatedByCoreWhileSramMetadataIsShared() {
+        assertEquals(
+            "states:/games/Example.rom:core-a",
+            SaveSyncPolicy.metadataKey(RemoteFileKind.State, "/games/Example.rom", "core-a"),
+        )
+        assertEquals(
+            "states:/games/Example.rom:core-b",
+            SaveSyncPolicy.metadataKey(RemoteFileKind.State, "/games/Example.rom", "core-b"),
+        )
+        assertEquals(
+            "saves:/games/Example.rom",
+            SaveSyncPolicy.metadataKey(RemoteFileKind.Save, "/games/Example.rom", "core-a"),
+        )
+        assertEquals(
+            "saves:/games/Example.rom",
+            SaveSyncPolicy.metadataKey(RemoteFileKind.Save, "/games/Example.rom", "core-b"),
+        )
+        assertEquals(
+            "states:/games/Example.rom:core-a:remote_hash",
+            SaveSyncPolicy.remoteHashKey(RemoteFileKind.State, "/games/Example.rom", "core-a"),
+        )
+    }
+
+    @Test
     fun confirmedSyncRemainsSynced() {
         val result = SaveSyncPolicy.resolveStatus("synced", 0L, 500_000L)
 
