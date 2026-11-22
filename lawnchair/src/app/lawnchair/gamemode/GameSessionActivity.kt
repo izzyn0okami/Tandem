@@ -377,7 +377,7 @@ class GameSessionActivity : ComponentActivity() {
             repeatOnLifecycle(Lifecycle.State.RESUMED) {
                 while (true) {
                     delay(SRAM_AUTOSAVE_MS)
-                    romPath?.let { SaveSync.markSessionActive(this@GameSessionActivity, it) }
+                    romPath?.let { SaveSync.markSessionActive(this@GameSessionActivity, it, intent.getStringExtra(EXTRA_PLATFORM)) }
                     withContext(Dispatchers.Default) { persistSram() }
                 }
             }
