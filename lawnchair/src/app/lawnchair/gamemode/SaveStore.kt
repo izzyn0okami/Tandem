@@ -197,11 +197,6 @@ internal object GameIdentityResolver {
         } == true
         if (currentHasSave) return LegacyMigrationPlan(emptyMap(), ambiguous = false)
 
-        val targetExists = coreIds.all { coreId ->
-            val target = File(File(savesRoot, coreId), stableDirectoryName)
-            target.isDirectory && target.listFiles()?.isNotEmpty() == true
-        }
-        if (targetExists) return LegacyMigrationPlan(emptyMap(), ambiguous = false)
         val legacyDataExists = coreIds.distinct().any { coreId ->
             File(File(savesRoot, coreId), legacyName)
                 .walkTopDown()
