@@ -35,6 +35,10 @@ internal object GameIdentityResolver {
         }
     }
 
+    fun hasDirectRomMLink(context: Context, romFile: File): Boolean =
+        context.getSharedPreferences("romm_sync", Context.MODE_PRIVATE)
+            .getLong("rom:${romFile.absolutePath}", -1L) >= 0L
+
     fun linkedRomId(context: Context, romFile: File): Long? {
         val prefs = context.getSharedPreferences("romm_sync", Context.MODE_PRIVATE)
         val direct = prefs.getLong("rom:${romFile.absolutePath}", -1L)
