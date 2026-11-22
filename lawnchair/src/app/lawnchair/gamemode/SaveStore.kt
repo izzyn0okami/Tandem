@@ -145,8 +145,6 @@ internal object GameIdentityResolver {
 
     internal fun accountFingerprint(server: String, userId: Long): String = SaveSyncPolicy.accountFingerprint(server, userId)
 
-    internal fun digest(value: String): String = MessageDigest.getInstance("SHA-256").digest(value.toByteArray(Charsets.UTF_8)).toHex()
-
     internal fun migrateAccountFingerprint(
         context: Context,
         server: String,
