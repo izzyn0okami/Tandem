@@ -152,10 +152,7 @@ internal object GameIdentityResolver {
         val parent = target.parentFile ?: return false
         if (!parent.exists() && !parent.mkdirs()) return false
         val temp = File(parent, ".${target.name}.migration")
-        if (temp.exists()) {
-            runCatching { GameLog.log("saves", "migração anterior incompleta encontrada; origem preservada em ${source.name}") }
-            return false
-        }
+        if (temp.exists() && !temp.deleteRecursively()) return false
         return runCatching {
             check(temp.mkdirs())
             source.walkTopDown().filter { it.isFile }.forEach { file ->
@@ -277,16 +274,21 @@ class SaveStore internal constructor(
 
     private val legacyGameDirName: String = romFile.nameWithoutExtension.replace(Regex("[^A-Za-z0-9._ -]"), "_")
     private val gameDirName: String = gameIdentity?.takeIf { it.matches(Regex("[A-Za-z0-9._-]+")) } ?: legacyGameDirName
-    private val dir: File = File(File(savesRoot, coreId), gameDirName).apply {
-        if (!exists()) migrationSources[coreId]?.let { GameIdentityResolver.migrateLegacy(it, this) }
-        mkdirs()
+    private fun directoryForCore(targetCoreId: String): File {
+        val stable = File(File(savesRoot, targetCoreId), gameDirName)
+        if (stable.isDirectory) return stable
+        val legacy = migrationSources[targetCoreId]
+        if (legacy != null && legacy.isDirectory && !GameIdentityResolver.migrateLegacy(legacy, stable)) {
+            return legacy
+        }
+        stable.mkdirs()
+        return stable
     }
 
+    private val dir: File = directoryForCore(coreId)
+
     init {
-        siblingCores.filter { it != coreId }.forEach { sibling ->
-            val target = File(File(savesRoot, sibling), gameDirName)
-            if (!target.exists()) migrationSources[sibling]?.let { GameIdentityResolver.migrateLegacy(it, target) }
-        }
+        siblingCores.filter { it != coreId }.forEach(::directoryForCore)
     }
 
     val sramFile = File(dir, "sram.srm")
@@ -315,7 +317,7 @@ class SaveStore internal constructor(
         sramFile.takeIf { it.isFile && it.length() > 0 }?.let { return it.readBytes() }
         val other = siblingCores
             .filter { it != coreId }
-            .map { File(File(File(savesRoot, it), gameDirName), "sram.srm") }
+            .map { File(directoryForCore(it), "sram.srm") }
             .filter { it.isFile && it.length() > 0 }
             .maxByOrNull { it.lastModified() }
         if (other != null) GameLog.log("saves", "usando o save de ${other.parentFile?.parentFile?.name} para $coreId")
