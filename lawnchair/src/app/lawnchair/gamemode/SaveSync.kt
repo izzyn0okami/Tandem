@@ -182,21 +182,45 @@ object SaveSync {
         coreId: String,
         kind: RemoteFileKind,
         remotes: List<RemoteFile>,
+        romId: Long,
+        connection: RomMConnectionSnapshot,
     ) {
         val preferences = prefs(context)
-        val oldKey = SaveSyncPolicy.metadataKey(kind, romPath, coreId)
         val newKey = SaveSyncPolicy.metadataKey(kind, gameIdentity, coreId)
         if (preferences.contains("$newKey:id")) return
 
-        val oldId = preferences.getLong("$oldKey:id", -1L)
-        if (oldId < 0L || remotes.none {
+        val verifiedPaths = GameIdentityResolver.linkedRomPaths(
+            context,
+            romId,
+            connection,
+            romPath,
+        ).filter { oldPath ->
+            val oldKey = SaveSyncPolicy.metadataKey(kind, oldPath, coreId)
+            val oldId = preferences.getLong("$oldKey:id", -1L)
+            oldId >= 0L && remotes.any {
                 it.id == oldId && SaveSyncPolicy.isCompatibleRemote(kind, it.emulator, coreId)
             }
-        ) return
+        }
+        val oldPath = when {
+            romPath in verifiedPaths -> romPath
+            verifiedPaths.size == 1 -> verifiedPaths.single()
+            else -> {
+                if (verifiedPaths.size > 1) {
+                    GameLog.log(
+                        "saves",
+                        "metadados legados ambíguos; migração adiada: tipo=${kind.path}, jogo=$gameIdentity",
+                    )
+                }
+                return
+            }
+        }
+        if (oldPath == gameIdentity) return
 
-        val oldAppliedKey = appliedHashKey(kind, romPath, coreId)
+        val oldKey = SaveSyncPolicy.metadataKey(kind, oldPath, coreId)
+        val oldId = preferences.getLong("$oldKey:id", -1L)
+        val oldAppliedKey = appliedHashKey(kind, oldPath, coreId)
         val newAppliedKey = appliedHashKey(kind, gameIdentity, coreId)
-        val oldRemoteHashKey = SaveSyncPolicy.remoteHashKey(kind, romPath, coreId)
+        val oldRemoteHashKey = SaveSyncPolicy.remoteHashKey(kind, oldPath, coreId)
         val newRemoteHashKey = SaveSyncPolicy.remoteHashKey(kind, gameIdentity, coreId)
         val values = preferences.all
         preferences.edit {
@@ -330,7 +354,7 @@ object SaveSync {
             try {
                 for ((kind, file) in files(store)) {
                     val remotes = client.listRemoteFiles(kind, linkedRomId)
-                    migrateLegacyMetadata(context, romPath, gameIdentity, coreId, kind, remotes)
+                    migrateLegacyMetadata(context, romPath, gameIdentity, coreId, kind, remotes, linkedRomId, connection)
                     val remote = newestRemoteFile(kind, remotes, coreId) ?: continue
                     val compatibleCount = remotes.count {
                         SaveSyncPolicy.isCompatibleRemote(kind, it.emulator, coreId)
@@ -620,7 +644,7 @@ object SaveSync {
             }
             try {
                 withContext(Dispatchers.IO) {
-                    push(app, syncClient, activeRomPath, coreId, platformSlug, gameIdentity, linkedRomId)
+                    push(app, syncClient, activeRomPath, coreId, platformSlug, gameIdentity, linkedRomId, connection)
                 }
                 prefs(app).edit {
                     putString(statusKey, "synced")
@@ -651,6 +675,7 @@ object SaveSync {
         platformSlug: String?,
         gameIdentity: String,
         romId: Long,
+        connection: RomMConnectionSnapshot,
     ) {
         val store = SaveStore(context, coreId, File(romPath), platformSlug = platformSlug, gameIdentity = gameIdentity)
         val prefs = prefs(context)
@@ -666,13 +691,18 @@ object SaveSync {
             val storedId = prefs.getLong("$key:id", -1L).takeIf { it >= 0 }
             val legacyKey = SaveSyncPolicy.metadataKey(kind, romPath, coreId)
             val hasLegacyMetadata = storedId == null && prefs.contains("$legacyKey:id")
-            val remotes = if (storedId == null || hasLegacyMetadata) {
-                client.listRemoteFiles(kind, romId)
-            } else {
-                emptyList()
-            }
-            if (hasLegacyMetadata) {
-                migrateLegacyMetadata(context, romPath, gameIdentity, coreId, kind, remotes)
+            val remotes = if (storedId == null) client.listRemoteFiles(kind, romId) else emptyList()
+            if (storedId == null) {
+                migrateLegacyMetadata(
+                    context,
+                    romPath,
+                    gameIdentity,
+                    coreId,
+                    kind,
+                    remotes,
+                    romId,
+                    connection,
+                )
             }
             // A recuperação do Worker é "at least once": se o servidor aceitou um POST
             // antes de o processo morrer, encontre o head atual de qualquer núcleo Tandem
