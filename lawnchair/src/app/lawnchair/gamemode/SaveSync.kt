@@ -70,6 +70,8 @@ object SaveSync {
             ?: GameIdentityResolver.cachedIdentity(context, File(romPath), platformSlug)
             ?: return null
         val accountFingerprint = GameIdentityResolver.originAccountFingerprint(context, File(romPath)) ?: return null
+        val currentAccount = GameIdentityResolver.connectionFingerprint(context)
+        if (currentAccount != null && currentAccount != accountFingerprint) return SaveSyncStatus.Pending
         val statusKey = statusKey(gameIdentity, accountFingerprint)
         val store = SaveStore(
             context,
