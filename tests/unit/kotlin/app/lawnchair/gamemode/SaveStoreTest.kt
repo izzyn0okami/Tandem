@@ -266,4 +266,18 @@ class SaveStoreTest {
         assertEquals(before, GameIdentityResolver.fingerprint(renamedCue))
     }
 
+    @Test
+    fun migrationMergesLegacySaveWithExistingAuxiliaryProgressFiles() {
+        val legacy = File(root, "legacy/Pokemon")
+        legacy.mkdirs()
+        File(legacy, "sram.srm").writeBytes(byteArrayOf(1, 3, 3, 7))
+        val target = File(root, "stable/local-game-id").apply { mkdirs() }
+        File(target, "ra-progress-player.bin").writeBytes(byteArrayOf(9, 8, 7))
+
+        assertTrue(GameIdentityResolver.migrateLegacy(legacy, target))
+        assertArrayEquals(byteArrayOf(1, 3, 3, 7), File(target, "sram.srm").readBytes())
+        assertArrayEquals(byteArrayOf(9, 8, 7), File(target, "ra-progress-player.bin").readBytes())
+        assertTrue(legacy.isDirectory)
+    }
+
 }
