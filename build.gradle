@@ -349,6 +349,7 @@ android {
         test {
             // Keep JVM tests outside the broad main Kotlin source roots (notably 'src').
             java.srcDirs += ['tests/unit/kotlin']
+            kotlin.directories.addAll('tests/unit/kotlin')
         }
 
         withQuickstep {
