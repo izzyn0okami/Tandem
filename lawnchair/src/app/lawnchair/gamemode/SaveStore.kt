@@ -274,6 +274,7 @@ internal object GameIdentityResolver {
                     }
                     check(destination.length() == file.length())
                     check(fileHash(destination) == sourceHash)
+                    check(fileHash(file) == sourceHash)
                     expectedHashes[relative] = sourceHash
                 }
             }
@@ -305,6 +306,9 @@ internal object GameIdentityResolver {
                 error("could not promote verified legacy save directory")
             }
             previous?.deleteRecursively()
+            parent.listFiles()
+                ?.filter { it.name.startsWith(recoveryPrefix) && it.isDirectory }
+                ?.forEach { it.deleteRecursively() }
             true
         }.getOrElse {
             if (!target.exists()) previous?.renameTo(target)
