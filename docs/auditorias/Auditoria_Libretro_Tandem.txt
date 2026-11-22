@@ -2767,3 +2767,23 @@ ARTEFATO EXTRAÍDO PARA TESTE FUNCIONAL
 - SHA-256 do APK: 664de26a1b1a645ead5fe3fb6db95157bc4b12f01e83566af2d049aa12674fa4.
 - O tamanho/hash do artefato ZIP reportado pela API do GitHub refere-se ao pacote de Actions; não confundir com o hash do APK extraído acima.
 - O APK permanece fora do repositório; o artefato original de Actions pode ser baixado pela execução #596.
+
+
+ATUALIZAÇÃO DA VERIFICAÇÃO DA PR #40 — 2026-11-22
+- Head atual consultado: b261932020dca71b14e179f3cff08af524d3545a. PR #40 segue aberta como draft, mergeable=true, sem reviews formais ou threads de revisão; não houve merge.
+- CI #596 / run 45076680204 passou integralmente no commit d00631bb899cc4390e32e2e34c1fcf29b7e0ca04: check-style/spotlessCheck, unit tests, build-debug APK, upload do artefato e final-status concluídos com sucesso.
+- Log da job confirmou execução explícita de ./gradlew testLawnWithQuickstepGithubDebugUnitTest, compilação dos testes Kotlin e execução da tarefa :testLawnWithQuickstepGithubDebugUnitTest; não foi NO-SOURCE. O Gradle terminou BUILD SUCCESSFUL. Foram observados avisos de nullability no SaveStoreTest.kt (linhas 55, 56, 69 e 181) sem falha.
+- Artefato debug ID 14775581597, 46.066.885 bytes, SHA-256 87730464f323c1c3f765267cc43afc200f3862f32d2f76071f97ed57e7f6a167, expira 2027-02-20. Link da execução: https://github.com/izzyn0okami/Tandem/actions/runs/45076680204.
+- O head atual está dois commits à frente do commit validado, mas a comparação mostrou que ambos alteram somente docs/auditorias/Auditoria_Libretro_Tandem.txt; não há diferença de código funcional entre o código testado e o atual. A CI é, portanto, válida para o código funcional atual, embora não para os commits documentais em si.
+
+PENDÊNCIAS TÉCNICAS AINDA ABERTAS
+1. SaveStore ainda constrói a pasta como <savesRoot>/<coreId>/<gameIdentity>. Para jogos RomM, gameIdentity é servidor + romId, sem accountFingerprint. Duas contas no mesmo servidor/mesmo jogo podem compartilhar os mesmos arquivos físicos. As chaves SaveSyncPolicy.metadataKey também não recebem conta. O status visual é separado por conta, mas armazenamento e metadados de sync não estão totalmente isolados.
+2. RomMConnectionSnapshot.accountFingerprint continua sendo SHA-256(server + token). Rotação do token altera a identidade da conta e pode exigir reassociação; não foi implementado GET /api/users/me nem um ID estável de usuário.
+3. RomMSaveSyncWorker persiste romPath/core/gameIdentity/accountFingerprint, mas não um snapshot imutável dos bytes. pushFromWorker lê o SaveStore atual quando o worker executa; alterações posteriores do arquivo podem mudar o conteúdo enviado pelo job já enfileirado.
+4. Conflitos na migração: migrateLegacy preserva arquivos conflitantes na origem e mantém o conteúdo do destino no diretório ativo, registrando o conflito. Não há diálogo de resolução; o usuário pode iniciar com o conteúdo do destino enquanto a origem mantém outra versão. Isso evita apagar a origem, mas não é resolução explícita do conflito.
+5. Jobs antigos sem gameIdentity/accountFingerprint permanecem em retry, preservando a segurança contra envio cruzado, mas sem uma experiência de recuperação/limpeza definida.
+
+RESULTADO
+- A CI está aprovada para o código funcional da PR #40 e o APK debug está disponível para teste.
+- Ainda não recomendo concluir a revisão nem mesclar: isolamento físico/metadados por conta, identidade estável da conta e payload imutável da fila seguem como pendências de arquitetura; teste funcional no telefone também não foi realizado.
+- Próximo passo: corrigir as pendências 1–3 e decidir a resolução visual/operacional de conflitos antes de solicitar teste funcional e autorização de merge.
