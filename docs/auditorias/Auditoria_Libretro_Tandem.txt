@@ -1435,3 +1435,36 @@ Data: 2026-11-22
 - PR #25 permanece integrada à branch game-mode-m2-dev.
 - Status desta etapa: concluída e aprovada pelo usuário.
 - A auditoria geral de cobertura Libretro continua com as pendências de avaliação de novos núcleos, manifesto/disponibilidade e validação individual de alternativas.
+
+
+AUDITORIA DE CANDIDATOS — REVISÃO DO CATÁLOGO ARM64
+Data: 2026-11-22
+Branch analisada: game-mode-m2-dev
+PRs abertas verificadas antes da análise: nenhuma.
+Nenhuma alteração de código realizada nesta etapa.
+
+RESULTADOS DA CONFERÊNCIA
+- A listagem oficial do Buildbot Android latest/arm64-v8a foi consultada. A presença de um ZIP confirma apenas que existe artefato publicado para essa ABI; não confirma instalação, inicialização, compatibilidade de ROM/BIOS, desempenho ou suporte a RetroAchievements.
+- BlastEm já está cadastrado como alternativa para Mega Drive/Genesis; não duplicar.
+- Geolith já está cadastrado no catálogo do Tandem? Não: o catálogo atual CoreRegistry não o lista para Neo Geo. O Buildbot publica geolith_libretro_android.so.zip. A documentação oficial informa que Geolith aceita ROMs de cartucho em formato .neo e mídia Neo Geo CD em BIN/CUE/CHD; requer BIOS distintas conforme AES/MVS/CD/CDZ. A plataforma Tandem atual está modelada para ZIP nativo e só declara neogeo.zip. Portanto, não adicionar Geolith como simples alternativa sem antes ampliar e validar o modelo de formatos e BIOS. Candidato para fase arquitetural separada.
+- Ymir está publicado para Android ARM64 e possui arquivo .info oficial. O core é descrito como experimental/em desenvolvimento, requer BIOS Saturn e está em maturação. O Tandem já tem Beetle Saturn, YabaSanshiro e Yabause; Ymir pode ser candidato de precisão/compatibilidade, mas deve ficar em avaliação até testes de inicialização, BIOS e desempenho.
+- melonDS DS (ID melondsds) está publicado para Android ARM64 e a documentação Libretro o descreve como versão mais nova do melonDS, com suporte a DSi e mais recursos. É candidato forte para avaliação como alternativa ao atual melonds; exige verificar configuração de firmware/BIOS e suporte de controles/toque no Tandem antes de incluí-lo.
+- Beetle PSX e Beetle PSX HW (IDs mednafen_psx e mednafen_psx_hw) estão publicados para Android ARM64. A documentação diferencia o Beetle PSX de software, voltado à precisão, do HW, que oferece renderização acelerada e exige OpenGL 3.3 ou Vulkan para os renderizadores correspondentes. Ambos aceitam BIOS fornecida pelo usuário e podem usar OpenBIOS, mas BIOS regionais são recomendadas. São candidatos para ampliar a escolha além de PCSX ReARMed e SwanStation; não cadastrar HW sem tratar compatibilidade de renderer/GPU e custo de desempenho.
+- Stella 2023 está publicado, mas é uma versão baseada no Stella 6.6 congelada no estado de 2023. A documentação diz que o core Stella atual acompanha a versão mais recente e oferece mais tipos de controle/opções. O catálogo já possui Stella e Stella 2014. Benefício incremental baixo; não priorizar.
+- TGB Dual não foi encontrado na listagem consultada do Buildbot Android ARM64; não tratar como disponível.
+- Parallel DC está publicado, mas Dreamcast está modelado no Tandem como LaunchMode.EMULATOR (emulador externo). Adicionar esse core exigiria uma mudança arquitetural e validação própria; não é uma simples entrada de alternativa no catálogo atual.
+- FBAlpha 2012 Neo Geo e Geolith aparecem como artefatos distintos, mas ambos exigem análise específica de conjuntos ROM/BIOS e não devem ser adicionados sem validar o formato de conteúdo esperado pelo atual importador.
+
+PRIORIZAÇÃO PROPOSTA
+1. melonDS DS (melondsds): candidato prioritário para prova técnica, por ser a geração mais nova do core DS e adicionar suporte DSi.
+2. Beetle PSX (mednafen_psx, software): candidato secundário para opção focada em precisão; avaliar desempenho e BIOS, sem ativar o core HW automaticamente.
+3. Ymir: manter em observação até amadurecimento e testes no aparelho.
+4. Geolith: adiar até o Tandem suportar corretamente formatos e conjuntos BIOS AES/MVS/CD/CDZ.
+5. Stella 2023: não priorizar frente ao Stella atual.
+6. Parallel DC: tratar como expansão futura do modo de emulador, não como simples alternativa Libretro.
+
+DECISÃO DESTA ETAPA
+- Nenhum núcleo novo foi incluído e nenhum comportamento do app foi alterado.
+- Próxima ação técnica recomendada: preparar uma prova isolada do melonDS DS, incluindo revisão da configuração de BIOS/firmware, formatos aceitos, controles/toque e integração com o instalador/atualizador existente.
+- Só abrir PR após revisar a implementação proposta e confirmar novamente que não existe PR concorrente aberta.
+- Teste real no aparelho continuará obrigatório antes de aprovar o candidato.
