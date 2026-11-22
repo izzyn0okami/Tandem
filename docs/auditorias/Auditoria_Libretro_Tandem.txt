@@ -2457,3 +2457,17 @@ ESTADO DA AUDITORIA
 - CI pós-merge da PR #38 (run 45065462643): check-style passou; build-debug APK ainda estava em andamento na última consulta. Não declarar publicação de tandem-latest até confirmar conclusão do workflow.
 - PRs abertas verificadas: nenhuma.
 - Próximo passo recomendado: iniciar Fase 1 pela identidade dos saves e isolamento das referências remotas de estados rápidos, após confirmar a CI pós-merge. Antes de abrir PR, verificar novamente PRs abertas e evitar sobreposição.
+
+DECISÃO FUNCIONAL DO USUÁRIO — MÚLTIPLOS SLOTS
+Data: 2026-11-22
+Aprovado: sim, o Tandem deverá oferecer múltiplos slots independentes por jogo, permitindo manter progressos alternativos (por exemplo, campanha principal e campanha secundária) sem sobrescrita entre eles.
+Diretrizes:
+- Slots devem ser claramente identificados e gerenciáveis pelo usuário.
+- A implementação deve preservar e reconhecer o progresso legado existente; nenhuma migração pode apagar/substituir save sem cópia recuperável e validação.
+- SRAM e estados rápidos não devem ser tratados como equivalentes: estado rápido permanece vinculado ao núcleo compatível; compartilhamento de SRAM só ocorre entre núcleos/plataformas comprovadamente compatíveis.
+- Definir antes da implementação como cada slot se relaciona com RomM (canal remoto ou armazenamento local independente); não sincronizar automaticamente slots alternativos até fechar essa regra.
+- Próximo trabalho técnico recomendado: Fase 1 da auditoria (identidade estável, colisões e isolamento de metadados de estado rápido), seguido de proposta de UX para slots. Nenhuma implementação autorizada por esta decisão isolada.
+
+ATUALIZAÇÃO CI
+- Workflow pós-merge da PR #38, run 45065462643: concluído com sucesso em 2026-11-22.
+- PRs abertas verificadas após a conclusão: nenhuma.
