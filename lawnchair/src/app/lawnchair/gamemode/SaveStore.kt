@@ -96,10 +96,18 @@ internal object GameIdentityResolver {
     }
 
     /** Fingerprint of the credentials that originally linked this game, even while disconnected. */
-    fun originAccountFingerprint(context: Context, romFile: File): String? {
+    fun originAccountFingerprint(
+        context: Context,
+        romFile: File,
+        allowHash: Boolean = false,
+    ): String? {
         val prefs = context.getSharedPreferences("romm_sync", Context.MODE_PRIVATE)
         val direct = prefs.getLong("rom:${romFile.absolutePath}", -1L)
-        val fingerprint = cachedFingerprint(context, romFile)
+        val fingerprint = if (allowHash) {
+            cachedFingerprint(context, romFile)
+        } else {
+            cachedFingerprintIfAvailable(context, romFile) ?: return null
+        }
         val directFingerprint = prefs.getString("rom_fingerprint:${romFile.absolutePath}", null)
         if (direct >= 0L && isSameGameFingerprint(directFingerprint, fingerprint)) {
             return prefs.getString("rom_account:${romFile.absolutePath}", null)
