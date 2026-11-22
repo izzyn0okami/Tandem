@@ -2272,3 +2272,17 @@ Status: implementação em branch isolada; CI e teste funcional pendentes.
 - Testes JVM efetivamente executados: PENDENTE até confirmar no log que `testLawnWithQuickstepGithubDebugUnitTest` não está como `NO-SOURCE` e que os casos `SaveSyncPolicyTest` foram executados.
 - Teste funcional no telefone: PENDENTE; não disponibilizar artefato para validação até a CI com testes reais e build concluir com sucesso.
 - Teste funcional no Motorola Edge 30 Fusion: PENDENTE. Não considerar resolvido até confirmar que um save remoto mais recente é carregado tanto no núcleo de origem quanto em outro núcleo da mesma plataforma, e que o save local divergente fica recuperável no backup.
+
+
+RESULTADO FINAL — PR #37 / RECONCILIAÇÃO DE SAVES ROMM ENTRE NÚCLEOS LIBRETRO
+Data: 2026-11-22
+- PR #37 — “Fix RomM save reconciliation across Libretro cores”: https://github.com/izzyn0okami/Tandem/pull/37
+- Merge autorizado explicitamente pelo usuário após confirmar os testes funcionais concluídos.
+- Merge concluído com sucesso; merge commit: 271a530d75e6b7ec0ea21ad57379eafe28ffd0f4.
+- Head final integrado: f72319a56ba9b868af74ebab331d1da45bb0951e.
+- CI #517 / run ID 45061894316: CONCLUÍDA COM SUCESSO no commit de implementação a24cc3abd737e791dba334c5efb780f8de02d49b. check-style, tarefa Run unit tests, build-debug APK, upload do artefato e final-status passaram.
+- O log da job confirmou execução da tarefa testLawnWithQuickstepGithubDebugUnitTest; não foi reportado NO-SOURCE. A etapa de compilação dos testes Kotlin também foi executada.
+- O único commit posterior da PR antes do merge foi f72319a, que alterou exclusivamente este arquivo de auditoria (7 adições e 3 remoções); nenhuma alteração de código funcional ficou fora da CI aprovada.
+- O usuário confirmou que os testes funcionais foram concluídos. Considerar a validação funcional desta correção APROVADA.
+- A CI #517 não publicou tandem-latest porque os jobs tandem-release/nightly-release foram skipped na execução da PR. Aguardar CI pós-merge para confirmar publicação de tandem-latest e registrar o resultado.
+- Resultado: PR #37 mesclada em game-mode-m2-dev. Não reabrir esta auditoria sem evidência nova de falha.
