@@ -2234,5 +2234,5 @@ Status: implementação preparada em branch isolada; CI pendente.
   - Adicionar três testes JVM para mudança de ID com timestamp igual, mudança de timestamp com mesmo ID e igualdade completa dos metadados.
 - Limite conhecido: a API usada pelo cliente não fornece hash remoto no objeto listado. A comparação de conteúdo local continua baseada no hash SHA-1 confirmado; a detecção de versão remota usa ID + updated_at.
 - Risco/decisão: em conflito, o save local divergente é preservado em backup, mas a versão remota passa a ser a ativa, conforme a prioridade solicitada de carregar a versão atual do servidor. O usuário ainda deve validar no telefone antes de merge.
-- PR ainda não criada; aguardar validação da CI da branch e revisar o diff completo antes de abrir PR.
+- PR #36 criada: https://github.com/izzyn0okami/Tandem/pull/36. Branch isolada `fix/romm-latest-save-pull`; head `baf2b70ce6b2099419951026de1bfdcc42ab57c1`. A PR está aberta e não mesclada.
 - Teste funcional no Motorola Edge 30 Fusion: PENDENTE.
