@@ -511,6 +511,7 @@ dependencies {
     debugImplementation libs.leakcanary.android
     debugImplementation libs.leakcanary.androidstudio
 
+    testImplementation libs.junit
 }
 
 ksp {
