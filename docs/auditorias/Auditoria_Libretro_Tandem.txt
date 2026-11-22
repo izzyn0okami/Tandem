@@ -2172,3 +2172,15 @@ Data: 2026-11-22
 - check-style, build-debug-apk, final-status e tandem-release: sucesso.
 - tandem-release publicou/atualizou tandem-latest; nightly-release e tarefas condicionais: skipped.
 - Resultado: pós-merge e atualização documental da PR #34 validados; o APK mais recente foi publicado pelo fluxo tandem-latest.
+
+
+FALHA DE FORMATAÇÃO E CORREÇÃO — PR #35 / CI #503
+Data: 2026-11-22
+- CI #503 / run ID 45053908907, no head eade2651536856aacd1cb98c0ef523b937518222: check-style falhou em `spotlessKotlinCheck`.
+- Arquivo identificado pelo log: lawnchair/src/app/lawnchair/gamemode/SaveSyncPolicy.kt.
+- A falha é exclusivamente de formatação Kotlin: quebra de linha na expressão `resolveStatus` e na expressão `isSessionActive`; o Spotless sugeriu executar spotlessApply.
+- O job build-debug-apk foi cancelado em consequência da falha de estilo; portanto, os seis testes unitários e a compilação do APK ainda não foram validados nesta execução.
+- Correção aplicada na mesma branch da PR #35, sem alterar a lógica funcional: alinhamento das expressões ao formato exigido pelo Spotless.
+- Commit da correção: 26d6f0fc44e4576b79dccdfd1b551cd9f652806e.
+- Validação após a correção: PENDENTE; aguardar nova CI e confirmar Spotless, os seis testes JVM, build-debug APK, upload do artefato e final-status.
+- PR #35 permanece aberta e não mesclada. Não mesclar sem autorização explícita.
