@@ -2303,3 +2303,20 @@ Data: 2026-11-22
 - Artefato debug da CI: ID 14769783048, 46.035.006 bytes, disponível até 2027-02-20; SHA-256 69ffc4631f32368d53db0610790dd4bbf9c8b6ede4d4964fcd9162045d2b704c.
 - PR #37 permanece mesclada. Consulta ao GitHub em 2026-11-22 não encontrou PRs abertas no repositório.
 - Resultado final: implementação integrada, CI pós-merge aprovada e versão tandem-latest publicada. Teste funcional da correção já havia sido confirmado pelo usuário.
+
+
+AUDITORIA — TESTABILIDADE DO WORKMANAGER E CICLO DE VIDA DO SAVE SYNC
+Data: 2026-11-22
+Status: análise estática concluída; correção/testes dedicados ainda não implementados.
+- Arquivos revisados: lawnchair/src/app/lawnchair/gamemode/RomMSaveSyncWorker.kt, SaveSync.kt, SaveSyncPolicy.kt, SaveStore.kt, AndroidManifest.xml, AndroidManifest-common.xml, build.gradle, gradle/libs.versions.toml e testes em tests/unit/kotlin/app/lawnchair/gamemode/.
+- A execução persistente usa CoroutineWorker, exige NetworkType.CONNECTED, backoff exponencial inicial de 30 segundos, tag global romm-save-sync e trabalho único por caminho de ROM com ExistingWorkPolicy.APPEND_OR_REPLACE.
+- O Worker valida rom_path/core_id, propaga CancellationException, converte outras exceções em Result.retry() e chama SaveSync.pushFromWorker(). O mesmo Mutex protege pull e push.
+- O push confere novamente a sessão ativa antes do upload. A sessão usa heartbeat e janela de expiração de 120 segundos; portanto um trabalho pode iniciar enquanto a sessão do jogo ainda está ativa.
+- ACHADO COMPORTAMENTAL: SaveSync.pushFromWorker() retorna false quando detecta sessão ativa, deixando o estado PENDING e sem enviar arquivos. RomMSaveSyncWorker.doWork() atualmente ignora esse Boolean e sempre retorna Result.success() quando não ocorre exceção. Assim, um trabalho adiado porque o jogo está ativo é encerrado como concluído pelo WorkManager, em vez de permanecer elegível para nova tentativa. O próximo onPause normalmente agenda outro trabalho, mas se o processo for encerrado durante a sessão, o envio pode ficar pendente até uma nova saída/pausa de jogo ou outra ação que o re-enfileire. Este é um risco identificado por leitura do fluxo; ainda não há reprodução funcional registrada.
+- O cancelamento atual é global por tag (cancelAllWorkByTag(WORK_TAG)) e é acionado quando as configurações RomM são limpas. Deve-se verificar em etapa própria se esse cancelamento global é intencional quando existem uploads de várias ROMs enfileirados.
+- O manifesto comum remove androidx.startup.InitializationProvider; o WorkManager foi inicializado manualmente no processo principal pela implementação anterior. Não alterar a inicialização sem mapear o ponto de inicialização e os processos envolvidos.
+- Cobertura atual: os testes JVM existentes cobrem regras puras de SaveSyncPolicy e SaveStore. Não há dependência androidx.work:work-testing, Robolectric ou suíte instrumentada específica para testar WorkManager, Worker, restrições de rede, backoff, APPEND_OR_REPLACE, cancelamento e retomada.
+- A suíte JVM usa JUnit 4 e o source set Kotlin tests/unit/kotlin; ela não consegue, por si só, comprovar a persistência/execução real do WorkManager Android.
+- Próxima correção recomendada: fazer o Worker retornar Result.retry() quando pushFromWorker() informar adiamento por sessão ativa; manter Result.success() apenas quando o sync for concluído ou não houver mais trabalho aplicável. Adicionar teste que comprove a decisão de retry e um teste de integração WorkManager em ambiente Android apropriado, cobrindo restrição de rede, reexecução após sessão ativa, fila única por ROM e cancelamento de trabalhos.
+- Critério de segurança: nunca marcar SYNCED quando o envio não foi confirmado; manter PENDING durante adiamento/falha. Não alterar o mutex, a política de conflito ou a sincronização durante jogo nesta etapa.
+- Próximas etapas gerais já registradas: depois dos testes WorkManager, avaliar cobertura instrumentada/lifecycle/GL e manter separada a avaliação arquitetural de isolamento de processo contra crashes nativos.
