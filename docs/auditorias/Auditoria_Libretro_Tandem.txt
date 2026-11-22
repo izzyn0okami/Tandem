@@ -2553,3 +2553,13 @@ PLANO DE IMPLEMENTAÇÃO EM ETAPAS
 4. Adicionar testes de migração, isolamento, persistência de descrição, troca de slot e recuperação após falha.
 5. Auditar política RomM por slot antes de habilitar sincronização remota dos slots alternativos.
 Nenhuma PR funcional foi criada nesta etapa; a decisão foi registrada para orientar a implementação sem introduzir uma interface de slots antes de existir armazenamento seguro.
+
+
+PR #39 — ISOLAMENTO DE METADADOS DE ESTADOS RÁPIDOS POR NÚCLEO
+Atualização: 2026-11-22
+- CI inicial run 45066973246: reprovada exclusivamente em check-style/spotlessCheck.
+- Falha localizada em lawnchair/src/app/lawnchair/gamemode/SaveSyncPolicy.kt: a expressão de remoteHashKey estava quebrada em duas linhas, enquanto Spotless exige a forma em uma linha.
+- Compilação do APK Debug e testes unitários da execução inicial passaram; não houve falha funcional reportada pela CI.
+- Correção aplicada na branch fix/save-state-metadata-core-isolation, commit 345d8e59368360b83a690abb6a3fb9a76dc032f8: ajuste de formatação, sem mudança de comportamento.
+- PR #39 permanece aberta; base game-mode-m2-dev está atualizada (sem commits atrás na comparação consultada).
+- CI do commit corrigido: aguardando confirmação de nova execução. Não solicitar teste no telefone nem mesclar até CI completa aprovada.
