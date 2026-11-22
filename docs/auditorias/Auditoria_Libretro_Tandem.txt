@@ -1304,3 +1304,10 @@ Data: 2026-11-22
 - Jobs condicionais crowdin-auto-merge, send-notifications e nightly-release foram ignorados; não representam falha.
 - Não havia PRs abertas na consulta após a conclusão.
 - Estado: CI pós-merge concluída; atualização básica do núcleo validada pelo usuário. Auditoria Libretro continua aberta para os testes e revisão de catálogo listados acima.
+
+
+VALIDAÇÃO FUNCIONAL — JOGOS APÓS ATUALIZAÇÃO DE NÚCLEO
+Data: 2026-11-22
+- O usuário confirmou que os jogos continuam iniciando normalmente após a atualização do núcleo Libretro.
+- Com isso, ficam validados no Motorola Edge 30 Fusion: detecção de nova versão, download, atualização e inicialização normal dos jogos após a atualização.
+- Ainda pendente: teste de falha durante download/substituição e confirmação de preservação/recuperação do núcleo anterior; revisão de cobertura e catálogo de núcleos/plataformas; avaliação de robustez da sessão e demais itens gerais da auditoria.
