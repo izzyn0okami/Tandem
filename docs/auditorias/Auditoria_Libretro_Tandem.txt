@@ -54,13 +54,14 @@ Prioridade 6 — Testes
 - Ampliar testes automatizados para catálogo, detecção de ROM, instalação de núcleos, BIOS e sessão completa.
 - Manter matriz de validação real no aparelho.
 
-PR EM ANDAMENTO — CORREÇÃO DE ZIP
+CORREÇÃO DE ZIP — PR #6 (STATUS ATUALIZADO EM 2026-11-22)
 PR #6: Fix ambiguous ROM archive selection
 URL: https://github.com/izzyn0okami/Tandem/pull/6
 Branch: fix/rom-archive-selection
-Base: game-mode-m2-dev
-Commit observado: 5645a1a5d9ef272cbd47fcb075b44e96048c0ffd
-Estado: aberta, draft, NÃO mesclada.
+Head final: 7c0d08a8bc44804ecbdf5f3fba89bab7487c1b37
+Estado: FECHADA E MESCLADA.
+Merge commit: b35b01e651249f18f9cfaaa6ed54504a4d0a2f95.
+A anotação anterior que a descrevia como aberta/draft estava desatualizada e fica substituída por este registro.
 
 Mudanças propostas na PR #6
 - Para ZIPs comuns, exige exatamente uma entrada compatível com as extensões da plataforma.
@@ -1117,3 +1118,22 @@ Data: 2026-11-22
 - Implementação integrada: preserva tamanho e hashes CRC32, MD5 e SHA-1 publicados pelo RomM; valida o firmware após download e só substitui o destino depois da validação. Em caso de divergência, descarta o temporário inválido.
 - Teste funcional no aparelho com firmware real permanece pendente. A CI comprova estilo e compilação, mas não comprova que os hashes recebidos do servidor correspondem aos arquivos reais.
 - Não marcar a validação funcional de firmware como concluída até confirmação do usuário.
+
+
+ATUALIZAÇÃO — CI #407 APÓS PR #22 E VERIFICAÇÃO DO STATUS DA PR #6
+Data: 2026-11-22
+
+- Execução: https://github.com/izzyn0okami/Tandem/actions/runs/44971664196
+- Commit validado: 0a975325e4204107b8e2e1a1dd81e092434f3433.
+- Mensagem do commit: Update audit log after firmware integrity PR #22 merge.
+- check-style / ./gradlew spotlessCheck: sucesso.
+- build-debug-apk / assembleLawnWithQuickstepGithubDebug: sucesso.
+- Upload artifact: sucesso.
+- final-status: sucesso.
+- tandem-release: sucesso; publicação do canal tandem-latest concluída.
+- send-notifications, crowdin-auto-merge e nightly-release: ignorados conforme as condições do workflow.
+- Resultado global: CI #407 concluída com sucesso.
+- Verificação adicional de PRs: nenhuma PR aberta foi encontrada no repositório.
+- A PR #6, descrita em trecho anterior deste documento como aberta/draft, está fechada e mesclada desde 2026-11-21. Merge commit b35b01e651249f18f9cfaaa6ed54504a4d0a2f95. O status histórico foi corrigido acima.
+- Testes funcionais da seleção de ZIP no telefone permanecem pendentes: ZIP com uma ROM; ZIP com múltiplas ROMs; ZIP sem ROM compatível/corrompido; ROM fora de ZIP; ZIP discBased. A CI não substitui esses testes.
+- Pendências funcionais já registradas para firmware, retomada de downloads, espaço de armazenamento e Intellivision continuam em aberto; não foram marcadas como concluídas por esta CI.
