@@ -82,7 +82,7 @@ object SaveSync {
             val exists = file.isFile
             val length = if (exists) file.length() else 0L
             val currentHash = if (length > 0L) hash(file) else null
-            val key = "${kind.path}:$romPath"
+            val key = SaveSyncPolicy.metadataKey(kind, romPath, coreId)
             val confirmedHash = prefs.getString(
                 appliedHashKey(kind, romPath, coreId),
                 prefs.getString("$key:hash", null),
@@ -131,8 +131,6 @@ object SaveSync {
 
     private fun appliedHashKey(kind: RemoteFileKind, romPath: String, coreId: String) = "${kind.path}:$romPath:$coreId:applied_hash"
 
-    private fun remoteHashKey(kind: RemoteFileKind, romPath: String) = "${kind.path}:$romPath:remote_hash"
-
     private fun newestRemoteFile(kind: RemoteFileKind, remotes: List<RemoteFile>, coreId: String): RemoteFile? = SaveSyncPolicy.newestCompatibleRemote(kind, remotes, coreId)
 
     /** Registra que a ROM está em uma sessão ativa, impedindo upload enquanto ela pode mudar. */
@@ -177,7 +175,7 @@ object SaveSync {
                 } else {
                     null
                 }
-                val key = "${kind.path}:$romPath"
+                val key = SaveSyncPolicy.metadataKey(kind, romPath, coreId)
                 SaveFileSnapshot(
                     file = file,
                     backup = backup,
@@ -189,7 +187,7 @@ object SaveSync {
                     id = prefs.getLong("$key:id", Long.MIN_VALUE),
                     appliedHashKey = appliedHashKey(kind, romPath, coreId),
                     appliedHash = prefs.getString(appliedHashKey(kind, romPath, coreId), null),
-                    remoteHash = prefs.getString(remoteHashKey(kind, romPath), null),
+                    remoteHash = prefs.getString(SaveSyncPolicy.remoteHashKey(kind, romPath, coreId), null),
                 )
             }
             var preserveSnapshots = false
@@ -218,7 +216,7 @@ object SaveSync {
                             if (snapshot.remote == Long.MIN_VALUE) remove("${snapshot.key}:remote") else putLong("${snapshot.key}:remote", snapshot.remote)
                             if (snapshot.id == Long.MIN_VALUE) remove("${snapshot.key}:id") else putLong("${snapshot.key}:id", snapshot.id)
                             if (snapshot.appliedHash == null) remove(snapshot.appliedHashKey) else putString(snapshot.appliedHashKey, snapshot.appliedHash)
-                            val remoteKey = remoteHashKey(snapshot.kind, romPath)
+                            val remoteKey = SaveSyncPolicy.remoteHashKey(snapshot.kind, romPath, coreId)
                             if (snapshot.remoteHash == null) remove(remoteKey) else putString(remoteKey, snapshot.remoteHash)
                         }
                     }.onFailure {
@@ -254,9 +252,9 @@ object SaveSync {
         // Recover the previous save if Android stopped the app during an earlier replacement.
         RomMFileReplacement.recoverFile(file)
         val prefs = prefs(context)
-        val key = "${kind.path}:$romPath"
+        val key = SaveSyncPolicy.metadataKey(kind, romPath, coreId)
         val appliedKey = appliedHashKey(kind, romPath, coreId)
-        val remoteKey = remoteHashKey(kind, romPath)
+        val remoteKey = SaveSyncPolicy.remoteHashKey(kind, romPath, coreId)
         val lastRemoteMs = prefs.getLong("$key:remote", 0L)
         val lastRemoteId = prefs.getLong("$key:id", -1L)
         val lastRemoteHash = prefs.getString(remoteKey, null)
@@ -444,7 +442,7 @@ object SaveSync {
         val prefs = prefs(context)
         for ((kind, file) in files(store)) {
             if (!file.isFile || file.length() == 0L) continue
-            val key = "${kind.path}:$romPath"
+            val key = SaveSyncPolicy.metadataKey(kind, romPath, coreId)
             val current = hash(file)
             val confirmedHash = prefs.getString(
                 appliedHashKey(kind, romPath, coreId),
@@ -471,7 +469,7 @@ object SaveSync {
                 putString(appliedHashKey(kind, romPath, coreId), current)
                 putLong("$key:remote", uploaded.updatedAtMs)
                 putLong("$key:id", uploaded.id)
-                val remoteKey = remoteHashKey(kind, romPath)
+                val remoteKey = SaveSyncPolicy.remoteHashKey(kind, romPath, coreId)
                 if (uploaded.contentHash == null) remove(remoteKey) else putString(remoteKey, uploaded.contentHash)
             }
         }

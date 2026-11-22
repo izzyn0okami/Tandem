@@ -9,6 +9,14 @@ internal object SaveSyncPolicy {
         val resetStartedAt: Boolean = false,
     )
 
+    /** SRAM mantém metadados compartilhados entre núcleos; estados rápidos isolam tudo por coreId. */
+    fun metadataKey(kind: RemoteFileKind, romPath: String, coreId: String): String = when (kind) {
+        RemoteFileKind.Save -> "${kind.path}:$romPath"
+        RemoteFileKind.State -> "${kind.path}:$romPath:$coreId"
+    }
+
+    fun remoteHashKey(kind: RemoteFileKind, romPath: String, coreId: String): String = "${metadataKey(kind, romPath, coreId)}:remote_hash"
+
     fun resolveStatus(
         storedStatus: String?,
         startedAt: Long,
