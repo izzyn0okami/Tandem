@@ -2960,3 +2960,45 @@ Data: 2026-11-22
 - Não confundir esse resultado com uma interface de resolução: a escolha/recuperação interativa entre conjuntos conflitantes continua sendo uma pendência de produto, salvo implementação posterior.
 - Atualizar este registro não altera os dados de saves nem o comportamento da aplicação.
 
+AUDITORIA — RESOLUÇÃO EXPLÍCITA DE CONFLITOS DE SAVES
+Data: 2026-11-22
+Branch auditada: game-mode-m2-dev
+PRs abertas no momento da auditoria: nenhuma.
+
+ESCOPO INSPECIONADO
+- lawnchair/src/app/lawnchair/gamemode/SaveStore.kt
+- lawnchair/src/app/lawnchair/gamemode/SaveSync.kt
+- lawnchair/src/app/lawnchair/gamemode/RomMSaveSyncWorker.kt
+- lawnchair/src/app/lawnchair/gamemode/SaveSnapshotStore.kt
+- lawnchair/src/app/lawnchair/gamemode/GameModeActivity.kt
+
+ESTADO ATUAL CONFIRMADO NO CÓDIGO
+1. planLegacyMigration detecta colisões entre origem legada e diretório de identidade estável. Quando encontra arquivos diferentes no mesmo caminho relativo, retorna plano ambíguo e preserva os dois diretórios.
+2. GameModeActivity bloqueia a inicialização quando migrationPlan.ambiguous é verdadeiro. A mensagem informa que os dados foram preservados, mas não apresenta os conjuntos nem oferece resolução.
+3. Já existe LegacySaveClaimDialog para atribuição explícita de saves legados sem proprietário comprovado. Esse fluxo não resolve colisões entre dois conjuntos de conteúdo diferentes e não deve ser duplicado.
+4. claimLegacySaves revalida a conta/jogo e chama migrateLegacy; a migração valida hashes e preserva a origem. Colisões de bytes continuam recusadas.
+5. RomMSaveSyncWorker bloqueia uploads quando a migração está ambígua ou exige confirmação. A proteção do Worker deve continuar ativa durante qualquer futura resolução.
+6. SaveSync.pull possui rotina própria de backup antes de aplicar arquivos remotos; não confundir esse backup de sincronização com a resolução de colisões na migração.
+
+CONCLUSÃO
+- O bloqueio atual e a preservação dos conjuntos foram validados funcionalmente pelo usuário na release.
+- A pendência não é corrigir o bloqueio: é oferecer uma resolução explícita, rastreável e segura pela interface.
+- Não foi feita alteração funcional nesta etapa de auditoria.
+
+REQUISITOS PARA A PRÓXIMA IMPLEMENTAÇÃO
+1. Ao detectar colisão, apresentar um diálogo específico de conflito em vez de somente a mensagem genérica.
+2. Identificar claramente os dois lados: conjunto já existente no destino estável e conjunto legado/origem. Mostrar arquivos envolvidos, tamanho, data de modificação e indicação de conteúdo idêntico/diferente; usar hash para verificação, sem exigir que o usuário interprete hashes.
+3. Permitir escolher qual conjunto será o progresso ativo. Não escolher automaticamente pelo horário, tamanho ou origem.
+4. Preservar uma cópia íntegra do conjunto não escolhido em uma área de backup de conflitos, identificada por jogo, núcleo, data e origem. Não apagar a pasta original.
+5. Para arquivos não conflitantes, combinar apenas quando não houver colisão de caminho; para cada caminho conflitante, a decisão escolhida deve ser aplicada sem sobrescrita silenciosa.
+6. Executar a resolução em staging, validar tamanhos e SHA-256 e promover atomicamente. Em falha/interrupção, manter os dois conjuntos e continuar bloqueando o jogo.
+7. Revalidar a identidade do jogo e a conta RomM imediatamente antes da promoção. Uma troca de conta ou vínculo deve cancelar a operação.
+8. Manter o jogo bloqueado e os uploads WorkManager impedidos enquanto houver conflito não resolvido.
+9. Após resolução verificada, permitir nova tentativa de inicialização e sincronização; não iniciar automaticamente sem repetir as verificações de identidade e sync.
+10. Adicionar testes para escolha de cada lado, múltiplos arquivos, arquivos idênticos, falha durante cópia/promoção, troca de conta, preservação do backup e bloqueio do Worker.
+
+PENDÊNCIA
+- Implementar a interface e o mecanismo transacional de resolução de conflitos conforme os requisitos acima.
+- A auditoria não autoriza remover o bloqueio atual, descartar arquivos ou escolher um conjunto automaticamente.
+- Nenhuma PR foi criada nesta etapa; não havia PR aberta no momento da verificação.
+
