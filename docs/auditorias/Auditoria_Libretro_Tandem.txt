@@ -1568,3 +1568,17 @@ STATUS DAS CIs DOS REGISTROS ANTERIORES
 - CI #435 / ID 44984294349 (commit b1690ddc99ac1ca04d7c441e4a17571667658a0b): check-style sucesso; build-debug-apk permanecia em execução na última consulta.
 - CI #436 / ID 44984462877 (commit 823ebd65c6338c10f486516cab6d9136a761409b): check-style sucesso; build-debug-apk permanecia em execução na última consulta.
 - Não declarar qualquer uma das duas como concluída até consultar o estado final.
+
+
+REVISÃO DE CANDIDATO — GAME BOY LINK / TGB DUAL
+Data: 2026-11-22
+- Correção da observação preliminar anterior: a listagem atual do Buildbot Android ARM64 contém tgbdual_libretro_android.so.zip (106 KB), portanto o pacote está publicado.
+- TGB Dual suporta GB/GBC, ROMs .gb/.gbc/.sgb, dois Game Boys em paralelo e Link Cable local/netplay. A opção de link e layout de telas é configurável no próprio core.
+- Limitação relevante: TGB Dual não fornece memory descriptors; RetroAchievements não é suportado. Seu subsistema de carregamento não está declarado como suportado no arquivo .info. A documentação recomenda SameBoy para melhor precisão/compatibilidade e indica que SameBoy também oferece função Link Cable.
+- O catálogo atual já oferece SameBoy para GB e GBC, além de outros núcleos; TGB Dual seria principalmente uma alternativa de link/baixo consumo, não uma melhoria geral de precisão ou conquistas.
+- Decisão: não adicionar TGB Dual neste momento. A ausência de RetroAchievements e a redundância funcional com SameBoy reduzem o benefício. Manter a possibilidade em espera caso o usuário queira especificamente uma opção Link Cable dedicada.
+- Fonte oficial: https://docs.libretro.com/library/tgb_dual/ e arquivo de informação oficial TGB Dual.
+- Nenhuma alteração de código foi feita nesta etapa.
+
+REVISÃO DO STATUS DAS CIs
+- Na consulta desta etapa, CI #435 / ID 44984294349 e CI #436 / ID 44984462877 ainda apareciam como in_progress, com check-style concluído com sucesso e build-debug-apk sem conclusão. Aguardar finalização e não marcar como aprovadas.
