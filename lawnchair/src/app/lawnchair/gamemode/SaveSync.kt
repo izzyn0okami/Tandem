@@ -621,6 +621,7 @@ object SaveSync {
         platformSlug: String?,
         gameIdentity: String,
         expectedAccountFingerprint: String?,
+        snapshotJobId: String,
     ): Boolean {
         val app = context.applicationContext
         if (expectedAccountFingerprint.isNullOrBlank()) return false
@@ -654,9 +655,32 @@ object SaveSync {
                 putLong("$statusKey:started", System.currentTimeMillis())
             }
             try {
+                val store = SaveStore(
+                    app,
+                    coreId,
+                    activeRom,
+                    siblingCores,
+                    platformSlug,
+                    gameIdentity,
+                    migrationPlan.sources,
+                )
+                val snapshotFiles = SaveSnapshotStore(File(app.filesDir, "romm-save-queue")).capture(
+                    snapshotJobId,
+                    files(store).associate { (kind, file) -> kind to file },
+                )
                 withContext(Dispatchers.IO) {
-                    push(app, syncClient, activeRomPath, coreId, platformSlug, gameIdentity, linkedRomId, connection)
+                    push(
+                        app,
+                        syncClient,
+                        activeRomPath,
+                        coreId,
+                        gameIdentity,
+                        linkedRomId,
+                        connection,
+                        snapshotFiles,
+                    )
                 }
+                SaveSnapshotStore(File(app.filesDir, "romm-save-queue")).delete(snapshotJobId)
                 prefs(app).edit {
                     putString(statusKey, "synced")
                     remove("$statusKey:started")
@@ -683,14 +707,13 @@ object SaveSync {
         client: RomMClient,
         romPath: String,
         coreId: String,
-        platformSlug: String?,
         gameIdentity: String,
         romId: Long,
         connection: RomMConnectionSnapshot,
+        snapshotFiles: Map<RemoteFileKind, File>,
     ) {
-        val store = SaveStore(context, coreId, File(romPath), platformSlug = platformSlug, gameIdentity = gameIdentity)
         val prefs = prefs(context)
-        for ((kind, file) in files(store)) {
+        for ((kind, file) in snapshotFiles) {
             if (!file.isFile || file.length() == 0L) continue
             val key = SaveSyncPolicy.metadataKey(kind, gameIdentity, coreId)
             val current = hash(file)

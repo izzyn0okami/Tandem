@@ -27,6 +27,7 @@ class RomMSaveSyncWorker(
                 platformSlug,
                 gameIdentity,
                 accountFingerprint,
+                id.toString(),
             )
             if (SaveSyncPolicy.shouldRetryWorker(completed)) Result.retry() else Result.success()
         } catch (cancelled: CancellationException) {

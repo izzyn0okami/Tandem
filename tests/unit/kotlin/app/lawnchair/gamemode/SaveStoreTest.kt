@@ -102,6 +102,34 @@ class SaveStoreTest {
     }
 
     @Test
+    fun queuedSaveSnapshotRemainsImmutableAcrossWorkerRetries() {
+        val source = File(root, "sram.srm").apply { writeBytes(byteArrayOf(1, 2, 3)) }
+        val snapshots = SaveSnapshotStore(File(root, "queue"))
+
+        val first = snapshots.capture("worker-one", mapOf(RemoteFileKind.Save to source))
+        source.writeBytes(byteArrayOf(4, 5, 6))
+
+        val retry = snapshots.capture("worker-one", mapOf(RemoteFileKind.Save to source))
+        val nextJob = snapshots.capture("worker-two", mapOf(RemoteFileKind.Save to source))
+
+        assertArrayEquals(byteArrayOf(1, 2, 3), retry.getValue(RemoteFileKind.Save).readBytes())
+        assertArrayEquals(byteArrayOf(4, 5, 6), nextJob.getValue(RemoteFileKind.Save).readBytes())
+        assertEquals(first.getValue(RemoteFileKind.Save), retry.getValue(RemoteFileKind.Save))
+    }
+
+    @Test
+    fun queuedSaveSnapshotRejectsModifiedSnapshotBytes() {
+        val source = File(root, "state.state").apply { writeBytes(byteArrayOf(7, 8, 9)) }
+        val snapshots = SaveSnapshotStore(File(root, "queue"))
+        val captured = snapshots.capture("worker-integrity", mapOf(RemoteFileKind.State to source))
+        captured.getValue(RemoteFileKind.State).writeBytes(byteArrayOf(9, 8, 7))
+
+        assertTrue(runCatching {
+            snapshots.capture("worker-integrity", mapOf(RemoteFileKind.State to source))
+        }.isFailure)
+    }
+
+    @Test
     fun stableGameIdentitiesPreventSameBasenameCollisions() {
         val first = SaveStore(root, "melonds", File("folder-one/Pokemon.nds"), gameIdentity = "local-game-one")
         val second = SaveStore(root, "melonds", File("folder-two/Pokemon.nds"), gameIdentity = "local-game-two")
