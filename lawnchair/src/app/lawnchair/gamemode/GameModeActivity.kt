@@ -60,7 +60,6 @@ import java.io.File
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import kotlinx.coroutines.withTimeoutOrNull
 
 /**
  * Modo jogos: biblioteca (pasta configurável, jogos baixados e colocados à mão), destaque de
@@ -127,8 +126,6 @@ class GameModeActivity : ComponentActivity() {
         fun intent(context: Context): Intent = Intent(context, GameModeActivity::class.java)
     }
 }
-
-private const val SYNC_TIMEOUT_MS = 15_000L
 
 private enum class GameTab(val label: Int) {
     Library(R.string.game_tab_library),
@@ -218,7 +215,9 @@ private fun GameModeRoot(refreshKey: Int, onExit: () -> Unit) {
         }.getOrThrow()
         if (RomMSettings.isConnected(context)) {
             status = context.getString(R.string.game_mode_status_syncing)
-            withTimeoutOrNull(SYNC_TIMEOUT_MS) { withContext(Dispatchers.IO) { SaveSync.pull(context, romPath, coreId) } }
+            // A partida só começa depois que o pull terminou de verdade. Não deixe uma
+            // requisição bloqueante continuar em segundo plano após um timeout de coroutine.
+            withContext(Dispatchers.IO) { SaveSync.pull(context, romPath, coreId) }
         }
         status = context.getString(R.string.game_mode_status_starting, title)
         context.startActivity(GameSessionActivity.intent(context, core.absolutePath, romPath, loadState, platform?.slug))
