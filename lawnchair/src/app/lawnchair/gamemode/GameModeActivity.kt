@@ -147,6 +147,15 @@ private data class PendingLegacySaveClaim(
     val sources: Map<String, File>,
 )
 
+private data class PendingSaveConflict(
+    val coreId: String,
+    val romPath: String,
+    val title: String,
+    val platform: GamePlatform?,
+    val gameIdentity: String,
+    val sources: Map<String, File>,
+)
+
 private enum class GameTab(val label: Int) {
     Library(R.string.game_tab_library),
     Achievements(R.string.game_tab_achievements),
@@ -165,6 +174,7 @@ private fun GameModeRoot(refreshKey: Int, onExit: () -> Unit) {
     var status by remember { mutableStateOf("") }
     var pendingSaveSync by remember { mutableStateOf<PendingSaveSync?>(null) }
     var pendingLegacySaveClaim by remember { mutableStateOf<PendingLegacySaveClaim?>(null) }
+    var pendingSaveConflict by remember { mutableStateOf<PendingSaveConflict?>(null) }
     var busy by remember { mutableStateOf(false) }
     var rootPath by remember { mutableStateOf(GameLibrarySettings.rootPath(context)) }
     var games by remember { mutableStateOf(emptyList<LocalGame>()) }
@@ -257,9 +267,20 @@ private fun GameModeRoot(refreshKey: Int, onExit: () -> Unit) {
             Triple(identity, plan, siblings)
         }
         if (migrationPlan.ambiguous) {
+            if (migrationPlan.conflictSources.isNotEmpty()) {
+                pendingSaveConflict = PendingSaveConflict(
+                    coreId = coreId,
+                    romPath = romPath,
+                    title = title,
+                    platform = platform,
+                    gameIdentity = gameIdentity,
+                    sources = migrationPlan.conflictSources,
+                )
+                status = ""
+                return
+            }
             error(
-                "Não foi possível confirmar a qual jogo pertence o save antigo ou se dois conjuntos de progresso são diferentes. " +
-                    "Os arquivos foram preservados e o jogo não será iniciado. Conflitos ou jogos com identificação ambígua exigem revisão separada.",
+                "Não foi possível confirmar a qual jogo pertence o save antigo. Os arquivos foram preservados e o jogo não será iniciado.",
             )
         }
         if (migrationPlan.confirmationSources.isNotEmpty()) {
@@ -347,6 +368,34 @@ private fun GameModeRoot(refreshKey: Int, onExit: () -> Unit) {
                 )
             }.onFailure {
                 GameLog.error("saves", "falha ao associar save legado à conta atual", it)
+                status = context.getString(R.string.game_mode_status_error, it.message ?: it.toString())
+            }
+            busy = false
+        }
+    }
+
+    fun resolveSaveConflict(pending: PendingSaveConflict, preferSource: Boolean) {
+        if (busy) return
+        scope.launch {
+            busy = true
+            runCatching {
+                val resolved = withContext(Dispatchers.IO) {
+                    GameIdentityResolver.resolveLegacyConflicts(
+                        context,
+                        File(pending.romPath),
+                        pending.platform?.slug,
+                        pending.gameIdentity,
+                        pending.sources,
+                        preferSource,
+                    )
+                }
+                check(resolved) {
+                    "Não foi possível concluir a resolução com segurança. Os conjuntos originais foram preservados e o jogo continua bloqueado."
+                }
+                pendingSaveConflict = null
+                status = "Conflito resolvido. Abra o jogo novamente para repetir as verificações de sincronização."
+            }.onFailure {
+                GameLog.error("saves", "falha ao resolver conflito de saves", it)
                 status = context.getString(R.string.game_mode_status_error, it.message ?: it.toString())
             }
             busy = false
@@ -588,6 +637,19 @@ private fun GameModeRoot(refreshKey: Int, onExit: () -> Unit) {
             },
         )
     }
+    pendingSaveConflict?.let { pending ->
+        SaveConflictDialog(
+            title = pending.title,
+            files = GameIdentityResolver.inspectLegacyConflicts(
+                GameFolders.dir(context, FolderKind.Saves),
+                pending.gameIdentity,
+                pending.sources,
+            ),
+            busy = busy,
+            onKeepCurrent = { resolveSaveConflict(pending, preferSource = false) },
+            onUseLegacy = { resolveSaveConflict(pending, preferSource = true) },
+        )
+    }
 }
 
 @Composable
@@ -686,6 +748,62 @@ private fun LegacySaveClaimDialog(
                 stringResource(R.string.game_save_claim_confirm),
                 onConfirm,
                 enabled = !busy,
+            )
+        }
+    }
+}
+
+@Composable
+private fun SaveConflictDialog(
+    title: String,
+    files: List<SaveConflictFileInfo>,
+    busy: Boolean,
+    onKeepCurrent: () -> Unit,
+    onUseLegacy: () -> Unit,
+) {
+    val currentFocus = remember { FocusRequester() }
+    LaunchedEffect(Unit) { runCatching { currentFocus.requestFocus() } }
+    Box(
+        modifier = Modifier.fillMaxSize().background(GameColors.scrim),
+        contentAlignment = Alignment.Center,
+    ) {
+        Column(
+            modifier = Modifier
+                .width(560.dp)
+                .background(GameColors.backgroundTop, RoundedCornerShape(14.dp))
+                .padding(24.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            Text("Conflito de saves: $title", color = GameColors.text, fontSize = 21.sp, fontWeight = FontWeight.Bold)
+            Text(
+                "Foram encontrados arquivos diferentes entre o conjunto atual e o legado. Escolha qual progresso ficará ativo. Os dois conjuntos completos serão guardados em backup.",
+                color = GameColors.textDim,
+                fontSize = 14.sp,
+            )
+            files.take(8).forEach { file ->
+                val sourceDate = java.text.DateFormat.getDateTimeInstance().format(java.util.Date(file.sourceModified))
+                val targetDate = java.text.DateFormat.getDateTimeInstance().format(java.util.Date(file.targetModified))
+                Text(
+                    "${file.coreId} • ${file.path}\nLegado: ${file.sourceBytes} bytes • $sourceDate\nAtual: ${file.targetBytes} bytes • $targetDate",
+                    color = GameColors.textDim,
+                    fontSize = 12.sp,
+                )
+            }
+            if (files.size > 8) {
+                Text("E mais ${files.size - 8} arquivo(s) conflitante(s).", color = GameColors.textDim, fontSize = 12.sp)
+            }
+            GameButton(
+                "Manter conjunto atual",
+                onKeepCurrent,
+                primary = true,
+                enabled = !busy,
+                modifier = Modifier.focusRequester(currentFocus),
+            )
+            GameButton("Usar conjunto legado", onUseLegacy, enabled = !busy)
+            Text(
+                "O jogo continuará bloqueado se a cópia, a verificação ou a validação da conta falhar.",
+                color = GameColors.textDim,
+                fontSize = 12.sp,
             )
         }
     }
