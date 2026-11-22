@@ -144,7 +144,10 @@ internal object GameIdentityResolver {
         coreIds: List<String>,
         stableDirectoryName: String,
     ): Map<String, File> {
-        val targetExists = coreIds.all { File(File(savesRoot, it), stableDirectoryName).exists() }
+        val targetExists = coreIds.all { coreId ->
+            val target = File(File(savesRoot, coreId), stableDirectoryName)
+            target.isDirectory && target.listFiles()?.isNotEmpty() == true
+        }
         if (targetExists) return emptyMap()
 
         val libraryRoot = File(GameLibrarySettings.rootPath(context))
@@ -376,11 +379,16 @@ class SaveStore internal constructor(
     private val gameDirName: String = gameIdentity?.takeIf { it.matches(Regex("[A-Za-z0-9._-]+")) } ?: legacyGameDirName
     private fun directoryForCore(targetCoreId: String): File {
         val stable = File(File(savesRoot, targetCoreId), gameDirName)
-        if (stable.isDirectory) return stable
+        if (stable.isDirectory && stable.listFiles()?.isNotEmpty() == true) return stable
         val legacy = migrationSources[targetCoreId]
-        if (legacy != null && legacy.isDirectory && !GameIdentityResolver.migrateLegacy(legacy, stable)) {
-            return legacy
+        if (legacy != null && legacy.isDirectory) {
+            // A previous status lookup may have created an empty stable directory before migration.
+            // It is safe to replace only that empty directory, never a directory with user data.
+            if (stable.isDirectory && stable.listFiles()?.isEmpty() == true) stable.delete()
+            if (!GameIdentityResolver.migrateLegacy(legacy, stable)) return legacy
+            return stable
         }
+        if (stable.isDirectory) return stable
         stable.mkdirs()
         return stable
     }
