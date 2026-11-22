@@ -1125,7 +1125,7 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
  * Para diretórios, usa backup + rollback porque um diretório não vazio não pode ser
  * sobrescrito por rename; a cópia anterior só é removida depois que a nova está no lugar.
  */
-private object RomMFileReplacement {
+internal object RomMFileReplacement {
 
     @Synchronized
     fun replaceFile(staged: File, target: File) {
