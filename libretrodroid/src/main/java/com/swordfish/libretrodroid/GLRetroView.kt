@@ -135,7 +135,7 @@ class GLRetroView(
     }
 
     var frameSpeed: Int by Delegates.observable(1) { _, _, value ->
-        queueEvent { LibretroDroid.setFrameSpeed(value) }
+        queueNativeEvent { LibretroDroid.setFrameSpeed(value) }
     }
 
     var rotation: Int by Delegates.observable(-1) { _, _, value ->
@@ -143,7 +143,7 @@ class GLRetroView(
     }
 
     var shader: ShaderConfig by Delegates.observable(data.shader) { _, _, value ->
-        queueEvent {
+        queueNativeEvent {
             catchExceptions {
                 LibretroDroid.setShaderConfig(buildShader(value))
                 prepareShaderAndUpdateSensors()
@@ -152,7 +152,7 @@ class GLRetroView(
     }
 
     var filterMode: Int by Delegates.observable(-1) { _, _, value ->
-        queueEvent {
+        queueNativeEvent {
             catchExceptions {
                 LibretroDroid.setFilterMode(value)
                 prepareShaderAndUpdateSensors()
@@ -487,7 +487,7 @@ class GLRetroView(
      * Defer the reset until the current rc_client callback has unwound.
      */
     fun resetAfterAchievementsModeChange() {
-        queueEvent {
+        queueNativeEvent {
             if (!isDestroyed) {
                 LibretroDroid.reset()
                 LibretroDroid.raReset()
@@ -538,13 +538,13 @@ class GLRetroView(
 
     /** Queue asynchronous RA work without blocking an IO thread while the GL surface is paused. */
     fun beginAchievementsLogin(user: String, token: String, shouldStart: () -> Boolean) {
-        queueEvent {
+        queueNativeEvent {
             if (!isDestroyed && shouldStart()) LibretroDroid.raBeginLoginWithToken(user, token)
         }
     }
 
     fun beginAchievementsGame(hash: String, consoleId: Int) {
-        queueEvent {
+        queueNativeEvent {
             if (!isDestroyed) LibretroDroid.raBeginLoadGame(hash, consoleId)
         }
     }
@@ -556,7 +556,7 @@ class GLRetroView(
         networkError: Boolean,
         shouldDeliver: () -> Boolean,
     ) {
-        queueEvent {
+        queueNativeEvent {
             if (!isDestroyed && shouldDeliver()) {
                 LibretroDroid.raDeliverServerResponse(requestId, status, body, networkError)
             }
@@ -624,7 +624,7 @@ class GLRetroView(
     /** Disable Hardcore safely even when called from an rc_client callback. */
     fun disableAchievementsHardcore() {
         achievementsHardcoreEnabled = false
-        queueEvent {
+        queueNativeEvent {
             if (!isDestroyed) {
                 LibretroDroid.raSetHardcoreEnabled(false)
             }
@@ -688,7 +688,7 @@ class GLRetroView(
     }
 
     fun updateVariables(vararg variables: Variable) {
-        queueEvent {
+        queueNativeEvent {
             variables.forEach { LibretroDroid.updateVariable(it) }
         }
     }
@@ -702,18 +702,18 @@ class GLRetroView(
         set(value) {
             field = value && !achievementsHardcoreEnabled
             val enabled = field
-            queueEvent { LibretroDroid.setRewindEnabled(enabled) }
+            queueNativeEvent { LibretroDroid.setRewindEnabled(enabled) }
         }
 
     var isRewinding: Boolean = false
         set(value) {
             field = value && !achievementsHardcoreEnabled
             val active = field
-            queueEvent { LibretroDroid.setRewinding(active) }
+            queueNativeEvent { LibretroDroid.setRewinding(active) }
         }
 
     var rewindSpeed: Int by Delegates.observable(1) { _, _, value ->
-        queueEvent { LibretroDroid.setRewindSpeed(value) }
+        queueNativeEvent { LibretroDroid.setRewindSpeed(value) }
     }
 
     fun initRewindBuffer(maxSlots: Int, budgetBytes: Long) = runOnGLThread {
@@ -848,7 +848,7 @@ class GLRetroView(
             isEmulationReady = false
             // GLSurfaceView.onPause() is called by LibretroActivity.onPause() --
             // do NOT call it again here.
-            LibretroDroid.pause()
+            if (!isDestroyed) LibretroDroid.pause()
         }
     }
 
@@ -1001,7 +1001,18 @@ class GLRetroView(
         }
     }
 
+    /** Queue JNI work only while this native session is alive. The second check closes the
+     * race where teardown starts after an event is enqueued but before the GL thread runs it.
+     */
+    private fun queueNativeEvent(block: () -> Unit) {
+        if (isDestroyed) return
+        queueEvent {
+            if (!isDestroyed) block()
+        }
+    }
+
     private fun <T> runOnGLThread(block: () -> T): T {
+        check(!isDestroyed) { "Libretro session has already been destroyed" }
         if (Thread.currentThread().name.startsWith("GLThread")) {
             return block()
         }
@@ -1011,6 +1022,7 @@ class GLRetroView(
         var failure: Throwable? = null
         queueEvent {
             try {
+                check(!isDestroyed) { "Libretro session was destroyed before the GL operation ran" }
                 result = block()
             } catch (t: Throwable) {
                 failure = t
