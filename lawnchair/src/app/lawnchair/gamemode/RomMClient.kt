@@ -129,8 +129,15 @@ object RomMSettings {
         val previousServer = GameIdentityResolver.normalizedServer(previous.getString("url", null))
         val previousUserId = previous.getLong("user_id", -1L)
         val previousToken = previous.getString("token", null)
+        val canMigratePreviousLinks = SaveSyncPolicy.canMigrateAccountLinks(
+            sameServer = previousServer == server,
+            previousUserId = previousUserId,
+            currentUserId = accountId,
+            previousToken = previousToken,
+            currentToken = token,
+        )
         val previousFingerprint = when {
-            previousServer != server -> null
+            !canMigratePreviousLinks -> null
             previousUserId > 0L -> GameIdentityResolver.accountFingerprint(server, previousUserId)
             !previousToken.isNullOrBlank() -> GameIdentityResolver.digest("$server|$previousToken")
             else -> null

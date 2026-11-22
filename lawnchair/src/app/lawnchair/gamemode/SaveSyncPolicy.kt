@@ -8,6 +8,18 @@ internal object SaveSyncPolicy {
     fun accountFingerprint(server: String, userId: Long): String =
         sha256("$server|user:$userId")
 
+    /** Migra vínculos antigos somente quando a mesma conta é comprovada. */
+    fun canMigrateAccountLinks(
+        sameServer: Boolean,
+        previousUserId: Long,
+        currentUserId: Long,
+        previousToken: String?,
+        currentToken: String,
+    ): Boolean = sameServer && when {
+        previousUserId > 0L -> previousUserId == currentUserId
+        else -> !previousToken.isNullOrBlank() && previousToken == currentToken
+    }
+
     /** Namespace físico/metadados de um jogo RomM: instância + conta + ID remoto. */
     fun rommGameIdentity(server: String, accountFingerprint: String, romId: Long): String =
         "romm-${sha256("$server|$accountFingerprint|$romId")}"

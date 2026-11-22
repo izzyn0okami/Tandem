@@ -17,6 +17,15 @@ class SaveSyncPolicyTest {
     }
 
     @Test
+    fun legacyAccountLinksMigrateOnlyWhenTheOriginalAccountIsProven() {
+        assertTrue(SaveSyncPolicy.canMigrateAccountLinks(true, 41L, 41L, "old", "new"))
+        assertFalse(SaveSyncPolicy.canMigrateAccountLinks(true, 41L, 42L, "old", "new"))
+        assertTrue(SaveSyncPolicy.canMigrateAccountLinks(true, -1L, 41L, "same-token", "same-token"))
+        assertFalse(SaveSyncPolicy.canMigrateAccountLinks(true, -1L, 41L, "old-token", "new-token"))
+        assertFalse(SaveSyncPolicy.canMigrateAccountLinks(false, -1L, 41L, "same-token", "same-token"))
+    }
+
+    @Test
     fun rommGameStorageIdentityIsIsolatedByAccount() {
         val accountA = SaveSyncPolicy.rommGameIdentity("https://romm.example", "account-a", 7L)
         val accountB = SaveSyncPolicy.rommGameIdentity("https://romm.example", "account-b", 7L)
