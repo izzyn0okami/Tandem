@@ -2532,3 +2532,24 @@ CI / REPOSITÓRIO
 
 DECISÃO AINDA NECESSÁRIA ANTES DA IMPLEMENTAÇÃO DOS SLOTS
 - Definir se cada slot representa um progresso completo (SRAM + estado rápido opcional) ou se o usuário quer slots separados para SRAM e estados rápidos. Recomendação técnica: slot de progresso completo, com SRAM compartilhável conforme compatibilidade e estado rápido específico por núcleo.
+
+DECISÃO FUNCIONAL — SLOTS DE PROGRESSO
+Data: 2026-11-22
+Aprovação do usuário: confirmada.
+- Cada slot representa um progresso completo do jogo: SRAM + estado rápido opcional.
+- Estados rápidos permanecem vinculados ao núcleo que os criou; SRAM só é compartilhada entre núcleos explicitamente compatíveis.
+- O progresso legado será preservado como slot principal/default durante a migração, sem apagar nem substituir dados silenciosamente.
+- Cada slot terá ID técnico próprio e independente do nome/descrição.
+- Cada slot também terá descrição manual, opcional e editável pelo usuário, para diferenciar campanhas/progressos (ex.: "Campanha original", "Partida alternativa", "Testes").
+- Descrição não será usada como chave/identidade, não precisará ser única e poderá ficar vazia.
+- A descrição e os metadados do slot devem sobreviver a reinicializações e não depender da sincronização RomM.
+- A interface deverá permitir criar, selecionar, renomear/editar descrição e excluir slots com confirmação e proteção contra exclusão do último slot ativo ou perda de progresso sem backup.
+- Não sincronizar slots alternativos com RomM automaticamente até definir o mapeamento seguro de canais/IDs remotos.
+
+PLANO DE IMPLEMENTAÇÃO EM ETAPAS
+1. Corrigir identidade local do jogo, colisões e isolamento de metadados de estados por núcleo.
+2. Criar armazenamento de slots e migração validada do progresso legado para o slot principal.
+3. Adicionar gerenciamento visual dos slots, incluindo descrição manual opcional e seleção do progresso ativo.
+4. Adicionar testes de migração, isolamento, persistência de descrição, troca de slot e recuperação após falha.
+5. Auditar política RomM por slot antes de habilitar sincronização remota dos slots alternativos.
+Nenhuma PR funcional foi criada nesta etapa; a decisão foi registrada para orientar a implementação sem introduzir uma interface de slots antes de existir armazenamento seguro.
