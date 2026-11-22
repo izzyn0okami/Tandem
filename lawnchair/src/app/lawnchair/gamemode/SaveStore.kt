@@ -354,12 +354,13 @@ class SaveStore internal constructor(
         romFile: File,
         siblingCores: List<String> = emptyList(),
         platformSlug: String? = null,
+        gameIdentity: String? = null,
     ) : this(
         GameFolders.dir(context, FolderKind.Saves),
         coreId,
         romFile,
         siblingCores,
-        GameIdentityResolver.resolve(context, romFile, platformSlug),
+        gameIdentity ?: GameIdentityResolver.resolve(context, romFile, platformSlug),
         GameIdentityResolver.legacySources(
             context,
             GameFolders.dir(context, FolderKind.Saves),
