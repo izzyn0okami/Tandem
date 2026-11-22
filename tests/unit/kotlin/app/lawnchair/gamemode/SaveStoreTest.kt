@@ -309,6 +309,38 @@ class SaveStoreTest {
     }
 
     @Test
+    fun verifiedLegacyClaimCopiesBytesAndKeepsOriginalSource() {
+        val source = File(root, "legacy/Pokemon")
+        source.mkdirs()
+        File(source, "sram.srm").writeBytes(byteArrayOf(3, 1, 4, 1, 5))
+        File(source, "state1.state").writeBytes(byteArrayOf(9, 2, 6))
+        val target = File(root, "account-a/romm-game")
+
+        assertFalse(GameIdentityResolver.isVerifiedLegacyCopy(source, target))
+        assertTrue(GameIdentityResolver.migrateLegacy(source, target))
+        assertTrue(GameIdentityResolver.isVerifiedLegacyCopy(source, target))
+        assertArrayEquals(byteArrayOf(3, 1, 4, 1, 5), File(target, "sram.srm").readBytes())
+        assertArrayEquals(byteArrayOf(9, 2, 6), File(target, "state1.state").readBytes())
+        assertTrue(source.isDirectory)
+        assertArrayEquals(byteArrayOf(3, 1, 4, 1, 5), File(source, "sram.srm").readBytes())
+    }
+
+    @Test
+    fun legacyClaimCannotBeVerifiedWhenDestinationHasDifferentProgress() {
+        val source = File(root, "legacy/Pokemon")
+        source.mkdirs()
+        File(source, "sram.srm").writeBytes(byteArrayOf(1, 2, 3))
+        val target = File(root, "account-a/romm-game")
+        target.mkdirs()
+        File(target, "sram.srm").writeBytes(byteArrayOf(9, 9, 9))
+
+        assertFalse(GameIdentityResolver.isVerifiedLegacyCopy(source, target))
+        assertFalse(GameIdentityResolver.migrateLegacy(source, target))
+        assertArrayEquals(byteArrayOf(1, 2, 3), File(source, "sram.srm").readBytes())
+        assertArrayEquals(byteArrayOf(9, 9, 9), File(target, "sram.srm").readBytes())
+    }
+
+    @Test
     fun rommIdentityMigrationPreservesProgressFromPreviousLocalIdentity() {
         val local = File(root, "melonds/local-previous-identity")
         local.mkdirs()
