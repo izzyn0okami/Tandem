@@ -90,9 +90,51 @@ object BiosManager {
         val target = File(systemDir(context), bios.name)
         target.parentFile?.mkdirs()
         val temp = File(target.parentFile, "${target.name}.part")
-        temp.outputStream().use { input.copyTo(it) }
-        target.delete()
-        return if (temp.renameTo(target)) bios else null
+        val backup = File(target.parentFile, "${target.name}.backup")
+
+        try {
+            FileOutputStream(temp).use { output ->
+                input.copyTo(output)
+                output.flush()
+                output.fd.sync()
+            }
+            check(temp.isFile && temp.length() > 0L) { "Arquivo de BIOS vazio ou inválido" }
+            val importedLength = temp.length()
+
+            if (backup.exists()) check(backup.delete()) { "Não foi possível limpar o backup antigo da BIOS" }
+            val hadPrevious = target.exists()
+            if (hadPrevious) check(target.renameTo(backup)) { "Não foi possível preservar a BIOS anterior" }
+
+            try {
+                check(temp.renameTo(target)) { "Não foi possível instalar a nova BIOS" }
+                check(target.isFile && target.length() == importedLength) { "A BIOS instalada não corresponde ao arquivo importado" }
+            } catch (installFailure: Throwable) {
+                if (target.exists() && !target.delete()) {
+                    throw IllegalStateException(
+                        "Falha na importação; não foi possível remover o arquivo incompleto. Backup preservado em ${backup.name}",
+                        installFailure,
+                    )
+                }
+                if (hadPrevious && backup.exists() && !backup.renameTo(target)) {
+                    throw IllegalStateException(
+                        "Falha na importação e restauração automática não concluída; backup preservado em ${backup.name}",
+                        installFailure,
+                    )
+                }
+                throw IllegalStateException("Nova BIOS rejeitada; arquivo anterior restaurado", installFailure)
+            }
+
+            if (backup.exists() && !backup.delete()) {
+                GameLog.error(
+                    "bios",
+                    "BIOS ${bios.name} importada, mas não foi possível remover o backup ${backup.name}",
+                    IllegalStateException("Falha ao excluir o backup após a importação"),
+                )
+            }
+            return bios
+        } finally {
+            temp.delete()
+        }
     }
 
     /** Procura BIOS na pasta "bios" da pasta de jogos e copia os que faltam. Devolve quantos copiou. */
