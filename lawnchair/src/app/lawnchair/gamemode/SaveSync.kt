@@ -73,6 +73,8 @@ object SaveSync {
     }
 
     private fun pullOne(context: Context, client: RomMClient, store: SaveStore, kind: RemoteFileKind, file: File, remote: RemoteFile, romPath: String) {
+        // Recover the previous save if Android stopped the app during an earlier replacement.
+        RomMFileReplacement.recoverFile(file)
         val prefs = prefs(context)
         val key = "${kind.path}:$romPath"
         val lastHash = prefs.getString("$key:hash", null)
@@ -98,8 +100,8 @@ object SaveSync {
             temp.delete()
             return
         }
-        file.delete()
-        check(temp.renameTo(file))
+        // Keep the previous local save until the downloaded file is safely promoted.
+        RomMFileReplacement.replaceFile(temp, file)
         prefs.edit {
             putString("$key:hash", hash(file))
             putLong("$key:remote", remote.updatedAtMs)
