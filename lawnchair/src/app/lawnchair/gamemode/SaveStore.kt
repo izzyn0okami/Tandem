@@ -20,9 +20,10 @@ internal object GameIdentityResolver {
         val storedServer = prefs.getString("rom_server:${romFile.absolutePath}", null)
         val currentServer = normalizedServer(RomMSettings.url(context))
         val server = if (directId >= 0L) storedServer else currentServer
+        val account = connectionFingerprint(context)
         val linkedId = when {
             directId >= 0L -> directId
-            server != null -> prefs.getLong(linkKey(server, fingerprint), -1L)
+            server != null && account != null -> prefs.getLong(linkKey(server, account, fingerprint), -1L)
             else -> -1L
         }
         return when {
@@ -37,9 +38,30 @@ internal object GameIdentityResolver {
     fun linkedRomId(context: Context, romFile: File): Long? {
         val prefs = context.getSharedPreferences("romm_sync", Context.MODE_PRIVATE)
         val direct = prefs.getLong("rom:${romFile.absolutePath}", -1L)
-        if (direct >= 0L) return direct
         val server = normalizedServer(RomMSettings.url(context)) ?: return null
-        return prefs.getLong(linkKey(server, fingerprint(romFile)), -1L).takeIf { it >= 0L }
+        val account = connectionFingerprint(context) ?: return null
+        if (direct >= 0L) {
+            val storedServer = prefs.getString("rom_server:${romFile.absolutePath}", null)
+            val storedAccount = prefs.getString("rom_account:${romFile.absolutePath}", null)
+            return direct.takeIf { storedServer == server && storedAccount == account }
+        }
+        return prefs.getLong(linkKey(server, account, fingerprint(romFile)), -1L).takeIf { it >= 0L }
+    }
+
+    fun connectionFingerprint(context: Context): String? {
+        val server = normalizedServer(RomMSettings.url(context)) ?: return null
+        val token = RomMSettings.token(context)?.takeIf { it.isNotBlank() } ?: return null
+        return digest("$server|$token")
+    }
+
+    /** Finds a moved ROM by its stable identity, without trusting the old path. */
+    fun findRomPath(context: Context, identity: String, preferredPath: String, platformSlug: String?): String? {
+        val preferred = File(preferredPath)
+        if (preferred.isFile && resolve(context, preferred, platformSlug) == identity) return preferred.absolutePath
+        val root = File(GameLibrarySettings.rootPath(context))
+        return runCatching { GameLibraryScanner.scan(root) }.getOrNull().orEmpty()
+            .firstOrNull { game -> resolve(context, File(game.path), game.platform.slug) == identity }
+            ?.path
     }
 
     /** Adds a content-based association so a moved or renamed downloaded ROM keeps its RomM link. */
@@ -162,7 +184,7 @@ internal object GameIdentityResolver {
         return digest.digest().toHex()
     }
 
-    private fun linkKey(server: String, fingerprint: String) = LINK_PREFIX + digest("$server|$fingerprint")
+    private fun linkKey(server: String, account: String, fingerprint: String) = LINK_PREFIX + digest("$server|$account|$fingerprint")
 
     private fun normalizedServer(value: String?): String? {
         if (value.isNullOrBlank()) return null
