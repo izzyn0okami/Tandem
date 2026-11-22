@@ -173,7 +173,11 @@ object CoreInstaller {
                     .apply()
                 // A limpeza do backup é pós-commit: sua falha não invalida a instalação.
                 if (backup.exists() && !backup.delete()) {
-                    GameLog.error("núcleos", "núcleo $coreId atualizado, mas não foi possível remover ${backup.name}")
+                    GameLog.error(
+                        "núcleos",
+                        "núcleo $coreId atualizado, mas não foi possível remover ${backup.name}",
+                        IllegalStateException("Falha ao excluir o backup após a atualização"),
+                    )
                 }
                 GameLog.log("núcleos", "$coreId instalado/atualizado (${target.length() / 1024} KB)")
                 target
