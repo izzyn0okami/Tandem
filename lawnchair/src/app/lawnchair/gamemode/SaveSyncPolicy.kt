@@ -54,9 +54,13 @@ internal object SaveSyncPolicy {
         remotes.filter { isCompatibleRemote(kind, it.emulator, coreId) }
             .maxWithOrNull(compareBy<RemoteFile> { it.updatedAtMs }.thenBy { it.id })
 
-    /** SRAM sem hash fornecido pelo servidor precisa ser baixado temporariamente para verificação. */
-    fun shouldVerifyRemoteContent(kind: RemoteFileKind, remoteContentHash: String?): Boolean =
-        kind == RemoteFileKind.Save && remoteContentHash.isNullOrBlank()
+    /** SRAM sem hash remoto anterior precisa ser baixado para estabelecer uma comparação confiável. */
+    fun shouldVerifyRemoteContent(
+        kind: RemoteFileKind,
+        remoteContentHash: String?,
+        lastRemoteContentHash: String?,
+    ): Boolean = kind == RemoteFileKind.Save &&
+        (remoteContentHash.isNullOrBlank() || lastRemoteContentHash.isNullOrBlank())
 
     /** Um núcleo ainda sem baseline recebe o head remoto; ausência local também pede restauração. */
     fun shouldApplyRemote(remoteChanged: Boolean, localExists: Boolean, appliedHash: String?): Boolean =
