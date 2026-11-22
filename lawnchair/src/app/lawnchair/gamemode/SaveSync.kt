@@ -275,27 +275,42 @@ object SaveSync {
         }
 
         val temp = File(file.parentFile, "${file.name}.remote")
-        var remoteContentHash = remote.contentHash
+        val serverContentHash = remote.contentHash
+        var downloadedContentHash: String? = null
         var tempReady = false
         try {
-            // Algumas versões do RomM não expõem content_hash. Nesse caso, baixa o SRAM
-            // temporariamente e calcula o hash real do conteúdo antes de decidir se mudou.
-            if (SaveSyncPolicy.shouldVerifyRemoteContent(kind, remoteContentHash)) {
+            // Sem um hash remoto anterior não há como provar que content_hash corresponde
+            // à versão que o aparelho já conhecia. Fazemos uma verificação inicial do conteúdo.
+            // Se o servidor não fornece content_hash, a SRAM é verificada em cada inicialização.
+            if (SaveSyncPolicy.shouldVerifyRemoteContent(kind, serverContentHash, lastRemoteHash)) {
                 client.downloadRemoteFile(kind, remote.id, temp)
                 if (temp.length() == 0L) {
                     throw IOException("O servidor RomM retornou um save vazio para ${File(romPath).name}")
                 }
-                remoteContentHash = hash(temp)
+                downloadedContentHash = hash(temp)
                 tempReady = true
             }
+            val comparisonRemoteHash = if (!serverContentHash.isNullOrBlank() && !lastRemoteHash.isNullOrBlank()) {
+                serverContentHash
+            } else {
+                downloadedContentHash ?: serverContentHash
+            }
+            val comparisonLastRemoteHash = if (!serverContentHash.isNullOrBlank() && !lastRemoteHash.isNullOrBlank()) {
+                lastRemoteHash
+            } else if (downloadedContentHash != null) {
+                lastRemoteHash ?: legacyHash
+            } else {
+                lastRemoteHash
+            }
+            val persistedRemoteHash = serverContentHash ?: downloadedContentHash
 
             val remoteChanged = SaveSyncPolicy.isRemoteVersionChanged(
                 remote.updatedAtMs,
                 remote.id,
                 lastRemoteMs,
                 lastRemoteId,
-                remoteContentHash,
-                lastRemoteHash,
+                comparisonRemoteHash,
+                comparisonLastRemoteHash,
             )
             val shouldApplyRemote = SaveSyncPolicy.shouldApplyRemote(
                 remoteChanged = remoteChanged,
@@ -309,7 +324,7 @@ object SaveSync {
                 prefs.edit {
                     putLong("$key:remote", remote.updatedAtMs)
                     putLong("$key:id", remote.id)
-                    remoteContentHash?.let { putString(remoteKey, it) } ?: remove(remoteKey)
+                    persistedRemoteHash?.let { putString(remoteKey, it) } ?: remove(remoteKey)
                 }
                 if (localHash != appliedHash) {
                     GameLog.log(
@@ -338,7 +353,9 @@ object SaveSync {
                     throw IOException("O servidor RomM retornou um save vazio para ${File(romPath).name}")
                 }
                 tempReady = true
-                if (remoteContentHash == null) remoteContentHash = hash(temp)
+                if (downloadedContentHash == null && serverContentHash == null) {
+                    downloadedContentHash = hash(temp)
+                }
             }
             // Keep the previous local save until the downloaded file is safely promoted.
             RomMFileReplacement.replaceFile(temp, file)
@@ -348,7 +365,7 @@ object SaveSync {
                 putString(appliedKey, downloadedHash)
                 putLong("$key:remote", remote.updatedAtMs)
                 putLong("$key:id", remote.id)
-                remoteContentHash?.let { putString(remoteKey, it) } ?: remove(remoteKey)
+                persistedRemoteHash?.let { putString(remoteKey, it) } ?: remove(remoteKey)
             }
             GameLog.log(
                 "saves",
