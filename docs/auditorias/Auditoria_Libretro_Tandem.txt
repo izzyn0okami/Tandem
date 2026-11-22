@@ -2335,3 +2335,16 @@ Status: implementação em branch isolada; CI pendente; PR ainda não criada.
 - A dependência androidx.work:work-testing ainda não foi adicionada; a suíte nova cobre a decisão pura de retry, não a integração completa do WorkManager. Uma suíte de integração Android/Robolectric permanece como etapa separada, pois a configuração atual só declara JUnit 4 para testes JVM.
 - Critério de validação: CI deve executar o teste novo, Spotless e build APK; não considerar a cobertura como teste integral do agendador WorkManager.
 - Não mesclar sem autorização explícita do usuário.
+
+RESULTADO FINAL — PR #38 / RETENTATIVA DE SAVE SYNC DURANTE SESSÃO ATIVA
+Data: 2026-11-22
+- PR #38 — “Retry RomM save sync when a game session is still active”: https://github.com/izzyn0okami/Tandem/pull/38
+- Head integrado: 4d473b3815518f0220efeebd29322bf45e6d78b4.
+- CI #? / run ID 45064234588: CONCLUÍDA COM SUCESSO no head final. check-style/Spotless, tarefa de testes unitários, build-debug APK, upload de artefato e final-status passaram. O job de testes invocou testLawnWithQuickstepGithubDebugUnitTest e terminou com BUILD SUCCESSFUL; não foi identificada ocorrência NO-SOURCE para essa tarefa.
+- Os jobs tandem-release e nightly-release foram skipped na CI da PR; a publicação de tandem-latest depende da CI pós-merge.
+- Merge autorizado pelo usuário e concluído com sucesso.
+- Merge commit: 6f7e88107f19e754229a28eb7d3f6d44d2963014.
+- PR #38 está mesclada em game-mode-m2-dev.
+- A correção faz o Worker retornar Result.retry() quando pushFromWorker() informa que o envio foi adiado porque a sessão ainda está ativa; o WorkManager pode então tentar novamente com o backoff exponencial existente. Quando o envio é concluído, retorna Result.success().
+- Limitação mantida e documentada: o teste adicionado cobre a decisão pura de retry, não a integração completa do WorkManager (restrições, persistência, fila e retomada). Essa cobertura permanece como pendência separada.
+- Próximo passo: verificar CI pós-merge, registrar o resultado e confirmar se tandem-latest foi atualizado.
