@@ -1104,3 +1104,16 @@ VALIDAÇÃO / PENDÊNCIAS
 - Commit de implementação: 170ee38f99cad5f234c2db78ddd055926f8ce336.
 - CI e revisão da PR: pendentes.
 - Teste funcional no aparelho com firmware real: pendente; a CI não comprova correspondência dos hashes do servidor.
+
+CONCLUSÃO — PR #22 / INTEGRIDADE DE DOWNLOADS DE FIRMWARE ROMM
+Data: 2026-11-22
+
+- PR #22 mesclada por merge normal após autorização explícita do usuário.
+- PR: https://github.com/izzyn0okami/Tandem/pull/22
+- Head aprovado: 3437e4b9bc0f539ba5dd24f41582405ece8518a0.
+- Merge commit: ab19f08db111ef2eedf0840a845a4d1b310dcc78.
+- CI da PR #22 (run 44971193096 / #405): check-style, ./gradlew spotlessCheck, build-debug-apk, upload artifact e final-status concluídos com sucesso.
+- Correção Spotless final: imports em RomMClient.kt reorganizados na ordem exigida; não houve alteração da lógica de integridade de firmware.
+- Implementação integrada: preserva tamanho e hashes CRC32, MD5 e SHA-1 publicados pelo RomM; valida o firmware após download e só substitui o destino depois da validação. Em caso de divergência, descarta o temporário inválido.
+- Teste funcional no aparelho com firmware real permanece pendente. A CI comprova estilo e compilação, mas não comprova que os hashes recebidos do servidor correspondem aos arquivos reais.
+- Não marcar a validação funcional de firmware como concluída até confirmação do usuário.
