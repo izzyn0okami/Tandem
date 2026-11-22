@@ -92,7 +92,7 @@ object SaveSync {
     ) {
         if (!GameIdentityResolver.hasRomMLink(context, File(romPath))) return
         val gameIdentity = gameIdentityOverride ?: GameIdentityResolver.resolve(context, File(romPath), platformSlug)
-        val store = SaveStore(context, coreId, File(romPath), platformSlug = platformSlug)
+        val store = SaveStore(context, coreId, File(romPath), platformSlug = platformSlug, gameIdentity = gameIdentity, migrationSourcesOverride = emptyMap())
         val prefs = prefs(context)
         val changed = files(store).any { (kind, file) ->
             val exists = file.isFile
