@@ -3092,3 +3092,58 @@ PENDÊNCIAS
 - Confirmar no servidor real do usuário que a versão reportada é efetivamente 5.4.1 e que os escopos do token estão ativos; a inspeção de código confirma o contrato da versão, não o estado/configuração da instância em execução.
 - Não houve alteração funcional nem execução de CI nesta auditoria.
 
+
+
+AUDITORIA COMPLEMENTAR — ROMM RETROARCH CLOUD SYNC / WEBDAV
+Data: 2026-11-22
+Escopo: avaliar se o Tandem pode reutilizar a integração RetroArch Cloud Sync do RomM para saves SRAM e save states.
+PR aberta verificada: #41 — feat: add explicit save conflict resolution; continua aberta, draft e não mesclada. A branch da PR aparece não mergeable no momento da consulta. Não alterar em paralelo os arquivos de sincronização afetados por essa PR.
+
+FONTES
+- Documentação oficial RomM 5.4.0, família de versão usada como referência para a instância 5.4.1:
+  https://docs.romm.app/5.4.0/ecosystem/retroarch-cloud-sync/
+  https://docs.romm.app/5.4.0/using/saves-and-states/
+- Documentação oficial Libretro:
+  https://docs.libretro.com/guides/retroarch-cloud-sync/
+
+DISTINÇÃO DOS DOIS MECANISMOS
+1. Device Sync Protocol (/api/devices, /api/sync/negotiate, sessões): API de sincronização por dispositivo, com baseline por dispositivo, operações upload/download/conflict/delete/no_op e confirmação de download. Na documentação 5.4.1 auditada anteriormente, a negociação cobre saves, não states.
+2. RetroArch Cloud Sync (/api/sync/retroarch/): endpoint WebDAV do RomM destinado ao mecanismo Cloud Sync do RetroArch. O cliente compara manifesto de caminhos/hashes e usa operações WebDAV; não é o mesmo fluxo de negociação por dispositivo.
+3. O Tandem usa LibretroDroid, não executa o aplicativo RetroArch. Portanto, não pode simplesmente ativar a opção Cloud Sync do RetroArch. Pode, porém, implementar um cliente WebDAV compatível com o endpoint do RomM e adaptar seus próprios arquivos locais.
+
+COMPORTAMENTO DOCUMENTADO DO WEBDAV ROMM
+- Endpoint: https://<servidor>/api/sync/retroarch/ (barra final obrigatória).
+- Autenticação documentada: HTTP Basic com usuário e senha RomM. Contas exclusivamente OIDC sem senha não conseguem autenticar dessa forma.
+- Métodos usados/suportados: OPTIONS, PROPFIND, GET, HEAD, PUT, DELETE, MOVE, MKCOL, LOCK e UNLOCK; o proxy reverso precisa permitir esses métodos e encaminhar Authorization.
+- O manifesto é gerado pelo RomM a partir do banco; o manifesto enviado pelo RetroArch não é tratado como fonte autoritativa.
+- Saves .srm: o Cloud Sync do RetroArch usa slot autosave compartilhado com web player e apps de device sync. O RomM oferece ao RetroArch a versão mais recente por jogo e núcleo; uploads idênticos não criam nova versão. Histórico de autosave é mantido no servidor por núcleo. Slots nomeados não são expostos ao RetroArch.
+- Save states: RomM agrupa por jogo, núcleo e slot extraído do nome do arquivo; entrega a versão mais recente de cada slot com o nome esperado pelo RetroArch. Estados do web player podem ser apresentados como slot 0.
+- Identificação do jogo: o nome-base do save/state precisa corresponder ao nome-base de um arquivo ROM visível no RomM. Correspondência exata é preferida; há fallback sem distinção de maiúsculas/minúsculas. Nomes diferentes, renomeados ou duplicados entre plataformas podem falhar ou causar associação incorreta.
+- Núcleos: recomenda-se separar saves e states em pastas por núcleo. O RomM mapeia nomes de pastas RetroArch conhecidos para IDs de núcleos do player; nomes desconhecidos são armazenados como identificador de emulador literal.
+- Exclusões: excluir save/state via RetroArch também exclui no RomM os dados correspondentes. O cliente Tandem não deve expor exclusão remota como efeito colateral de limpeza local.
+- O endpoint também sincroniza config/thumbnails/system como arquivos opacos por usuário; isso não é necessário para o escopo atual do Tandem.
+
+VIABILIDADE PARA O TANDEM
+- Tecnicamente viável implementar um cliente WebDAV para /api/sync/retroarch/ sem incorporar o aplicativo RetroArch.
+- Vantagem: um único mecanismo pode sincronizar SRAM e save states, aproveitando a integração já mantida pelo RomM e a compatibilidade com RetroArch.
+- Limitação: WebDAV é centrado em nomes/caminhos e manifesto; não oferece a mesma negociação semântica de conflitos por dispositivo do Device Sync Protocol. A identidade por jogo/núcleo/slot precisa ser construída cuidadosamente pelo Tandem.
+- A documentação consultada é da versão 5.4.0, enquanto a auditoria anterior conferiu a API de sincronização por dispositivo no código 5.4.1. A presença e o comportamento exato do endpoint WebDAV na instância 5.4.1 do usuário ainda devem ser confirmados por teste de contrato/servidor antes de implementação definitiva.
+- Não assumir que o cliente WebDAV possa substituir sem perdas o fluxo atual: nomes das ROMs, múltiplos registros com nomes iguais, nomes de cores, estados incompatíveis entre cores, tamanhos grandes e comportamento de DELETE exigem proteção.
+
+RECOMENDAÇÃO
+- Não ativar nem substituir o sincronizador atual diretamente.
+- Fazer uma prova de conceito isolada do endpoint WebDAV, somente leitura primeiro, confirmando PROPFIND/manifesto e mapeamento jogo-núcleo-slot para uma ROM de teste.
+- Depois testar upload/download de SRAM e state em diretórios temporários, validar hashes e preservar snapshots/backups.
+- Para o Tandem, preferir sincronização não destrutiva: não propagar DELETE automaticamente; nunca sobrescrever um estado de outro núcleo; manter os dois lados em conflito e exigir escolha explícita.
+- Comparar os resultados do WebDAV com o protocolo Device Sync. Uma arquitetura híbrida pode ser melhor: WebDAV para states e/ou compatibilidade RetroArch; Device Sync para SRAM quando se desejar baseline e conflitos explícitos por dispositivo.
+- Preservar isolamento por conta e as proteções já implementadas (SHA-256 local, staging, backups, snapshots e bloqueio de conflito).
+
+PENDÊNCIAS
+1. Conferir no código-fonte/tag RomM 5.4.1 o roteador e handler WebDAV, incluindo o contrato de manifesto e os detalhes de conflito/exclusão.
+2. Confirmar se a instância real do usuário tem /api/sync/retroarch/ habilitado e se a autenticação por senha está disponível.
+3. Definir estratégia robusta de correspondência por ID de ROM no Tandem, evitando depender apenas do nome do arquivo.
+4. Definir política não destrutiva para exclusões, conflitos, múltiplos núcleos e states incompatíveis.
+5. Executar prova de conceito com dados descartáveis antes de integrar ao sincronizador principal.
+
+RESULTADO
+Auditoria concluída sem alteração funcional. A integração WebDAV do RomM é reutilizável por implementação própria, mas não pode ser ligada automaticamente ao LibretroDroid. Não abrir PR concorrente enquanto a PR #41 permanecer aberta; coordenar futuras mudanças em SaveSync.kt/RomMClient.kt após resolução dessa PR.
