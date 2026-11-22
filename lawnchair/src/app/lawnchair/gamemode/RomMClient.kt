@@ -76,7 +76,12 @@ enum class RemoteFileKind(val path: String, val part: String) {
     State("states", "stateFile"),
 }
 
-data class RemoteFile(val id: Long, val emulator: String?, val updatedAtMs: Long)
+data class RemoteFile(
+    val id: Long,
+    val emulator: String?,
+    val updatedAtMs: Long,
+    val contentHash: String? = null,
+)
 
 /** Pedido de aprovação do aparelho: o usuário confirma o código no RomM, pelo navegador. */
 data class DevicePairing(
@@ -1066,6 +1071,7 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
         id = json.getLong("id"),
         emulator = json.optString("emulator").ifEmpty { null },
         updatedAtMs = parseTime(json.optString("updated_at")),
+        contentHash = json.optString("content_hash").takeIf { it.isNotBlank() && it != "null" },
     )
 
     private fun parseTime(text: String): Long = runCatching { java.time.OffsetDateTime.parse(text).toInstant().toEpochMilli() }

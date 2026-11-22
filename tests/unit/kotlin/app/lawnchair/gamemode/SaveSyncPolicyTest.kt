@@ -59,6 +59,92 @@ class SaveSyncPolicyTest {
     }
 
     @Test
+    fun remoteContentHashDetectsReplacementEvenWhenIdAndTimestampMatch() {
+        assertTrue(SaveSyncPolicy.isRemoteVersionChanged(1_000L, 23L, 1_000L, 23L, "hash-b", "hash-a"))
+    }
+
+    @Test
+    fun matchingRemoteContentHashIsStableAcrossTimestampChanges() {
+        assertFalse(SaveSyncPolicy.isRemoteVersionChanged(1_001L, 23L, 1_000L, 23L, "same-hash", "same-hash"))
+    }
+
+    @Test
+    fun sramAcceptsTheLatestSaveFromAnotherTandemCore() {
+        val remotes = listOf(
+            RemoteFile(10L, "tandem_pcsx_rearmed", 1_000L),
+            RemoteFile(11L, "tandem_swanstation", 900L),
+            RemoteFile(12L, "duckstation", 2_000L),
+        )
+
+        assertEquals(10L, SaveSyncPolicy.newestCompatibleRemote(RemoteFileKind.Save, remotes, "swanstation")?.id)
+    }
+
+    @Test
+    fun quickStatesRemainRestrictedToTheirOriginalCore() {
+        val remotes = listOf(
+            RemoteFile(10L, "tandem_pcsx_rearmed", 2_000L),
+            RemoteFile(11L, "tandem_swanstation", 1_000L),
+        )
+
+        assertEquals(11L, SaveSyncPolicy.newestCompatibleRemote(RemoteFileKind.State, remotes, "swanstation")?.id)
+    }
+
+    @Test
+    fun unrelatedEmulatorSavesAreNotImported() {
+        val remotes = listOf(RemoteFile(10L, "duckstation", 2_000L))
+
+        assertEquals(null, SaveSyncPolicy.newestCompatibleRemote(RemoteFileKind.Save, remotes, "swanstation"))
+    }
+
+    @Test
+    fun sramWithoutServerContentHashIsDownloadedForVerification() {
+        assertTrue(SaveSyncPolicy.shouldVerifyRemoteContent(RemoteFileKind.Save, null, "old-hash"))
+    }
+
+    @Test
+    fun sramWithoutStoredRemoteBaselineIsDownloadedEvenWhenServerProvidesHash() {
+        assertTrue(SaveSyncPolicy.shouldVerifyRemoteContent(RemoteFileKind.Save, "server-hash", null))
+    }
+
+    @Test
+    fun sramWithKnownServerHashDoesNotNeedContentDownload() {
+        assertFalse(SaveSyncPolicy.shouldVerifyRemoteContent(RemoteFileKind.Save, "server-hash", "server-hash"))
+    }
+
+    @Test
+    fun quickStateWithoutServerContentHashUsesItsVersionMetadata() {
+        assertFalse(SaveSyncPolicy.shouldVerifyRemoteContent(RemoteFileKind.State, null, null))
+    }
+
+    @Test
+    fun aCoreWithoutAnAppliedBaselineReceivesTheRemoteSave() {
+        assertTrue(SaveSyncPolicy.shouldApplyRemote(false, true, null))
+    }
+
+    @Test
+    fun aMissingLocalSaveIsRestoredEvenWhenTheRemoteVersionIsKnown() {
+        assertTrue(SaveSyncPolicy.shouldApplyRemote(false, false, "known-hash"))
+    }
+
+    @Test
+    fun aChangedLocalSaveIsKeptWhenTheRemoteHeadDidNotChange() {
+        assertFalse(SaveSyncPolicy.shouldApplyRemote(false, true, "previously-applied-hash"))
+    }
+
+    @Test
+    fun aChangedRemoteHeadIsApplied() {
+        assertTrue(SaveSyncPolicy.shouldApplyRemote(true, true, "previously-applied-hash"))
+    }
+
+    @Test
+    fun localFileIsBackedUpWhenItHasNoBaselineOrDiffersFromAppliedVersion() {
+        assertTrue(SaveSyncPolicy.shouldBackupLocal(true, "local", null))
+        assertTrue(SaveSyncPolicy.shouldBackupLocal(true, "local-new", "local-old"))
+        assertFalse(SaveSyncPolicy.shouldBackupLocal(true, "same", "same"))
+        assertFalse(SaveSyncPolicy.shouldBackupLocal(false, null, null))
+    }
+
+    @Test
     fun uploadRequiresExistingNonEmptyChangedFile() {
         assertFalse(SaveSyncPolicy.shouldUpload(false, 10L, "new", "old"))
         assertFalse(SaveSyncPolicy.shouldUpload(true, 0L, "new", "old"))

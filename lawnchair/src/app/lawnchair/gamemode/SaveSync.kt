@@ -33,10 +33,14 @@ private data class SaveFileSnapshot(
     val file: File,
     val backup: File?,
     val existed: Boolean,
+    val kind: RemoteFileKind,
     val key: String,
     val hash: String?,
     val remote: Long,
     val id: Long,
+    val appliedHashKey: String,
+    val appliedHash: String?,
+    val remoteHash: String?,
 )
 
 object SaveSync {
@@ -78,11 +82,16 @@ object SaveSync {
             val exists = file.isFile
             val length = if (exists) file.length() else 0L
             val currentHash = if (length > 0L) hash(file) else null
+            val key = "${kind.path}:$romPath"
+            val confirmedHash = prefs.getString(
+                appliedHashKey(kind, romPath, coreId),
+                prefs.getString("$key:hash", null),
+            )
             SaveSyncPolicy.shouldUpload(
                 exists,
                 length,
                 currentHash,
-                prefs.getString("${kind.path}:$romPath:hash", null),
+                confirmedHash,
             )
         }
         if (changed) prefs.edit { putString(statusKey(romPath), "pending") }
@@ -119,6 +128,12 @@ object SaveSync {
         RemoteFileKind.Save to store.sramFile,
         RemoteFileKind.State to store.stateFile,
     )
+
+    private fun appliedHashKey(kind: RemoteFileKind, romPath: String, coreId: String) = "${kind.path}:$romPath:$coreId:applied_hash"
+
+    private fun remoteHashKey(kind: RemoteFileKind, romPath: String) = "${kind.path}:$romPath:remote_hash"
+
+    private fun newestRemoteFile(kind: RemoteFileKind, remotes: List<RemoteFile>, coreId: String): RemoteFile? = SaveSyncPolicy.newestCompatibleRemote(kind, remotes, coreId)
 
     /** Registra que a ROM está em uma sessão ativa, impedindo upload enquanto ela pode mudar. */
     fun markSessionActive(context: Context, romPath: String) {
@@ -167,19 +182,27 @@ object SaveSync {
                     file = file,
                     backup = backup,
                     existed = existed,
+                    kind = kind,
                     key = key,
                     hash = prefs.getString("$key:hash", null),
                     remote = prefs.getLong("$key:remote", Long.MIN_VALUE),
                     id = prefs.getLong("$key:id", Long.MIN_VALUE),
+                    appliedHashKey = appliedHashKey(kind, romPath, coreId),
+                    appliedHash = prefs.getString(appliedHashKey(kind, romPath, coreId), null),
+                    remoteHash = prefs.getString(remoteHashKey(kind, romPath), null),
                 )
             }
             var preserveSnapshots = false
             try {
                 for ((kind, file) in files(store)) {
-                    val remote = client.listRemoteFiles(kind, romId)
-                        .filter { it.emulator == emulatorTag(coreId) }
-                        .maxWithOrNull(compareBy<RemoteFile> { it.updatedAtMs }.thenBy { it.id }) ?: continue
-                    pullOne(context, client, store, kind, file, remote, romPath)
+                    val remotes = client.listRemoteFiles(kind, romId)
+                    val remote = newestRemoteFile(kind, remotes, coreId) ?: continue
+                    GameLog.log(
+                        "saves",
+                        "save remoto selecionado: tipo=${kind.path}, id=${remote.id}, núcleo=${remote.emulator}, " +
+                            "updatedAt=${remote.updatedAtMs}, candidatos compatíveis=${remotes.count { SaveSyncPolicy.isCompatibleRemote(kind, it.emulator, coreId) }}",
+                    )
+                    pullOne(context, client, store, kind, file, remote, romPath, coreId)
                 }
             } catch (error: Exception) {
                 var restoreFailure: Throwable? = null
@@ -194,6 +217,9 @@ object SaveSync {
                             if (snapshot.hash == null) remove("${snapshot.key}:hash") else putString("${snapshot.key}:hash", snapshot.hash)
                             if (snapshot.remote == Long.MIN_VALUE) remove("${snapshot.key}:remote") else putLong("${snapshot.key}:remote", snapshot.remote)
                             if (snapshot.id == Long.MIN_VALUE) remove("${snapshot.key}:id") else putLong("${snapshot.key}:id", snapshot.id)
+                            if (snapshot.appliedHash == null) remove(snapshot.appliedHashKey) else putString(snapshot.appliedHashKey, snapshot.appliedHash)
+                            val remoteKey = remoteHashKey(snapshot.kind, romPath)
+                            if (snapshot.remoteHash == null) remove(remoteKey) else putString(remoteKey, snapshot.remoteHash)
                         }
                     }.onFailure {
                         restoreFailure = it
@@ -215,47 +241,135 @@ object SaveSync {
         }
     }
 
-    private fun pullOne(context: Context, client: RomMClient, store: SaveStore, kind: RemoteFileKind, file: File, remote: RemoteFile, romPath: String) {
+    private fun pullOne(
+        context: Context,
+        client: RomMClient,
+        store: SaveStore,
+        kind: RemoteFileKind,
+        file: File,
+        remote: RemoteFile,
+        romPath: String,
+        coreId: String,
+    ) {
         // Recover the previous save if Android stopped the app during an earlier replacement.
         RomMFileReplacement.recoverFile(file)
         val prefs = prefs(context)
         val key = "${kind.path}:$romPath"
-        val lastHash = prefs.getString("$key:hash", null)
+        val appliedKey = appliedHashKey(kind, romPath, coreId)
+        val remoteKey = remoteHashKey(kind, romPath)
         val lastRemoteMs = prefs.getLong("$key:remote", 0L)
         val lastRemoteId = prefs.getLong("$key:id", -1L)
+        val lastRemoteHash = prefs.getString(remoteKey, null)
         val local = file.takeIf { it.isFile && it.length() > 0 }
-        val remoteChanged = SaveSyncPolicy.isRemoteVersionChanged(
-            remote.updatedAtMs,
-            remote.id,
-            lastRemoteMs,
-            lastRemoteId,
-        )
-        if (!remoteChanged) return
-        if (local != null && hash(local) != lastHash) {
-            // O relógio do aparelho pode divergir do servidor. Quando a versão remota mudou,
-            // preserve o save local divergente como backup e use a versão atual do RomM.
-            backup(store, file)
+        val localHash = local?.let(::hash)
+        var appliedHash = prefs.getString(appliedKey, null)
+        val legacyHash = prefs.getString("$key:hash", null)
+
+        // Migra o marcador antigo apenas quando o arquivo deste núcleo prova que contém aqueles bytes.
+        if (appliedHash == null && localHash != null && localHash == legacyHash) {
+            appliedHash = localHash
+            prefs.edit { putString(appliedKey, localHash) }
+        }
+
+        val temp = File(file.parentFile, "${file.name}.remote")
+        val serverContentHash = remote.contentHash
+        var downloadedContentHash: String? = null
+        var tempReady = false
+        try {
+            // Sem um hash remoto anterior não há como provar que content_hash corresponde
+            // à versão que o aparelho já conhecia. Fazemos uma verificação inicial do conteúdo.
+            // Se o servidor não fornece content_hash, a SRAM é verificada em cada inicialização.
+            if (SaveSyncPolicy.shouldVerifyRemoteContent(kind, serverContentHash, lastRemoteHash)) {
+                client.downloadRemoteFile(kind, remote.id, temp)
+                if (temp.length() == 0L) {
+                    throw IOException("O servidor RomM retornou um save vazio para ${File(romPath).name}")
+                }
+                downloadedContentHash = hash(temp)
+                tempReady = true
+            }
+            val comparisonRemoteHash = if (!serverContentHash.isNullOrBlank() && !lastRemoteHash.isNullOrBlank()) {
+                serverContentHash
+            } else {
+                downloadedContentHash ?: serverContentHash
+            }
+            val comparisonLastRemoteHash = if (!serverContentHash.isNullOrBlank() && !lastRemoteHash.isNullOrBlank()) {
+                lastRemoteHash
+            } else if (downloadedContentHash != null) {
+                lastRemoteHash ?: legacyHash
+            } else {
+                lastRemoteHash
+            }
+            val persistedRemoteHash = serverContentHash ?: downloadedContentHash
+
+            val remoteChanged = SaveSyncPolicy.isRemoteVersionChanged(
+                remote.updatedAtMs,
+                remote.id,
+                lastRemoteMs,
+                lastRemoteId,
+                comparisonRemoteHash,
+                comparisonLastRemoteHash,
+            )
+            val shouldApplyRemote = SaveSyncPolicy.shouldApplyRemote(
+                remoteChanged = remoteChanged,
+                localExists = local != null,
+                appliedHash = appliedHash,
+            )
+
+            if (!shouldApplyRemote) {
+                // Atualiza a identidade do registro mesmo quando o conteúdo é idêntico.
+                // Isso evita que o próximo upload tente atualizar um ID antigo já substituído no RomM.
+                prefs.edit {
+                    putLong("$key:remote", remote.updatedAtMs)
+                    putLong("$key:id", remote.id)
+                    persistedRemoteHash?.let { putString(remoteKey, it) } ?: remove(remoteKey)
+                }
+                if (localHash != appliedHash) {
+                    GameLog.log(
+                        "saves",
+                        "save local mudou desde a última sincronização; servidor sem nova versão; mantendo progresso local para envio posterior",
+                    )
+                } else {
+                    GameLog.log("saves", "save local já corresponde à versão remota conhecida; nenhum download necessário")
+                }
+                return
+            }
+
+            if (SaveSyncPolicy.shouldBackupLocal(local != null, localHash, appliedHash)) {
+                // O arquivo de outro núcleo pode existir, mas ainda não ter recebido a versão remota atual.
+                // Preserve-o antes de colocar o head remoto no diretório do núcleo que será iniciado.
+                backup(store, file)
+                GameLog.log(
+                    "saves",
+                    "save local divergente preservado em backup antes de aplicar a versão remota",
+                )
+            }
+
+            if (!tempReady) {
+                client.downloadRemoteFile(kind, remote.id, temp)
+                if (temp.length() == 0L) {
+                    throw IOException("O servidor RomM retornou um save vazio para ${File(romPath).name}")
+                }
+                tempReady = true
+                if (downloadedContentHash == null && serverContentHash == null) {
+                    downloadedContentHash = hash(temp)
+                }
+            }
+            // Keep the previous local save until the downloaded file is safely promoted.
+            RomMFileReplacement.replaceFile(temp, file)
+            val downloadedHash = hash(file)
+            prefs.edit {
+                putString("$key:hash", downloadedHash)
+                putString(appliedKey, downloadedHash)
+                putLong("$key:remote", remote.updatedAtMs)
+                putLong("$key:id", remote.id)
+                persistedRemoteHash?.let { putString(remoteKey, it) } ?: remove(remoteKey)
+            }
             GameLog.log(
                 "saves",
-                "versão remota mais recente selecionada; save local divergente preservado em backup",
+                "save remoto aplicado: tipo=${kind.path}, id=${remote.id}, núcleo destino=$coreId, bytes=${file.length()}",
             )
-        }
-        val temp = File(file.parentFile, "${file.name}.remote")
-        try {
-            client.downloadRemoteFile(kind, remote.id, temp)
-            if (temp.length() == 0L) {
-                throw IOException("O servidor RomM retornou um save vazio para ${File(romPath).name}")
-            }
-        } catch (error: Exception) {
+        } finally {
             temp.delete()
-            throw error
-        }
-        // Keep the previous local save until the downloaded file is safely promoted.
-        RomMFileReplacement.replaceFile(temp, file)
-        prefs.edit {
-            putString("$key:hash", hash(file))
-            putLong("$key:remote", remote.updatedAtMs)
-            putLong("$key:id", remote.id)
         }
     }
 
@@ -332,14 +446,16 @@ object SaveSync {
             if (!file.isFile || file.length() == 0L) continue
             val key = "${kind.path}:$romPath"
             val current = hash(file)
-            if (current == prefs.getString("$key:hash", null)) continue
+            val confirmedHash = prefs.getString(
+                appliedHashKey(kind, romPath, coreId),
+                prefs.getString("$key:hash", null),
+            )
+            if (current == confirmedHash) continue
             val storedId = prefs.getLong("$key:id", -1L).takeIf { it >= 0 }
             // A recuperação do Worker é "at least once": se o servidor aceitou um POST
-            // antes de o processo morrer, encontre o registro antes de tentar criar outro.
-            val existing = storedId ?: client.listRemoteFiles(kind, romId)
-                .filter { it.emulator == emulatorTag(coreId) }
-                .maxByOrNull { it.updatedAtMs }
-                ?.id
+            // antes de o processo morrer, encontre o head atual de qualquer núcleo Tandem
+            // para SRAM; estados rápidos continuam vinculados ao núcleo de origem.
+            val existing = storedId ?: newestRemoteFile(kind, client.listRemoteFiles(kind, romId), coreId)?.id
             val extension = if (kind == RemoteFileKind.Save) "srm" else "state"
             val uploadName = "${File(romPath).nameWithoutExtension}.$extension"
             val uploaded = try {
@@ -352,8 +468,11 @@ object SaveSync {
             }
             prefs.edit {
                 putString("$key:hash", current)
+                putString(appliedHashKey(kind, romPath, coreId), current)
                 putLong("$key:remote", uploaded.updatedAtMs)
                 putLong("$key:id", uploaded.id)
+                val remoteKey = remoteHashKey(kind, romPath)
+                if (uploaded.contentHash == null) remove(remoteKey) else putString(remoteKey, uploaded.contentHash)
             }
         }
     }
