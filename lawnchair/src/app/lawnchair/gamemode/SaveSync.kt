@@ -65,7 +65,7 @@ object SaveSync {
         val gameIdentity = gameIdentityOverride
             ?: GameIdentityResolver.cachedIdentity(context, File(romPath), platformSlug)
             ?: return null
-        val store = SaveStore(context, coreId, File(romPath), platformSlug = platformSlug)
+        val store = SaveStore(context, coreId, File(romPath), platformSlug = platformSlug, gameIdentity = gameIdentity, migrationSourcesOverride = emptyMap())
         if (files(store).none { (_, file) -> file.isFile && file.length() > 0L }) return null
         val prefs = prefs(context)
         val resolution = SaveSyncPolicy.resolveStatus(
@@ -194,6 +194,7 @@ object SaveSync {
         coreId: String,
         platformSlug: String? = null,
         gameIdentityOverride: String? = null,
+        migrationSources: Map<String, File>? = null,
     ) {
         val connection = GameIdentityResolver.connectionSnapshot(context)
         if (connection == null) {
@@ -211,7 +212,14 @@ object SaveSync {
         }
         val gameIdentity = gameIdentityOverride ?: GameIdentityResolver.resolve(context, File(romPath), platformSlug)
         val client = RomMClient(connection.url, connection.token)
-        val store = SaveStore(context, coreId, File(romPath), platformSlug = platformSlug, gameIdentity = gameIdentity)
+        val store = SaveStore(
+            context,
+            coreId,
+            File(romPath),
+            platformSlug = platformSlug,
+            gameIdentity = gameIdentity,
+            migrationSourcesOverride = migrationSources,
+        )
         // Compartilha o mesmo bloqueio do push: nunca permita pull e push simultâneos.
         lock.withLock {
             val prefs = prefs(context)
