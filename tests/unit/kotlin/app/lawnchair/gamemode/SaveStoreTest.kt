@@ -4,6 +4,7 @@ import java.io.File
 import java.nio.file.Files
 import org.junit.After
 import org.junit.Assert.assertArrayEquals
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertNotEquals
@@ -164,6 +165,19 @@ class SaveStoreTest {
         val after = GameIdentityResolver.fingerprint(playlist)
 
         assertNotEquals(before, after)
+    }
+
+    @Test
+    fun singleRomFingerprintSurvivesRename() {
+        val original = File(root, "folder/Original Name.nds")
+        original.parentFile.mkdirs()
+        original.writeBytes(byteArrayOf(4, 8, 15, 16, 23, 42))
+        val before = GameIdentityResolver.fingerprint(original)
+
+        val renamed = File(original.parentFile, "Renamed Name.nds")
+        assertTrue(original.renameTo(renamed))
+
+        assertEquals(before, GameIdentityResolver.fingerprint(renamed))
     }
 
 }
