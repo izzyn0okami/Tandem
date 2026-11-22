@@ -2847,3 +2847,52 @@ RESULTADO DE CI INTERMEDIÁRIA — RUN #608
 - Artefato Actions ID 14776836251; 46.075.712 bytes; digest do arquivo ZIP SHA-256 b54aee8456a6a450d6c5ec164b83a5bf3d56319accb85f379c21bf75469f342a; expira em 2027-02-20.
 - Esta execução valida identidade estável de conta e snapshots imutáveis, mas antecede as últimas alterações de bloqueio de migrações ambíguas/conflitantes. Não usar como CI final da PR.
 - A CI #614 (head de código 639693024ae9f094da498ef04fdbb492db0a5b12) continua sendo a validação necessária para o conjunto de migração mais recente; check-style passou, testes/build ainda estavam em andamento na última consulta.
+
+
+IMPLEMENTAÇÃO — CONFIRMAÇÃO EXPLÍCITA DE SAVES LEGADOS ROMM (PR #40)
+Data: 2026-11-22
+Branch: feat/stable-game-save-identity
+Head de código: bc48b7b54bb43164ee17f48066bdd775a304f079
+
+OBJETIVO
+Permitir que o usuário atribua conscientemente saves antigos sem proprietário de conta comprovado à conta RomM atualmente vinculada, sem apagar a origem ou escolher silenciosamente entre progressos conflitantes.
+
+IMPLEMENTADO
+1. LegacyMigrationPlan agora distingue:
+   - migração segura sem confirmação;
+   - confirmação explícita necessária;
+   - ambiguidade/conflito que permanece bloqueado.
+2. O diálogo aparece somente quando:
+   - existe vínculo RomM estável e atual para a ROM;
+   - o jogo é identificado de forma única na biblioteca quando a origem é a pasta legada por basename;
+   - a conta vinculada ao jogo corresponde à conta RomM atualmente configurada;
+   - não há conflito de conteúdo entre origem e destino.
+3. A confirmação do usuário:
+   - copia os arquivos para o diretório estável da conta e do jogo;
+   - usa staging/renomeação atômica da migração existente;
+   - confere os hashes SHA-256 e tamanhos dos arquivos copiados;
+   - mantém a pasta original integralmente preservada;
+   - revalida servidor, conta e vínculo no momento da confirmação, impedindo que uma troca de conta enquanto o diálogo está aberto copie os dados para o namespace errado.
+4. Cancelar mantém o save sem atribuição e não inicia o jogo.
+5. Destinos com bytes conflitantes continuam bloqueados; não há opção de sobrescrita silenciosa.
+6. RomMSaveSyncWorker também retorna retry quando a migração exige confirmação; não pode capturar nem enviar save legado antes da autorização.
+7. O núcleo só é instalado depois que a verificação da migração e a eventual confirmação forem resolvidas.
+
+TESTES AUTOMATIZADOS ADICIONADOS
+- Cópia legada verificada por hash/tamanho preserva integralmente a origem.
+- Destino com conteúdo diferente não é considerado cópia válida e a migração é recusada sem alterar origem/destino.
+- Os testes unitários existentes de identidade, isolamento de conta, snapshots e migração permanecem no conjunto.
+
+VALIDAÇÃO
+- PR #40 permanece aberta em draft; nenhum merge realizado.
+- Branch comparada com game-mode-m2-dev: behind_by=0 na última comparação.
+- CI #626 / run ID 45081324533, HEAD bc48b7b54bb43164ee17f48066bdd775a304f079: em andamento na última consulta. check-style e testes/build ainda não concluídos.
+- CI anterior #623 / run ID 45081080615: check-style passou; testes/build ainda em andamento, e não valida as últimas verificações de conta.
+- Teste funcional no telefone: pendente. A CI não comprova a interação do diálogo, o comportamento ao trocar contas nem a cópia real dos saves.
+- Não mesclar nem publicar APK até CI final aprovada, teste funcional no telefone e autorização explícita do usuário.
+
+PRÓXIMAS AÇÕES
+1. Aguardar CI #626; corrigir qualquer falha e validar novamente o HEAD final.
+2. Após CI completa, disponibilizar o APK para teste no aparelho.
+3. Testar: confirmação, cancelamento, troca de conta com diálogo aberto, cópia com origem preservada, retry do Worker e conflito entre bytes.
+4. Atualizar este log com o resultado completo da CI e dos testes confirmados pelo usuário.
