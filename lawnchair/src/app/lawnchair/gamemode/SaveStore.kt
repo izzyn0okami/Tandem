@@ -463,6 +463,45 @@ internal object GameIdentityResolver {
         return LegacyMigrationPlan(sources, ambiguous = false)
     }
 
+    internal fun stageLegacyConflictResolution(
+        source: File,
+        target: File,
+        temp: File,
+        preferSource: Boolean,
+    ): Boolean {
+        if (!source.isDirectory || !target.isDirectory) return false
+        if (temp.exists() && !temp.deleteRecursively()) return false
+        if (!temp.mkdirs()) return false
+        return runCatching {
+            val sourceFiles = source.walkTopDown().filter { it.isFile }
+                .associateBy { it.relativeTo(source).path }
+            val targetFiles = target.walkTopDown().filter { it.isFile }
+                .associateBy { it.relativeTo(target).path }
+            val expected = linkedMapOf<String, String>()
+            for (relative in (sourceFiles.keys + targetFiles.keys).toSortedSet()) {
+                val left = sourceFiles[relative]
+                val right = targetFiles[relative]
+                val chosen = when {
+                    left == null -> right!!
+                    right == null -> left
+                    left.length() == right.length() && fileHash(left) == fileHash(right) ->
+                        if (preferSource) left else right
+                    preferSource -> left
+                    else -> right
+                }
+                val destination = File(temp, relative)
+                check(destination.parentFile?.let { it.exists() || it.mkdirs() } == true)
+                chosen.copyTo(destination)
+                val hash = fileHash(chosen)
+                check(fileHash(destination) == hash)
+                expected[relative] = hash
+            }
+            val actual = temp.walkTopDown().filter { it.isFile }
+                .associate { it.relativeTo(temp).path to fileHash(it) }
+            actual == expected
+        }.getOrDefault(false)
+    }
+
     internal fun inspectLegacyConflicts(
         savesRoot: File,
         stableDirectoryName: String,
@@ -564,29 +603,9 @@ internal object GameIdentityResolver {
 
                 val temp = File(targetParent, ".${target.name}.conflict-$stamp")
                 val rollback = File(targetParent, ".${target.name}.rollback-$stamp")
-                if (temp.exists() && !temp.deleteRecursively()) return false
-                if (!temp.mkdirs()) return false
-
-                val sourceFiles = source.walkTopDown().filter { it.isFile }.associateBy { it.relativeTo(source).path }
-                val targetFiles = target.walkTopDown().filter { it.isFile }.associateBy { it.relativeTo(target).path }
-                for (relative in (sourceFiles.keys + targetFiles.keys).toSortedSet()) {
-                    val left = sourceFiles[relative]
-                    val right = targetFiles[relative]
-                    val chosen = when {
-                        left == null -> right!!
-                        right == null -> left
-                        left.length() == right.length() && fileHash(left) == fileHash(right) -> if (preferSource) left else right
-                        preferSource -> left
-                        else -> right
-                    }
-                    val destination = File(temp, relative)
-                    check(destination.parentFile?.let { it.exists() || it.mkdirs() } == true)
-                    chosen.copyTo(destination)
-                    check(fileHash(chosen) == fileHash(destination))
+                if (!stageLegacyConflictResolution(source, target, temp, preferSource)) {
+                    throw IOException("Não foi possível preparar e verificar o conjunto escolhido")
                 }
-                val stagedFiles = temp.walkTopDown().filter { it.isFile }.toList()
-                val expectedFiles = sourceFiles.keys + targetFiles.keys
-                check(stagedFiles.map { it.relativeTo(temp).path }.toSet() == expectedFiles)
                 prepared += Prepared(
                     coreId = coreId,
                     source = source,
