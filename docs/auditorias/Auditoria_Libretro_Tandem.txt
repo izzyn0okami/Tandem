@@ -2896,3 +2896,44 @@ PRÓXIMAS AÇÕES
 2. Após CI completa, disponibilizar o APK para teste no aparelho.
 3. Testar: confirmação, cancelamento, troca de conta com diálogo aberto, cópia com origem preservada, retry do Worker e conflito entre bytes.
 4. Atualizar este log com o resultado completo da CI e dos testes confirmados pelo usuário.
+
+
+VALIDAÇÃO DE CI — PR #40 / IDENTIDADE ESTÁVEL E MIGRAÇÃO DE SAVES
+Data: 2026-11-22
+Branch: feat/stable-game-save-identity
+Base: game-mode-m2-dev
+Estado da PR: aberta, draft, sem merge.
+Comparação com a base: 155 commits à frente; 0 commits atrás.
+
+CI #626
+- Run ID: 45081324533
+- Commit validado: bc48b7b54bb43164ee17f48066bdd775a304f079 (head com as alterações de código da confirmação explícita).
+- check-style / spotlessCheck: sucesso.
+- build-debug-apk / testes unitários: sucesso.
+- Build APK: sucesso.
+- Upload artifact: sucesso.
+- final-status: sucesso.
+- Resultado global: CI concluída com sucesso.
+
+CI #627
+- Run ID: 45081445838
+- Commit validado: 683ffac74453b1140dd1bcc7c182943cd8dff401 (inclui a atualização documental posterior; código funcional igual ao validado na CI #626).
+- check-style / spotlessCheck: sucesso.
+- build-debug-apk / testes unitários: sucesso.
+- Build APK: sucesso.
+- Upload artifact: sucesso.
+- final-status: sucesso.
+- Resultado global: CI concluída com sucesso.
+- Artefato: assembleLawnWithQuickstepGithubDebug, ID 14778190424, 46.090.686 bytes.
+- SHA-256 do ZIP do artefato: e857a7ea687f1563efaca83c511ff2b169910689a712157745de05970b1e1f16.
+- Disponível até 2027-02-20T23:06:50Z.
+- Execução: https://github.com/izzyn0okami/Tandem/actions/runs/45081445838
+
+PENDÊNCIAS APÓS CI
+- Testar no telefone o diálogo de atribuição de saves legados: confirmar e cancelar.
+- Confirmar que a origem permanece intacta após a cópia.
+- Verificar revalidação da conta se a conta RomM for alterada com o diálogo aberto.
+- Verificar que o Worker não envia saves enquanto a confirmação estiver pendente e que retoma/re tenta corretamente depois.
+- Verificar conflito de conteúdo entre origem e destino: nenhum conjunto deve ser sobrescrito ou descartado.
+- Não considerar o teste no telefone concluído sem confirmação do usuário.
+- Não mesclar a PR #40 sem autorização explícita.
