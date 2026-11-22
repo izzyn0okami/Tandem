@@ -18,21 +18,14 @@ internal data class RomMConnectionSnapshot(
 )
 
 internal object GameIdentityResolver {
-    private const val LINK_PREFIX = "game_link:"
-
     fun resolve(context: Context, romFile: File, platformSlug: String?): String {
         val fingerprint = fingerprint(romFile)
         val prefs = context.getSharedPreferences("romm_sync", Context.MODE_PRIVATE)
         val directId = prefs.getLong("rom:${romFile.absolutePath}", -1L)
         val storedServer = prefs.getString("rom_server:${romFile.absolutePath}", null)
-        val currentServer = connectionSnapshot(context)?.server
-        val server = if (directId >= 0L) storedServer else currentServer
-        val account = connectionSnapshot(context)?.accountFingerprint
-        val linkedId = when {
-            directId >= 0L -> directId
-            server != null && account != null -> prefs.getLong(linkKey(server, account, fingerprint), -1L)
-            else -> -1L
-        }
+        val contentLink = parseContentLink(prefs.getString(contentLinkKey(fingerprint), null))
+        val server = if (directId >= 0L) storedServer else contentLink?.server
+        val linkedId = if (directId >= 0L) directId else contentLink?.romId ?: -1L
         return when {
             linkedId >= 0L && server != null -> "romm-${digest("$server|$linkedId")}"
             directId >= 0L -> "romm-legacy-${digest("${platformSlug.orEmpty()}|$directId")}"
@@ -61,7 +54,8 @@ internal object GameIdentityResolver {
             val storedAccount = prefs.getString("rom_account:${romFile.absolutePath}", null)
             return direct.takeIf { storedServer == server && storedAccount == account }
         }
-        return prefs.getLong(linkKey(server, account, fingerprint(romFile)), -1L).takeIf { it >= 0L }
+        val link = parseContentLink(prefs.getString(contentLinkKey(fingerprint(romFile)), null)) ?: return null
+        return link.romId.takeIf { link.server == server && link.accountFingerprint == account }
     }
 
     fun connectionSnapshot(context: Context): RomMConnectionSnapshot? {
@@ -78,11 +72,7 @@ internal object GameIdentityResolver {
         val prefs = context.getSharedPreferences("romm_sync", Context.MODE_PRIVATE)
         val direct = prefs.getLong("rom:${romFile.absolutePath}", -1L)
         if (direct >= 0L) return prefs.getString("rom_account:${romFile.absolutePath}", null)
-        val connection = connectionSnapshot(context) ?: return null
-        val currentAccount = connection.accountFingerprint
-        val server = connection.server
-        val linked = prefs.getLong(linkKey(server, currentAccount, fingerprint(romFile)), -1L)
-        return currentAccount.takeIf { linked >= 0L }
+        return parseContentLink(prefs.getString(contentLinkKey(fingerprint(romFile)), null))?.accountFingerprint
     }
 
     /** Finds a moved ROM by its stable identity, without trusting the old path. */
@@ -97,16 +87,20 @@ internal object GameIdentityResolver {
 
     /** Adds a content-based association so a moved or renamed downloaded ROM keeps its RomM link. */
     fun link(context: Context, romFile: File, romId: Long) {
-        val server = normalizedServer(RomMSettings.url(context)) ?: return
+        val connection = connectionSnapshot(context) ?: return
         if (!romFile.isFile) return
-        val key = linkKey(server, fingerprint(romFile))
+        val fingerprint = fingerprint(romFile)
         val prefs = context.getSharedPreferences("romm_sync", Context.MODE_PRIVATE)
-        val existing = prefs.getLong(key, -1L)
+        val key = contentLinkKey(fingerprint)
+        val encoded = "${connection.server}|${connection.accountFingerprint}|$romId"
+        val existing = prefs.getString(key, null)
         prefs.edit {
-            // Identical content linked to two different RomM records is ambiguous. Fail closed:
-            // keep the conflict marker rather than silently assigning one game's identity.
-            if (existing == -1L || existing == romId) putLong(key, romId)
-            else putLong(key, -2L)
+            putLong("rom:${romFile.absolutePath}", romId)
+            putString("rom_server:${romFile.absolutePath}", connection.server)
+            putString("rom_account:${romFile.absolutePath}", connection.accountFingerprint)
+            // A content fingerprint shared by different server records is ambiguous after a move.
+            if (existing == null || existing == encoded) putString(key, encoded)
+            else putString(key, "ambiguous")
         }
     }
 
@@ -212,7 +206,16 @@ internal object GameIdentityResolver {
         return digest.digest().toHex()
     }
 
-    private fun linkKey(server: String, account: String, fingerprint: String) = LINK_PREFIX + digest("$server|$account|$fingerprint")
+    private data class ContentLink(val server: String, val accountFingerprint: String, val romId: Long)
+
+    private fun contentLinkKey(fingerprint: String) = "game_link_content:$fingerprint"
+
+    private fun parseContentLink(value: String?): ContentLink? {
+        val parts = value?.split('|') ?: return null
+        if (parts.size != 3) return null
+        val romId = parts[2].toLongOrNull() ?: return null
+        return ContentLink(parts[0], parts[1], romId)
+    }
 
     private fun normalizedServer(value: String?): String? {
         if (value.isNullOrBlank()) return null
