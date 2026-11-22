@@ -232,7 +232,7 @@ object SaveSync {
                             if (snapshot.remote == Long.MIN_VALUE) remove("${snapshot.key}:remote") else putLong("${snapshot.key}:remote", snapshot.remote)
                             if (snapshot.id == Long.MIN_VALUE) remove("${snapshot.key}:id") else putLong("${snapshot.key}:id", snapshot.id)
                             if (snapshot.appliedHash == null) remove(snapshot.appliedHashKey) else putString(snapshot.appliedHashKey, snapshot.appliedHash)
-                            val remoteKey = SaveSyncPolicy.remoteHashKey(snapshot.kind, romPath, coreId)
+                            val remoteKey = SaveSyncPolicy.remoteHashKey(snapshot.kind, gameIdentity, coreId)
                             if (snapshot.remoteHash == null) remove(remoteKey) else putString(remoteKey, snapshot.remoteHash)
                         }
                     }.onFailure {
@@ -451,7 +451,7 @@ object SaveSync {
                 putLong("${statusKey(gameIdentity)}:started", System.currentTimeMillis())
             }
             try {
-                withContext(Dispatchers.IO) { push(app, syncClient, activeRomPath, coreId, gameIdentity, linkedRomId) }
+                withContext(Dispatchers.IO) { push(app, syncClient, activeRomPath, coreId, platformSlug, gameIdentity, linkedRomId) }
                 prefs(app).edit {
                     putString(statusKey(gameIdentity), "synced")
                     remove("${statusKey(gameIdentity)}:started")
@@ -473,8 +473,16 @@ object SaveSync {
         val key = digest.joinToString("") { "%02x".format(it) }
         return "romm-save-sync:$key"
     }
-    private fun push(context: Context, client: RomMClient, romPath: String, coreId: String, gameIdentity: String, romId: Long) {
-        val store = SaveStore(context, coreId, File(romPath))
+    private fun push(
+        context: Context,
+        client: RomMClient,
+        romPath: String,
+        coreId: String,
+        platformSlug: String?,
+        gameIdentity: String,
+        romId: Long,
+    ) {
+        val store = SaveStore(context, coreId, File(romPath), platformSlug = platformSlug)
         val prefs = prefs(context)
         for ((kind, file) in files(store)) {
             if (!file.isFile || file.length() == 0L) continue
