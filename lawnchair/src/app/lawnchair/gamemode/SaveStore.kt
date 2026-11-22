@@ -26,10 +26,9 @@ internal object GameIdentityResolver {
     private val cueFileReference = Regex("""(?i)^\s*FILE\s+(?:"([^"]+)"|(\S+))""")
     private val cueFileDirective = Regex("""(?i)^\s*FILE\s+(?:"[^"]+"|\S+)""")
 
-    private fun referencedFile(parent: File?, reference: String): File =
-        File(parent, reference.replace('\\', '/'))
-    fun resolve(context: Context, romFile: File, platformSlug: String?): String =
-        resolveWithFingerprint(context, romFile, platformSlug, cachedFingerprint(context, romFile))
+    private fun referencedFile(parent: File?, reference: String): File = File(parent, reference.replace('\\', '/'))
+
+    fun resolve(context: Context, romFile: File, platformSlug: String?): String = resolveWithFingerprint(context, romFile, platformSlug, cachedFingerprint(context, romFile))
 
     fun cachedIdentity(context: Context, romFile: File, platformSlug: String?): String? {
         val fingerprint = cachedFingerprintIfAvailable(context, romFile) ?: return null
@@ -52,7 +51,9 @@ internal object GameIdentityResolver {
         val linkedId = if (directId >= 0L) directId else contentLink?.romId ?: -1L
         return when {
             linkedId >= 0L && server != null -> "romm-${digest("$server|$linkedId")}"
+
             directId >= 0L -> "romm-legacy-${digest("${platformSlug.orEmpty()}|$directId")}"
+
             else -> {
                 "local-${digest("${platformSlug.orEmpty()}|$fingerprint")}"
             }
@@ -73,8 +74,7 @@ internal object GameIdentityResolver {
         return parseContentLink(prefs.getString(contentLinkKey(fingerprint), null)) != null
     }
 
-    internal fun isSameGameFingerprint(stored: String?, current: String): Boolean =
-        !stored.isNullOrBlank() && stored == current
+    internal fun isSameGameFingerprint(stored: String?, current: String): Boolean = !stored.isNullOrBlank() && stored == current
 
     fun linkedRomId(
         context: Context,
@@ -172,8 +172,11 @@ internal object GameIdentityResolver {
             putString("rom_account:${romFile.absolutePath}", connection.accountFingerprint)
             // Token rotation for the same server/game may update the account fingerprint.
             // Different remote records sharing identical bytes remain ambiguous after a move.
-            if (existing == null || existing == encoded || sameRemoteGame) putString(key, encoded)
-            else putString(key, "ambiguous")
+            if (existing == null || existing == encoded || sameRemoteGame) {
+                putString(key, encoded)
+            } else {
+                putString(key, "ambiguous")
+            }
         }
     }
 
@@ -309,9 +312,11 @@ internal object GameIdentityResolver {
                 .map { it.relativeTo(temp).path }
                 .toSet()
             check(copiedFiles == expectedHashes.keys)
-            check(expectedHashes.all { (relative, expected) ->
-                fileHash(File(temp, relative)) == expected
-            })
+            check(
+                expectedHashes.all { (relative, expected) ->
+                    fileHash(File(temp, relative)) == expected
+                },
+            )
             if (conflictingFiles.isNotEmpty()) {
                 runCatching {
                     GameLog.log(
@@ -399,8 +404,7 @@ internal object GameIdentityResolver {
 
     private fun sanitize(value: String) = value.replace(Regex("[^A-Za-z0-9._ -]"), "_")
 
-    private fun digest(value: String): String =
-        MessageDigest.getInstance("SHA-256").digest(value.toByteArray(Charsets.UTF_8)).toHex()
+    private fun digest(value: String): String = MessageDigest.getInstance("SHA-256").digest(value.toByteArray(Charsets.UTF_8)).toHex()
 
     private fun ByteArray.toHex(): String = joinToString("") { "%02x".format(it.toInt() and 0xFF) }
 }
