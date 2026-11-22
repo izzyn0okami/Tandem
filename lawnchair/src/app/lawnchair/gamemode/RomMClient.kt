@@ -7,8 +7,10 @@ import androidx.core.content.edit
 import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
+import java.security.MessageDigest
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
+import java.util.zip.CRC32
 import okhttp3.Call
 import okhttp3.EventListener
 import okhttp3.HttpUrl
@@ -54,7 +56,14 @@ data class RemoteGame(
 }
 
 /** Arquivo de firmware (BIOS) guardado no servidor. */
-data class RemoteFirmware(val id: Long, val fileName: String)
+data class RemoteFirmware(
+    val id: Long,
+    val fileName: String,
+    val sizeBytes: Long? = null,
+    val crcHash: String? = null,
+    val md5Hash: String? = null,
+    val sha1Hash: String? = null,
+)
 
 enum class RemoteFileKind(val path: String, val part: String) {
     Save("saves", "saveFile"),
@@ -871,7 +880,14 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
             for (j in 0 until firmware.length()) {
                 val item = firmware.getJSONObject(j)
                 if (item.optBoolean("missing_from_fs", false)) continue
-                result += RemoteFirmware(item.getLong("id"), item.getString("file_name"))
+                result += RemoteFirmware(
+                    id = item.getLong("id"),
+                    fileName = item.getString("file_name"),
+                    sizeBytes = item.optLong("file_size_bytes", 0L).takeIf { it > 0L },
+                    crcHash = item.optString("crc_hash").takeUnless { it.isBlank() || it.equals("null", true) },
+                    md5Hash = item.optString("md5_hash").takeUnless { it.isBlank() || it.equals("null", true) },
+                    sha1Hash = item.optString("sha1_hash").takeUnless { it.isBlank() || it.equals("null", true) },
+                )
             }
         }
         return result
@@ -882,7 +898,68 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
             .newBuilder()
             .addPathSegment(firmware.fileName)
             .build()
-        downloadToFile(url, target, "firmware=${firmware.id}, arquivo=${firmware.fileName}")
+        target.parentFile?.mkdirs()
+        val temp = File(target.parentFile, "${target.name}.part")
+        val description = "firmware=${firmware.id}, arquivo=${firmware.fileName}"
+        downloadResumable(
+            url,
+            temp,
+            description,
+            estimateRequiredSpace = { total -> total.takeIf { it > 0L } ?: firmware.sizeBytes ?: 0L },
+            onProgress = {},
+        )
+        try {
+            verifyFirmwareIntegrity(temp, firmware)
+        } catch (error: Exception) {
+            temp.delete()
+            File(temp.parentFile, "${temp.name}.range").delete()
+            throw error
+        }
+        target.delete()
+        check(temp.renameTo(target)) { "Não consegui gravar ${target.name}" }
+        File(temp.parentFile, "${temp.name}.range").delete()
+    }
+
+    /** Compara o arquivo recebido com tamanho e hashes publicados pelo RomM, quando disponíveis. */
+    private fun verifyFirmwareIntegrity(file: File, firmware: RemoteFirmware) {
+        firmware.sizeBytes?.let { expected ->
+            check(file.length() == expected) {
+                "Firmware ${firmware.fileName} incompleto: recebidos ${file.length()} de $expected bytes"
+            }
+        }
+        val expectedHashes = listOfNotNull(
+            firmware.crcHash?.let { "CRC32" to it },
+            firmware.md5Hash?.let { "MD5" to it },
+            firmware.sha1Hash?.let { "SHA-1" to it },
+        )
+        if (expectedHashes.isEmpty()) return
+
+        val crc = if (firmware.crcHash != null) CRC32() else null
+        val md5 = if (firmware.md5Hash != null) MessageDigest.getInstance("MD5") else null
+        val sha1 = if (firmware.sha1Hash != null) MessageDigest.getInstance("SHA-1") else null
+        file.inputStream().use { input ->
+            val buffer = ByteArray(64 * 1024)
+            while (true) {
+                val read = input.read(buffer)
+                if (read < 0) break
+                crc?.update(buffer, 0, read)
+                md5?.update(buffer, 0, read)
+                sha1?.update(buffer, 0, read)
+            }
+        }
+        fun hex(bytes: ByteArray): String = bytes.joinToString("") { "%02x".format(it.toInt() and 0xff) }
+        val actualHashes = buildMap {
+            crc?.let { put("CRC32", it.value.toString(16).padStart(8, '0')) }
+            md5?.let { put("MD5", hex(it.digest())) }
+            sha1?.let { put("SHA-1", hex(it.digest())) }
+        }
+        expectedHashes.forEach { (algorithm, expected) ->
+            val actual = actualHashes.getValue(algorithm)
+            check(actual.equals(expected.trim(), ignoreCase = true)) {
+                "Integridade do firmware ${firmware.fileName} inválida: hash $algorithm não corresponde"
+            }
+        }
+        GameLog.log("romm", "integridade do firmware confirmada: ${firmware.fileName}; verificações=${expectedHashes.map { it.first }}")
     }
 
     private fun downloadToFile(url: HttpUrl, target: File, description: String) {
