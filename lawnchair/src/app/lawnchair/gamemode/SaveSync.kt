@@ -545,7 +545,22 @@ object SaveSync {
         val connection = GameIdentityResolver.connectionSnapshot(app) ?: return false
         if (!SaveSyncPolicy.isSameSyncAccount(expectedAccountFingerprint, connection.accountFingerprint)) return false
         val activeRomPath = GameIdentityResolver.findRomPath(app, gameIdentity, romPath, platformSlug) ?: return false
-        val linkedRomId = GameIdentityResolver.linkedRomId(app, File(activeRomPath), connection) ?: return false
+        val activeRom = File(activeRomPath)
+        val siblingCores = platformSlug
+            ?.let(GamePlatforms::bySlug)
+            ?.let { CoreRegistry.cores(it) }
+            .orEmpty()
+            .map { it.id }
+        val migrationPlan = GameIdentityResolver.planLegacyMigration(
+            app,
+            GameFolders.dir(app, FolderKind.Saves),
+            activeRom,
+            platformSlug,
+            listOf(coreId) + siblingCores,
+            gameIdentity,
+        )
+        if (migrationPlan.ambiguous) return false
+        val linkedRomId = GameIdentityResolver.linkedRomId(app, activeRom, connection) ?: return false
         val syncClient = RomMClient(connection.url, connection.token)
         lock.withLock {
             // A sessão pode ter sido reaberta, inclusive depois de mover a ROM.
