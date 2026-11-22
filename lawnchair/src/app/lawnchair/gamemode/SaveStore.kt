@@ -3,6 +3,7 @@ package app.lawnchair.gamemode
 import android.content.Context
 import androidx.core.content.edit
 import java.io.File
+import java.io.IOException
 import java.security.MessageDigest
 import java.util.Locale
 
