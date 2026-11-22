@@ -55,7 +55,8 @@ object SaveSync {
 
     private fun prefs(context: Context) = context.getSharedPreferences("romm_sync", Context.MODE_PRIVATE)
 
-    private fun statusKey(gameIdentity: String) = "sync_status:$gameIdentity"
+    private fun statusKey(gameIdentity: String, accountFingerprint: String) =
+        "sync_status:$gameIdentity:$accountFingerprint"
 
     /** Estado persistente exibido na biblioteca. Só existe para ROM vinculada ao RomM e com saves locais. */
     fun status(
@@ -69,6 +70,8 @@ object SaveSync {
         val gameIdentity = gameIdentityOverride
             ?: GameIdentityResolver.cachedIdentity(context, File(romPath), platformSlug)
             ?: return null
+        val accountFingerprint = GameIdentityResolver.originAccountFingerprint(context, File(romPath)) ?: return null
+        val statusKey = statusKey(gameIdentity, accountFingerprint)
         val store = SaveStore(
             context,
             coreId,
@@ -80,14 +83,14 @@ object SaveSync {
         if (files(store).none { (_, file) -> file.isFile && file.length() > 0L }) return null
         val prefs = prefs(context)
         val resolution = SaveSyncPolicy.resolveStatus(
-            prefs.getString(statusKey(gameIdentity), null),
-            prefs.getLong("${statusKey(gameIdentity)}:started", 0L),
+            prefs.getString(statusKey, null),
+            prefs.getLong("$statusKey:started", 0L),
             System.currentTimeMillis(),
         )
         if (resolution.resetStartedAt) {
             prefs.edit {
-                putString(statusKey(gameIdentity), "pending")
-                remove("${statusKey(gameIdentity)}:started")
+                putString(statusKey, "pending")
+                remove("$statusKey:started")
             }
         }
         return resolution.status
@@ -103,6 +106,8 @@ object SaveSync {
     ) {
         if (!GameIdentityResolver.hasRomMLink(context, File(romPath))) return
         val gameIdentity = gameIdentityOverride ?: GameIdentityResolver.resolve(context, File(romPath), platformSlug)
+        val accountFingerprint = GameIdentityResolver.originAccountFingerprint(context, File(romPath)) ?: return
+        val statusKey = statusKey(gameIdentity, accountFingerprint)
         val store = SaveStore(
             context,
             coreId,
@@ -128,7 +133,7 @@ object SaveSync {
                 confirmedHash,
             )
         }
-        if (changed) prefs.edit { putString(statusKey(gameIdentity), "pending") }
+        if (changed) prefs.edit { putString(statusKey, "pending") }
     }
 
     /** Liga uma ROM baixada ao jogo correspondente no servidor. */
@@ -207,9 +212,11 @@ object SaveSync {
     ) {
         if (!GameIdentityResolver.hasRomMLink(context, File(romPath))) return
         val gameIdentity = gameIdentityOverride ?: GameIdentityResolver.resolve(context, File(romPath), platformSlug)
+        val accountFingerprint = GameIdentityResolver.originAccountFingerprint(context, File(romPath)) ?: return
+        val statusKey = statusKey(gameIdentity, accountFingerprint)
         prefs(context).edit {
-            putString(statusKey(gameIdentity), "pending")
-            remove("${statusKey(gameIdentity)}:started")
+            putString(statusKey, "pending")
+            remove("$statusKey:started")
         }
     }
 
@@ -512,12 +519,13 @@ object SaveSync {
             .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 30, TimeUnit.SECONDS)
             .addTag(WORK_TAG)
             .build()
+        val statusKey = statusKey(gameIdentity, accountFingerprint)
         prefs(app).edit {
-            putString(statusKey(gameIdentity), "pending")
-            remove("${statusKey(gameIdentity)}:started")
+            putString(statusKey, "pending")
+            remove("$statusKey:started")
         }
         WorkManager.getInstance(app).enqueueUniqueWork(
-            workName(gameIdentity, coreId),
+            workName(gameIdentity, coreId, accountFingerprint),
             ExistingWorkPolicy.APPEND_OR_REPLACE,
             request,
         )
@@ -543,28 +551,33 @@ object SaveSync {
             // A sessão pode ter sido reaberta, inclusive depois de mover a ROM.
             // Não envie arquivos enquanto o núcleo puder estar atualizando o save.
             if (isSessionActive(app, gameIdentity)) return false
+            val statusKey = statusKey(gameIdentity, expectedAccountFingerprint)
             prefs(app).edit {
-                putString(statusKey(gameIdentity), "syncing")
-                putLong("${statusKey(gameIdentity)}:started", System.currentTimeMillis())
+                putString(statusKey, "syncing")
+                putLong("$statusKey:started", System.currentTimeMillis())
             }
             try {
                 withContext(Dispatchers.IO) {
                     push(app, syncClient, activeRomPath, coreId, platformSlug, gameIdentity, linkedRomId)
                 }
                 prefs(app).edit {
-                    putString(statusKey(gameIdentity), "synced")
-                    remove("${statusKey(gameIdentity)}:started")
+                    putString(statusKey, "synced")
+                    remove("$statusKey:started")
                 }
                 return true
             } catch (error: Exception) {
-                markSyncPending(app, activeRomPath, coreId, platformSlug)
+                prefs(app).edit {
+                    putString(statusKey, "pending")
+                    remove("$statusKey:started")
+                }
                 throw error
             }
         }
     }
 
-    private fun workName(gameIdentity: String, coreId: String): String {
-        val digest = MessageDigest.getInstance("SHA-256").digest("$gameIdentity|$coreId".toByteArray(Charsets.UTF_8))
+    private fun workName(gameIdentity: String, coreId: String, accountFingerprint: String): String {
+        val digest = MessageDigest.getInstance("SHA-256")
+            .digest("$gameIdentity|$coreId|$accountFingerprint".toByteArray(Charsets.UTF_8))
         val key = digest.joinToString("") { "%02x".format(it) }
         return "romm-save-sync:$key"
     }
