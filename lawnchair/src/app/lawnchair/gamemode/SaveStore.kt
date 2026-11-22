@@ -21,7 +21,9 @@ internal object GameIdentityResolver {
     fun resolve(context: Context, romFile: File, platformSlug: String?): String {
         val fingerprint = cachedFingerprint(context, romFile)
         val prefs = context.getSharedPreferences("romm_sync", Context.MODE_PRIVATE)
-        val directId = prefs.getLong("rom:${romFile.absolutePath}", -1L)
+        val storedDirectId = prefs.getLong("rom:${romFile.absolutePath}", -1L)
+        val directFingerprint = prefs.getString("rom_fingerprint:${romFile.absolutePath}", null)
+        val directId = storedDirectId.takeIf { isSameGameFingerprint(directFingerprint, fingerprint) } ?: -1L
         val storedServer = prefs.getString("rom_server:${romFile.absolutePath}", null)
         val contentLink = parseContentLink(prefs.getString(contentLinkKey(fingerprint), null))
         val server = if (directId >= 0L) storedServer else contentLink?.server
@@ -41,6 +43,9 @@ internal object GameIdentityResolver {
             parseContentLink(prefs.getString(contentLinkKey(cachedFingerprint(context, romFile)), null)) != null
     }
 
+    internal fun isSameGameFingerprint(stored: String?, current: String): Boolean =
+        !stored.isNullOrBlank() && stored == current
+
     fun linkedRomId(
         context: Context,
         romFile: File,
@@ -48,15 +53,18 @@ internal object GameIdentityResolver {
     ): Long? {
         val prefs = context.getSharedPreferences("romm_sync", Context.MODE_PRIVATE)
         val direct = prefs.getLong("rom:${romFile.absolutePath}", -1L)
+        val currentFingerprint = cachedFingerprint(context, romFile)
+        val directFingerprint = prefs.getString("rom_fingerprint:${romFile.absolutePath}", null)
+        val verifiedDirect = direct.takeIf { isSameGameFingerprint(directFingerprint, currentFingerprint) } ?: -1L
         connection ?: return null
         val server = connection.server
         val account = connection.accountFingerprint
-        if (direct >= 0L) {
+        if (verifiedDirect >= 0L) {
             val storedServer = prefs.getString("rom_server:${romFile.absolutePath}", null)
             val storedAccount = prefs.getString("rom_account:${romFile.absolutePath}", null)
-            return direct.takeIf { storedServer == server && storedAccount == account }
+            return verifiedDirect.takeIf { storedServer == server && storedAccount == account }
         }
-        val link = parseContentLink(prefs.getString(contentLinkKey(cachedFingerprint(context, romFile)), null)) ?: return null
+        val link = parseContentLink(prefs.getString(contentLinkKey(currentFingerprint), null)) ?: return null
         return link.romId.takeIf { link.server == server && link.accountFingerprint == account }
     }
 
@@ -71,8 +79,12 @@ internal object GameIdentityResolver {
     fun originAccountFingerprint(context: Context, romFile: File): String? {
         val prefs = context.getSharedPreferences("romm_sync", Context.MODE_PRIVATE)
         val direct = prefs.getLong("rom:${romFile.absolutePath}", -1L)
-        if (direct >= 0L) return prefs.getString("rom_account:${romFile.absolutePath}", null)
-        return parseContentLink(prefs.getString(contentLinkKey(cachedFingerprint(context, romFile)), null))?.accountFingerprint
+        val fingerprint = cachedFingerprint(context, romFile)
+        val directFingerprint = prefs.getString("rom_fingerprint:${romFile.absolutePath}", null)
+        if (direct >= 0L && isSameGameFingerprint(directFingerprint, fingerprint)) {
+            return prefs.getString("rom_account:${romFile.absolutePath}", null)
+        }
+        return parseContentLink(prefs.getString(contentLinkKey(fingerprint), null))?.accountFingerprint
     }
 
     /** Finds a moved ROM by its stable identity, without trusting the old path. */
@@ -96,6 +108,7 @@ internal object GameIdentityResolver {
         val existing = prefs.getString(key, null)
         prefs.edit {
             putLong("rom:${romFile.absolutePath}", romId)
+            putString("rom_fingerprint:${romFile.absolutePath}", fingerprint)
             putString("rom_server:${romFile.absolutePath}", connection.server)
             putString("rom_account:${romFile.absolutePath}", connection.accountFingerprint)
             // A content fingerprint shared by different server records is ambiguous after a move.
