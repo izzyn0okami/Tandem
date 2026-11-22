@@ -1941,3 +1941,18 @@ Data: 2026-11-22
 - Último reforço: se o rollback não conseguir restaurar integralmente os arquivos/metadados, o Tandem desativa a ação "Iniciar com save local" e mantém os snapshots restantes como arquivos de recuperação; oferece apenas nova tentativa. Isso evita apagar a única cópia de recuperação.
 - Commit mais recente da implementação: dd4fb29ece8722a6087357de22125c6ad6eef7fb.
 - CI do commit mais recente e teste funcional no aparelho ainda pendentes.
+
+
+
+AUDITORIA — PROTEÇÃO DO CICLO DE VIDA DA SESSÃO LIBRETRO / THREAD OPENGL
+Data: 2026-11-22
+Branch: fix/libretro-gl-session-teardown
+Status: implementação inicial; CI e testes funcionais pendentes.
+- Identificado risco de JNI após destruição: eventos assíncronos podiam permanecer na fila GL e executar depois de destroyNative() marcar a sessão como encerrada.
+- Implementado helper queueNativeEvent(), que verifica o estado antes de enfileirar e novamente na execução. Eventos pendentes passam a ser descartados após o início do teardown.
+- Operações síncronas via runOnGLThread() agora verificam o estado antes de enfileirar e no momento da execução; a contagem da latch é mantida mesmo quando o encerramento vence a corrida.
+- Mantido o caminho raw de fila usado por destroyNative(), para não bloquear a própria chamada LibretroDroid.destroy().
+- restoreAchievementsProgressAsync() permanece com tratamento próprio: se a sessão já foi destruída, não chama JNI e conclui o callback com null, preservando o contrato existente.
+- RenderLifecycleObserver deixa de chamar resume/pause nativos após a destruição; entradas diretas de controles, sensores, controladores e leituras de Rewind também passam a ignorar/retornar valores seguros após o encerramento.
+- Nenhuma alteração foi feita na política de saves, BIOS, núcleos, RetroAchievements ou Rewind durante uma sessão ativa.
+- Limitação conhecida desta etapa: não foi acrescentado teste automatizado de concorrência do GLSurfaceView/JNI; a cobertura atual do módulo não exercita esse ciclo de vida. Revisar o diff, executar Spotless/build/CI e validar no aparelho encerramento normal, pausa/retomada e callbacks tardios antes de considerar concluído.
