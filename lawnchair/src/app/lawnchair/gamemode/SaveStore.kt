@@ -117,7 +117,7 @@ internal object GameIdentityResolver {
         coreIds: List<String>,
         stableDirectoryName: String,
     ): Map<String, File> {
-        val targetExists = coreIds.any { File(File(savesRoot, it), stableDirectoryName).exists() }
+        val targetExists = coreIds.all { File(File(savesRoot, it), stableDirectoryName).exists() }
         if (targetExists) return emptyMap()
 
         val libraryRoot = File(GameLibrarySettings.rootPath(context))
