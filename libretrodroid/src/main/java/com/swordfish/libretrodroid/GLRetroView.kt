@@ -81,7 +81,7 @@ class GLRetroView(
     private fun updateCoreSensorAccess() {
         val motion = if (coreMotionAllowed) motionSensors.availableSensors else 0
         val sun = if (sunSensorEnabled && !coreSensorsBlocked) LibretroDroid.SENSOR_ILLUMINANCE else 0
-        LibretroDroid.setCoreSensorAccess(motion or sun)
+        if (!isDestroyed) LibretroDroid.setCoreSensorAccess(motion or sun)
         updateMotionSensors()
     }
 
@@ -123,15 +123,15 @@ class GLRetroView(
     }
 
     var audioEnabled: Boolean by Delegates.observable(true) { _, _, value ->
-        LibretroDroid.setAudioEnabled(value)
+        if (!isDestroyed) LibretroDroid.setAudioEnabled(value)
     }
 
     var pitchPreservationEnabled: Boolean by Delegates.observable(false) { _, _, value ->
-        LibretroDroid.setPitchPreservationEnabled(value)
+        if (!isDestroyed) LibretroDroid.setPitchPreservationEnabled(value)
     }
 
     var audioVolume: Float by Delegates.observable(1f) { _, _, value ->
-        LibretroDroid.setAudioVolume(value)
+        if (!isDestroyed) LibretroDroid.setAudioVolume(value)
     }
 
     var frameSpeed: Int by Delegates.observable(1) { _, _, value ->
@@ -139,7 +139,7 @@ class GLRetroView(
     }
 
     var rotation: Int by Delegates.observable(-1) { _, _, value ->
-        LibretroDroid.setRotation(value)
+        if (!isDestroyed) LibretroDroid.setRotation(value)
     }
 
     var shader: ShaderConfig by Delegates.observable(data.shader) { _, _, value ->
@@ -232,7 +232,7 @@ class GLRetroView(
      */
     fun sendSecondaryTouch(position: PointF?) {
         val point = position ?: TOUCH_EVENT_OUTSIDE
-        LibretroDroid.onMotionEvent(0, MOTION_SOURCE_POINTER, point.x, point.y)
+        if (!isDestroyed) LibretroDroid.onMotionEvent(0, MOTION_SOURCE_POINTER, point.x, point.y)
     }
 
     fun setScreenSplit(primaryCrop: RectF?, primaryAspectRatio: Float) {
@@ -368,11 +368,11 @@ class GLRetroView(
     }
 
     fun sendKeyEvent(action: Int, keyCode: Int, port: Int = 0) {
-        LibretroDroid.onKeyEvent(port, action, keyCode)
+        if (!isDestroyed) LibretroDroid.onKeyEvent(port, action, keyCode)
     }
 
     fun sendMotionEvent(source: Int, xAxis: Float, yAxis: Float, port: Int = 0) {
-        LibretroDroid.onMotionEvent(port, source, xAxis, yAxis)
+        if (!isDestroyed) LibretroDroid.onMotionEvent(port, source, xAxis, yAxis)
     }
 
     override fun onTouchEvent(event: MotionEvent?): Boolean {
@@ -387,7 +387,7 @@ class GLRetroView(
         }
 
         if (position != null) {
-            LibretroDroid.onTouchEvent(position.x, position.y)
+            if (!isDestroyed) LibretroDroid.onTouchEvent(position.x, position.y)
         }
 
         return true
@@ -676,15 +676,15 @@ class GLRetroView(
     }
 
     fun getControllers(): Array<Array<Controller>> {
-        return LibretroDroid.getControllers()
+        return if (isDestroyed) emptyArray() else LibretroDroid.getControllers()
     }
 
     fun setControllerType(port: Int, type: Int) {
-        LibretroDroid.setControllerType(port, type)
+        if (!isDestroyed) LibretroDroid.setControllerType(port, type)
     }
 
     fun getVariables(): Array<Variable> {
-        return LibretroDroid.getVariables()
+        return if (isDestroyed) emptyArray() else LibretroDroid.getVariables()
     }
 
     fun updateVariables(vararg variables: Variable) {
@@ -738,9 +738,9 @@ class GLRetroView(
         }
     }
 
-    fun getRewindBufferUsage(): Float = LibretroDroid.getRewindBufferUsage()
+    fun getRewindBufferUsage(): Float = if (isDestroyed) 0f else LibretroDroid.getRewindBufferUsage()
 
-    fun getRewindBufferValidCount(): Int = LibretroDroid.getRewindBufferValidCount()
+    fun getRewindBufferValidCount(): Int = if (isDestroyed) 0 else LibretroDroid.getRewindBufferValidCount()
 
     private fun getGLESVersion(context: Context): Int {
         val activityManager = context.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
@@ -827,12 +827,13 @@ class GLRetroView(
     // These functions are called only after the GLSurfaceView has been created.
     private inner class RenderLifecycleObserver : DefaultLifecycleObserver {
         fun manualResume() = catchExceptions {
+            if (isDestroyed) return@catchExceptions
             LibretroDroid.resume()
             isEmulationReady = true
         }
 
         override fun onResume(owner: LifecycleOwner) = catchExceptions {
-            if (!isNativeResumed) {
+            if (!isNativeResumed && !isDestroyed) {
                 isNativeResumed = true
                 LibretroDroid.resume()
                 // GLSurfaceView.onResume() is called by LibretroActivity.onResume() --
