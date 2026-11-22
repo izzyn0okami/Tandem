@@ -97,6 +97,17 @@ class SaveSyncPolicyTest {
     }
 
     @Test
+    fun sramWithoutServerContentHashIsDownloadedForVerification() {
+        assertTrue(SaveSyncPolicy.shouldVerifyRemoteContent(RemoteFileKind.Save, null))
+        assertFalse(SaveSyncPolicy.shouldVerifyRemoteContent(RemoteFileKind.Save, "server-hash"))
+    }
+
+    @Test
+    fun quickStateWithoutServerContentHashUsesItsVersionMetadata() {
+        assertFalse(SaveSyncPolicy.shouldVerifyRemoteContent(RemoteFileKind.State, null))
+    }
+
+    @Test
     fun aCoreWithoutAnAppliedBaselineReceivesTheRemoteSave() {
         assertTrue(SaveSyncPolicy.shouldApplyRemote(false, true, null))
     }
