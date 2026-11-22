@@ -2158,3 +2158,17 @@ Status: implementação preparada; CI pendente.
 - Branch: test/libretro-save-sync-policy.
 - Validação CI e compilação: PENDENTES. Confirmar execução dos seis testes, Spotless e build APK antes de considerar esta etapa aprovada.
 - Próximas etapas, condicionadas à CI: avaliar testes de integração WorkManager com ambiente de teste apropriado; depois cobrir lifecycle/GL por testes instrumentados ou abstrações, sem chamar JNI real em JVM.
+
+
+RESULTADO DAS CI PÓS-MERGE — PR #34
+Data: 2026-11-22
+- CI #499 / run ID 45052955802, no merge commit 84dbb5d603898b595df46439133792ac58bbe209: CONCLUÍDA COM SUCESSO.
+- URL: https://github.com/izzyn0okami/Tandem/actions/runs/45052955802
+- check-style, build-debug-apk, final-status e tandem-release: sucesso.
+- tandem-release publicou/atualizou a release permanente tandem-latest com Tandem.apk.
+- nightly-release e tarefas condicionais de notificação/Crowdin: skipped.
+- CI #500 / run ID 45052986277, no commit documental a03c3fc81d876e1a338b4dd221832295996c9fc2: CONCLUÍDA COM SUCESSO.
+- URL: https://github.com/izzyn0okami/Tandem/actions/runs/45052986277
+- check-style, build-debug-apk, final-status e tandem-release: sucesso.
+- tandem-release publicou/atualizou tandem-latest; nightly-release e tarefas condicionais: skipped.
+- Resultado: pós-merge e atualização documental da PR #34 validados; o APK mais recente foi publicado pelo fluxo tandem-latest.
