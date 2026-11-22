@@ -2563,3 +2563,53 @@ Atualização: 2026-11-22
 - Correção aplicada na branch fix/save-state-metadata-core-isolation, commit 345d8e59368360b83a690abb6a3fb9a76dc032f8: ajuste de formatação, sem mudança de comportamento.
 - PR #39 permanece aberta; base game-mode-m2-dev está atualizada (sem commits atrás na comparação consultada).
 - CI do commit corrigido: aguardando confirmação de nova execução. Não solicitar teste no telefone nem mesclar até CI completa aprovada.
+
+
+ATUALIZAÇÃO — PR #39 MESCLADA E AUDITORIA DE IDENTIDADE ESTÁVEL
+Data: 2026-11-22
+
+PR #39 — ISOLAMENTO DE METADADOS DE ESTADOS RÁPIDOS POR NÚCLEO
+- URL: https://github.com/izzyn0okami/Tandem/pull/39
+- Head aprovado pela CI: 345d8e59368360b83a690abb6a3fb9a76dc032f8.
+- Merge commit: 33416a8c1d10630ae3375fd10d262ea46b1ce3d6.
+- CI da PR: run 45068664005 (execução #532), concluída com sucesso; Spotless, testes unitários, compilação APK e upload de artefato aprovados. Testes unitários executados; sem NO-SOURCE.
+- A consulta de workflow runs associadas ao merge commit não retornou execuções PR-triggered, e os status checks do commit vieram vazios. Portanto, a CI pós-merge não foi confirmada por esta consulta; não registrar publicação de tandem-latest com base nisso.
+- A alteração separa metadados de SRAM (compartilhados) e estados rápidos (por coreId), inclusive ID remoto, timestamp e hash. Metadados legados compartilhados de states não são reutilizados como baseline confiável. Arquivos locais permanecem intactos.
+
+AUDITORIA TÉCNICA — IDENTIDADE ESTÁVEL E CICLO DE VIDA DE SAVES
+Status: inspeção estática adicional concluída; nenhuma alteração funcional nesta etapa.
+
+ACHADOS CONFIRMADOS
+1. SaveStore.kt ainda constrói o diretório como <savesRoot>/<coreId>/<basename da ROM sanitizado>. O basename ignora diretórios de origem e identidade RomM; nomes repetidos ou diferentes que sanitizam para o mesmo texto podem colidir e compartilhar SRAM, estado rápido, backups e progresso RA.
+2. GameSessionActivity recebe corePath, romPath, loadState e platformSlug; cria SaveStore diretamente a partir do caminho da ROM. A sessão não recebe remoteGameId nem identidade estável.
+3. GameModeActivity.startGame executa SaveSync.pull(context, romPath, coreId) antes de abrir a sessão. O caminho da ROM é passado também para a Activity.
+4. SaveSync.link grava romId em SharedPreferences usando a chave "rom:<romPath>". Metadados, status, heartbeat de sessão e applied hashes também são indexados pelo caminho; a identidade do servidor RomM não faz parte dessas chaves.
+5. WorkManager recebe romPath e coreId; o nome do trabalho único é SHA-256 do romPath. Mover/renomear a ROM pode separar um trabalho pendente do arquivo de save correspondente.
+6. RomMSettings.clear cancela todos os trabalhos com a tag romm-save-sync e limpa as configurações/cache de conexão. Isso descarta trabalhos pendentes da fila ao desconectar. As preferências romm_sync não são apagadas por clear(), mas continuam com chaves baseadas em caminho e sem namespace explícito do servidor/conta.
+7. RemoteLibrary.download tem acesso ao RemoteGame.id e ao URL do servidor no momento em que conclui o download, mas atualmente só registra o vínculo por caminho. O RemoteGame contém ID RomM, plataforma e metadados de arquivos; o ID não é encaminhado para GameSessionActivity.
+8. GameLibraryScanner reconhece ROMs locais e playlists M3U, mas LocalGame contém apenas título, plataforma e caminho. Para identidade local de multidisco, o fingerprint deverá considerar a playlist e o conteúdo dos discos referenciados, respeitando a ordem da playlist.
+9. SaveStore mantém progresso RA por conta, mas isso não resolve identidade de jogo nem colisões do diretório de save.
+
+DIREÇÃO TÉCNICA PARA A PRÓXIMA IMPLEMENTAÇÃO
+- Separar identidade do jogo, núcleo, slot e artefato.
+- Jogos vinculados ao RomM: identidade estável derivada do namespace do servidor e do ID da ROM, nunca somente do caminho.
+- Jogos locais: fingerprint SHA-256 do conteúdo, combinado com plataforma; para M3U, fingerprint determinístico da playlist e dos discos referenciados.
+- Registrar uma associação persistente entre fingerprint/conteúdo e identidade RomM para que mover ou renomear o arquivo não perca o vínculo.
+- Usar a identidade estável no SaveStore, nos metadados RomM e na fila WorkManager. O caminho atual pode ser atualizado como localização, mas não pode continuar sendo a chave primária.
+- Preservar a separação já aprovada: SRAM compartilhada apenas entre núcleos explicitamente compatíveis; estados rápidos e todos os metadados correspondentes por núcleo.
+- Migrar diretórios legados somente quando a origem for inequívoca. Se houver mais de um jogo candidato com o mesmo basename/sanitização, não atribuir automaticamente os bytes; manter todos os dados antigos intactos e sinalizar conflito para resolução explícita.
+- Migração deve copiar, validar tamanho e hash, registrar conclusão de forma idempotente e manter rollback. Nunca apagar a origem durante a primeira migração.
+- Reformular a fila RomM para não perder uploads pendentes ao mover/renomear ROM ou desconectar o servidor; um trabalho deve validar o namespace do servidor/conta antes de enviar, para nunca encaminhar um save a uma instância/conta diferente.
+- Não habilitar sincronização automática de slots alternativos com RomM nesta etapa.
+
+PENDÊNCIAS ANTES DE ABRIR A PR DE IMPLEMENTAÇÃO
+- Fechar a estratégia de namespace de conta RomM, além do URL/instância, para impedir reutilização de IDs e hashes entre contas diferentes no mesmo servidor.
+- Definir comportamento de trabalhos pendentes quando a conta/servidor original estiver desconectado ou for substituído: preservar a fila e impedir envio cruzado; não cancelar silenciosamente.
+- Implementar e testar migração segura e detecção de colisões, incluindo jogos com basename igual em subpastas diferentes e nomes que colidem após sanitização.
+- Implementar e testar identidade estável para ROM única, ROM renomeada/movida e playlist multidisco.
+- Testar que uploads WorkManager continuam associados ao jogo correto após mudança de caminho e que SRAM/state continuam respeitando compatibilidade/núcleo.
+
+REPOSITÓRIO
+- PRs abertas verificadas em 2026-11-22: nenhuma.
+- Nenhuma alteração funcional foi feita nesta auditoria.
+- Não foi criada PR #40 nesta etapa; a implementação deve começar somente depois de a política de namespace da conta e a preservação da fila estarem definidas.
