@@ -259,6 +259,9 @@ internal object GameIdentityResolver {
                     val relative = file.relativeTo(from).path
                     val destination = File(temp, relative)
                     val sourceHash = fileHash(file)
+                    if (destination.exists() && destination.length() == 0L && file.length() > 0L) {
+                        check(destination.delete())
+                    }
                     if (destination.exists()) {
                         check(fileHash(destination) == sourceHash) {
                             "save collision while merging legacy migration: $relative"
