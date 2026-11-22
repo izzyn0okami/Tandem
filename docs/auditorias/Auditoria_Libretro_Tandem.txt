@@ -1028,3 +1028,34 @@ Data: 2026-11-21
 - Não há PRs abertas no repositório no momento desta consulta.
 - Testes funcionais de armazenamento no telefone permanecem deliberadamente adiados a pedido do usuário. Não marcar como validados downloads normais nem bloqueio por falta de espaço.
 - Próxima etapa: continuar a auditoria técnica sem repetir a verificação de espaço já integrada; manter os testes funcionais de armazenamento pendentes até o usuário desejar retomá-los.
+
+
+AUDITORIA — RETOMADA DE DOWNLOADS ROMM (HTTP RANGE)
+Data: 2026-11-22
+
+RESULTADO DA INVESTIGAÇÃO
+- A versão RomM 5.4.1, tag oficial 9c74d0143fbb876f2f62260b91c6fd0b3f590226, contém a implementação de cache ZIP para solicitações Range em ROMs com vários arquivos.
+- Para ROMs de arquivo único, o endpoint por ROM usa redirecionamento para arquivo estático, compatível com Range/206.
+- Para ROMs com vários arquivos, o endpoint por ROM reconhece o cabeçalho Range, cria ou reutiliza um ZIP em cache e o entrega por redirecionamento estático; sem Range, mantém o fluxo ZIP em streaming.
+- A issue upstream rommapp/romm#3160 confirma que arquivo único já respondia 206; a limitação inicial era o ZIP dinâmico, resolvida pelo commit upstream 0273d5832c246a68225c697e3316a067f0fed50b, presente no código da tag 5.4.1.
+- O Tandem usa endpoints por ROM; portanto, a retomada pode ser implementada sem trocar as rotas existentes.
+- Ressalva: se o RomM não conseguir criar o ZIP em cache (por exemplo, espaço insuficiente no servidor), pode retornar ao streaming sem Range. O cliente deve reiniciar do zero quando receber 200 e nunca concatenar resposta completa a arquivo parcial.
+
+IMPLEMENTAÇÃO PROPOSTA — PR #21
+- PR: https://github.com/izzyn0okami/Tandem/pull/21
+- Branch: feat/romm-resumable-downloads.
+- Commit atual: 7b48f4046b35e65e54e039c5ac63a2bc5a00272a.
+- Implementa Range e If-Range quando existe validador HTTP (ETag forte ou Last-Modified).
+- Só acrescenta bytes quando recebe HTTP 206 e Content-Range começa exatamente no offset local.
+- Resposta 200 reinicia a gravação; resposta 416 descarta o parcial e tenta uma vez desde o início.
+- Verifica o total recebido quando informado por Content-Range ou Content-Length.
+- Aplica a lógica a ROMs individuais, ZIPs multidisco, firmware, saves e states.
+- Mantém arquivos .part e validador entre falhas transitórias; remove-os após conclusão ou respostas 401/403/404.
+- A checagem de espaço considera apenas os bytes ainda necessários, além do espaço de extração quando aplicável.
+
+VALIDAÇÃO / PENDÊNCIAS
+- PR #21 aberta, ainda não mesclada. Não mesclar sem autorização explícita.
+- CI da PR no commit 7b48f4046b35e65e54e039c5ac63a2bc5a00272a: em andamento na última consulta; aguardar check-style e build-debug-apk.
+- Teste funcional no aparelho pendente: interromper e retomar um download de ROM grande; verificar também uma ROM multidisco. Confirmar que o progresso continua do ponto parcial e que o arquivo final abre normalmente.
+- Testes de armazenamento da PR #20 permanecem adiados a pedido do usuário; não misturar esses testes com a validação de retomada.
+- Não marcar retomada como concluída até CI aprovada e confirmação funcional do usuário.
