@@ -8,15 +8,20 @@ import java.security.MessageDigest
  * Saves por jogo, na pasta de saves escolhida (padrão: dentro do app) em `<núcleo>/<jogo>/` com `sram.srm`
  * (save de bateria, gravado sozinho) e `state1.state` (estado rápido, gravado pelo menu).
  */
-class SaveStore(
-    context: Context,
+class SaveStore internal constructor(
+    private val savesRoot: File,
     private val coreId: String,
     romFile: File,
     /** Outros núcleos da mesma plataforma: o save de bateria deles serve como ponto de partida. */
     private val siblingCores: List<String> = emptyList(),
 ) {
+    constructor(
+        context: Context,
+        coreId: String,
+        romFile: File,
+        siblingCores: List<String> = emptyList(),
+    ) : this(GameFolders.dir(context, FolderKind.Saves), coreId, romFile, siblingCores)
 
-    private val savesRoot: File = GameFolders.dir(context, FolderKind.Saves)
     private val gameDirName: String = romFile.nameWithoutExtension.replace(Regex("[^A-Za-z0-9._ -]"), "_")
     private val dir: File = File(File(savesRoot, coreId), gameDirName).apply { mkdirs() }
 
