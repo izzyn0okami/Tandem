@@ -47,6 +47,10 @@ object SaveSync {
 
     private val lock = Mutex()
 
+    private const val INVALID_LINK_MESSAGE =
+        "O vínculo salvo deste jogo não pôde ser confirmado com a conta RomM atual. " +
+            "Reimporte o jogo do servidor ou associe-o novamente antes de sincronizar."
+
     internal const val WORK_TAG = "romm-save-sync"
 
     private fun prefs(context: Context) = context.getSharedPreferences("romm_sync", Context.MODE_PRIVATE)
@@ -65,7 +69,14 @@ object SaveSync {
         val gameIdentity = gameIdentityOverride
             ?: GameIdentityResolver.cachedIdentity(context, File(romPath), platformSlug)
             ?: return null
-        val store = SaveStore(context, coreId, File(romPath), platformSlug = platformSlug, gameIdentity = gameIdentity, migrationSourcesOverride = emptyMap())
+        val store = SaveStore(
+            context,
+            coreId,
+            File(romPath),
+            platformSlug = platformSlug,
+            gameIdentity = gameIdentity,
+            migrationSourcesOverride = emptyMap(),
+        )
         if (files(store).none { (_, file) -> file.isFile && file.length() > 0L }) return null
         val prefs = prefs(context)
         val resolution = SaveSyncPolicy.resolveStatus(
@@ -139,9 +150,17 @@ object SaveSync {
         RemoteFileKind.State to store.stateFile,
     )
 
-    private fun appliedHashKey(kind: RemoteFileKind, gameIdentity: String, coreId: String) = "${kind.path}:$gameIdentity:$coreId:applied_hash"
+    private fun appliedHashKey(
+        kind: RemoteFileKind,
+        gameIdentity: String,
+        coreId: String,
+    ) = "${kind.path}:$gameIdentity:$coreId:applied_hash"
 
-    private fun newestRemoteFile(kind: RemoteFileKind, remotes: List<RemoteFile>, coreId: String): RemoteFile? = SaveSyncPolicy.newestCompatibleRemote(kind, remotes, coreId)
+    private fun newestRemoteFile(
+        kind: RemoteFileKind,
+        remotes: List<RemoteFile>,
+        coreId: String,
+    ): RemoteFile? = SaveSyncPolicy.newestCompatibleRemote(kind, remotes, coreId)
 
     /** Registra que a ROM está em uma sessão ativa, impedindo upload enquanto ela pode mudar. */
     fun markSessionActive(
@@ -199,14 +218,14 @@ object SaveSync {
         val connection = GameIdentityResolver.connectionSnapshot(context)
         if (connection == null) {
             if (GameIdentityResolver.hasRomMLink(context, File(romPath))) {
-                throw IOException("O vínculo salvo deste jogo não pôde ser confirmado com a conta RomM atual. Reimporte o jogo do servidor ou associe-o novamente antes de sincronizar.")
+                throw IOException(INVALID_LINK_MESSAGE)
             }
             return
         }
         val linkedRomId = GameIdentityResolver.linkedRomId(context, File(romPath), connection)
         if (linkedRomId == null) {
             if (GameIdentityResolver.hasRomMLink(context, File(romPath))) {
-                throw IOException("O vínculo salvo deste jogo não pôde ser confirmado com a conta RomM atual. Reimporte o jogo do servidor ou associe-o novamente antes de sincronizar.")
+                throw IOException(INVALID_LINK_MESSAGE)
             }
             return
         }
@@ -252,10 +271,13 @@ object SaveSync {
                 for ((kind, file) in files(store)) {
                     val remotes = client.listRemoteFiles(kind, linkedRomId)
                     val remote = newestRemoteFile(kind, remotes, coreId) ?: continue
+                    val compatibleCount = remotes.count {
+                        SaveSyncPolicy.isCompatibleRemote(kind, it.emulator, coreId)
+                    }
                     GameLog.log(
                         "saves",
                         "save remoto selecionado: tipo=${kind.path}, id=${remote.id}, núcleo=${remote.emulator}, " +
-                            "updatedAt=${remote.updatedAtMs}, candidatos compatíveis=${remotes.count { SaveSyncPolicy.isCompatibleRemote(kind, it.emulator, coreId) }}",
+                            "updatedAt=${remote.updatedAtMs}, candidatos compatíveis=$compatibleCount",
                     )
                     pullOne(context, client, store, kind, file, remote, romPath, coreId, gameIdentity)
                 }
@@ -269,12 +291,32 @@ object SaveSync {
                             snapshot.file.delete()
                         }
                         prefs.edit {
-                            if (snapshot.hash == null) remove("${snapshot.key}:hash") else putString("${snapshot.key}:hash", snapshot.hash)
-                            if (snapshot.remote == Long.MIN_VALUE) remove("${snapshot.key}:remote") else putLong("${snapshot.key}:remote", snapshot.remote)
-                            if (snapshot.id == Long.MIN_VALUE) remove("${snapshot.key}:id") else putLong("${snapshot.key}:id", snapshot.id)
-                            if (snapshot.appliedHash == null) remove(snapshot.appliedHashKey) else putString(snapshot.appliedHashKey, snapshot.appliedHash)
+                            if (snapshot.hash == null) {
+                                remove("${snapshot.key}:hash")
+                            } else {
+                                putString("${snapshot.key}:hash", snapshot.hash)
+                            }
+                            if (snapshot.remote == Long.MIN_VALUE) {
+                                remove("${snapshot.key}:remote")
+                            } else {
+                                putLong("${snapshot.key}:remote", snapshot.remote)
+                            }
+                            if (snapshot.id == Long.MIN_VALUE) {
+                                remove("${snapshot.key}:id")
+                            } else {
+                                putLong("${snapshot.key}:id", snapshot.id)
+                            }
+                            if (snapshot.appliedHash == null) {
+                                remove(snapshot.appliedHashKey)
+                            } else {
+                                putString(snapshot.appliedHashKey, snapshot.appliedHash)
+                            }
                             val remoteKey = SaveSyncPolicy.remoteHashKey(snapshot.kind, gameIdentity, coreId)
-                            if (snapshot.remoteHash == null) remove(remoteKey) else putString(remoteKey, snapshot.remoteHash)
+                            if (snapshot.remoteHash == null) {
+                                remove(remoteKey)
+                            } else {
+                                putString(remoteKey, snapshot.remoteHash)
+                            }
                         }
                     }.onFailure {
                         restoreFailure = it
@@ -498,7 +540,9 @@ object SaveSync {
                 putLong("${statusKey(gameIdentity)}:started", System.currentTimeMillis())
             }
             try {
-                withContext(Dispatchers.IO) { push(app, syncClient, activeRomPath, coreId, platformSlug, gameIdentity, linkedRomId) }
+                withContext(Dispatchers.IO) {
+                    push(app, syncClient, activeRomPath, coreId, platformSlug, gameIdentity, linkedRomId)
+                }
                 prefs(app).edit {
                     putString(statusKey(gameIdentity), "synced")
                     remove("${statusKey(gameIdentity)}:started")
