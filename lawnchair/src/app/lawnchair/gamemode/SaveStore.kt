@@ -126,13 +126,16 @@ internal object GameIdentityResolver {
         val key = contentLinkKey(fingerprint)
         val encoded = "${connection.server}|${connection.accountFingerprint}|$romId"
         val existing = prefs.getString(key, null)
+        val existingLink = parseContentLink(existing)
+        val sameRemoteGame = existingLink?.server == connection.server && existingLink.romId == romId
         prefs.edit {
             putLong("rom:${romFile.absolutePath}", romId)
             putString("rom_fingerprint:${romFile.absolutePath}", fingerprint)
             putString("rom_server:${romFile.absolutePath}", connection.server)
             putString("rom_account:${romFile.absolutePath}", connection.accountFingerprint)
-            // A content fingerprint shared by different server records is ambiguous after a move.
-            if (existing == null || existing == encoded) putString(key, encoded)
+            // Token rotation for the same server/game may update the account fingerprint.
+            // Different remote records sharing identical bytes remain ambiguous after a move.
+            if (existing == null || existing == encoded || sameRemoteGame) putString(key, encoded)
             else putString(key, "ambiguous")
         }
     }
