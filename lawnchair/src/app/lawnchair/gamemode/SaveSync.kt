@@ -21,6 +21,8 @@ import kotlinx.coroutines.sync.withLock
  */
 enum class SaveSyncStatus { PENDING, SYNCING, SYNCED }
 
+class SaveRollbackException(message: String, cause: Throwable) : IOException(message, cause)
+
 private data class SaveFileSnapshot(
     val file: File,
     val backup: File?,
@@ -151,6 +153,7 @@ object SaveSync {
                     pullOne(context, client, store, kind, file, remote, romPath)
                 }
             } catch (error: Exception) {
+                var restoreFailure: Throwable? = null
                 snapshots.forEach { snapshot ->
                     runCatching {
                         if (snapshot.backup != null && snapshot.backup.isFile) {
@@ -163,7 +166,16 @@ object SaveSync {
                             if (snapshot.remote == Long.MIN_VALUE) remove("${snapshot.key}:remote") else putLong("${snapshot.key}:remote", snapshot.remote)
                             if (snapshot.id == Long.MIN_VALUE) remove("${snapshot.key}:id") else putLong("${snapshot.key}:id", snapshot.id)
                         }
-                    }.onFailure { GameLog.error("saves", "falha ao restaurar save local após erro no pull", it) }
+                    }.onFailure {
+                        restoreFailure = it
+                        GameLog.error("saves", "falha ao restaurar save local após erro no pull", it)
+                    }
+                }
+                if (restoreFailure != null) {
+                    throw SaveRollbackException(
+                        "A sincronização falhou e não foi possível confirmar a restauração do save local. Não inicie com o save local.",
+                        restoreFailure!!,
+                    )
                 }
                 throw error
             } finally {
