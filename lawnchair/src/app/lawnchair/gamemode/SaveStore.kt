@@ -648,6 +648,10 @@ internal object GameIdentityResolver {
                     archived += item
                 }
             }
+            if (gameIdentity.startsWith("romm-") &&
+                !gameIdentity.startsWith("romm-legacy-") &&
+                !isCurrentAccountGameIdentity(context, romFile, gameIdentity)
+            ) throw IOException("A conta RomM mudou antes da conclusão")
             prepared.forEach { it.rollback.deleteRecursively() }
             GameLog.log(
                 "saves",
