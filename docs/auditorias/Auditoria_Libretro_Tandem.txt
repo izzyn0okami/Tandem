@@ -2013,3 +2013,32 @@ Data: 2026-11-22
 - O histórico do log foi reconciliado com a base atual antes do merge, preservando os registros da PR #31 e da PR #32. A integração foi feita sem force push.
 - Estado final verificado: PR #32 fechada e merged=true. Nenhuma outra PR aberta foi encontrada na consulta posterior.
 - Pendências específicas desta auditoria: nenhuma pendência bloqueante para a proteção JNI após teardown. Riscos arquiteturais já identificados para auditorias futuras permanecem registrados separadamente: persistência do sync RomM com WorkManager, ampliação de testes automatizados de SaveStore/SaveSync/lifecycle/GL e isolamento de processo para crashes nativos.
+
+AUDITORIA — PERSISTÊNCIA DO ENVIO DE SAVES ROMM / WORKMANAGER
+Data: 2026-11-22
+Status: implementação preparada; CI e validação funcional pendentes.
+
+ACHADO DA AUDITORIA
+- Antes desta etapa, SaveSync.pushAsync() usava CoroutineScope(SupervisorJob() + Dispatchers.IO), vinculado ao processo. O envio iniciado em GameSessionActivity.onStop() podia ser perdido se o processo fosse encerrado antes da conclusão.
+- O projeto remove o androidx.startup.InitializationProvider no manifesto comum para desativar inicializações automáticas. Portanto, WorkManager não pode ser usado com inicialização padrão; a implementação o inicializa explicitamente apenas no processo principal do launcher, sem inicializá-lo no processo separado de bug report.
+- RomMClient usa chamadas OkHttp bloqueantes e prazos longos; o trabalho deve ser executado fora do ciclo de vida da Activity e falhas devem continuar mantendo o estado PENDING.
+
+IMPLEMENTAÇÃO NESTA BRANCH
+- Adicionada dependência androidx.work:work-runtime-ktx 2.12.0 (versão estável oficial consultada em 2026-11-22).
+- Substituído o escopo em memória por RomMSaveSyncWorker/WorkManager, com requisito de rede conectada, backoff exponencial de 30 segundos e trabalho único por ROM usando APPEND_OR_REPLACE para não descartar uma nova solicitação enquanto outra está em andamento.
+- O worker reutiliza o mesmo Mutex de SaveSync.pull(), preservando a exclusão mútua entre download e upload.
+- A insígnia permanece Pendente enquanto o trabalho aguarda rede/fila; passa a Enviando apenas quando o worker começa; Sync OK só é gravado depois de push() terminar sem erro.
+- Falhas retornam Result.retry() e mantêm o estado PENDING. A desconexão do RomM cancela trabalhos marcados com a tag de sincronização.
+- A sessão ativa é registrada ao criar/retomar o jogo e renovada no ciclo de autosave. O worker não envia enquanto a sessão está ativa; a marca é removida somente depois de onPause() e da pausa do GL. A marca expira após 120 segundos sem heartbeat, permitindo recuperação se o processo morrer inesperadamente.
+- Para a semântica de execução ao menos uma vez, quando não há ID remoto salvo localmente o push consulta os registros do RomM para o mesmo emulador antes de criar um novo, evitando duplicação se o servidor aceitou o upload mas o processo morreu antes de persistir os metadados locais.
+- Nenhuma mudança foi feita na sincronização durante a partida: uploads continuam sendo solicitados quando a sessão sai de primeiro plano/para, e são adiados se a mesma ROM for reaberta.
+
+VALIDAÇÃO PENDENTE
+- CI: aguardar Spotless, build-debug APK e final-status na PR desta branch.
+- Teste funcional no aparelho: saída de jogo com rede disponível; saída sem rede e posterior reconexão; encerrar/reabrir o launcher enquanto houver envio pendente; reabrir a mesma ROM antes do worker iniciar e confirmar que não há upload durante a partida; desconectar RomM com trabalho pendente.
+- Avaliar em teste real se algum save/state pode levar mais de 10 minutos para enviar. Workers comuns do WorkManager têm limite de execução; se arquivos grandes atingirem esse limite, será necessário avaliar execução em primeiro plano com notificação de sincronização.
+- A CI pós-merge da PR #32 (run 45042684614) ainda estava em andamento na última consulta; não registrar como aprovada até confirmação.
+
+PENDÊNCIAS FUTURAS MANTIDAS
+- Ampliar testes automatizados de SaveStore/SaveSync/lifecycle/GL.
+- Avaliar isolamento de processo para proteger o launcher contra crashes nativos Libretro.
