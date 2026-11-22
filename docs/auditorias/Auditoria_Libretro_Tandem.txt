@@ -1774,3 +1774,29 @@ Data: 2026-11-22
 - Validação funcional no aparelho ainda pendente: sincronizar um save remoto mais novo com save local existente; confirmar que a versão remota substitui corretamente; confirmar que falha/interrupção de substituição mantém ou recupera a versão local anterior; testar também quando o destino ainda não existe. Não usar saves importantes sem cópia de segurança durante o teste.
 - CI pós-merge no commit 9548908d está em execução (run #452, ID 45023261682); resultado ainda não confirmado. Atualizar este log quando concluir.
 - Não reabrir os testes já aprovados de BIOS e ZIP/cache; esta é uma pendência independente.
+
+
+ATUALIZAÇÃO — AUDITORIA DE ENVIO DE SAVES E INSÍGNIA VISUAL
+Data: 2026-11-22
+
+VERIFICAÇÃO DO COMPORTAMENTO ATUAL
+- SaveSync.pushAsync() é chamado em GameSessionActivity.onStop(); portanto, o envio remoto ocorre quando a Activity deixa de estar visível (por exemplo, ao sair do jogo ou colocar o app em segundo plano), e não durante a partida.
+- Durante a partida, GameSessionActivity persiste SRAM localmente a cada 60 segundos (SRAM_AUTOSAVE_MS) e também em onPause()/saída. Esse salvamento local não significa que o arquivo foi enviado ao RomM.
+- SaveSync.push() envia os arquivos SRAM/state que mudaram, e só atualiza o hash/ID/horário local após uploadRemoteFile() retornar com sucesso.
+- A sincronização é assíncrona, em segundo plano, protegida por Mutex; falhas são registradas no log, mas atualmente não há estado visual persistente para o usuário confirmar sucesso ou pendência.
+
+REQUISITO DE INTERFACE ADICIONADO — INSÍGNIA DE CONFIRMAÇÃO
+- Adicionar uma insígnia de status de sincronização associada ao jogo, visível na biblioteca/detalhe do jogo quando o usuário retornar ao Modo Jogos.
+- Estados visuais: “Sincronizando…” enquanto houver envio em andamento; “Saves sincronizados” somente após confirmação bem-sucedida do RomM; “Sincronização pendente” quando houver alterações locais ainda não enviadas ou falha de rede/servidor.
+- A confirmação deve ser persistida por jogo e considerar separadamente SRAM e save state; não marcar tudo como sincronizado se um dos arquivos alterados falhar.
+- A insígnia de sucesso só pode ser gravada depois que uploadRemoteFile() retornar sucesso e os metadados locais do envio forem atualizados. Iniciar a transferência, salvar localmente ou simplesmente sair do jogo não é confirmação.
+- Se o app for para segundo plano e não houver interface visível, manter o estado pendente/em andamento e apresentá-lo ao usuário na próxima abertura do Modo Jogos.
+- Não apresentar a insígnia como “sincronizado” para jogos sem vínculo com uma ROM do RomM ou quando não houver confirmação real do servidor.
+- Este requisito foi registrado para implementação na continuação da auditoria; ainda NÃO está implementado.
+
+CI PÓS-MERGE DA PR #29
+- CI #452 / run ID 45023261682: CONCLUÍDA COM SUCESSO no merge commit 9548908d725fa1aaaf0898329bc071583b7542c1.
+- URL: https://github.com/izzyn0okami/Tandem/actions/runs/45023261682
+- A execução global terminou com conclusion=success. A CI pós-merge da PR #29 fica aprovada.
+- Testes funcionais no aparelho da substituição segura de saves continuam pendentes conforme os três cenários já registrados acima.
+- Consulta de PRs abertas em 2026-11-22: nenhuma encontrada antes desta atualização; não havia PR sobreposta para esta etapa.
