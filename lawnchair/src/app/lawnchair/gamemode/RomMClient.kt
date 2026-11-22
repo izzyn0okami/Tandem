@@ -113,12 +113,37 @@ object RomMSettings {
 
     fun token(context: Context): String? = prefs(context).getString("token", null)
 
-    fun isConnected(context: Context): Boolean = url(context) != null && token(context) != null
+    fun isConnected(context: Context): Boolean {
+        val preferences = prefs(context)
+        val server = GameIdentityResolver.normalizedServer(preferences.getString("url", null)) ?: return false
+        return !preferences.getString("token", null).isNullOrBlank() &&
+            preferences.getString("account_server", null) == server &&
+            preferences.getLong("user_id", -1L) > 0L
+    }
 
-    fun save(context: Context, url: String, token: String) {
-        prefs(context).edit {
+    fun save(context: Context, url: String, token: String, accountId: Long) {
+        require(accountId > 0L) { "O RomM não informou um ID de usuário válido" }
+        val server = GameIdentityResolver.normalizedServer(url)
+            ?: throw IOException("Endereço do servidor RomM inválido")
+        val previous = prefs(context)
+        val previousServer = GameIdentityResolver.normalizedServer(previous.getString("url", null))
+        val previousUserId = previous.getLong("user_id", -1L)
+        val previousToken = previous.getString("token", null)
+        val previousFingerprint = when {
+            previousServer != server -> null
+            previousUserId > 0L -> GameIdentityResolver.accountFingerprint(server, previousUserId)
+            !previousToken.isNullOrBlank() -> GameIdentityResolver.digest("$server|$previousToken")
+            else -> null
+        }
+        val newFingerprint = GameIdentityResolver.accountFingerprint(server, accountId)
+        if (previousFingerprint != null && previousFingerprint != newFingerprint) {
+            GameIdentityResolver.migrateAccountFingerprint(context, server, previousFingerprint, newFingerprint)
+        }
+        previous.edit {
             putString("url", url)
             putString("token", token)
+            putString("account_server", server)
+            putLong("user_id", accountId)
         }
     }
 
@@ -185,6 +210,25 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
             builder.header("Authorization", "Bearer $token")
         }
         return builder
+    }
+
+    /** ID estável da conta autenticada; requer o escopo OAuth me.read. */
+    fun currentUserId(): Long {
+        val url = base.resolve("api/users/me")!!
+        http.newCall(request(url).get().build()).execute().use { response ->
+            if (!response.isSuccessful) {
+                val reason = if (response.code == 403) {
+                    "O token RomM precisa do escopo me.read para identificar a conta com segurança. Gere um novo token com esse escopo."
+                } else {
+                    "Não foi possível identificar a conta RomM (HTTP ${response.code})"
+                }
+                throw IOException(reason)
+            }
+            val user = JSONObject(response.body.string())
+            val id = user.optLong("id", -1L)
+            if (id <= 0L) throw IOException("O RomM não retornou um ID de usuário válido")
+            return id
+        }
     }
 
     fun heartbeat(): Boolean = checkServer() == null

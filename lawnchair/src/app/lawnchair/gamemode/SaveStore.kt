@@ -48,9 +48,17 @@ internal object GameIdentityResolver {
         val storedServer = prefs.getString("rom_server:${romFile.absolutePath}", null)
         val contentLink = parseContentLink(prefs.getString(contentLinkKey(fingerprint), null))
         val server = if (directId >= 0L) storedServer else contentLink?.server
+        val account = if (directId >= 0L) {
+            prefs.getString("rom_account:${romFile.absolutePath}", null)
+        } else {
+            contentLink?.accountFingerprint
+        }
         val linkedId = if (directId >= 0L) directId else contentLink?.romId ?: -1L
         return when {
-            linkedId >= 0L && server != null -> "romm-${digest("$server|$linkedId")}"
+            linkedId >= 0L && server != null && !account.isNullOrBlank() ->
+                SaveSyncPolicy.rommGameIdentity(server, account, linkedId)
+
+            linkedId >= 0L && server != null -> "romm-legacy-${digest("$server|$linkedId")}"
 
             directId >= 0L -> "romm-legacy-${digest("${platformSlug.orEmpty()}|$directId")}"
 
@@ -127,7 +135,45 @@ internal object GameIdentityResolver {
         val url = RomMSettings.url(context)?.takeIf { it.isNotBlank() } ?: return null
         val token = RomMSettings.token(context)?.takeIf { it.isNotBlank() } ?: return null
         val server = normalizedServer(url) ?: return null
-        return RomMConnectionSnapshot(url, token, server, digest("$server|$token"))
+        val preferences = context.getSharedPreferences("romm", Context.MODE_PRIVATE)
+        val storedServer = preferences.getString("account_server", null)
+        val accountId = preferences.getLong("user_id", -1L)
+        // Never fall back to a token-derived identity: an unknown account must not share saves.
+        if (storedServer != server || accountId <= 0L) return null
+        return RomMConnectionSnapshot(url, token, server, accountFingerprint(server, accountId))
+    }
+
+    internal fun accountFingerprint(server: String, userId: Long): String =
+        SaveSyncPolicy.accountFingerprint(server, userId)
+
+    internal fun digest(value: String): String =
+        MessageDigest.getInstance("SHA-256").digest(value.toByteArray(Charsets.UTF_8)).toHex()
+
+    internal fun migrateAccountFingerprint(
+        context: Context,
+        server: String,
+        previousFingerprint: String,
+        currentFingerprint: String,
+    ) {
+        val preferences = context.getSharedPreferences("romm_sync", Context.MODE_PRIVATE)
+        val values = preferences.all
+        preferences.edit {
+            values.forEach { (key, value) ->
+                when {
+                    key.startsWith("rom_account:") &&
+                        value == previousFingerprint &&
+                        preferences.getString(key.removePrefix("rom_account:").let { "rom_server:$it" }, null) == server ->
+                        putString(key, currentFingerprint)
+
+                    key.startsWith("game_link_content:") && value is String -> {
+                        val parts = value.split('|')
+                        if (parts.size == 3 && parts[0] == server && parts[1] == previousFingerprint) {
+                            putString(key, "$server|$currentFingerprint|${parts[2]}")
+                        }
+                    }
+                }
+            }
+        }
     }
 
     /** Fingerprint of the credentials that originally linked this game, even while disconnected. */
@@ -220,6 +266,30 @@ internal object GameIdentityResolver {
         // A user may have played with the local identity while an old RomM link was unverified.
         // When the same content is linked again, move that known local progress to the RomM identity.
         if (stableDirectoryName.startsWith("romm-")) {
+            val preferences = context.getSharedPreferences("romm_sync", Context.MODE_PRIVATE)
+            val currentFingerprint = cachedFingerprint(context, romFile)
+            val directId = preferences.getLong("rom:${romFile.absolutePath}", -1L)
+            val directHash = preferences.getString("rom_fingerprint:${romFile.absolutePath}", null)
+            val verifiedDirectId = directId.takeIf { isSameGameFingerprint(directHash, currentFingerprint) } ?: -1L
+            val oldServer = preferences.getString("rom_server:${romFile.absolutePath}", null)
+            val oldAccount = preferences.getString("rom_account:${romFile.absolutePath}", null)
+            val contentLink = parseContentLink(preferences.getString(contentLinkKey(currentFingerprint), null))
+            val oldRomId = if (verifiedDirectId >= 0L) verifiedDirectId else contentLink?.romId ?: -1L
+            val oldRomServer = if (verifiedDirectId >= 0L) oldServer else contentLink?.server
+            val oldRomAccount = if (verifiedDirectId >= 0L) oldAccount else contentLink?.accountFingerprint
+            if (oldRomId > 0L && !oldRomServer.isNullOrBlank() && !oldRomAccount.isNullOrBlank()) {
+                val preAccountIdentity = "romm-${digest("$oldRomServer|$oldRomId")}"
+                if (preAccountIdentity != stableDirectoryName) {
+                    val preAccountSources = coreIds.distinct().associateWith { coreId ->
+                        File(File(savesRoot, coreId), preAccountIdentity)
+                    }.filterValues { directory ->
+                        directory.walkTopDown().any { it.isFile && it.length() > 0L }
+                    }
+                    if (preAccountSources.isNotEmpty()) {
+                        return LegacyMigrationPlan(preAccountSources, ambiguous = false)
+                    }
+                }
+            }
             val localIdentity = "local-${digest("${platformSlug.orEmpty()}|${cachedFingerprint(context, romFile)}")}"
             if (localIdentity != stableDirectoryName) {
                 val localSources = coreIds.distinct().associateWith { coreId ->
@@ -496,7 +566,7 @@ internal object GameIdentityResolver {
         return ContentLink(parts[0], parts[1], romId)
     }
 
-    private fun normalizedServer(value: String?): String? {
+    internal fun normalizedServer(value: String?): String? {
         if (value.isNullOrBlank()) return null
         return runCatching {
             val uri = java.net.URI(value.trim().trimEnd('/'))
@@ -521,7 +591,7 @@ internal object GameIdentityResolver {
 
     private fun sanitize(value: String) = value.replace(Regex("[^A-Za-z0-9._ -]"), "_")
 
-    private fun digest(value: String): String = MessageDigest.getInstance("SHA-256").digest(value.toByteArray(Charsets.UTF_8)).toHex()
+    internal fun digest(value: String): String = MessageDigest.getInstance("SHA-256").digest(value.toByteArray(Charsets.UTF_8)).toHex()
 
     private fun ByteArray.toHex(): String = joinToString("") { "%02x".format(it.toInt() and 0xFF) }
 }

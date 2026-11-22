@@ -7,6 +7,25 @@ import org.junit.Test
 
 class SaveSyncPolicyTest {
     @Test
+    fun rommAccountIdentityIsStableForTheSameUserAndDifferentAcrossAccounts() {
+        val firstFingerprint = SaveSyncPolicy.accountFingerprint("https://romm.example", 41L)
+        val sameUserAfterTokenRotation = SaveSyncPolicy.accountFingerprint("https://romm.example", 41L)
+        val otherUser = SaveSyncPolicy.accountFingerprint("https://romm.example", 42L)
+
+        assertEquals(firstFingerprint, sameUserAfterTokenRotation)
+        assertFalse(firstFingerprint == otherUser)
+    }
+
+    @Test
+    fun rommGameStorageIdentityIsIsolatedByAccount() {
+        val accountA = SaveSyncPolicy.rommGameIdentity("https://romm.example", "account-a", 7L)
+        val accountB = SaveSyncPolicy.rommGameIdentity("https://romm.example", "account-b", 7L)
+
+        assertEquals(accountA, SaveSyncPolicy.rommGameIdentity("https://romm.example", "account-a", 7L))
+        assertFalse(accountA == accountB)
+    }
+
+    @Test
     fun quickStateMetadataIsIsolatedByCoreWhileSramMetadataIsShared() {
         assertEquals(
             "states:local-game-identity:core-a",
