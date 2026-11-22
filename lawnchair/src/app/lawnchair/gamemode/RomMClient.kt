@@ -123,7 +123,8 @@ object RomMSettings {
     }
 
     fun clear(context: Context) {
-        SaveSync.cancelPending(context)
+        // Pending uploads retain their originating server/account fingerprint in WorkManager.
+        // Keep them queued while disconnected; the worker retries and refuses different credentials.
         prefs(context).edit { clear() }
         RomMCache.clear(context)
     }
