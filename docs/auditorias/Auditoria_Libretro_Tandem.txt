@@ -2143,3 +2143,55 @@ Data: 2026-11-22
 - Resultado da etapa: cobertura automatizada inicial de SaveStore integrada. Não houve teste funcional adicional exigido no telefone para esta PR de testes unitários.
 - Pendências futuras: ampliar a cobertura para regras de estado/elegibilidade de SaveSync e integração WorkManager; lifecycle/GL deve usar testes instrumentados apropriados, sem invocar JNI real em JVM.
 - A CI pós-merge no commit 84dbb5d603898b595df46439133792ac58bbe209 ainda deve ser consultada e registrada após conclusão.
+
+
+AUDITORIA — COBERTURA AUTOMATIZADA DAS REGRAS DE SAVE SYNC
+Data: 2026-11-22
+Status: implementação preparada; CI pendente.
+- Após o merge da PR #34, a base foi atualizada e nenhuma PR aberta foi encontrada antes de iniciar esta etapa.
+- A implementação anterior mantém a sincronização de saves em SaveSync/WorkManager e já foi validada funcionalmente pelo usuário na PR #33.
+- Para ampliar a cobertura sem depender de Android Context, SharedPreferences, rede ou WorkManager real em testes JVM, as decisões determinísticas foram extraídas para SaveSyncPolicy.
+- A política extraída cobre: interpretação de estados SYNCED/SYNCING/PENDING; expiração do estado SYNCING após 120 segundos; janela de sessão ativa baseada no heartbeat de 120 segundos; e elegibilidade de upload apenas para arquivo existente, não vazio e diferente do hash confirmado.
+- SaveSync passou a usar a política extraída nos pontos correspondentes; o comportamento esperado e os limites de tempo foram preservados.
+- Adicionados seis testes unitários JVM em tests/unit/kotlin/app/lawnchair/gamemode/SaveSyncPolicyTest.kt: estado confirmado; estado ausente/desconhecido; SYNCING no limite exato; SYNCING expirado; janela de sessão ativa; elegibilidade de upload para arquivos ausentes/vazios/inalterados/alterados.
+- Não foram alteradas as regras de rede, endpoints RomM, concorrência pull/push, política de conflito de saves, WorkManager ou interface.
+- Branch: test/libretro-save-sync-policy.
+- Validação CI e compilação: PENDENTES. Confirmar execução dos seis testes, Spotless e build APK antes de considerar esta etapa aprovada.
+- Próximas etapas, condicionadas à CI: avaliar testes de integração WorkManager com ambiente de teste apropriado; depois cobrir lifecycle/GL por testes instrumentados ou abstrações, sem chamar JNI real em JVM.
+
+
+RESULTADO DAS CI PÓS-MERGE — PR #34
+Data: 2026-11-22
+- CI #499 / run ID 45052955802, no merge commit 84dbb5d603898b595df46439133792ac58bbe209: CONCLUÍDA COM SUCESSO.
+- URL: https://github.com/izzyn0okami/Tandem/actions/runs/45052955802
+- check-style, build-debug-apk, final-status e tandem-release: sucesso.
+- tandem-release publicou/atualizou a release permanente tandem-latest com Tandem.apk.
+- nightly-release e tarefas condicionais de notificação/Crowdin: skipped.
+- CI #500 / run ID 45052986277, no commit documental a03c3fc81d876e1a338b4dd221832295996c9fc2: CONCLUÍDA COM SUCESSO.
+- URL: https://github.com/izzyn0okami/Tandem/actions/runs/45052986277
+- check-style, build-debug-apk, final-status e tandem-release: sucesso.
+- tandem-release publicou/atualizou tandem-latest; nightly-release e tarefas condicionais: skipped.
+- Resultado: pós-merge e atualização documental da PR #34 validados; o APK mais recente foi publicado pelo fluxo tandem-latest.
+
+
+FALHA DE FORMATAÇÃO E CORREÇÃO — PR #35 / CI #503
+Data: 2026-11-22
+- CI #503 / run ID 45053908907, no head eade2651536856aacd1cb98c0ef523b937518222: check-style falhou em `spotlessKotlinCheck`.
+- Arquivo identificado pelo log: lawnchair/src/app/lawnchair/gamemode/SaveSyncPolicy.kt.
+- A falha é exclusivamente de formatação Kotlin: quebra de linha na expressão `resolveStatus` e na expressão `isSessionActive`; o Spotless sugeriu executar spotlessApply.
+- O job build-debug-apk foi cancelado em consequência da falha de estilo; portanto, os seis testes unitários e a compilação do APK ainda não foram validados nesta execução.
+- Correção aplicada na mesma branch da PR #35, sem alterar a lógica funcional: alinhamento das expressões ao formato exigido pelo Spotless.
+- Commit da correção: 26d6f0fc44e4576b79dccdfd1b551cd9f652806e.
+- Validação após a correção: PENDENTE; aguardar nova CI e confirmar Spotless, os seis testes JVM, build-debug APK, upload do artefato e final-status.
+- PR #35 permanece aberta e não mesclada. Não mesclar sem autorização explícita.
+
+
+SEGUNDA FALHA SPOTLESS — PR #35 / CI #504
+Data: 2026-11-22
+- CI #504 / run ID 45054252420, head 92f2c3025c470c750e5a03daebbe972aafd953fb: `spotlessKotlinCheck` voltou a falhar no mesmo arquivo `SaveSyncPolicy.kt`.
+- O diff do Spotless isolou a causa remanescente: linha em branco necessária entre o fechamento do bloco `"syncing"` e o ramo `else` do `when`.
+- Correção aplicada: inclusão da linha em branco exigida, sem alteração de lógica.
+- Commit da correção: e97a0fa24148675e1ed22f87fe574a5686fc6dda.
+- CI #504: o job de testes unitários ainda estava em andamento na última consulta; resultado dos testes não deve ser considerado aprovado até confirmação final.
+- Próxima validação pendente: nova CI no commit de correção, incluindo Spotless, seis testes JVM, build-debug APK, upload do artefato e final-status.
+- PR #35 permanece aberta e não mesclada; merge depende de autorização explícita.
