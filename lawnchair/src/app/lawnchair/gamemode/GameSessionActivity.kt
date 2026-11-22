@@ -140,7 +140,7 @@ class GameSessionActivity : ComponentActivity() {
         val coreId = File(corePath).name.removeSuffix("_libretro_android.so")
         val platformSlug = intent.getStringExtra(EXTRA_PLATFORM)
         val siblings = platformSlug?.let(GamePlatforms::bySlug)?.let { CoreRegistry.cores(it) }.orEmpty().map { it.id }
-        val store = SaveStore(this, coreId, File(romPath), siblings)
+        val store = SaveStore(this, coreId, File(romPath), siblings, platformSlug)
         saveStore = store
         coreIdForOptions = coreId
         SessionDiagnostics.sessionStarted(this, coreId, romPath, platformSlug)
@@ -462,7 +462,7 @@ class GameSessionActivity : ComponentActivity() {
             val bytes = view.serializeSRAM()
             if (bytes.isNotEmpty()) {
                 store.writeSram(bytes)
-                romPath?.let { path -> coreIdOf()?.let { SaveSync.markPending(this, path, it) } }
+                romPath?.let { path -> coreIdOf()?.let { SaveSync.markPending(this, path, it, intent.getStringExtra(EXTRA_PLATFORM)) } }
             }
         }
         val user = RaSettings.user(this) ?: return
@@ -493,7 +493,7 @@ class GameSessionActivity : ComponentActivity() {
                 emuState
             }
             store.writeState(payload)
-            romPath?.let { path -> coreIdOf()?.let { SaveSync.markPending(this, path, it) } }
+            romPath?.let { path -> coreIdOf()?.let { SaveSync.markPending(this, path, it, intent.getStringExtra(EXTRA_PLATFORM)) } }
             true
         }.getOrDefault(false)
         toast(if (saved) R.string.game_session_state_saved else R.string.game_session_state_save_failed)
@@ -627,7 +627,7 @@ class GameSessionActivity : ComponentActivity() {
         // Só libere e agende o upload depois que o GL foi pausado e o save local persistido.
         romPath?.let { path ->
             SaveSync.markSessionInactive(this, path)
-            coreIdOf()?.let { SaveSync.pushAsync(this, path, it) }
+            coreIdOf()?.let { SaveSync.pushAsync(this, path, it, intent.getStringExtra(EXTRA_PLATFORM)) }
         }
         // Em uma pausa comum, o idle é retomado em onResume; respostas de rede aguardam o GL.
         stopRaIdleLoop()
