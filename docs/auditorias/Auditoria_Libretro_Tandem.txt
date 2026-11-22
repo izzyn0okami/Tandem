@@ -697,8 +697,7 @@ Data: 2026-11-21
 - Método: merge normal (não squash).
 - Branch: fix/romm-5-4-integration-audit.
 - Head validado pela CI: 000007c6ee43c324fb722231592c7dc94810f4cc.
-- Merge commit na branch game-mode-m2-dev: f3f139b79e510ec28db31cd381e1b74b28f6547c.
-- CI pré-merge #370: https://github.com/izzyn0okami/Tandem/actions/runs/44954314685 — completed / success.
+- Merge commit na branch game-mode-m2-dev: f3f139b79e510ec28db31cd381e1b74b28f6547c.- CI pré-merge #370: https://github.com/izzyn0okami/Tandem/actions/runs/44954314685 — completed / success.
 - Jobs obrigatórios aprovados: check-style (Spotless), build-debug-apk (assembleLawnWithQuickstepGithubDebug) e final-status.
 - Jobs opcionais tandem-release, nightly-release, crowdin-auto-merge e send-notifications foram ignorados pelas condições do workflow; não representam falha.
 - A CI validou estilo e compilação do APK Debug. Não confirma ainda o funcionamento real do ZIP transmitido por nginx/mod_zip.
@@ -1399,7 +1398,6 @@ Data: 2026-11-22
 - Nova CI após o commit: pendente de confirmação.
 - Não mesclar até a CI passar e a PR ser revisada; teste de falha real no aparelho continua pendente.
 
-
 RESULTADO — PR #25 MESCLADA
 Data: 2026-11-22
 PR: https://github.com/izzyn0okami/Tandem/pull/25
@@ -1957,3 +1955,16 @@ Status: implementação inicial; CI e testes funcionais pendentes.
 - Chamadas JNI diretas que podem partir da thread de interface agora passam por um lock de sessão compartilhado com destroyNative(): a destruição só marca a sessão como encerrada depois que uma chamada direta em andamento termina, e novas chamadas são rejeitadas. O lock não é mantido para operações enfileiradas na GL thread, cuja ordenação é garantida pela própria fila.
 - Nenhuma alteração foi feita na política de saves, BIOS, núcleos, RetroAchievements ou Rewind durante uma sessão ativa.
 - Limitação conhecida desta etapa: não foi acrescentado teste automatizado de concorrência do GLSurfaceView/JNI; a cobertura atual do módulo não exercita esse ciclo de vida. Revisar o diff, executar Spotless/build/CI e validar no aparelho encerramento normal, pausa/retomada e callbacks tardios antes de considerar concluído.
+
+RESULTADO DA CI — PR #32 / PROTEÇÃO DO TEARDOWN JNI
+Data: 2026-11-22
+- PR: https://github.com/izzyn0okami/Tandem/pull/32
+- Commit validado: 0a11a7b366b0d84e518558e8a88c40952047cf01.
+- CI #477 / run ID 45033906969: CONCLUÍDA COM SUCESSO.
+- check-style / spotlessCheck: sucesso.
+- build-debug-apk / assembleLawnWithQuickstepGithubDebug: sucesso; artefato carregado.
+- final-status: sucesso.
+- Jobs de publicação tandem-release e nightly-release: skipped nesta execução; não registrar publicação de APK.
+- Teste funcional no Motorola Edge 30 Fusion: PENDENTE. A CI não substitui a validação de ciclo de vida, callbacks tardios, áudio, controles, saves e RetroAchievements.
+- Estado da PR na consulta: aberta; GitHub retornou mergeable=false / mergeable_state=dirty. A comparação com a base indicou 7 commits à frente e 0 atrás; a condição de mergeabilidade precisa ser reavaliada antes de qualquer merge.
+- Não mesclar sem validação funcional e autorização explícita do usuário.
