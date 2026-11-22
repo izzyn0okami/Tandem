@@ -25,6 +25,9 @@ internal data class RomMConnectionSnapshot(
 internal object GameIdentityResolver {
     private val cueFileReference = Regex("""(?i)^\s*FILE\s+(?:"([^"]+)"|(\S+))""")
     private val cueFileDirective = Regex("""(?i)^\s*FILE\s+(?:"[^"]+"|\S+)""")
+
+    private fun referencedFile(parent: File?, reference: String): File =
+        File(parent, reference.replace('\\', '/'))
     fun resolve(context: Context, romFile: File, platformSlug: String?): String =
         resolveWithFingerprint(context, romFile, platformSlug, cachedFingerprint(context, romFile))
 
@@ -310,7 +313,7 @@ internal object GameIdentityResolver {
                 }
                 else -> emptyList()
             }
-            references.forEach { addFile(File(file.parentFile, it), depth + 1) }
+            references.forEach { addFile(referencedFile(file.parentFile, it), depth + 1) }
         }
         addFile(romFile, 0)
         return digest.digest().toHex()
@@ -329,7 +332,7 @@ internal object GameIdentityResolver {
                         .filter { it.isNotEmpty() && !it.startsWith("#") }
                         .forEachIndexed { index, reference ->
                             digest.update(index.toString().toByteArray(Charsets.UTF_8))
-                            addFile(File(file.parentFile, reference), depth + 1)
+                            addFile(referencedFile(file.parentFile, reference), depth + 1)
                         }
                 }
                 "cue" -> {
