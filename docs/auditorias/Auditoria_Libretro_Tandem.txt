@@ -1937,3 +1937,7 @@ SALVAGUARDA DO FALLBACK LOCAL — CONDIÇÃO DE SEGURANÇA
 Data: 2026-11-22
 - A opção "Iniciar com save local" só é oferecida quando o rollback do pull confirma que arquivos e metadados locais foram restaurados.
 - Se a restauração falhar, o Tandem desativa o fallback local e oferece apenas nova tentativa, evitando iniciar com um save cuja integridade não pôde ser confirmada.
+
+- Último reforço: se o rollback não conseguir restaurar integralmente os arquivos/metadados, o Tandem desativa a ação "Iniciar com save local" e mantém os snapshots restantes como arquivos de recuperação; oferece apenas nova tentativa. Isso evita apagar a única cópia de recuperação.
+- Commit mais recente da implementação: dd4fb29ece8722a6087357de22125c6ad6eef7fb.
+- CI do commit mais recente e teste funcional no aparelho ainda pendentes.
