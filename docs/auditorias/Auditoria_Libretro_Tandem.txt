@@ -2050,3 +2050,19 @@ Data: 2026-11-22
 - O log combinado preserva o registro pós-merge da PR #32 e a auditoria da PR #33; a comparação confirma 0 commits atrás da base.
 - A CI pós-merge #480 da PR #32 terminou com sucesso, incluindo tandem-release, que publicou/atualizou `tandem-latest` com `Tandem.apk`.
 - O commit de integração não altera código funcional; a CI da PR #33 precisa validar o head final após esta reconciliação.
+
+RESULTADO DA CI — PR #33 / PERSISTÊNCIA DO ENVIO DE SAVES ROMM
+Data: 2026-11-22
+- PR: https://github.com/izzyn0okami/Tandem/pull/33
+- Commit de código validado: f863a9251579ed0c96f31132e53b2ae1f03d68c0.
+- CI #489 / run ID 45047911535: CONCLUÍDA COM SUCESSO.
+- URL: https://github.com/izzyn0okami/Tandem/actions/runs/45047911535
+- check-style / spotlessCheck: sucesso.
+- build-debug-apk / assembleLawnWithQuickstepGithubDebug: sucesso; Build APK e Upload artifact concluídos.
+- final-status: sucesso.
+- Jobs de publicação tandem-release e nightly-release: skipped; nenhuma release foi publicada por esta execução.
+- Artefato: assembleLawnWithQuickstepGithubDebug, ID 14764622558, 46.026.565 bytes; disponível até 2027-02-20T17:10:13Z.
+- Digest SHA-256 do ZIP do artefato: 3c351abd3419c2cde784e711f9c8d2bb1c71d0d4030443d774834e903b9a7c98.
+- A execução anterior #488 no commit 33b4c5e9d1172962a234fa72d9092307f022d37a falhou em Spotless e na compilação Java por ausência de três classes KSP geradas (FullWidgetsCatalogViewModel_Factory_Impl, LandingScreenViewModel_Factory_Impl e SearchScreenViewModel_Factory_Impl). A correção de formatação foi aplicada em GameSessionActivity.kt no commit f863a925; a CI #489 no novo head passou integralmente, sem repetição do erro de compilação.
+- Resultado: CI do head f863a925 aprovada. Testes funcionais no Motorola Edge 30 Fusion continuam PENDENTES; não considerar a persistência do upload validada até o usuário concluir o checklist no aparelho.
+- PR #33 permanece aberta e não mesclada. Não mesclar sem autorização explícita do usuário.
