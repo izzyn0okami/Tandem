@@ -1424,3 +1424,14 @@ PENDÊNCIAS
 
 ATUALIZAÇÃO DE STATUS
 - As linhas anteriores que indicavam CI pendente e proibição de merge descreviam o estado antes da conclusão da CI #427 e do merge. Este registro posterior prevalece.
+
+
+VALIDAÇÃO NO DISPOSITIVO — PR #25 APROVADA
+Data: 2026-11-22
+- O usuário concluiu os testes no aparelho e aprovou o funcionamento da implementação de rollback do atualizador Libretro.
+- CI pós-merge #428 / ID 44979811856: sucesso.
+- CI da atualização deste registro #429 / ID 44979828571: sucesso.
+- Compilação do APK e verificação de estilo concluídas com sucesso nas execuções correspondentes.
+- PR #25 permanece integrada à branch game-mode-m2-dev.
+- Status desta etapa: concluída e aprovada pelo usuário.
+- A auditoria geral de cobertura Libretro continua com as pendências de avaliação de novos núcleos, manifesto/disponibilidade e validação individual de alternativas.
