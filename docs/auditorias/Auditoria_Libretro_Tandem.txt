@@ -2102,3 +2102,14 @@ Data: 2026-11-22
 - Riscos prioritários para cobertura: escrita temporária/rename e leitura/fallback de SRAM; separação por usuário do progresso RA; estados PENDING/SYNCING/SYNCED e recuperação de timeout; exclusão mútua pull/push; worker não enviar com sessão ativa e retomar após pausa; tratamento de cancelamento/falha; eventos GL enfileirados após destroy e liberação de operações síncronas em corridas de teardown.
 - Estratégia recomendada: começar por testes unitários puros e determinísticos de SaveStore e regras de estado/eligibilidade do sync, sem rede real nem inicialização do motor nativo; em seguida adicionar testes de integração com WorkManager e testes instrumentados específicos para lifecycle/GL. Não simular JNI real em teste unitário JVM.
 - Nenhuma alteração funcional foi feita nesta etapa de auditoria. Próximo trabalho será uma PR isolada de cobertura automatizada, com verificação das PRs abertas antes da criação.
+
+
+PR EM PREPARAÇÃO — PRIMEIRA ETAPA DE TESTES AUTOMATIZADOS
+Data: 2026-11-22
+- Criada branch isolada `test/libretro-save-store-coverage` após confirmar que não havia PRs abertas.
+- Tornado o diretório raiz de saves injetável no construtor interno de SaveStore; o construtor público que recebe Context continua usando GameFolders.dir sem mudança de comportamento.
+- Adicionada dependência JUnit 4.13.2 ao módulo principal para habilitar testes unitários JVM.
+- Adicionado `src/test/kotlin/app/lawnchair/gamemode/SaveStoreTest.kt` com cinco cenários: leitura/escrita SRAM e estado com substituição temporária; ausência de arquivos temporários após gravação; fallback para o save mais recente entre núcleos irmãos; prioridade do save do núcleo atual; isolamento e exclusão de progresso RetroAchievements por conta; arquivo RA vazio tratado como ausente.
+- Nenhuma regra funcional de sincronização, RomM, sessão ou Libretro foi alterada.
+- CI e compilação de testes ainda pendentes; confirmar que o source set de teste Kotlin do módulo raiz é reconhecido pelo AGP e que os testes executam antes de ampliar a suíte.
+- Próximas etapas condicionadas ao resultado: cobrir transições de estado e elegibilidade do SaveSync com dependências isoladas; depois avaliar testes de WorkManager; lifecycle/GL requer testes instrumentados ou abstração explícita da fila JNI, sem invocar JNI real em JVM.
