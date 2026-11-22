@@ -182,13 +182,21 @@ internal object GameIdentityResolver {
         coreIds: List<String>,
         stableDirectoryName: String,
     ): LegacyMigrationPlan {
+        val legacyName = sanitize(romFile.nameWithoutExtension)
+        val currentCore = coreIds.firstOrNull()
+        val currentStable = currentCore?.let { File(File(savesRoot, it), stableDirectoryName) }
+        val currentHasSave = currentStable?.let { stable ->
+            listOf("sram.srm", "state1.state").any { name ->
+                File(stable, name).let { it.isFile && it.length() > 0L }
+            }
+        } == true
+        if (currentHasSave) return LegacyMigrationPlan(emptyMap(), ambiguous = false)
+
         val targetExists = coreIds.all { coreId ->
             val target = File(File(savesRoot, coreId), stableDirectoryName)
             target.isDirectory && target.listFiles()?.isNotEmpty() == true
         }
         if (targetExists) return LegacyMigrationPlan(emptyMap(), ambiguous = false)
-
-        val legacyName = sanitize(romFile.nameWithoutExtension)
         val legacyDataExists = coreIds.distinct().any { coreId ->
             File(File(savesRoot, coreId), legacyName)
                 .walkTopDown()
