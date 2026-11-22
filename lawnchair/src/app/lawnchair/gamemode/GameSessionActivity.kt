@@ -458,7 +458,10 @@ class GameSessionActivity : ComponentActivity() {
         val store = saveStore ?: return
         runCatching {
             val bytes = view.serializeSRAM()
-            if (bytes.isNotEmpty()) store.writeSram(bytes)
+            if (bytes.isNotEmpty()) {
+                store.writeSram(bytes)
+                romPath?.let { path -> coreIdOf()?.let { SaveSync.markPending(this, path, it) } }
+            }
         }
         val user = RaSettings.user(this) ?: return
         if (raSession != null) {
@@ -488,6 +491,7 @@ class GameSessionActivity : ComponentActivity() {
                 emuState
             }
             store.writeState(payload)
+            romPath?.let { path -> coreIdOf()?.let { SaveSync.markPending(this, path, it) } }
             true
         }.getOrDefault(false)
         toast(if (saved) R.string.game_session_state_saved else R.string.game_session_state_save_failed)

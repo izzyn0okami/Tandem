@@ -18,12 +18,50 @@ import kotlinx.coroutines.sync.withLock
  * se mudou. Se os dois mudaram, vence o mais recente e o outro vai para uma pasta de backup.
  * Falhas de rede nunca atrapalham o jogo.
  */
+enum class SaveSyncStatus { PENDING, SYNCING, SYNCED }
+
 object SaveSync {
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val lock = Mutex()
 
     private fun prefs(context: Context) = context.getSharedPreferences("romm_sync", Context.MODE_PRIVATE)
+
+    private fun statusKey(romPath: String) = "sync_status:$romPath"
+
+    /** Estado persistente exibido na biblioteca. Só existe para ROM vinculada ao RomM e com saves locais. */
+    fun status(context: Context, romPath: String, coreId: String): SaveSyncStatus? {
+        if (romId(context, romPath) == null) return null
+        val store = SaveStore(context, coreId, File(romPath))
+        if (files(store).none { (_, file) -> file.isFile && file.length() > 0L }) return null
+        val prefs = prefs(context)
+        return when (prefs.getString(statusKey(romPath), null)) {
+            "synced" -> SaveSyncStatus.SYNCED
+
+            "syncing" -> {
+                val started = prefs.getLong("${statusKey(romPath)}:started", 0L)
+                if (started > 0L && System.currentTimeMillis() - started > 120_000L) {
+                    prefs.edit { putString(statusKey(romPath), "pending") }
+                    SaveSyncStatus.PENDING
+                } else {
+                    SaveSyncStatus.SYNCING
+                }
+            }
+
+            else -> SaveSyncStatus.PENDING
+        }
+    }
+
+    /** Marca pendência apenas quando há arquivo local diferente da última versão confirmada. */
+    fun markPending(context: Context, romPath: String, coreId: String) {
+        if (romId(context, romPath) == null) return
+        val store = SaveStore(context, coreId, File(romPath))
+        val prefs = prefs(context)
+        val changed = files(store).any { (kind, file) ->
+            file.isFile && file.length() > 0L && hash(file) != prefs.getString("${kind.path}:$romPath:hash", null)
+        }
+        if (changed) prefs.edit { putString(statusKey(romPath), "pending") }
+    }
 
     /** Liga uma ROM baixada ao jogo correspondente no servidor. */
     fun link(context: Context, romPath: String, romId: Long) {
@@ -117,17 +155,34 @@ object SaveSync {
     /** Ao sair do jogo: envia em segundo plano o que mudou. */
     fun pushAsync(context: Context, romPath: String, coreId: String) {
         val app = context.applicationContext
+        if (romId(app, romPath) == null) return
+        prefs(app).edit {
+            putString(statusKey(romPath), "syncing")
+            putLong("${statusKey(romPath)}:started", System.currentTimeMillis())
+        }
         scope.launch {
             lock.withLock {
                 runCatching { push(app, romPath, coreId) }
-                    .onFailure { GameLog.error("saves", "falha ao enviar saves de ${File(romPath).name}", it) }
+                    .onSuccess {
+                        prefs(app).edit {
+                            putString(statusKey(romPath), "synced")
+                            remove("${statusKey(romPath)}:started")
+                        }
+                    }
+                    .onFailure {
+                        prefs(app).edit {
+                            putString(statusKey(romPath), "pending")
+                            remove("${statusKey(romPath)}:started")
+                        }
+                        GameLog.error("saves", "falha ao enviar saves de ${File(romPath).name}", it)
+                    }
             }
         }
     }
 
     private fun push(context: Context, romPath: String, coreId: String) {
         val romId = romId(context, romPath) ?: return
-        val client = client(context) ?: return
+        val client = client(context) ?: error("RomM não está configurado para enviar saves")
         val store = SaveStore(context, coreId, File(romPath))
         val prefs = prefs(context)
         for ((kind, file) in files(store)) {

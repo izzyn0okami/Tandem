@@ -73,6 +73,7 @@ internal fun LibraryScreen(
     androidGames: List<AndroidGame>,
     progress: Map<Long, Long>,
     version: Int,
+    syncVersion: Int,
     busy: Boolean,
     onPlay: (LocalGame) -> Unit,
     onOpen: (LibraryEntry) -> Unit,
@@ -225,7 +226,7 @@ internal fun LibraryScreen(
                 item(key = "library-title") { SectionTitle(stringResource(R.string.game_library_section)) }
                 items(visible.chunked(columns), key = { row -> row.first().key }) { row ->
                     Row(horizontalArrangement = Arrangement.spacedBy(CARD_GAP)) {
-                        row.forEach { entry -> EntryCard(entry, progress, onClick = { onOpen(entry) }) }
+                        row.forEach { entry -> EntryCard(entry, progress, syncVersion, onClick = { onOpen(entry) }) }
                     }
                 }
             }
@@ -236,15 +237,49 @@ internal fun LibraryScreen(
 /** Só o chip selecionado recebe o foco quando o botão Y pede para ir aos consoles. */
 private fun chipModifier(selected: Boolean, focus: FocusRequester): Modifier = if (selected) Modifier.focusRequester(focus) else Modifier
 
+@Composable
+private fun SaveSyncBadge(status: SaveSyncStatus?) {
+    if (status == null) return
+    val (label, color) = when (status) {
+        SaveSyncStatus.SYNCING -> "Sincronizando…" to GameColors.accent
+        SaveSyncStatus.SYNCED -> "Saves sincronizados" to GameColors.success
+        SaveSyncStatus.PENDING -> "Sincronização pendente" to GameColors.danger
+    }
+    Text(
+        text = label,
+        color = GameColors.text,
+        fontSize = 12.sp,
+        fontWeight = FontWeight.SemiBold,
+        modifier = Modifier
+            .padding(top = 6.dp)
+            .background(color.copy(alpha = 0.18f), RoundedCornerShape(6.dp))
+            .padding(horizontal = 9.dp, vertical = 5.dp),
+    )
+}
+
 /** Cartão da grade: capa, selo "Baixar" se só está no servidor, "N versões" e o andamento do download. */
 @Composable
-private fun EntryCard(entry: LibraryEntry, progress: Map<Long, Long>, onClick: () -> Unit) {
+private fun EntryCard(entry: LibraryEntry, progress: Map<Long, Long>, syncVersion: Int, onClick: () -> Unit) {
+    val context = LocalContext.current
     val percent = entry.percent(progress)
+    val syncStatus = entry.local?.let { SaveSync.status(context, it.path, CoreRegistry.chosen(context, it.platform)) }
     FocusSurface(onClick = onClick, modifier = Modifier.size(width = CARD_WIDTH, height = CARD_HEIGHT)) {
         CoverTile(entry.cover, modifier = Modifier.fillMaxSize())
         val versions = entry.group?.versions?.size ?: 0
         if (versions > 1) {
             CardBadge(stringResource(R.string.game_romm_versions, versions), GameColors.scrim, GameColors.text, Alignment.BottomStart)
+        }
+        if (syncStatus != null) {
+            CardBadge(
+                when (syncStatus) {
+                    SaveSyncStatus.SYNCED -> "Sync OK"
+                    SaveSyncStatus.SYNCING -> "Enviando…"
+                    SaveSyncStatus.PENDING -> "Pendente"
+                },
+                GameColors.scrim,
+                GameColors.text,
+                Alignment.TopStart,
+            )
         }
         if (entry.remoteOnly && percent == null) {
             CardBadge(stringResource(R.string.game_romm_download), GameColors.accent, GameColors.onAccent, Alignment.TopEnd)
@@ -375,6 +410,7 @@ private fun HeroSection(
 internal fun GameDetailScreen(
     entry: LibraryEntry,
     progress: Map<Long, Long>,
+    syncVersion: Int,
     busy: Boolean,
     onPlay: (LocalGame) -> Unit,
     onLoad: (LocalGame) -> Unit,
@@ -393,6 +429,9 @@ internal fun GameDetailScreen(
     val manyVersions = (group?.versions?.size ?: 0) > 1
     val summary = remember(entry.key) { group?.versions?.firstOrNull()?.summary }
     val chosenCoreId = remember(entry.platform.slug) { CoreRegistry.chosen(context, entry.platform) }
+    val syncStatus by produceState<SaveSyncStatus?>(null, local?.path, chosenCoreId, syncVersion) {
+        value = local?.let { SaveSync.status(context, it.path, chosenCoreId) }
+    }
     val coreUpdateAvailable by produceState<Boolean?>(null, local?.path, chosenCoreId) {
         value = if (local != null && entry.platform.launch == LaunchMode.LIBRETRO && chosenCoreId.isNotBlank()) {
             CoreInstaller.updateAvailable(context, chosenCoreId)
@@ -479,6 +518,9 @@ internal fun GameDetailScreen(
                         )
                     }
                     GameButton(label = stringResource(R.string.game_hint_back), onClick = onBack, modifier = Modifier.width(100.dp))
+                }
+                if (syncStatus != null) {
+                    SaveSyncBadge(syncStatus)
                 }
                 if (local != null && coreUpdateAvailable == true) {
                     GameButton(

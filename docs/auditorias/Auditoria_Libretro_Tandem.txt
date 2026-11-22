@@ -1800,3 +1800,31 @@ CI PÓS-MERGE DA PR #29
 - A execução global terminou com conclusion=success. A CI pós-merge da PR #29 fica aprovada.
 - Testes funcionais no aparelho da substituição segura de saves continuam pendentes conforme os três cenários já registrados acima.
 - Consulta de PRs abertas em 2026-11-22: nenhuma encontrada antes desta atualização; não havia PR sobreposta para esta etapa.
+
+IMPLEMENTAÇÃO — ESTADO DE SINCRONIZAÇÃO E INSÍGNIA VISUAL (EM VALIDAÇÃO)
+Data: 2026-11-22
+Branch: feat/romm-save-sync-badges
+- CI pós-merge da PR #29 (run #452, ID 45023261682): CONCLUÍDA COM SUCESSO; build-debug-apk, check-style, final-status e tandem-release aprovados. APK publicado no fluxo tandem-latest.
+- Implementado em SaveSync.kt:
+  - Estado persistente por jogo: pendente, enviando e sincronizado.
+  - Estado “sincronizado” só é gravado após push() concluir sem erro; ausência de cliente RomM agora gera falha, nunca confirmação falsa.
+  - Falha mantém a sincronização pendente; estado “enviando” abandonado por mais de dois minutos volta a pendente.
+  - O estado só é apresentado para ROM vinculada ao RomM que possua save local.
+- GameSessionActivity marca a sincronização como pendente quando SRAM ou save state local muda.
+- GameModeActivity atualiza a leitura dos estados quando retorna à tela do Modo Jogos.
+- GameScreens exibe insígnia compacta na grade (Sync OK / Enviando… / Pendente) e texto completo nos detalhes do jogo.
+- A insígnia não confunde gravação local com envio remoto; SRAM e save state são enviados pelo fluxo já existente ao sair/colocar o jogo em segundo plano. O estado agregado permanece pendente se qualquer envio falhar.
+- PR #30 aberta após consulta que não encontrou outras PRs abertas: https://github.com/izzyn0okami/Tandem/pull/30. CI inicial #455 / run ID 45024537548 foi iniciada; resultado ainda pendente. A atualização deste próprio log pode disparar nova execução para o head atualizado. Não mesclar sem autorização explícita.
+- Testes funcionais pendentes: confirmar Sync OK após upload confirmado; desligar/desconectar RomM durante envio e confirmar Pendente; verificar que jogos sem vínculo RomM não exibem insígnia; confirmar estados distintos na grade e nos detalhes.
+
+- CI #456 / run ID 45024573217: FALHOU exclusivamente em `spotlessKotlinCheck` por duas violações de formatação em `GameScreens.kt` e `SaveSync.kt`. A compilação do APK terminou com sucesso. Correções de formatação aplicadas nos commits c0fe864b4bb35cb85f362c867477ab223eae63b8 e acb7d119082ebd60e47601ad16e2b434ef19e4b2; nova CI aguardada.
+
+ATUALIZAÇÃO — CI #458 E CORREÇÃO ADICIONAL DE FORMATAÇÃO
+Data: 2026-11-22
+- CI #457 / run ID 45026247764: cancelada; não representa aprovação.
+- CI #458 / run ID 45026262046: FALHOU em check-style, exclusivamente na tarefa spotlessKotlinCheck.
+- Arquivo apontado: lawnchair/src/app/lawnchair/gamemode/SaveSync.kt.
+- O Spotless exige uma linha em branco entre o caso "synced" e o caso "syncing" no when de status().
+- O job build-debug-apk concluiu com sucesso; o APK foi compilado e o artefato foi carregado. final-status falhou como consequência do check-style.
+- Correção aplicada sem alteração funcional: commit 041cd291ae7421fa7c62b68677896a16935b2367, adicionando a linha em branco exigida.
+- Nova CI para validar o commit corretivo: PENDENTE. A PR #30 permanece aberta e não deve ser mesclada sem autorização explícita.

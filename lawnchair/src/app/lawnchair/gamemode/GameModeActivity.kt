@@ -330,6 +330,7 @@ private fun GameModeRoot(refreshKey: Int, onExit: () -> Unit) {
                     targetDetail != null -> GameDetailScreen(
                         entry = targetDetail,
                         progress = remote.progress,
+                        syncVersion = refreshKey,
                         busy = busy,
                         onPlay = { play(it) },
                         onLoad = { play(it, loadState = true) },
@@ -343,6 +344,7 @@ private fun GameModeRoot(refreshKey: Int, onExit: () -> Unit) {
                         androidGames = androidGames,
                         progress = remote.progress,
                         version = version,
+                        syncVersion = refreshKey,
                         busy = busy,
                         onPlay = { play(it) },
                         onOpen = { detailKey = it.key },
