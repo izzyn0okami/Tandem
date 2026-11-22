@@ -55,8 +55,7 @@ object SaveSync {
 
     private fun prefs(context: Context) = context.getSharedPreferences("romm_sync", Context.MODE_PRIVATE)
 
-    private fun statusKey(gameIdentity: String, accountFingerprint: String) =
-        "sync_status:$gameIdentity:$accountFingerprint"
+    private fun statusKey(gameIdentity: String, accountFingerprint: String) = "sync_status:$gameIdentity:$accountFingerprint"
 
     /** Estado persistente exibido na biblioteca. Só existe para ROM vinculada ao RomM e com saves locais. */
     fun status(
@@ -579,13 +578,15 @@ object SaveSync {
             .setRequiredNetworkType(NetworkType.CONNECTED)
             .build()
         val request = OneTimeWorkRequestBuilder<RomMSaveSyncWorker>()
-            .setInputData(workDataOf(
-                RomMSaveSyncWorker.KEY_ROM_PATH to romPath,
-                RomMSaveSyncWorker.KEY_CORE_ID to coreId,
-                RomMSaveSyncWorker.KEY_PLATFORM to platformSlug,
-                RomMSaveSyncWorker.KEY_GAME_IDENTITY to gameIdentity,
-                RomMSaveSyncWorker.KEY_ACCOUNT_FINGERPRINT to accountFingerprint,
-            ))
+            .setInputData(
+                workDataOf(
+                    RomMSaveSyncWorker.KEY_ROM_PATH to romPath,
+                    RomMSaveSyncWorker.KEY_CORE_ID to coreId,
+                    RomMSaveSyncWorker.KEY_PLATFORM to platformSlug,
+                    RomMSaveSyncWorker.KEY_GAME_IDENTITY to gameIdentity,
+                    RomMSaveSyncWorker.KEY_ACCOUNT_FINGERPRINT to accountFingerprint,
+                ),
+            )
             .setConstraints(constraints)
             .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 30, TimeUnit.SECONDS)
             .addTag(WORK_TAG)
