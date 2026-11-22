@@ -2102,3 +2102,24 @@ Data: 2026-11-22
 - Riscos prioritários para cobertura: escrita temporária/rename e leitura/fallback de SRAM; separação por usuário do progresso RA; estados PENDING/SYNCING/SYNCED e recuperação de timeout; exclusão mútua pull/push; worker não enviar com sessão ativa e retomar após pausa; tratamento de cancelamento/falha; eventos GL enfileirados após destroy e liberação de operações síncronas em corridas de teardown.
 - Estratégia recomendada: começar por testes unitários puros e determinísticos de SaveStore e regras de estado/eligibilidade do sync, sem rede real nem inicialização do motor nativo; em seguida adicionar testes de integração com WorkManager e testes instrumentados específicos para lifecycle/GL. Não simular JNI real em teste unitário JVM.
 - Nenhuma alteração funcional foi feita nesta etapa de auditoria. Próximo trabalho será uma PR isolada de cobertura automatizada, com verificação das PRs abertas antes da criação.
+
+
+PR EM PREPARAÇÃO — PRIMEIRA ETAPA DE TESTES AUTOMATIZADOS
+Data: 2026-11-22
+- Criada branch isolada `test/libretro-save-store-coverage` após confirmar que não havia PRs abertas.
+- Tornado o diretório raiz de saves injetável no construtor interno de SaveStore; o construtor público que recebe Context continua usando GameFolders.dir sem mudança de comportamento.
+- Adicionada dependência JUnit 4.13.2 ao módulo principal para habilitar testes unitários JVM.
+- Adicionado `src/test/kotlin/app/lawnchair/gamemode/SaveStoreTest.kt` com cinco cenários: leitura/escrita SRAM e estado com substituição temporária; ausência de arquivos temporários após gravação; fallback para o save mais recente entre núcleos irmãos; prioridade do save do núcleo atual; isolamento e exclusão de progresso RetroAchievements por conta; arquivo RA vazio tratado como ausente.
+- Nenhuma regra funcional de sincronização, RomM, sessão ou Libretro foi alterada.
+- CI e compilação de testes ainda pendentes; confirmar que o source set de teste Kotlin do módulo raiz é reconhecido pelo AGP e que os testes executam antes de ampliar a suíte.
+- Próximas etapas condicionadas ao resultado: cobrir transições de estado e elegibilidade do SaveSync com dependências isoladas; depois avaliar testes de WorkManager; lifecycle/GL requer testes instrumentados ou abstração explícita da fila JNI, sem invocar JNI real em JVM.
+
+
+CORREÇÃO DA FALHA DE SOURCE SET — PR #34
+Data: 2026-11-22
+- CI run #45051110634 (job build-debug-apk, job ID 137296205622) falhou durante a compilação do código principal, antes de executar os testes.
+- Erro observado: imports e símbolos JUnit não resolvidos em SaveStoreTest.kt. A causa foi a configuração do projeto: o diretório principal Kotlin inclui a raiz ampla `src`, fazendo com que `src/test/kotlin` também fosse capturado como código principal.
+- Correção aplicada na mesma branch da PR #34: movido SaveStoreTest.kt para `tests/unit/kotlin/app/lawnchair/gamemode/`, fora das raízes principais; registrado `tests/unit/kotlin` no source set Android `test` via `java.srcDirs`.
+- A dependência `testImplementation libs.junit` e a tarefa CI `testLawnWithQuickstepGithubDebugUnitTest` foram mantidas.
+- Commits de correção: 06597c3b6dbf47395bbb3b32faa4507a5ffaab76 (novo caminho do teste), 659921231136fc11eaa82501d51b1d6cc0288158 (remoção do caminho antigo), 1e1ca8fdb2c8b4d04575088bc5e849ab24c4104d (source set).
+- Validação após correção: PENDENTE. A nova CI precisa confirmar que o arquivo de teste é compilado no source set de testes e que os cinco casos são executados. Não considerar a falha resolvida até a execução completa.

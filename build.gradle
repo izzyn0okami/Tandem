@@ -346,6 +346,11 @@ android {
             manifest.srcFile "quickstep/AndroidManifest-launcher.xml"
         }
 
+        test {
+            // Keep JVM tests outside the broad main Kotlin source roots (notably 'src').
+            java.srcDirs += ['tests/unit/kotlin']
+        }
+
         withQuickstep {
             res.srcDirs = ['quickstep/res', 'quickstep/recents_ui_overrides/res']
             java.srcDirs = ['quickstep/src', 'quickstep/dagger', 'quickstep/recents_ui_overrides/src', 'quickstep/src_protolog']
@@ -511,6 +516,7 @@ dependencies {
     debugImplementation libs.leakcanary.android
     debugImplementation libs.leakcanary.androidstudio
 
+    testImplementation libs.junit
 }
 
 ksp {
