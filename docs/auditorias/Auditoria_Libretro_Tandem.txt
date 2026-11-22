@@ -1509,3 +1509,16 @@ CI da PR #432 / ID 44980599097: sucesso (build-debug-apk e check-style).
 Resultado: Beetle PSX (mednafen_psx) cadastrado como alternativa opcional de PlayStation. PCSX ReARMed permanece como padrão e SwanStation continua disponível. Nenhuma alteração de BIOS, formatos, controles ou configuração padrão.
 CI pós-merge #433 / ID 44983501786: em execução no momento deste registro; verificar conclusão antes de encerrar a validação.
 PENDENTE: teste no Motorola do download/instalação, inicialização de jogos, BIOS, desempenho, áudio, controles, saves de bateria, estados rápidos, RetroAchievements e retorno ao launcher. O merge não equivale à aprovação funcional no dispositivo.
+
+
+VALIDAÇÃO NO DISPOSITIVO — PR #26 / BEETLE PSX APROVADA
+Data: 2026-11-22
+- O usuário confirmou que o Beetle PSX funciona corretamente no aparelho.
+- A alternativa Beetle PSX (mednafen_psx) está aprovada funcionalmente para o uso testado.
+- PCSX ReARMed permanece como núcleo padrão; SwanStation e Beetle PSX permanecem como alternativas.
+- CI pós-merge #433 / ID 44983501786: sucesso.
+- Jobs build-debug-apk, check-style, final-status e tandem-release: sucesso.
+- APK de depuração compilado e artefato enviado; publicação tandem-latest concluída.
+- PR #26: mesclada no commit 0431e7a8b5371608001b2137a5f3a69c74d71ff0.
+- Estado da etapa Beetle PSX: concluída e aprovada pelo usuário.
+- Auditoria geral Libretro continua aberta para os demais itens e candidatos; a aprovação do Beetle PSX não valida automaticamente outros núcleos.
