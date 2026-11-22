@@ -233,7 +233,7 @@ private fun GameModeRoot(refreshKey: Int, onExit: () -> Unit) {
         }.getOrThrow()
         // Fingerprint e descoberta de saves legados podem ler arquivos grandes/varrer a biblioteca.
         // Faça tudo fora da interface e entregue o resultado pronto à sessão.
-        val (gameIdentity, migrationPlan) = withContext(Dispatchers.IO) {
+        val (gameIdentity, migrationPlan, siblings) = withContext(Dispatchers.IO) {
             val identity = GameIdentityResolver.resolve(context, File(romPath), platform?.slug)
             val siblings = platform?.let { selectedPlatform ->
                 CoreRegistry.cores(selectedPlatform)
@@ -246,7 +246,7 @@ private fun GameModeRoot(refreshKey: Int, onExit: () -> Unit) {
                 listOf(coreId) + siblings,
                 identity,
             )
-            identity to plan
+            Triple(identity, plan, siblings)
         }
         if (migrationPlan.ambiguous) {
             error(
@@ -273,7 +273,18 @@ private fun GameModeRoot(refreshKey: Int, onExit: () -> Unit) {
                     loadState = loadState,
                     platform = platform,
                     error = error.message ?: error.toString(),
-                    localSaveAvailable = error !is SaveRollbackException,
+                    localSaveAvailable = error !is SaveRollbackException && withContext(Dispatchers.IO) {
+                        val store = SaveStore(
+                            context,
+                            coreId,
+                            File(romPath),
+                            siblings,
+                            platform?.slug,
+                            gameIdentity,
+                            migrationSources,
+                        )
+                        store.readSram() != null || store.hasState()
+                    },
                 )
                 status = ""
                 return
