@@ -1636,3 +1636,20 @@ STATUS DAS OUTRAS CIs
 - #438 / 44984612588: check-style sucesso; build-debug-apk em execução.
 - #439 / 44984761191: check-style e build-debug-apk em execução.
 - Essas execuções permanecem pendentes até conclusão global; não inferir sucesso a partir do check-style isolado.
+
+
+ATUALIZAÇÃO — PR #27 MESCLADA
+Data: 2026-11-22
+
+PR #27 — Preserve existing BIOS during manual import
+- Estado: MESCLADA E FECHADA.
+- URL: https://github.com/izzyn0okami/Tandem/pull/27
+- Merge commit: 8056eb6ea939f49da5af9c892f009bc31c5fe779.
+- Branch de destino: game-mode-m2-dev.
+- Arquivo alterado: lawnchair/src/app/lawnchair/gamemode/BiosManager.kt.
+- Implementação: gravação em arquivo temporário com flush/sync; preservação da BIOS anterior em backup antes da troca; restauração em caso de falha; recuperação de backup deixado por interrupção; registro de falha de limpeza do backup.
+- CI da PR #27: #440 (run ID 44984832056) e #441 (run ID 44984860457) concluídas com sucesso. Ambas passaram em check-style, build-debug-apk e final-status. Publicação tandem-release foi ignorada nas execuções de PR, conforme esperado.
+- CIs anteriores de auditoria #436 (44984462877), #437 (44984600627), #438 (44984612588) e #439 (44984761191): todas concluídas com sucesso, incluindo check-style, build-debug-apk, final-status e tandem-release.
+- CI pós-merge #442 / run ID 44985469458: iniciada para o merge commit 8056eb6ea939f49da5af9c892f009bc31c5fe779; check-style e build-debug-apk ainda em execução na última consulta. Não registrar publicação pós-merge como concluída até resultado final.
+- Validação funcional no aparelho: PENDENTE. A aprovação da CI não substitui os testes no Motorola. Solicitar ao usuário verificar importação de BIOS nova, substituição de BIOS já existente e preservação/restauração do arquivo anterior em caso de falha, quando possível.
+- Próxima pendência da auditoria: validar no aparelho a nova rotina e depois avaliar validação por hash para BIOS de conteúdo conhecido. A rotina atual verifica arquivo não vazio e tamanho após instalação, mas ainda não valida hash criptográfico nem autenticidade do conteúdo.
