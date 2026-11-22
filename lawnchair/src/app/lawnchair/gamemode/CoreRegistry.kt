@@ -63,6 +63,7 @@ object CoreRegistry {
         "psx" to listOf(
             core("pcsx_rearmed", "PCSX ReARMed", "Leve e rápido"),
             core("swanstation", "SwanStation", "Mais preciso, mais pesado"),
+            core("mednafen_psx", "Beetle PSX", "Alta precisão, renderização por software; exige mais desempenho"),
         ),
         "pce" to listOf(
             core("mednafen_pce_fast", "Beetle PCE Fast", "Rápido"),
