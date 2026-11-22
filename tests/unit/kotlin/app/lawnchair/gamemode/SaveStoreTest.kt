@@ -99,6 +99,7 @@ class SaveStoreTest {
 
         assertNull(store.readRaProgress("player"))
     }
+
     @Test
     fun stableGameIdentitiesPreventSameBasenameCollisions() {
         val first = SaveStore(root, "melonds", File("folder-one/Pokemon.nds"), gameIdentity = "local-game-one")
