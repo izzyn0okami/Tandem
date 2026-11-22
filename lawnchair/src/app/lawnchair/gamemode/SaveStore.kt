@@ -203,7 +203,7 @@ internal object GameIdentityResolver {
             val references = when (extension) {
                 "m3u" -> file.readLines().map(String::trim).filter { it.isNotEmpty() && !it.startsWith("#") }
                 "cue" -> file.readLines().mapNotNull { line ->
-                    Regex("""(?i)^\\s*FILE\\s+"([^"]+)"""").find(line)?.groupValues?.getOrNull(1)
+                    Regex("""(?i)^\s*FILE\s+"([^"]+)"""").find(line)?.groupValues?.getOrNull(1)
                 }
                 else -> emptyList()
             }
