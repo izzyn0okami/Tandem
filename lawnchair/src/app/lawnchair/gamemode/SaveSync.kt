@@ -145,6 +145,7 @@ object SaveSync {
                     id = prefs.getLong("$key:id", Long.MIN_VALUE),
                 )
             }
+            var preserveSnapshots = false
             try {
                 for ((kind, file) in files(store)) {
                     val remote = client.listRemoteFiles(kind, romId)
@@ -172,6 +173,8 @@ object SaveSync {
                     }
                 }
                 if (restoreFailure != null) {
+                    // Keep any remaining snapshot files as recovery copies if rollback was incomplete.
+                    preserveSnapshots = true
                     throw SaveRollbackException(
                         "A sincronização falhou e não foi possível confirmar a restauração do save local. Não inicie com o save local.",
                         restoreFailure!!,
@@ -179,7 +182,7 @@ object SaveSync {
                 }
                 throw error
             } finally {
-                snapshots.forEach { it.backup?.delete() }
+                if (!preserveSnapshots) snapshots.forEach { it.backup?.delete() }
             }
         }
     }
