@@ -1386,3 +1386,15 @@ VALIDAÇÃO E LIMITES
 - A CI da PR ainda precisa confirmar compilação e estilo.
 - Teste real no telefone deve validar atualização normal e, se possível, simular falha após preservação do núcleo anterior sem colocar a instalação funcional em risco.
 - Não mesclar sem autorização explícita do usuário.
+
+
+CORREÇÃO DE COMPILAÇÃO — PR #25
+Data: 2026-11-22
+- CI run #425 / run ID 44978284885 falhou na tarefa :compileLawnWithQuickstepGithubDebugKotlin.
+- Erro exato: CoreInstaller.kt:176:29 — "No value passed for parameter 'error'".
+- Causa: chamada a GameLog.error com dois argumentos, embora GameLog.kt exija categoria, mensagem e Throwable.
+- Correção aplicada na mesma branch/PR: fornecido IllegalStateException como terceiro argumento ao registrar falha na remoção do backup pós-atualização.
+- Commit da correção: b9d61d9b6fe6258bd15be99d9d76d960af0d2cfc.
+- A correção é localizada e não altera o fluxo de instalação/rollback; apenas completa o diagnóstico de uma falha de limpeza do backup.
+- Nova CI após o commit: pendente de confirmação.
+- Não mesclar até a CI passar e a PR ser revisada; teste de falha real no aparelho continua pendente.
