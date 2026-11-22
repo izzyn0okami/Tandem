@@ -610,6 +610,10 @@ internal object GameIdentityResolver {
             ) throw IOException("A conta RomM mudou antes da conclusão")
 
             for (item in prepared) {
+                if (gameIdentity.startsWith("romm-") &&
+                    !gameIdentity.startsWith("romm-legacy-") &&
+                    !isCurrentAccountGameIdentity(context, romFile, gameIdentity)
+                ) throw IOException("A conta RomM mudou antes do arquivamento final")
                 if (item.source.exists() && !item.source.deleteRecursively()) {
                     throw IOException("Não foi possível concluir o arquivamento do diretório legado")
                 }
