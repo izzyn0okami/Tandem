@@ -1851,3 +1851,38 @@ Data: 2026-11-22
 - A consulta de workflows associadas ao merge commit e ao commit anterior de atualização do log não retornou execuções; não afirmar CI pós-merge aprovada.
 - Consulta atual de PRs abertas: nenhuma encontrada.
 - Próxima etapa da auditoria Libretro: continuar a avaliação de robustez da sessão e cobertura de testes automatizados, sem repetir validações já aprovadas de BIOS, ZIP/cache, núcleos confirmados e insígnias de sincronização.
+
+
+PONTO DE CONTROLE — AUDITORIA DE CICLO DE VIDA E ROBUSTEZ DA SESSÃO
+Data: 2026-11-22
+Branch consultada: game-mode-m2-dev
+- Log oficial consultado antes da retomada; nenhuma PR aberta foi encontrada.
+- Arquivos revisados:
+  - lawnchair/src/app/lawnchair/gamemode/GameSessionActivity.kt
+  - lawnchair/src/app/lawnchair/gamemode/GameModeActivity.kt
+  - lawnchair/src/app/lawnchair/gamemode/SessionDiagnostics.kt
+  - lawnchair/src/app/lawnchair/gamemode/SaveStore.kt
+  - lawnchair/src/app/lawnchair/gamemode/SaveSync.kt
+  - libretrodroid/src/main/java/com/swordfish/libretrodroid/GLRetroView.kt
+
+COMPORTAMENTOS CONFIRMADOS NO CÓDIGO
+1. O núcleo Libretro executa no processo do launcher; falha nativa ainda pode encerrar o processo inteiro. Isolamento em processo separado não existe e continua sendo uma melhoria arquitetural de maior porte.
+2. GameSessionActivity salva SRAM periodicamente a cada 60 segundos enquanto RESUMED e também em onPause()/saída. A gravação local usa arquivo temporário e rename.
+3. SaveSync.pushAsync() é iniciado em onStop(), usa escopo de aplicação com SupervisorJob e Mutex. O estado visual passa a SYNCING antes da operação e volta a PENDING em falha; o prazo de 2 minutos corrige estado abandonado após morte/interrupção do processo.
+4. A sincronização remota não é trabalho persistente do Android (não foi encontrado WorkManager/JobScheduler neste fluxo). Se o processo for encerrado durante o envio, a transferência pode ser interrompida; o estado abandonado é recuperado como PENDING na consulta seguinte. Isso é limitação de resiliência, não evidência de perda do save local.
+5. SaveStore.write() grava em .tmp e promove por rename no mesmo diretório. SaveSync.pullOne() usa RomMFileReplacement e recuperação de backup antes da substituição.
+6. GLRetroView centraliza chamadas nativas na thread GL. runOnGLThread() aguarda até GL_THREAD_OP_TIMEOUT_MS=8000 ms e lança erro se a fila não for drenada. runOnGLThreadVoid() registra aviso em timeout. destroyNative() marca isDestroyed e agenda LibretroDroid.destroy() na thread GL.
+7. GameSessionActivity encerra RaSession e destrói o núcleo em encerramento/recriação; em pausa comum preserva a sessão. Erros emitidos por getGLRetroErrors() são registrados, apresentados ao usuário e encerram a Activity.
+8. SessionDiagnostics registra sessão aberta/encerrada, coleta linhas do logcat do processo e, em Android 11+, consulta ApplicationExitInfo para classificar encerramentos anormais e pistas de crashes nativos.
+
+ACHADOS / RISCOS A INVESTIGAR
+- Risco A — sincronização RomM não persistente: a execução é mantida por CoroutineScope de processo. Um encerramento do processo pode interromper upload/download em andamento; o mecanismo atual recupera estado visual pendente, mas não garante retomada automática da transferência. Avaliar se vale migrar apenas o envio de saves para WorkManager, preservando a regra de não bloquear a partida.
+- Risco B — chamadas GL após destruição/pausa: runOnGLThread() não verifica isDestroyed antes de enfileirar e aguardar; o timeout de 8 s protege contra espera infinita, mas ainda pode produzir exceção/atraso se um chamador tardio tentar usar a view depois da destruição. Mapear todos os chamadores assíncronos e decidir política uniforme (cancelar/retornar valor seguro) antes de alterar.
+- Risco C — cobertura de testes: na árvore consultada não foram localizados testes próprios do pacote lawnchair/src/app/lawnchair/gamemode nem testes de ciclo de vida do GLRetroView. Existem testes nativos de achievements, mas não cobrem o ciclo completo Android/GL/SaveSync. Planejar testes isolados para SaveStore, transições de estado de SaveSync, destruição/recriação de sessão e timeout da thread GL.
+- Risco D — encerramento abrupto: a arquitetura no mesmo processo permanece vulnerável a crashes nativos. Os diagnósticos ajudam a identificar a causa, mas não impedem que o launcher seja encerrado.
+
+NÃO ALTERADO NESTA ETAPA
+- Nenhum código de emulação, sincronização ou ciclo de vida foi modificado.
+- Nenhum teste funcional adicional foi executado no telefone.
+- Não reabrir testes aprovados pelo usuário de BIOS, ZIP/cache, núcleos confirmados ou insígnias de sincronização.
+- Próximo passo: aprofundar o fluxo de chamadas GL e os limites de cancelamento da sincronização; escolher correção pequena, isolada e coberta por testes antes de criar PR. Verificar novamente PRs abertas antes de qualquer PR nova.
