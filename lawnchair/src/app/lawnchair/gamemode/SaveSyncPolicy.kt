@@ -15,7 +15,11 @@ internal object SaveSyncPolicy {
         RemoteFileKind.State -> "${kind.path}:$gameIdentity:$coreId"
     }
 
-    fun remoteHashKey(kind: RemoteFileKind, gameIdentity: String, coreId: String): String = "${metadataKey(kind, gameIdentity, coreId)}:remote_hash"
+    fun remoteHashKey(
+        kind: RemoteFileKind,
+        gameIdentity: String,
+        coreId: String,
+    ): String = "${metadataKey(kind, gameIdentity, coreId)}:remote_hash"
 
     fun resolveStatus(
         storedStatus: String?,
@@ -35,7 +39,8 @@ internal object SaveSyncPolicy {
         else -> StatusResolution(SaveSyncStatus.PENDING)
     }
 
-    fun isSessionActive(lastActiveAt: Long, now: Long): Boolean = lastActiveAt > 0L && now - lastActiveAt < SESSION_TIMEOUT_MS
+    fun isSessionActive(lastActiveAt: Long, now: Long): Boolean =
+        lastActiveAt > 0L && now - lastActiveAt < SESSION_TIMEOUT_MS
 
     fun isRemoteVersionChanged(
         remoteUpdatedAtMs: Long,
@@ -57,7 +62,12 @@ internal object SaveSyncPolicy {
         RemoteFileKind.State -> emulator == "tandem_$coreId"
     }
 
-    fun newestCompatibleRemote(kind: RemoteFileKind, remotes: List<RemoteFile>, coreId: String): RemoteFile? = remotes.filter { isCompatibleRemote(kind, it.emulator, coreId) }
+    fun newestCompatibleRemote(
+        kind: RemoteFileKind,
+        remotes: List<RemoteFile>,
+        coreId: String,
+    ): RemoteFile? = remotes
+        .filter { isCompatibleRemote(kind, it.emulator, coreId) }
         .maxWithOrNull(compareBy<RemoteFile> { it.updatedAtMs }.thenBy { it.id })
 
     /** SRAM sem hash remoto anterior precisa ser baixado para estabelecer uma comparação confiável. */
@@ -69,10 +79,18 @@ internal object SaveSyncPolicy {
         (remoteContentHash.isNullOrBlank() || lastRemoteContentHash.isNullOrBlank())
 
     /** Um núcleo ainda sem baseline recebe o head remoto; ausência local também pede restauração. */
-    fun shouldApplyRemote(remoteChanged: Boolean, localExists: Boolean, appliedHash: String?): Boolean = remoteChanged || !localExists || appliedHash == null
+    fun shouldApplyRemote(
+        remoteChanged: Boolean,
+        localExists: Boolean,
+        appliedHash: String?,
+    ): Boolean = remoteChanged || !localExists || appliedHash == null
 
     /** Só preserva local quando ele não é a versão que já havia sido aplicada neste núcleo. */
-    fun shouldBackupLocal(localExists: Boolean, localHash: String?, appliedHash: String?): Boolean = localExists && (appliedHash == null || localHash != appliedHash)
+    fun shouldBackupLocal(
+        localExists: Boolean,
+        localHash: String?,
+        appliedHash: String?,
+    ): Boolean = localExists && (appliedHash == null || localHash != appliedHash)
 
     /** A tarefa só pode usar as credenciais da mesma conta/servidor que a criou. */
     fun isSameSyncAccount(expectedFingerprint: String?, currentFingerprint: String?): Boolean =
