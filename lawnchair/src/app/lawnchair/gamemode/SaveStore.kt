@@ -517,10 +517,12 @@ internal object GameIdentityResolver {
             val temp: File,
             val rollback: File,
             val backup: File,
+            val archive: File,
         )
         val stamp = System.currentTimeMillis()
         val prepared = mutableListOf<Prepared>()
         val promoted = mutableListOf<Prepared>()
+        val archived = mutableListOf<Prepared>()
 
         fun directoryHash(directory: File): String {
             val digest = MessageDigest.getInstance("SHA-256")
@@ -585,7 +587,15 @@ internal object GameIdentityResolver {
                 val stagedFiles = temp.walkTopDown().filter { it.isFile }.toList()
                 val expectedFiles = sourceFiles.keys + targetFiles.keys
                 check(stagedFiles.map { it.relativeTo(temp).path }.toSet() == expectedFiles)
-                prepared += Prepared(coreId, source, target, temp, rollback, backup)
+                prepared += Prepared(
+                    coreId = coreId,
+                    source = source,
+                    target = target,
+                    temp = temp,
+                    rollback = rollback,
+                    backup = backup,
+                    archive = File(backup, "legado-original"),
+                )
             }
 
             for (item in prepared) {
@@ -614,8 +624,11 @@ internal object GameIdentityResolver {
                     !gameIdentity.startsWith("romm-legacy-") &&
                     !isCurrentAccountGameIdentity(context, romFile, gameIdentity)
                 ) throw IOException("A conta RomM mudou antes do arquivamento final")
-                if (item.source.exists() && !item.source.deleteRecursively()) {
-                    throw IOException("Não foi possível concluir o arquivamento do diretório legado")
+                if (item.source.exists()) {
+                    if (!item.source.renameTo(item.archive)) {
+                        throw IOException("Não foi possível arquivar o diretório legado sem removê-lo")
+                    }
+                    archived += item
                 }
             }
             prepared.forEach { it.rollback.deleteRecursively() }
@@ -625,6 +638,11 @@ internal object GameIdentityResolver {
             )
             true
         } catch (error: Exception) {
+            archived.asReversed().forEach { item ->
+                runCatching {
+                    if (item.archive.exists() && !item.source.exists()) item.archive.renameTo(item.source)
+                }
+            }
             promoted.asReversed().forEach { item ->
                 runCatching {
                     if (item.target.exists()) item.target.deleteRecursively()
