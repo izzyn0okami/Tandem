@@ -785,7 +785,7 @@ private fun SaveConflictDialog(
                 color = GameColors.textDim,
                 fontSize = 14.sp,
             )
-            files.take(8).forEach { file ->
+            files.take(4).forEach { file ->
                 val sourceDate = java.text.DateFormat.getDateTimeInstance().format(java.util.Date(file.sourceModified))
                 val targetDate = java.text.DateFormat.getDateTimeInstance().format(java.util.Date(file.targetModified))
                 Text(
@@ -794,8 +794,8 @@ private fun SaveConflictDialog(
                     fontSize = 12.sp,
                 )
             }
-            if (files.size > 8) {
-                Text("E mais ${files.size - 8} arquivo(s) conflitante(s).", color = GameColors.textDim, fontSize = 12.sp)
+            if (files.size > 4) {
+                Text("E mais ${files.size - 4} arquivo(s) conflitante(s).", color = GameColors.textDim, fontSize = 12.sp)
             }
             GameButton(
                 "Manter conjunto atual",
