@@ -1522,3 +1522,32 @@ Data: 2026-11-22
 - PR #26: mesclada no commit 0431e7a8b5371608001b2137a5f3a69c74d71ff0.
 - Estado da etapa Beetle PSX: concluída e aprovada pelo usuário.
 - Auditoria geral Libretro continua aberta para os demais itens e candidatos; a aprovação do Beetle PSX não valida automaticamente outros núcleos.
+
+
+DECISÃO DO USUÁRIO — NINTENDO DS / MELONDS
+Data: 2026-11-22
+- O usuário informou que já utiliza atualmente o melonDS.
+- Código verificado: GamePlatforms.nds define "melonds" como núcleo padrão.
+- CoreRegistry oferece ainda DeSmuME, DeSmuME 2015 e NooDS como alternativas.
+- Decisão: não adicionar melonDS DS como novo candidato nesta auditoria; evitar duplicação e preservar a implementação atual de tela/toque do Nintendo DS.
+- Nenhuma alteração de código foi feita nesta etapa.
+
+AUDITORIA DE CANDIDATOS — MSX / OPENMSX E FMSX
+Data: 2026-11-22
+- Plataforma MSX/MSX2 atualmente usa blueMSX e declara BIOS kit com subpastas "Databases" e "Machines".
+- openMSX possui build Android arm64-v8a segundo a documentação oficial e oferece C-BIOS interno, podendo iniciar sem BIOS externa; máquinas reais exigem ROMs em system/openmsx/share/systemroms.
+- Limitações relevantes do openMSX: documentação classifica o core como preliminar; Android oferece apenas saída de vídeo por software; memória para RetroAchievements não é suportada; estados rápidos são específicos da versão do core; imagens de disco exigem máquina configurada com drive, enquanto as máquinas C-BIOS incluídas não possuem drive.
+- A integração exigiria revisar a configuração de diretórios/BIOS por núcleo e o suporte a jogos em disco, sem assumir compatibilidade automática com o kit blueMSX existente.
+- fMSX exige BIOS por geração (MSX.ROM; MSX2.ROM + MSX2EXT.ROM; MSX2P.ROM + MSX2PEXT.ROM), e DISK.ROM para discos. A documentação do core indica licença não comercial; não é recomendado adicioná-lo sem análise jurídica/licenciamento específica.
+- Decisão provisória: não adicionar openMSX nem fMSX nesta etapa. openMSX permanece candidato de baixa prioridade para uma prova isolada futura; fMSX fica fora por restrição de licença e exigências de BIOS.
+
+AUDITORIA DE CANDIDATO — YMIR / SATURN
+Data: 2026-11-22
+- A documentação Libretro identifica o core como Emir (port do Ymir), experimental e ainda em desenvolvimento.
+- O core declara suporte a .cue, .chd, .mds, .ccd, .iso e .m3u; BIOS Saturn regionais opcionais conforme a lista .info; savestates, saves, controles, opções e memory descriptors.
+- A documentação também descreve o Ymir como alternativa jovem/em evolução ao Beetle Saturn. A presença de build ARM64/Android precisa ser novamente confirmada diretamente no Buildbot antes de qualquer implementação.
+- Decisão provisória: manter em observação; não incluir sem confirmação do pacote Android ARM64, revisão de desempenho no aparelho e teste funcional comparativo com o núcleo Saturn atual.
+
+CI DO REGISTRO ANTERIOR
+- CI #435 / ID 44984294349, disparada pelo commit b1690ddc99ac1ca04d7c441e4a17571667658a0b: check-style concluído com sucesso; build-debug-apk ainda em execução na última consulta.
+- Não declarar CI completa até confirmar o resultado final.
