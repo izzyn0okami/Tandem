@@ -2725,3 +2725,21 @@ GIT
 - PR #40 é a única PR aberta relevante e permanece em draft.
 - Nenhum merge foi realizado.
 - Não iniciar PR concorrente enquanto #40 estiver aberta.
+
+
+REVISÃO TÉCNICA ADICIONAL DA PR #40 — 2026-11-22
+Head observado: 79b257577783ffc2fddf44beec05bb4c80d66a98
+
+BLOQUEIOS CONFIRMADOS NA IMPLEMENTAÇÃO
+1. O diretório físico de SaveStore para jogo RomM deriva de servidor + romId, sem incluir conta. SaveSyncPolicy.metadataKey também recebe apenas kind, gameIdentity e coreId. Assim, contas diferentes na mesma instância podem compartilhar os arquivos locais e metadados remotos. É necessário incluir namespace estável de conta na identidade de armazenamento e em todas as chaves de sync; states continuam também isolados por coreId.
+2. A conta ainda é identificada por SHA-256(server + token). Isso impede usar credencial diferente, mas token renovado da mesma conta muda o identificador e pode deixar trabalhos pendentes sem retomada automática. RomM 5.4.x disponibiliza GET /api/users/me, protegido por me.read, para obter o ID estável do usuário. Adotar servidor + user ID; se me.read não estiver concedido, bloquear sync e orientar reautorização com esse escopo, sem fallback duradouro para token.
+3. O Worker guarda caminho, core, identidade do jogo e fingerprint de conta, mas resolve o SaveStore e lê o arquivo mutável quando executa. Ainda não há snapshot imutável do conteúdo enfileirado. Definir política segura de snapshot/coalescência e preservar associação por conta/jogo/artefato antes de adicionar slots.
+4. migrateLegacy mantém os arquivos de origem, mas quando destino e origem contêm bytes diferentes para o mesmo caminho relativo, mantém o destino, registra o conflito e conclui. Isso pode escolher um progresso sem resolução explícita. Bloquear abertura/migração conflitante e preservar ambos os conjuntos até escolha explícita.
+
+VALIDAÇÃO E ESTADO
+- PR #40 é a única PR aberta relevante, permanece draft. Não houve merge.
+- Run 45076202195 (#590) foi iniciada no head 9e1a5f14597c0395b0e1cca2e6a1a8efad64a640 e continuava in_progress na última consulta. A branch avançou desde então; essa CI não valida o head 79b257577783ffc2fddf44beec05bb4c80d66a98.
+- Run 45075705072 foi descrita na atualização anterior como validação intermediária (SpotlessApply, testes JVM e build APK); não valida o head final.
+- Nenhuma execução CI foi associada ao head atual na consulta. A CI final precisa ser disparada/concluída depois das correções e confirmar execução real dos testes, sem NO-SOURCE.
+- Comentário de revisão foi enviado à conversa da PR com os bloqueios acima. Nenhuma alteração funcional adicional foi feita nesta revisão.
+- Teste funcional no telefone continua pendente.
