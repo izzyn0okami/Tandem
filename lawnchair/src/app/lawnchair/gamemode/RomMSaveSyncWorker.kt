@@ -19,7 +19,7 @@ class RomMSaveSyncWorker(
         val gameIdentity = inputData.getString(KEY_GAME_IDENTITY)
             ?: GameIdentityResolver.resolve(applicationContext, gameFile, platformSlug)
         val accountFingerprint = inputData.getString(KEY_ACCOUNT_FINGERPRINT)
-            ?: GameIdentityResolver.originAccountFingerprint(applicationContext, gameFile)
+            ?: GameIdentityResolver.originAccountFingerprint(applicationContext, gameFile, allowHash = true)
             ?: return Result.retry()
         return try {
             val completed = SaveSync.pushFromWorker(
