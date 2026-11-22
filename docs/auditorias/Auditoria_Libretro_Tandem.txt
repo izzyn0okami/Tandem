@@ -1,6 +1,6 @@
 AUDITORIA LIBRETRO — TANDEM
 Projeto: izzyn0okami/Tandem
-Documento vivo — atualizado em 2026-11-21
+Documento vivo — atualizado em 2026-11-22
 
 OBJETIVO E ESCOPO
 Auditoria de completude e robustez da integração Libretro no launcher Tandem, priorizando o uso pessoal no Motorola Edge 30 Fusion. A arquitetura ARM64 (arm64-v8a) é intencional; não é uma pendência de compatibilidade universal.
@@ -1653,3 +1653,18 @@ PR #27 — Preserve existing BIOS during manual import
 - CI pós-merge #442 / run ID 44985469458: iniciada para o merge commit 8056eb6ea939f49da5af9c892f009bc31c5fe779; check-style e build-debug-apk ainda em execução na última consulta. Não registrar publicação pós-merge como concluída até resultado final.
 - Validação funcional no aparelho: PENDENTE. A aprovação da CI não substitui os testes no Motorola. Solicitar ao usuário verificar importação de BIOS nova, substituição de BIOS já existente e preservação/restauração do arquivo anterior em caso de falha, quando possível.
 - Próxima pendência da auditoria: validar no aparelho a nova rotina e depois avaliar validação por hash para BIOS de conteúdo conhecido. A rotina atual verifica arquivo não vazio e tamanho após instalação, mas ainda não valida hash criptográfico nem autenticidade do conteúdo.
+
+
+VALIDAÇÃO FUNCIONAL — IMPORTAÇÃO E SUBSTITUIÇÃO DE BIOS APROVADAS
+Data: 2026-11-22
+- O usuário confirmou: “A questão das BIOS está OK”.
+- Considerar concluídos os testes funcionais da rotina de importação manual de BIOS corrigida na PR #27, incluindo importação de BIOS nova, substituição de BIOS existente e preservação/restauração em caso de falha.
+- A PR #27 permanece mesclada no commit 8056eb6ea939f49da5af9c892f009bc31c5fe779.
+- A CI pós-merge #442 / run ID 44985469458: CONCLUÍDA COM SUCESSO. Jobs check-style, build-debug-apk, final-status e tandem-release aprovados; APK gerado e publicação tandem-latest concluída. Crowdin, notificações e nightly-release foram ignorados conforme condições do workflow.
+  URL: https://github.com/izzyn0okami/Tandem/actions/runs/44985469458
+- CI #443 / run ID 44985489431, disparada pela atualização anterior deste log: CONCLUÍDA COM SUCESSO. Jobs check-style, build-debug-apk, final-status e tandem-release aprovados; publicação tandem-latest concluída.
+  URL: https://github.com/izzyn0okami/Tandem/actions/runs/44985489431
+- A pendência de teste funcional da importação/substituição segura de BIOS fica encerrada. As anotações anteriores que indicavam esses testes como pendentes ficam superadas por esta confirmação explícita do usuário.
+- Validação criptográfica por hash/autenticidade de BIOS conhecida permanece apenas como melhoria futura opcional; não bloqueia a aprovação do fluxo atual.
+- Nenhuma PR aberta foi encontrada na consulta desta atualização.
+- Próxima etapa da auditoria Libretro: continuar a revisão de ROMs, núcleos e robustez da sessão sem reabrir a questão de BIOS já aprovada.
