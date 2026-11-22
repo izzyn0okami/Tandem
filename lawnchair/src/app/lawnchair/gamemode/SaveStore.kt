@@ -74,6 +74,12 @@ internal object GameIdentityResolver {
         return parseContentLink(prefs.getString(contentLinkKey(fingerprint), null)) != null
     }
 
+    fun hasAmbiguousContentLink(context: Context, romFile: File): Boolean {
+        val fingerprint = cachedFingerprintIfAvailable(context, romFile) ?: return false
+        return context.getSharedPreferences("romm_sync", Context.MODE_PRIVATE)
+            .getString(contentLinkKey(fingerprint), null) == "ambiguous"
+    }
+
     internal fun isSameGameFingerprint(stored: String?, current: String): Boolean = !stored.isNullOrBlank() && stored == current
 
     fun linkedRomId(
