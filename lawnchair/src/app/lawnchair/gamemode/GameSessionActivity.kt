@@ -604,12 +604,6 @@ class GameSessionActivity : ComponentActivity() {
         GameLog.log("núcleos", "$coreIdForOptions: ${option.key} = $value")
     }
 
-    override fun onStop() {
-        super.onStop()
-        val rom = romPath ?: return
-        val core = saveStore?.let { coreIdOf() } ?: return
-        SaveSync.pushAsync(this, rom, core)
-    }
 
     private fun coreIdOf(): String? = intent.getStringExtra(EXTRA_CORE_PATH)?.let { File(it).name.removeSuffix("_libretro_android.so") }
 
@@ -631,8 +625,11 @@ class GameSessionActivity : ComponentActivity() {
             nativeDestroyed = true
         }
         super.onPause()
-        // Só libere o upload depois que o GL foi pausado e o save local persistido.
-        romPath?.let { SaveSync.markSessionInactive(this, it) }
+        // Só libere e agende o upload depois que o GL foi pausado e o save local persistido.
+        romPath?.let { path ->
+            SaveSync.markSessionInactive(this, path)
+            coreIdOf()?.let { SaveSync.pushAsync(this, path, it) }
+        }
         // Em uma pausa comum, o idle é retomado em onResume; respostas de rede aguardam o GL.
         stopRaIdleLoop()
     }
