@@ -250,6 +250,11 @@ internal object GameIdentityResolver {
         stableDirectoryName: String,
     ): LegacyMigrationPlan {
         val legacyName = sanitize(romFile.nameWithoutExtension)
+        val legacyDataExists = coreIds.distinct().any { coreId ->
+            File(File(savesRoot, coreId), legacyName)
+                .walkTopDown()
+                .any { it.isFile && it.length() > 0L }
+        }
         // A user may have played with the local identity while an old RomM link was unverified.
         // When the same content is linked again, move that known local progress to the RomM identity.
         if (stableDirectoryName.startsWith("romm-")) {
@@ -291,6 +296,7 @@ internal object GameIdentityResolver {
                     directory.walkTopDown().any { it.isFile && it.length() > 0L }
                 }
                 if (localSources.isNotEmpty()) {
+                    if (legacyDataExists) return LegacyMigrationPlan(emptyMap(), ambiguous = true)
                     val hasConflict = localSources.any { (coreId, source) ->
                         hasConflictingFiles(source, File(File(savesRoot, coreId), stableDirectoryName))
                     }
@@ -300,11 +306,6 @@ internal object GameIdentityResolver {
             }
         }
 
-        val legacyDataExists = coreIds.distinct().any { coreId ->
-            File(File(savesRoot, coreId), legacyName)
-                .walkTopDown()
-                .any { it.isFile && it.length() > 0L }
-        }
         if (!legacyDataExists) return LegacyMigrationPlan(emptyMap(), ambiguous = false)
 
         val libraryRoot = File(GameLibrarySettings.rootPath(context))
