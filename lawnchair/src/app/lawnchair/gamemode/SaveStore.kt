@@ -19,7 +19,7 @@ internal data class RomMConnectionSnapshot(
 
 internal object GameIdentityResolver {
     fun resolve(context: Context, romFile: File, platformSlug: String?): String {
-        val fingerprint = fingerprint(romFile)
+        val fingerprint = cachedFingerprint(context, romFile)
         val prefs = context.getSharedPreferences("romm_sync", Context.MODE_PRIVATE)
         val directId = prefs.getLong("rom:${romFile.absolutePath}", -1L)
         val storedServer = prefs.getString("rom_server:${romFile.absolutePath}", null)
@@ -38,7 +38,7 @@ internal object GameIdentityResolver {
     fun hasRomMLink(context: Context, romFile: File): Boolean {
         val prefs = context.getSharedPreferences("romm_sync", Context.MODE_PRIVATE)
         return prefs.getLong("rom:${romFile.absolutePath}", -1L) >= 0L ||
-            parseContentLink(prefs.getString(contentLinkKey(fingerprint(romFile)), null)) != null
+            parseContentLink(prefs.getString(contentLinkKey(cachedFingerprint(context, romFile)), null)) != null
     }
 
     fun linkedRomId(
@@ -56,7 +56,7 @@ internal object GameIdentityResolver {
             val storedAccount = prefs.getString("rom_account:${romFile.absolutePath}", null)
             return direct.takeIf { storedServer == server && storedAccount == account }
         }
-        val link = parseContentLink(prefs.getString(contentLinkKey(fingerprint(romFile)), null)) ?: return null
+        val link = parseContentLink(prefs.getString(contentLinkKey(cachedFingerprint(context, romFile)), null)) ?: return null
         return link.romId.takeIf { link.server == server && link.accountFingerprint == account }
     }
 
@@ -74,7 +74,7 @@ internal object GameIdentityResolver {
         val prefs = context.getSharedPreferences("romm_sync", Context.MODE_PRIVATE)
         val direct = prefs.getLong("rom:${romFile.absolutePath}", -1L)
         if (direct >= 0L) return prefs.getString("rom_account:${romFile.absolutePath}", null)
-        return parseContentLink(prefs.getString(contentLinkKey(fingerprint(romFile)), null))?.accountFingerprint
+        return parseContentLink(prefs.getString(contentLinkKey(cachedFingerprint(context, romFile)), null))?.accountFingerprint
     }
 
     /** Finds a moved ROM by its stable identity, without trusting the old path. */
@@ -170,6 +170,47 @@ internal object GameIdentityResolver {
             runCatching { GameLog.error("saves", "falha ao migrar save legado; origem preservada", it) }
             false
         }
+    }
+
+    private fun cachedFingerprint(context: Context, romFile: File): String {
+        val canonicalPath = runCatching { romFile.canonicalPath }.getOrDefault(romFile.absolutePath)
+        val cacheKey = "fingerprint:${digest(canonicalPath)}"
+        val signature = sourceSignature(romFile)
+        val prefs = context.getSharedPreferences("game_identity_cache", Context.MODE_PRIVATE)
+        if (prefs.getString("$cacheKey:signature", null) == signature) {
+            prefs.getString("$cacheKey:value", null)?.let { return it }
+        }
+        val value = fingerprint(romFile)
+        prefs.edit {
+            putString("$cacheKey:signature", signature)
+            putString("$cacheKey:value", value)
+        }
+        return value
+    }
+
+    /** Cheap invalidation signature; large ROM bytes are hashed only when the source changes. */
+    private fun sourceSignature(romFile: File): String {
+        val digest = MessageDigest.getInstance("SHA-256")
+        val visited = mutableSetOf<String>()
+        fun addFile(file: File, depth: Int) {
+            val canonical = runCatching { file.canonicalPath }.getOrDefault(file.absolutePath)
+            if (depth > 4 || !file.isFile || !visited.add(canonical)) return
+            digest.update(file.extension.lowercase(Locale.ROOT).toByteArray(Charsets.UTF_8))
+            digest.update(file.length().toString().toByteArray(Charsets.UTF_8))
+            digest.update(file.lastModified().toString().toByteArray(Charsets.UTF_8))
+            val extension = file.extension.lowercase(Locale.ROOT)
+            if (extension == "m3u" || extension == "cue") digest.update(fileHash(file).toByteArray(Charsets.UTF_8))
+            val references = when (extension) {
+                "m3u" -> file.readLines().map(String::trim).filter { it.isNotEmpty() && !it.startsWith("#") }
+                "cue" -> file.readLines().mapNotNull { line ->
+                    Regex("""(?i)^\\s*FILE\\s+"([^"]+)"""").find(line)?.groupValues?.getOrNull(1)
+                }
+                else -> emptyList()
+            }
+            references.forEach { addFile(File(file.parentFile, it), depth + 1) }
+        }
+        addFile(romFile, 0)
+        return digest.digest().toHex()
     }
 
     fun fingerprint(romFile: File): String {
