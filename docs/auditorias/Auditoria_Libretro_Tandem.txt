@@ -1800,3 +1800,20 @@ CI PÓS-MERGE DA PR #29
 - A execução global terminou com conclusion=success. A CI pós-merge da PR #29 fica aprovada.
 - Testes funcionais no aparelho da substituição segura de saves continuam pendentes conforme os três cenários já registrados acima.
 - Consulta de PRs abertas em 2026-11-22: nenhuma encontrada antes desta atualização; não havia PR sobreposta para esta etapa.
+
+IMPLEMENTAÇÃO — ESTADO DE SINCRONIZAÇÃO E INSÍGNIA VISUAL (EM VALIDAÇÃO)
+Data: 2026-11-22
+Branch: feat/romm-save-sync-badges
+- CI pós-merge da PR #29 (run #452, ID 45023261682): CONCLUÍDA COM SUCESSO; build-debug-apk, check-style, final-status e tandem-release aprovados. APK publicado no fluxo tandem-latest.
+- Implementado em SaveSync.kt:
+  - Estado persistente por jogo: pendente, enviando e sincronizado.
+  - Estado “sincronizado” só é gravado após push() concluir sem erro; ausência de cliente RomM agora gera falha, nunca confirmação falsa.
+  - Falha mantém a sincronização pendente; estado “enviando” abandonado por mais de dois minutos volta a pendente.
+  - O estado só é apresentado para ROM vinculada ao RomM que possua save local.
+- GameSessionActivity marca a sincronização como pendente quando SRAM ou save state local muda.
+- GameModeActivity atualiza a leitura dos estados quando retorna à tela do Modo Jogos.
+- GameScreens exibe insígnia compacta na grade (Sync OK / Enviando… / Pendente) e texto completo nos detalhes do jogo.
+- A insígnia não confunde gravação local com envio remoto; SRAM e save state são enviados pelo fluxo já existente ao sair/colocar o jogo em segundo plano. O estado agregado permanece pendente se qualquer envio falhar.
+- Alterações ainda não foram validadas por CI nem por teste funcional no Motorola. A PR será aberta após nova consulta de PRs abertas; não mesclar sem autorização explícita.
+- Testes funcionais pendentes: confirmar Sync OK após upload confirmado; desligar/desconectar RomM durante envio e confirmar Pendente; verificar que jogos sem vínculo RomM não exibem insígnia; confirmar estados distintos na grade e nos detalhes.
+
