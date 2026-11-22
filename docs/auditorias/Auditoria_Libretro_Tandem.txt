@@ -2242,4 +2242,28 @@ Status: IMPLEMENTADA E MESCLADA na branch game-mode-m2-dev.
 - Merge commit: `0cf42c4da92e3ae7004a154fc874a86850b0b090`.
 - A PR #36 está fechada e mesclada em `game-mode-m2-dev`.
 - Teste funcional no Motorola Edge 30 Fusion: PENDENTE. A CI comprova compilação e testes automatizados, mas não comprova que o jogo carregue a versão correta do save no aparelho nem que o backup do save local divergente seja recuperável.
-- CI pós-merge no merge commit: PENDENTE; registrar quando a execução aparecer e concluir.
+- CI pós-merge #510 / run ID 45058859089, no merge commit `0cf42c4da92e3ae7004a154fc874a86850b0b090`: CONCLUÍDA COM SUCESSO. check-style/Spotless, testes unitários, build-debug APK, upload do artefato, final-status e tandem-release passaram; `tandem-latest` foi publicado. URL: https://github.com/izzyn0okami/Tandem/actions/runs/45058859089
+- CI #511 / run ID 45058915469, no commit documental `f477ee7664e9ec2a959858c2870c57ae1082947f`: CONCLUÍDA COM SUCESSO. check-style/Spotless, testes unitários, build-debug APK, upload do artefato, final-status e tandem-release passaram; `tandem-latest` foi atualizado. URL: https://github.com/izzyn0okami/Tandem/actions/runs/45058915469
+
+
+
+AUDITORIA — RECONCILIAÇÃO DE SAVES INSPIRADA NO ARGOSY
+Data: 2026-11-22
+Status: implementação em branch isolada; CI e teste funcional pendentes.
+- Referência analisada: https://github.com/izzyn0okami/argosy-launcher-izzyn0okami
+- Arquivos principais consultados no Argosy: `.takt/facets/policies/argosy-sync-saves.md`, `docs/save-sync-flow.md`, `LibretroSavePathResolver.kt`, `NegotiatorSaveSyncStrategy.kt`, `SaveSyncApiClient.kt`, `ReconcileEffectApplier.kt` e `SessionSaveFinalizer.kt`.
+- Princípios identificados no Argosy: hash do conteúdo como critério de identidade; comparação do save em disco com a versão ativa antes do lançamento; um resolvedor centralizado de caminhos; inventário local enviado para negociação com o servidor; plano explícito de upload/download/conflito/no-op. A implementação Argosy usa `POST /api/sync/negotiate` e os documentos do próprio projeto exigem prova com dados reais antes de considerar a sincronização validada.
+- O Tandem não implementa atualmente esse endpoint de negociação. Para não exigir uma versão específica do servidor RomM nem presumir suporte a API adicional, a adaptação usa os endpoints já existentes `GET /api/saves` e `GET /api/saves/{id}/content`, com comparação de hash local/remoto.
+- Achado estático no Tandem: os metadados de sincronização eram compartilhados por ROM, mas cada núcleo mantém seu próprio arquivo em diretório separado; ao mesmo tempo, a busca remota exigia correspondência exata com `tandem_<core>`. Assim, o save enviado por outro núcleo Tandem podia ser ignorado, e o arquivo antigo da pasta do núcleo atual podia ser considerado atualizado sem comparar seu hash com a versão que aquele núcleo havia recebido. Este é um diagnóstico por leitura de código; ainda precisa de confirmação funcional no aparelho.
+- Alterações preparadas:
+  1. Selecionar o SRAM remoto mais recente entre registros `tandem_*` da mesma ROM, permitindo a transferência entre núcleos Libretro. Estados rápidos continuam restritos ao mesmo núcleo.
+  2. Manter um hash de versão aplicada por núcleo, além da identidade global do registro remoto. Um núcleo sem baseline recebe a versão remota antes de iniciar; arquivo local ausente também é restaurado.
+  3. Comparar `content_hash` do RomM quando disponível. Se a API não fornecer esse campo para SRAM, baixar o conteúdo para arquivo temporário e calcular seu hash real antes de decidir se a versão mudou.
+  4. Se o servidor não mudou e o arquivo local foi alterado desde a última versão aplicada naquele núcleo, preservar o progresso local para upload posterior; se o servidor mudou, preservar o arquivo local divergente em backup e aplicar o head remoto.
+  5. Atualizar a identidade do registro remoto mesmo quando o conteúdo é idêntico, evitando tentar atualizar um ID antigo em uploads futuros.
+  6. Adicionar testes JVM para hash remoto, verificação de conteúdo sem `content_hash`, baseline por núcleo, seleção de SRAM entre núcleos, restrição de estados rápidos e proteção de arquivos locais.
+- Branch: `fix/romm-cross-core-save-reconcile`.
+- Head atual da implementação: `4bdebf1c438219465de5f4107e556e91db647bb6`.
+- PR: ainda não criada nesta atualização; não há outra PR aberta no repositório.
+- Spotless, testes JVM e build-debug APK: PENDENTES.
+- Teste funcional no Motorola Edge 30 Fusion: PENDENTE. Não considerar resolvido até confirmar que um save remoto mais recente é carregado tanto no núcleo de origem quanto em outro núcleo da mesma plataforma, e que o save local divergente fica recuperável no backup.
