@@ -360,4 +360,51 @@ class SaveStoreTest {
         assertTrue(local.isDirectory)
     }
 
+    @Test
+    fun conflictInspectionListsOnlyDifferentOverlappingFilesAndKeepsBothTrees() {
+        val source = File(root, "legacy/Pokemon").apply { mkdirs() }
+        val target = File(root, "stable/romm-game").apply { mkdirs() }
+        File(source, "sram.srm").writeBytes(byteArrayOf(1, 2, 3))
+        File(target, "sram.srm").writeBytes(byteArrayOf(9, 8, 7))
+        File(source, "same.state").writeBytes(byteArrayOf(4, 5, 6))
+        File(target, "same.state").writeBytes(byteArrayOf(4, 5, 6))
+        File(source, "legacy-only.bin").writeBytes(byteArrayOf(7, 7))
+        File(target, "current-only.bin").writeBytes(byteArrayOf(8, 8, 8))
+
+        val conflicts = GameIdentityResolver.inspectLegacyConflicts(
+            root,
+            "romm-game",
+            mapOf("melonds" to source),
+        )
+
+        assertEquals(1, conflicts.size)
+        assertEquals("sram.srm", conflicts.single().path)
+        assertEquals(3L, conflicts.single().sourceBytes)
+        assertEquals(3L, conflicts.single().targetBytes)
+        assertFalse(conflicts.single().identical)
+        assertArrayEquals(byteArrayOf(1, 2, 3), File(source, "sram.srm").readBytes())
+        assertArrayEquals(byteArrayOf(9, 8, 7), File(target, "sram.srm").readBytes())
+        assertTrue(File(source, "legacy-only.bin").isFile)
+        assertTrue(File(target, "current-only.bin").isFile)
+    }
+
+    @Test
+    fun conflictInspectionReturnsEmptyWhenOverlappingFilesAreIdentical() {
+        val source = File(root, "legacy/Pokemon").apply { mkdirs() }
+        val target = File(root, "stable/romm-game").apply { mkdirs() }
+        val bytes = byteArrayOf(2, 7, 1, 8)
+        File(source, "sram.srm").writeBytes(bytes)
+        File(target, "sram.srm").writeBytes(bytes)
+
+        val conflicts = GameIdentityResolver.inspectLegacyConflicts(
+            root,
+            "romm-game",
+            mapOf("melonds" to source),
+        )
+
+        assertTrue(conflicts.isEmpty())
+        assertTrue(source.isDirectory)
+        assertTrue(target.isDirectory)
+    }
+
 }
