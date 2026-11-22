@@ -1281,3 +1281,26 @@ Data: 2026-11-21
 - Pendente: teste no Motorola Edge 30 Fusion da detecção de atualização, download/instalação, preservação do núcleo anterior em falha e inicialização de jogos após atualizar.
 - Pendente: confirmar comportamento real do endpoint HEAD do Buildbot ARM64 (Last-Modified/ETag) e cobrir núcleos/plataformas adicionais.
 - Não considerar a auditoria Libretro completa até concluir testes no aparelho e a revisão do catálogo.
+
+
+VALIDAÇÃO FUNCIONAL — ATUALIZADOR DE NÚCLEOS LIBRETRO
+Data: 2026-11-22
+- O usuário confirmou em teste no aparelho que o Tandem detecta a atualização, baixa o núcleo e conclui a atualização.
+- Resultado: fluxo básico de detecção + download + atualização do núcleo validado no Motorola Edge 30 Fusion.
+- A confirmação também demonstra que, no cenário testado, o endpoint remoto forneceu informação suficiente para habilitar a atualização.
+- Permanecem pendentes: testar inicialização de jogos após atualizar; simular falha durante download/substituição para confirmar preservação e recuperação do núcleo anterior; verificar outros núcleos/plataformas e completar a revisão do catálogo. Não marcar esses itens como validados por inferência.
+
+CI PÓS-MERGE — PR #24
+Data: 2026-11-22
+- Workflow CI run #420 / run ID 44976915386: CONCLUÍDO COM SUCESSO.
+- URL: https://github.com/izzyn0okami/Tandem/actions/runs/44976915386
+- Commit: 0cf9af0f8338b1e4efbd7d1db6c103c976580053 (merge da PR #24).
+- check-style / spotlessCheck: sucesso.
+- build-debug-apk / assembleLawnWithQuickstepGithubDebug: sucesso.
+- final-status: sucesso.
+- tandem-release: sucesso; APK publicado no fluxo de release do projeto.
+- Artefato de CI: assembleLawnWithQuickstepGithubDebug, ID 14736525058, 45.680.207 bytes; expira em 2027-02-20.
+- SHA-256 do artefato ZIP: e7edde6e424dfe3247760e0559863521c0896b7f562b3e723ab81f4679e45839.
+- Jobs condicionais crowdin-auto-merge, send-notifications e nightly-release foram ignorados; não representam falha.
+- Não havia PRs abertas na consulta após a conclusão.
+- Estado: CI pós-merge concluída; atualização básica do núcleo validada pelo usuário. Auditoria Libretro continua aberta para os testes e revisão de catálogo listados acima.
