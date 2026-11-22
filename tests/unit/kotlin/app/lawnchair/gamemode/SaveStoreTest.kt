@@ -168,6 +168,14 @@ class SaveStoreTest {
     }
 
     @Test
+    fun directRomMLinkRequiresMatchingContentFingerprint() {
+        val fingerprint = "sha256-original"
+        assertTrue(GameIdentityResolver.isSameGameFingerprint(fingerprint, fingerprint))
+        assertFalse(GameIdentityResolver.isSameGameFingerprint("sha256-old", "sha256-new"))
+        assertFalse(GameIdentityResolver.isSameGameFingerprint(null, fingerprint))
+    }
+
+    @Test
     fun singleRomFingerprintSurvivesRename() {
         val original = File(root, "folder/Original Name.nds")
         original.parentFile.mkdirs()
