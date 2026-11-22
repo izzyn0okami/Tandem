@@ -1468,3 +1468,31 @@ DECISÃO DESTA ETAPA
 - Próxima ação técnica recomendada: preparar uma prova isolada do melonDS DS, incluindo revisão da configuração de BIOS/firmware, formatos aceitos, controles/toque e integração com o instalador/atualizador existente.
 - Só abrir PR após revisar a implementação proposta e confirmar novamente que não existe PR concorrente aberta.
 - Teste real no aparelho continuará obrigatório antes de aprovar o candidato.
+
+
+PROVA CONTROLADA — ALTERNATIVA BEETLE PSX (SOFTWARE)
+Data: 2026-11-22
+Branch: feat/libretro-beetle-psx-core
+Alteração proposta: incluir mednafen_psx como alternativa opcional para PlayStation, mantendo PCSX ReARMed como padrão e SwanStation como alternativa já existente.
+
+JUSTIFICATIVA
+- O Buildbot oficial publica mednafen_psx_libretro_android.so.zip para Android ARM64.
+- A documentação oficial descreve Beetle PSX como core baseado no módulo PSX do Mednafen, focado em precisão e renderização por software; não depende do renderizador OpenGL/Vulkan do Beetle PSX HW.
+- A plataforma PlayStation do Tandem já aceita .cue, .chd, .pbp, .iso e .m3u, compatíveis com os formatos documentados para Beetle PSX.
+- Os arquivos BIOS regionais já listados na plataforma correspondem aos nomes esperados pelo Beetle PSX. O core também pode usar OpenBIOS quando não há BIOS fornecida, mas a compatibilidade regional deve ser testada.
+- O novo core é adicionado depois das opções atuais; PCSX ReARMed permanece como padrão. Nenhuma migração automática de preferência ou save é feita.
+- SaveStore separa dados por ID de núcleo e, para núcleos irmãos da mesma plataforma, usa SRAM existente como ponto de partida. Estados rápidos continuam isolados por núcleo, evitando compartilhar estados incompatíveis.
+
+LIMITES E RISCOS
+- Renderização por software e maior precisão podem aumentar o consumo de CPU/bateria e reduzir desempenho em alguns jogos.
+- A publicação ARM64 não prova que todos os jogos ou BIOS funcionarão corretamente no dispositivo.
+- O Beetle PSX HW não foi incluído: seus requisitos de OpenGL 3.3/Vulkan não devem ser presumidos compatíveis com a camada GLRetroView do Tandem.
+- melonDS DS permanece em espera: a documentação oficial indica requisito de OpenGL Core >= 3.2, e a sessão atual do Tandem aplica o layout DS lado a lado com lógica específica para o ID/variável do core antigo "melonds". Além disso, estados de emulação não são intercambiáveis entre as versões. É necessário validar a camada gráfica e adaptar o layout antes de oferecer o core.
+- Geolith continua adiado por exigir formatos .neo/.cue/.chd e BIOS distintas AES/MVS/CD/CDZ que o modelo atual de Neo Geo não representa.
+
+VALIDAÇÃO PENDENTE
+- CI de compilação e estilo na PR.
+- Instalação do core no telefone.
+- Inicialização de jogos PlayStation com e sem BIOS regional quando aplicável.
+- Verificação de desempenho, áudio, controles, saves de bateria, estados, RetroAchievements e retorno ao launcher.
+- A inclusão é opcional; o padrão PCSX ReARMed não será alterado.
