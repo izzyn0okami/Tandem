@@ -74,6 +74,10 @@ internal object SaveSyncPolicy {
     /** Só preserva local quando ele não é a versão que já havia sido aplicada neste núcleo. */
     fun shouldBackupLocal(localExists: Boolean, localHash: String?, appliedHash: String?): Boolean = localExists && (appliedHash == null || localHash != appliedHash)
 
+    /** A tarefa só pode usar as credenciais da mesma conta/servidor que a criou. */
+    fun isSameSyncAccount(expectedFingerprint: String?, currentFingerprint: String?): Boolean =
+        !expectedFingerprint.isNullOrBlank() && expectedFingerprint == currentFingerprint
+
     /** Um trabalho adiado porque a sessão ainda está ativa deve permanecer na fila do WorkManager. */
     fun shouldRetryWorker(syncCompleted: Boolean): Boolean = !syncCompleted
 
