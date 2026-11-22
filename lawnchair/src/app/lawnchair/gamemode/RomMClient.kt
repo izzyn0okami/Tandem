@@ -9,8 +9,8 @@ import java.io.FileOutputStream
 import java.io.IOException
 import java.security.MessageDigest
 import java.util.concurrent.TimeUnit
-import java.util.zip.CRC32
 import java.util.concurrent.atomic.AtomicInteger
+import java.util.zip.CRC32
 import okhttp3.Call
 import okhttp3.EventListener
 import okhttp3.HttpUrl
