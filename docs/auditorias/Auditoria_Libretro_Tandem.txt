@@ -1269,3 +1269,15 @@ ESTADO
 - Código preparado na branch feature/libretro-core-updater.
 - Ainda não submetido a PR; CI pendente.
 - Nenhuma alteração mesclada em game-mode-m2-dev.
+
+ATUALIZAÇÃO DE AUDITORIA — PR #24 INTEGRADA
+Data: 2026-11-21
+- PR #24 (Add safe Libretro core updates) mesclada com sucesso em game-mode-m2-dev.
+- Commit de merge: 0cf9af0f8338b1e4efbd7d1db6c103c976580053.
+- CI da PR #24: sucesso em check-style (spotlessCheck), build-debug-apk (assembleLawnWithQuickstepGithubDebug), upload do artefato e final-status.
+- Nenhum conflito no merge.
+- APK de depuração gerado e publicado como artefato da execução da CI da PR.
+- Pendente: CI disparada após o merge na branch game-mode-m2-dev; registrar o resultado quando terminar.
+- Pendente: teste no Motorola Edge 30 Fusion da detecção de atualização, download/instalação, preservação do núcleo anterior em falha e inicialização de jogos após atualizar.
+- Pendente: confirmar comportamento real do endpoint HEAD do Buildbot ARM64 (Last-Modified/ETag) e cobrir núcleos/plataformas adicionais.
+- Não considerar a auditoria Libretro completa até concluir testes no aparelho e a revisão do catálogo.
