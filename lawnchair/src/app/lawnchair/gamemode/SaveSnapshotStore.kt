@@ -63,12 +63,17 @@ internal class SaveSnapshotStore(private val root: File) {
         manifest: File,
     ): Map<RemoteFileKind, File> {
         if (!manifest.isFile) throw IOException("A captura persistente do save está incompleta")
-        val hashes = manifest.readLines().mapNotNull { line ->
+        val hashes = linkedMapOf<RemoteFileKind, String>()
+        manifest.readLines().filter(String::isNotBlank).forEach { line ->
             val parts = line.split('=', limit = 2)
-            val kind = RemoteFileKind.entries.firstOrNull { it.name == parts.firstOrNull() }
-            val value = parts.getOrNull(1)
-            if (kind == null || value.isNullOrBlank()) null else kind to value
-        }.toMap()
+            if (parts.size != 2) throw IOException("Manifesto da captura de save inválido")
+            val kind = RemoteFileKind.entries.firstOrNull { it.name == parts[0] }
+                ?: throw IOException("Tipo de arquivo desconhecido na captura de save")
+            val expectedHash = parts[1]
+            if (!expectedHash.matches(Regex("[a-f0-9]{64}")) || hashes.put(kind, expectedHash) != null) {
+                throw IOException("Hash inválido no manifesto da captura de save")
+            }
+        }
         return hashes.mapValues { (kind, expectedHash) ->
             val snapshot = File(directory, fileName(kind))
             if (!snapshot.isFile || snapshot.length() == 0L || hash(snapshot) != expectedHash) {

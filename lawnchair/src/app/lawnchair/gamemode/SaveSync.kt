@@ -655,19 +655,21 @@ object SaveSync {
                 putLong("$statusKey:started", System.currentTimeMillis())
             }
             try {
-                val store = SaveStore(
-                    app,
-                    coreId,
-                    activeRom,
-                    siblingCores,
-                    platformSlug,
-                    gameIdentity,
-                    migrationPlan.sources,
-                )
-                val snapshotFiles = SaveSnapshotStore(File(app.filesDir, "romm-save-queue")).capture(
-                    snapshotJobId,
-                    files(store).associate { (kind, file) -> kind to file },
-                )
+                val snapshotFiles = withContext(Dispatchers.IO) {
+                    val store = SaveStore(
+                        app,
+                        coreId,
+                        activeRom,
+                        siblingCores,
+                        platformSlug,
+                        gameIdentity,
+                        migrationPlan.sources,
+                    )
+                    SaveSnapshotStore(File(app.filesDir, "romm-save-queue")).capture(
+                        snapshotJobId,
+                        files(store).associate { (kind, file) -> kind to file },
+                    )
+                }
                 withContext(Dispatchers.IO) {
                     push(
                         app,
