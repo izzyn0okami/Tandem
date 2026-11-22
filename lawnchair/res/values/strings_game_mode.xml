@@ -177,6 +177,10 @@
     <string name="game_save_sync_unsafe_body">Não foi possível sincronizar e o Tandem não conseguiu confirmar a restauração do save local. Por segurança, iniciar com o save local foi desativado. Tente novamente.</string>
     <string name="game_save_sync_retry">Tentar novamente</string>
     <string name="game_save_sync_use_local">Iniciar com save local</string>
+    <string name="game_save_claim_title">Save antigo sem identificação de conta</string>
+    <string name="game_save_claim_body">O Tandem encontrou progresso antigo sem comprovação de qual conta RomM era sua proprietária. Deseja copiar e validar esse progresso para a conta atualmente vinculada a %1$s? Os arquivos originais serão preservados e nunca serão apagados. Se não reconhecer esse progresso, mantenha-o sem atribuição.</string>
+    <string name="game_save_claim_confirm">Copiar para esta conta</string>
+    <string name="game_save_claim_cancel">Manter sem atribuir</string>
     <string name="game_android">Jogos Android</string>
     <string name="game_pad_disconnected_title">Controle desconectado</string>
     <string name="game_pad_disconnected_body">Quer continuar no modo jogos ou voltar ao launcher?</string>
