@@ -248,4 +248,22 @@ class SaveStoreTest {
         assertTrue(File(stable, "sram.srm").isFile)
     }
 
+    @Test
+    fun unquotedCueReferenceAlsoSurvivesRename() {
+        val folder = File(root, "cue-unquoted").apply { mkdirs() }
+        val cue = File(folder, "Original.cue")
+        val disc = File(folder, "Original.bin")
+        cue.writeText("FILE Original.bin BINARY\\nTRACK 01 MODE1/2352")
+        disc.writeBytes(byteArrayOf(6, 2, 6, 4))
+        val before = GameIdentityResolver.fingerprint(cue)
+
+        val renamedDisc = File(folder, "Renamed.bin")
+        assertTrue(disc.renameTo(renamedDisc))
+        val renamedCue = File(folder, "Renamed.cue")
+        cue.writeText("FILE Renamed.bin BINARY\\nTRACK 01 MODE1/2352")
+        assertTrue(cue.renameTo(renamedCue))
+
+        assertEquals(before, GameIdentityResolver.fingerprint(renamedCue))
+    }
+
 }
