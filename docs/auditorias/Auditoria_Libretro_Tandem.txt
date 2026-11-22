@@ -1398,3 +1398,29 @@ Data: 2026-11-22
 - A correção é localizada e não altera o fluxo de instalação/rollback; apenas completa o diagnóstico de uma falha de limpeza do backup.
 - Nova CI após o commit: pendente de confirmação.
 - Não mesclar até a CI passar e a PR ser revisada; teste de falha real no aparelho continua pendente.
+
+
+RESULTADO — PR #25 MESCLADA
+Data: 2026-11-22
+PR: https://github.com/izzyn0okami/Tandem/pull/25
+Título: Restore previous Libretro core on update failure
+Branch de destino: game-mode-m2-dev
+Commit de merge: 3173026da499fb4a2d6014593e805277e89416a4
+
+VALIDAÇÃO
+- CI da PR #25: run #427 / ID 44979307363 — sucesso.
+- build-debug-apk: sucesso; APK de depuração compilado e artefato enviado.
+- check-style: sucesso.
+- final-status: sucesso.
+- PR #25 mesclada após autorização explícita do usuário.
+- O fluxo de rollback foi integrado à branch game-mode-m2-dev.
+- A CI pós-merge #428 / ID 44979811856 está em execução neste registro; confirmar resultado antes de considerar a integração validada.
+
+PENDÊNCIAS
+- Testar no telefone uma atualização normal de núcleo após o merge.
+- Se for seguro e viável, validar recuperação após uma falha simulada durante a promoção/validação, sem arriscar a única cópia funcional.
+- A revisão estática e a CI não substituem o teste real de falha de armazenamento/download.
+- Permanecem as demais recomendações da auditoria de cobertura: avaliar novos núcleos, manifesto/disponibilidade e validação individual no aparelho.
+
+ATUALIZAÇÃO DE STATUS
+- As linhas anteriores que indicavam CI pendente e proibição de merge descreviam o estado antes da conclusão da CI #427 e do merge. Este registro posterior prevalece.
