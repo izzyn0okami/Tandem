@@ -265,6 +265,22 @@ class RomMDeviceSyncClient(
         return DeviceSyncProtocolJson.parseNegotiation(json)
     }
 
+    /**
+     * Executa apenas a negociação para diagnóstico e encerra a sessão sem transferir arquivos.
+     * Operações no-op contam como concluídas; todas as demais ficam registradas como não executadas.
+     */
+    fun inspectNegotiation(
+        deviceId: String,
+        saves: List<DeviceSyncSave>,
+        romIds: Set<Long>,
+    ): DeviceSyncNegotiation {
+        val negotiation = negotiate(deviceId, saves, romIds)
+        val completed = negotiation.operations.count { it.action == DeviceSyncAction.NoOp }
+        val failed = negotiation.operations.size - completed
+        complete(negotiation.sessionId, completed, failed)
+        return negotiation
+    }
+
     fun complete(sessionId: Long, operationsCompleted: Int, operationsFailed: Int) {
         require(sessionId > 0L)
         require(operationsCompleted >= 0 && operationsFailed >= 0)

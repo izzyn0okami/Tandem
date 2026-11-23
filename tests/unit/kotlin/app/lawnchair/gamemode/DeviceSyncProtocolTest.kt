@@ -191,6 +191,44 @@ class DeviceSyncProtocolTest {
     }
 
     @Test
+    fun readOnlyInspectionCompletesSessionWithoutExecutingReturnedOperations() {
+        val server = MockWebServer()
+        server.start()
+        try {
+            server.enqueue(
+                MockResponse(
+                    body = """{"session_id":18,"operations":[
+                        {"action":"no_op","rom_id":42},
+                        {"action":"upload","rom_id":42},
+                        {"action":"delete","rom_id":42},
+                        {"action":"future_action","rom_id":42}
+                    ]}""",
+                ),
+            )
+            server.enqueue(MockResponse(body = """{"session":{}}"""))
+            val client = RomMDeviceSyncClient(server.url("/").toString(), "test-token")
+
+            val result = client.inspectNegotiation("device-123", emptyList(), setOf(42L))
+            val negotiateRequest = server.takeRequest()
+            val completeRequest = server.takeRequest()
+            val completeBody = JSONObject(completeRequest.body!!.utf8())
+
+            assertEquals(4, result.operations.size)
+            assertEquals(DeviceSyncAction.NoOp, result.operations[0].action)
+            assertEquals(DeviceSyncAction.Upload, result.operations[1].action)
+            assertEquals(DeviceSyncAction.Delete, result.operations[2].action)
+            assertEquals(DeviceSyncAction.Unknown, result.operations[3].action)
+            assertEquals("/api/sync/negotiate", negotiateRequest.url.encodedPath)
+            assertEquals("/api/sync/sessions/18/complete", completeRequest.url.encodedPath)
+            assertEquals(1, completeBody.getInt("operations_completed"))
+            assertEquals(3, completeBody.getInt("operations_failed"))
+            assertEquals(2, server.requestCount)
+        } finally {
+            server.close()
+        }
+    }
+
+    @Test
     fun completeSendsOperationCountsAndHttpErrorsAreSurfaced() {
         val server = MockWebServer()
         server.start()
