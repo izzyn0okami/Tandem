@@ -4137,3 +4137,16 @@ IMPLEMENTAÇÃO INICIAL DE MÍDIAS — C1–C4 (2026-11-23)
 - Limitações da primeira versão: PDF mostra somente a primeira página; imagens e documentos são selecionados por lista de nomes (sem miniaturas); áudio possui play/pause básico, sem barra de progresso/seek ainda.
 - [ ] CI para commits de mídia em andamento.
 - [ ] Testes de regressão e validação no telefone pendentes.
+
+
+ATUALIZAÇÃO — CI #726 / PR #44 (2026-11-23)
+- [x] CI #726 / run 45173169486: SUCCESS — https://github.com/izzyn0okami/Tandem/actions/runs/45173169486.
+- [x] check-style: Spotless Apply executado com sucesso; o log confirmou que não havia alterações de formatação pendentes; spotlessCheck aprovado.
+- [x] build-debug-apk: testes unitários, Build APK e Upload artifact aprovados.
+- [x] final-status aprovado.
+- [x] Automação de correção de formatação executou o comando para iniciar uma nova CI; como Spotless não encontrou alterações, nenhum commit automático de formatação foi criado.
+- Jobs send-notifications, crowdin-auto-merge, nightly-release e tandem-release foram ignorados; nenhuma release publicada.
+- Head validado: 5f06190a05ed973e8630d3b0076a72082b616429.
+- PR #44 continua aberta e em draft; sem merge.
+- Teste funcional no telefone e testes específicos de mídia continuam pendentes.
+- C5 (aplicação de patches via endpoint oficial RomM) permanece pendente.
