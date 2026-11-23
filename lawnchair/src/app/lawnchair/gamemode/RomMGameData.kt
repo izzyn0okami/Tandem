@@ -209,5 +209,4 @@ private fun formatLocalPlaytime(ms: Long): String {
     return if (hours > 0L) "${hours}h ${minutes}min" else "${minutes}min"
 }
 
-private fun formatRomMDate(timestampMs: Long): String =
-    if (timestampMs <= 0L) "Não informado" else DateFormat.getDateTimeInstance(DateFormat.MEDIUM, DateFormat.SHORT).format(Date(timestampMs))
+private fun formatRomMDate(timestampMs: Long): String = if (timestampMs <= 0L) "Não informado" else DateFormat.getDateTimeInstance(DateFormat.MEDIUM, DateFormat.SHORT).format(Date(timestampMs))
