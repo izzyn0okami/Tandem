@@ -247,3 +247,19 @@ AUDITORIA — DADOS PESSOAIS POR JOGO E NOTAS (2026-11-23)
 - Importante: favorite é filtro separado, não campo de RomUserData. Valores 0 de rating/difficulty/completion significam não definido.
 - Confirmação exata de compatibilidade com RomM 5.4.1 pendente: o código-fonte consultado foi commit público 1ab3a3625af1c75d17bdd75c6e88224226d9236c, mas a tag literal 5.4.1 não foi resolvida. Não implementar dependência de schema até confirmar a versão instalada.
 - PR #42 segue aberta/draft, sem merge. PR #41 permanece intocada.
+
+
+A11 — Dados pessoais por jogo
+- [x] Confirmar contrato exato na tag RomM 5.4.1: GET /api/roms exige roms.read e retorna rom_user + has_notes.
+- [x] Confirmar campos, enum de status e escopos das rotas de leitura/escrita.
+- [x] Implementar parse somente leitura de rom_user e has_notes em RemoteGame.
+- [ ] CI e testes automatizados do commit 1c2ae0f.
+- [ ] Decidir apresentação visual dos dados pessoais após validação técnica.
+- [ ] Testar com conta RomM real no telefone.
+
+A12 — Notas por jogo
+- [x] Confirmar GET /api/roms/{id}/notes (roms.read) e estrutura de resposta na tag 5.4.1.
+- [x] Identificar has_notes na resposta de listagem como indicador leve.
+- [ ] Consultar conteúdo sob demanda na tela de detalhes.
+- [ ] Definir apresentação das notas e tags.
+- [ ] Testar no telefone.
