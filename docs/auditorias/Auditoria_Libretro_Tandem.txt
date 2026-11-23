@@ -3454,3 +3454,103 @@ PRÓXIMAS ETAPAS
 2. Auditar memory cards, netplay, streaming, música/playlists e limites de compatibilidade com LibretroDroid.
 3. Completar matriz de escopos e contratos de cada funcionalidade atualmente usada.
 4. Só após concluir a auditoria, apresentar decisões de produto para manter/adaptar/substituir/remover/não implementar.
+
+AUDITORIA AMPLA — ROMM × TANDEM (ETAPA 4: ESTATÍSTICAS, RECOMENDAÇÕES, NOTIFICAÇÕES, FEEDS, ADMINISTRAÇÃO E STREAMING)
+Data: 2026-11-22
+Branch: game-mode-m2-dev
+Fonte: código RomM tag 5.4.1; comparação com o código Tandem. Pesquisa de referências no repositório Tandem não encontrou integrações para os domínios abaixo.
+PR aberta revalidada: #41 continua aberta, draft, não mesclada e mergeable=false nesta consulta. Não criar alterações funcionais sobrepostas a GameModeActivity.kt/SaveStore.kt.
+
+1. ESTATÍSTICAS DO SERVIDOR
+RomM 5.4.1:
+- GET /api/stats entrega contagens globais como plataformas, ROMs, saves, states, screenshots, tamanho total e, opcionalmente, estatísticas por plataforma, cobertura de metadados e distribuição regional.
+- A rota é de leitura do servidor e não exige um scope OAuth dedicado no código consultado; visibilidade é aplicada conforme as permissões do usuário.
+Tandem:
+- Não foi encontrada integração com /api/stats.
+- O launcher tem histórico local de jogo, que não equivale às estatísticas de inventário e armazenamento do servidor.
+Avaliação preliminar: OPCIONAL / BAIXA PRIORIDADE. Útil numa tela de status da biblioteca/servidor, mas não necessário para jogar. Não criar contadores locais duplicados do inventário RomM.
+
+2. RECOMENDAÇÕES
+RomM 5.4.1:
+- GET /api/recommendations fornece recomendações personalizadas para o usuário atual, derivadas da biblioteca e dos dados disponíveis no RomM.
+- Exige roms.read.
+Tandem:
+- Não foi encontrada integração com recomendações.
+Avaliação preliminar: OPCIONAL / UTILIDADE MÉDIA. Pode enriquecer a descoberta de jogos, desde que o usuário queira uma área de recomendações. Consumir a lista pronta do RomM em vez de replicar o algoritmo. A relevância depende de metadados e histórico suficientes no servidor.
+
+3. NOTIFICAÇÕES E CANAIS
+RomM 5.4.1:
+- GET /api/notifications lista notificações do usuário (me.read).
+- POST /api/notifications/read marca notificações como lidas; DELETE permite dispensar uma ou todas (me.write).
+- GET /api/notification-channels e /apprise-services permitem consultar canais e serviços; POST/PATCH/DELETE configuram canais, com teste e confirmação (me.read/me.write).
+- Eventos de notificação podem ser enviados em tempo real por sockets.
+Tandem:
+- Não foi encontrada integração com notificações RomM ou configuração de canais.
+- As notificações/overlays de RetroAchievements já são uma funcionalidade própria do Tandem e foram validadas no aparelho; não são substituídas pelas notificações RomM.
+Avaliação preliminar: OPCIONAL. Leitura de notificações RomM pode ser útil numa central de avisos, mas configuração de canais é administração da conta/servidor e deve permanecer no RomM. Não duplicar notificações locais do RetroAchievements nem tentar administrar canais sem pedido explícito.
+
+4. FEEDS
+RomM 5.4.1:
+- GET /api/feeds oferece feeds especializados, como WebRCade e formatos de catálogos/instalação para plataformas específicas (PKGi, Tinfoil e outros).
+- Os feeds fornecem URLs/metadados para ecossistemas clientes externos; em geral usam roms.read ou configuração de autenticação do servidor.
+Tandem:
+- Não foi encontrada integração com os feeds.
+Avaliação preliminar: NÃO IMPLEMENTAR COMO RECURSO INTERNO. O Tandem já é cliente direto da API RomM e possui motor próprio LibretroDroid. Consumir um feed de outro frontend para reconstruir a biblioteca duplicaria a API e poderia perder metadados/IDs. Só considerar abrir/exportar um feed se houver cenário de interoperabilidade específico.
+
+5. TAREFAS E OPERAÇÕES ADMINISTRATIVAS
+RomM 5.4.1:
+- GET /api/tasks e /status consultam tarefas disponíveis/execuções; GET /api/tasks/{id} consulta uma execução; POST /api/tasks/run/{task_name} e rotas de scan iniciam tarefas.
+- Exige tasks.run. Pode iniciar varredura, conversão, limpeza e outras tarefas do servidor.
+Tandem:
+- Não foi encontrada integração com tarefas administrativas.
+Avaliação preliminar: NÃO IMPLEMENTAR NO FLUXO NORMAL DO LAUNCHER. São operações de administração da biblioteca/servidor, potencialmente custosas ou destrutivas. Não oferecer execução de tarefas no Tandem sem necessidade concreta e confirmação de segurança. A administração deve permanecer na interface RomM.
+
+6. PERMISSÕES E VISIBILIDADE
+RomM 5.4.1:
+- GET /api/permissions/me retorna permissões efetivas do usuário (me.read).
+- Catálogo, grupos e permissões de outros usuários são recursos administrativos (users.read/users.write).
+- As permissões podem restringir entidades ocultas, plataformas, ROMs, streaming e recursos; o servidor já aplica essas regras às respostas.
+Tandem:
+- Não foi identificada chamada a /api/permissions/me.
+- A biblioteca local filtra plataformas e extensões para compatibilidade, mas não deve tentar substituir permissões do servidor.
+Avaliação preliminar: ADAPTAR SOMENTE PARA UX. Se houver controles condicionais para ações, consultar permissões efetivas ou tratar 403/404 do servidor corretamente. Nunca replicar administração de grupos/permissões no launcher. Não usar lista local para expor conteúdo ocultado pelo RomM.
+
+7. CONFIGURAÇÃO, LOGS E AUDITORIA DO SERVIDOR
+RomM 5.4.1:
+- GET /api/config fornece configuração pública relevante ao cliente; operações de escrita em /api/config/system/* são administrativas e exigem platforms.write.
+- GET /api/logs exige logs.read, escopo administrativo.
+- GET /api/audit-events permite consultar eventos de auditoria (me.read; administradores com users.read podem ver todos, demais usuários veem os próprios).
+Tandem:
+- RomMClient já usa GET /api/heartbeat e endpoints funcionais, mas não foi identificada integração geral com /api/config, /api/logs ou /api/audit-events.
+- Tandem possui seu próprio GameLog local para diagnóstico de execução e integração.
+Avaliação preliminar:
+- /api/config: ADAPTAR se algum campo público for necessário para compatibilidade/feature detection; evitar espelhar toda a configuração do servidor.
+- /api/logs: NÃO IMPLEMENTAR no launcher comum; pertence à administração e expõe diagnóstico do backend.
+- /api/audit-events: NÃO IMPLEMENTAR na UI comum; útil apenas para administração/auditoria, sem relação direta com jogar.
+- Preservar GameLog local: registra problemas do dispositivo e do motor, não duplicados pelo log do servidor.
+
+8. STREAMING DO ROMM — DIFERENÇA DE ARQUITETURA
+RomM 5.4.1:
+- /api/streaming/config consulta disponibilidade/configuração; /api/streaming/states/{rom_id} expõe escolhas de save state; POST /api/streaming/sessions inicia/assume uma sessão; endpoints de status, join, heartbeat e save-and-exit controlam a sessão.
+- O backend gerencia containers/instâncias de streaming e broker; exige roms.read/assets.read para consulta e roms.user.write para criar/controlar sessões, além de permissões específicas de streaming.
+- O fluxo é voltado ao streaming de sessões do RomM/web player e ao gerenciamento de containers remotos; save-and-exit integra captura de state e memory card.
+Tandem:
+- Usa LibretroDroid local, executando o núcleo no próprio Android. Não foi encontrada integração com /api/streaming.
+- Não há evidência de que o endpoint de streaming seja um protocolo genérico para um cliente LibretroDroid local.
+Avaliação preliminar: NÃO SUBSTITUIR A EXECUÇÃO LOCAL. Streaming RomM é outra arquitetura e não elimina necessidade do LibretroDroid. Poderia ser uma funcionalidade separada de jogo remoto, mas exigiria player/protocolo compatível, rede, controles e UX próprios. Não implementar nem substituir execução local nesta auditoria.
+
+9. CONCLUSÕES E PENDÊNCIAS
+- Recomendações, notificações, estatísticas são recursos opcionais; não são pré-requisitos da integração básica.
+- Feeds são formatos de interoperabilidade com outros frontends; não substituem a API nativa RomM.
+- Tasks, logs, gestão de permissões e audit events são principalmente administrativos e não devem ser incorporados ao launcher de uso diário.
+- Streaming RomM é distinto da execução local LibretroDroid.
+- As notificações de RetroAchievements permanecem independentes e preservadas.
+- Não houve alteração funcional, CI, build ou teste de release nesta etapa.
+- Nenhuma funcionalidade foi removida.
+- PR #41 permanece aberta/draft e não mergeable na consulta; nenhuma ação nela foi tomada.
+
+PRÓXIMA ETAPA
+1. Concluir auditoria de memory cards, netplay, música/playlists e recursos de sessão; determinar dependência de streaming e limitações de compatibilidade.
+2. Auditar contratos de screenshots e demais assets pessoais para separar galeria do RomM de screenshots de RetroAchievements.
+3. Completar a matriz geral e revisar os escopos OAuth com rastreabilidade endpoint → chamada Tandem → necessidade.
+4. Apresentar ao usuário a matriz final de decisões, sem iniciar remoções ou substituições antes de sua aprovação.
