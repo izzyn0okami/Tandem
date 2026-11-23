@@ -363,11 +363,13 @@ internal fun LibraryScreen(
                             items(sortOptions, key = { it.first }) { (key, label) ->
                                 PlatformChip(label, sortBy == key) { sortBy = key }
                             }
-                            item {
-                                PlatformChip(
-                                    if (sortDescending) "↓ Decrescente" else "↑ Crescente",
-                                    sortDescending,
-                                ) { sortDescending = !sortDescending }
+                            if (sortBy.isNotEmpty()) {
+                                item {
+                                    PlatformChip(
+                                        if (sortDescending) "↓ Decrescente" else "↑ Crescente",
+                                        sortDescending,
+                                    ) { sortDescending = !sortDescending }
+                                }
                             }
                         }
                     }

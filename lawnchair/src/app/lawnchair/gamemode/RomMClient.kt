@@ -614,8 +614,11 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
     private fun parseGame(item: JSONObject): RemoteGame? {
         val slug = item.optString("platform_slug")
         val isEasyRpgGame = item.optBoolean("is_easyrpg_game", false)
-        val platform = GamePlatforms.fromRomM(slug)
-            ?: if (isEasyRpgGame) GamePlatforms.bySlug("easyrpg") else null
+        val platform = if (isEasyRpgGame) {
+            GamePlatforms.bySlug("easyrpg")
+        } else {
+            GamePlatforms.fromRomM(slug)
+        }
         if (platform == null) {
             if (skippedPlatforms[slug.ifEmpty { "?" }] == null) GameLog.log("romm", "plataforma ignorada: '$slug'")
             skippedPlatforms[slug.ifEmpty { "?" }] = (skippedPlatforms[slug.ifEmpty { "?" }] ?: 0) + 1
@@ -814,6 +817,14 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
             val value = source?.takeIf { it.has(key) && !it.isNull(key) }?.optDouble(key, Double.NaN)
             return value?.takeIf { it.isFinite() }
         }
+        val manualHasContent = manual != null && (
+            listOf("genres", "franchises", "collections", "companies", "publishers", "developers", "game_modes", "age_ratings")
+                .any { readStringArray(manual.optJSONArray(it)).isNotEmpty() } ||
+                listOf("player_count").any { key ->
+                    !manual.optString(key).isNullOrBlank() && manual.optString(key) != "null"
+                } ||
+                listOf("first_release_date").any { key -> manual.has(key) && !manual.isNull(key) }
+            )
         val result = RemoteGameMetadata(
             genres = values("genres"),
             franchises = values("franchises"),
@@ -826,13 +837,7 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
             playerCount = stringValue("player_count"),
             firstReleaseDate = longValue("first_release_date"),
             averageRating = doubleValue("average_rating"),
-            hasManualMetadata = manual != null && (
-                values("genres").isNotEmpty() || values("franchises").isNotEmpty() ||
-                    values("collections").isNotEmpty() || values("companies").isNotEmpty() ||
-                    values("publishers").isNotEmpty() || values("developers").isNotEmpty() ||
-                    values("game_modes").isNotEmpty() || values("age_ratings").isNotEmpty() ||
-                    stringValue("player_count") != null || longValue("first_release_date") != null
-                ),
+            hasManualMetadata = manualHasContent,
         )
         return result.takeIf { it.hasContent || it.hasManualMetadata }
     }

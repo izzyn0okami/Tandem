@@ -314,7 +314,8 @@ object GamePlatforms {
             zipIsNativeRom = true,
             bios = listOf(BiosFile("neogeo.zip", "Neo Geo (BIOS do conjunto)")),
             biosRequired = true,
-            GamePlatform(
+        ),
+        GamePlatform(
             slug = "easyrpg",
             name = "EasyRPG (RPG Maker 2000/2003)",
             coreId = "easyrpg",
@@ -322,7 +323,6 @@ object GamePlatforms {
             folderAliases = setOf("easyrpg", "rpgmaker2k", "rpgmaker2000", "rpgmaker2003", "rpgmaker2k3"),
             sortOrder = 99,
         ),
-    ),
     )
 
     /** Extensões genéricas: só valem quando a pasta já diz a plataforma. */

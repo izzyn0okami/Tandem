@@ -68,8 +68,8 @@ object RomMCache {
                                 gameModes = readStrings(m.optJSONArray("gameModes")),
                                 ageRatings = readStrings(m.optJSONArray("ageRatings")),
                                 playerCount = m.optString("playerCount").takeUnless { it.isBlank() || it == "null" },
-                                firstReleaseDate = if (m.has("firstReleaseDate")) m.optLong("firstReleaseDate") else null,
-                                averageRating = if (m.has("averageRating")) m.optDouble("averageRating") else null,
+                                firstReleaseDate = if (m.has("firstReleaseDate") && !m.isNull("firstReleaseDate")) m.optLong("firstReleaseDate") else null,
+                                averageRating = if (m.has("averageRating") && !m.isNull("averageRating")) m.optDouble("averageRating").takeIf { it.isFinite() } else null,
                                 hasManualMetadata = m.optBoolean("hasManualMetadata", false),
                             )
                         },
