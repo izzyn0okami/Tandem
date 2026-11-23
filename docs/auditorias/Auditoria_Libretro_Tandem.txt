@@ -3777,3 +3777,16 @@ Resultado global: FAILURE.
 - Não houve publicação de release.
 - A PR #41 permanece aberta, draft, sem merge. A falha precisa ser investigada e corrigida antes de solicitar validação funcional.
 - Não iniciar alterações concorrentes nos arquivos de saves/conflitos sem coordenar a própria PR #41.
+
+
+IMPLEMENTAÇÃO — FILTRO DE PLATAFORMA VIA API ROMM
+Data: 2026-11-23
+Branch: feat/romm-library-search
+Commits:
+- 4b2af0ef57e515a896584b75d863f9295ee8bb76 — RomMClient: modelo RemotePlatform, consulta GET /api/platforms e suporte a platform_ids repetido em GET /api/roms.
+- d8a4e2fbc250174e1b2febd46906a671fc73ee1e — LibraryScreen: carrega IDs de plataformas do RomM e aplica a seleção de plataforma como filtro no servidor.
+Compatibilidade confirmada na API RomM 5.4.1: RomFilterParams.platform_ids aceita lista de IDs inteiros, repetindo o parâmetro, e retorna ROMs que correspondem a qualquer ID selecionado.
+O filtro visual local permanece para a biblioteca instalada; o filtro remoto restringe os resultados usados na pesquisa e nos títulos alternativos. A lógica de execução, saves e RemoteLibrary não foi alterada.
+CI da nova implementação: execução #45090587588, inicialmente queued; aguarda conclusão.
+PR #42 permanece aberta e draft, sem merge.
+PR #41 permanece aberta e draft por decisão do usuário; não trabalhar em saves/conflitos até o usuário retomar explicitamente esse tema.
