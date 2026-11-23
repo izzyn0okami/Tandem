@@ -815,6 +815,15 @@ internal fun GameDetailScreen(
         }
     }
     val chosenCoreId = remember(entry.platform.slug) { CoreRegistry.chosen(context, entry.platform) }
+    var deviceSyncInspection by remember(entry.key) { mutableStateOf<DeviceSyncSramInspection?>(null) }
+    var deviceSyncInspectionLoading by remember(entry.key) { mutableStateOf(false) }
+    var deviceSyncInspectionError by remember(entry.key) { mutableStateOf<String?>(null) }
+    val canInspectDeviceSyncSram = local != null &&
+        entry.platform.launch == LaunchMode.LIBRETRO &&
+        chosenCoreId.isNotBlank() &&
+        RomMSettings.isConnected(context) &&
+        RomMSettings.deviceSyncDeviceId(context) != null &&
+        runCatching { GameIdentityResolver.hasRomMLink(context, File(local.path)) }.getOrDefault(false)
     val syncStatus by produceState<SaveSyncStatus?>(null, local?.path, chosenCoreId, syncVersion) {
         value = local?.let { SaveSync.status(context, it.path, chosenCoreId) }
     }
@@ -907,6 +916,77 @@ internal fun GameDetailScreen(
                 }
                 if (syncStatus != null) {
                     SaveSyncBadge(syncStatus)
+                }
+                if (canInspectDeviceSyncSram) {
+                    GameButton(
+                        label = if (deviceSyncInspectionLoading) "Inspecionando SRAM…" else "Inspecionar SRAM no RomM",
+                        onClick = {
+                            if (!deviceSyncInspectionLoading && local != null) {
+                                deviceSyncInspectionLoading = true
+                                deviceSyncInspection = null
+                                deviceSyncInspectionError = null
+                                detailScope.launch {
+                                    try {
+                                        val inspection = withContext(Dispatchers.IO) {
+                                            RomMDeviceSyncDiagnostics.inspectLocalSram(
+                                                context = context,
+                                                romPath = local.path,
+                                                coreId = chosenCoreId,
+                                                platformSlug = entry.platform.slug,
+                                            )
+                                        }
+                                        deviceSyncInspection = inspection
+                                        val counts = DeviceSyncAction.entries.associateWith { action ->
+                                            inspection.negotiation.operations.count { it.action == action }
+                                        }
+                                        GameLog.log(
+                                            "Device Sync",
+                                            "inspeção somente leitura concluída para ${entry.title}; SRAM local incluída=${inspection.localSramIncluded}; " +
+                                                counts.entries.joinToString { "${it.key}=${it.value}" } +
+                                                "; nenhuma operação aplicada",
+                                        )
+                                    } catch (error: CancellationException) {
+                                        deviceSyncInspectionLoading = false
+                                        throw error
+                                    } catch (error: Exception) {
+                                        deviceSyncInspectionError = error.message ?: "Não foi possível inspecionar a SRAM no RomM."
+                                        GameLog.error("Device Sync", "falha na inspeção somente leitura de ${entry.title}", error)
+                                    } finally {
+                                        deviceSyncInspectionLoading = false
+                                    }
+                                }
+                            }
+                        },
+                        enabled = !deviceSyncInspectionLoading && !busy,
+                        modifier = Modifier.width(230.dp),
+                    )
+                    deviceSyncInspection?.let { inspection ->
+                        val operations = inspection.negotiation.operations
+                        Text(
+                            text = "Inspeção concluída — ROM #${inspection.romId}. " +
+                                if (inspection.localSramIncluded) "SRAM local encontrada." else "Nenhuma SRAM local válida encontrada.",
+                            color = GameColors.text,
+                            fontSize = 13.sp,
+                        )
+                        Text(
+                            text = "Sem alterações: nenhuma operação foi aplicada. " +
+                                "Sem ação: ${operations.count { it.action == DeviceSyncAction.NoOp }} · " +
+                                "Enviar: ${operations.count { it.action == DeviceSyncAction.Upload }} · " +
+                                "Baixar: ${operations.count { it.action == DeviceSyncAction.Download }} · " +
+                                "Conflitos: ${operations.count { it.action == DeviceSyncAction.Conflict }} · " +
+                                "Excluir: ${operations.count { it.action == DeviceSyncAction.Delete }} · " +
+                                "Desconhecidas: ${operations.count { it.action == DeviceSyncAction.Unknown }}",
+                            color = GameColors.textDim,
+                            fontSize = 12.sp,
+                        )
+                    }
+                    deviceSyncInspectionError?.let { error ->
+                        Text(
+                            text = "Falha na inspeção: $error",
+                            color = GameColors.text,
+                            fontSize = 12.sp,
+                        )
+                    }
                 }
                 if (local != null && coreUpdateAvailable == true) {
                     GameButton(

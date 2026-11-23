@@ -4460,3 +4460,110 @@ ATUALIZAÇÃO — PR #45 / CI #856 (2026-11-23)
 - [x] Artefato assembleLawnWithQuickstepGithubDebug: ID 14841653637; 46.290.536 bytes; SHA-256 d8e8d136445f882b7d6f6d62841694599b29471380f88a5b1a73640d859fc705; expira em 2027-02-21.
 - [ ] Testes funcionais no telefone com servidor RomM 5.4.x real continuam pendentes; CI verde não substitui validação no aparelho.
 - PR #45 permanece aberta, Draft e sem merge; PR #41 permanece aberta, Draft, pausada e intocada; D9 segue fora do escopo.
+
+
+AUDITORIA LIBRETRO — ESTÁGIO E (2026-11-23)
+Escopo: integração de sincronização WebDAV e classificação dos assets de save. Trabalho centralizado na PR #41, branch feat/save-conflict-resolution.
+
+RETROARCH CLOUD SYNC / WEBDAV
+- A documentação oficial descreve WebDAV multiplataforma, manifest.local e manifest.server e merge de três vias; o mecanismo usa manifestos/hashes para identificar divergências e não deve ser substituído por cópia cega.
+- Conflitos são preservados sem sobrescrita silenciosa, com resolução manual; a consistência dos caminhos de saves/states entre dispositivos é importante.
+- O código de referência usa GET, PUT, PROPFIND, MKCOL, MOVE e COPY. A implementação Tandem deve tratar erros e diferenças de comportamento entre servidores WebDAV.
+- A PoC planejada começa somente leitura. Qualquer teste de PUT/download será feito apenas em servidor controlado/mock com dados descartáveis. DELETE automático é proibido; não testar com saves reais.
+- Issues do RetroArch relatam respostas de upload/OPTIONS inconsistentes em alguns servidores; compatibilidade deve ser validada por comportamento real, não apenas por anúncio de WebDAV.
+Fontes:
+- https://docs.libretro.com/guides/retroarch-cloud-sync/
+- https://github.com/libretro/RetroArch/blob/master/network/cloud_sync/webdav.c
+- https://github.com/libretro/RetroArch/blob/master/tasks/task_cloudsync.c
+- https://github.com/libretro/RetroArch/issues/19457
+- https://github.com/libretro/RetroArch/issues/19486
+
+CLASSIFICAÇÃO DE SAVES
+- O modelo RomM/Tandem distingue saves/SRAM e save states em tipos e endpoints diferentes (/api/saves e /api/states).
+- SaveStore usa sram.srm e state1.state como arquivos locais distintos.
+- Memory cards não possuem categoria própria no modelo auditado. Permanecem fora do escopo de sincronização até que os caminhos usados pelos cores sejam mapeados e haja contrato explícito; não devem ser enviados como SRAM nem como save state.
+- Pendência: auditar paths de memory cards por core e adicionar testes negativos para impedir inclusão acidental em /api/saves ou /api/states.
+
+STATUS DE VALIDAÇÃO
+- CI #862 / run 45237286023: sucesso nos testes unitários, Build APK, Upload artifact, Spotless e final-status; execução antecedeu o commit automático de formatação.
+- Head formatado atual na PR #41: 462640b9db64428a3d78e11b3153e54beb8f5e8f.
+- CI #864 / run 45237591685 para esse head terminou action_required sem jobs; portanto não há CI completa confirmada no head atual.
+- PR #41 permanece aberta em Draft e sem merge. Testes funcionais no telefone e em servidor real continuam pendentes.
+
+
+ATUALIZAÇÃO DE AUDITORIA — ESTÁGIO E / PR #41 / CI #870 (2026-11-23)
+- CI #870 / run 45241324702: SUCCESS integral no commit 4907685ad9a35a9589353dc74b933c59faaa6cef. Jobs check-style, build-debug-apk e final-status concluídos com sucesso: https://github.com/izzyn0okami/Tandem/actions/runs/45241324702.
+- check-style aprovou Spotless após aplicação e verificação final. build-debug-apk aprovou testes unitários, compilação e upload do APK Debug.
+- Falhas anteriores #866/#868: três testes JVM falharam porque org.json vinha dos stubs Android. Correção: dependência testImplementation org.json:json:20240303 no build.gradle. CI #870 confirmou os testes aprovados.
+- E5: RomMDeviceSyncClient.kt fornece registro, negotiate, complete e parsing; DeviceSyncProtocolTest.kt cobre payload limitado a ROM IDs explícitos, restore_unlisted=false, validação de MD5/session_id e reconhecimento de delete sem executá-lo.
+- Pendências E5: testes HTTP/mock server, persistência device_id separada por conta, montagem de saves locais e transferência de bytes, tratamento completo de respostas HTTP/scopes e validação contra servidor RomM real. Adaptador ainda não integrado/ativado no fluxo atual.
+- E6/E7: WebDAV continua em fase de auditoria; PoC somente leitura primeiro, depois escrita apenas em servidor mock/controlado com dados descartáveis. Nunca executar DELETE automático nem tocar saves reais.
+- E9: SRAM e save states continuam separados. Memory cards fora da sincronização até mapear caminhos por core e testar exclusão do fluxo /api/saves e /api/states.
+- PR #41 permanece aberta, Draft e sem merge. Head validado: 4907685ad9a35a9589353dc74b933c59faaa6cef. CI verde não substitui teste funcional em telefone/servidor real.
+
+ATUALIZAÇÃO DE AUDITORIA — ESTÁGIO E / PR #41 / CIs #872–#879 (2026-11-23)
+- CI #872 (run 45243316335) e CI #873 (run 45243570167): sucesso integral; commits de atualização anterior dos logs/descrição validados.
+- CI #874 (run 45246819052): sucesso integral no commit intermediário d1dc76a9d245ee655ec88fd154f2d5375f220cd5.
+- CI #875 (run 45246832063): testes unitários falharam por chamadas incompatíveis com a API do MockWebServer 5.5.1; correção feita na mesma PR.
+- CI #879 (run 45248205495): SUCCESS integral no head f67dbd43d388ac3f59851e532fc72aa8fd81e052. Spotless, testes unitários, Build APK, Upload artifact e final-status aprovados. Nenhuma release publicada. https://github.com/izzyn0okami/Tandem/actions/runs/45248205495
+- E5: implementada persistência isolada de device_id por servidor/usuário e testes de estabilidade/isolamento da chave. Adicionados testes HTTP MockWebServer para registro, negotiate, complete e HTTP 403. Essas aprovações confirmam testes automatizados, não interoperabilidade com servidor RomM real.
+- E5 pendente: integrar adaptador ao fluxo de sincronização sem ativá-lo prematuramente; montar arquivos locais, transferir bytes, verificar hashes e tratar todos os scopes/erros no servidor real. Não substituir o fluxo atual.
+- E4 ainda requer validação funcional no telefone (conflito, backups e rollback).
+- E6/E7 pendentes: PoC WebDAV read-only e testes de escrita somente em mock/servidor controlado com dados descartáveis; sem DELETE automático.
+- E8 pendente: comparação arquitetural formal entre Device Sync e WebDAV.
+- E9 pendente: mapear memory cards por core e testes negativos para impedir que sejam sincronizados como SRAM/save states.
+- PR #41 permanece aberta, Draft e sem merge; nenhum teste em aparelho/servidor real foi presumido.
+
+
+ATUALIZAÇÃO — ESTÁGIO E / PR #41 / CIs #884–#885 (2026-11-23)
+- CI #884 / run 45252054409: SUCCESS integral; check-style/Spotless, testes unitários, Build APK Debug, Upload artifact e final-status aprovados. A formatação automática publicou o commit formatado.
+- CI #885 / run 45252114132: SUCCESS integral no head formatado 9125b8af08e999a1f439fa29ace66f41d153651f; testes unitários, build, artefato e Spotless aprovados. Nenhuma release publicada.
+- E5: adaptador RomM Device Sync ganhou primitives isoladas para upload de SRAM (MD5, slot explícito, overwrite=false, autocleanup=false), download para staging com optimistic=false e validação MD5, e confirmação de download em chamada separada. HTTP 409 é tratado como conflito, sem retry destrutivo.
+- Testes MockWebServer cobrem upload multipart/query, conflito 409, download com hash correto/incorreto e confirmação separada. Não há integração no SaveSync nem validação contra RomM real; E5 segue EM ANDAMENTO.
+- Save states continuam fora do novo transporte e permanecem no fluxo legado; memory cards continuam fora de ambos os fluxos até mapeamento por core. Nenhum DELETE é executado.
+- PR #41 permanece aberta, Draft, sem conflitos e sem merge. Teste funcional no telefone e servidor RomM real continua pendente.
+
+
+ATUALIZAÇÃO — CI #888 / ESTÁGIO E / PR #41 (2026-11-23)
+- CI #888 / run 45254259983: SUCCESS integral no commit 7c0bdd84f4249cf55e2f9067d6ba1d039b3b8b1a. check-style/Spotless, testes unitários, Build APK Debug, Upload artifact e final-status aprovados.
+- Nenhuma release foi publicada; artefato gerado é APK Debug.
+- E5: CI confirma os testes automatizados do transporte isolado de SRAM, mas não comprova integração ao SaveSync nem interoperabilidade com RomM real. E4 requer teste no telefone; E6/E7/E8/E9 seguem pendentes.
+- PR #41 continua aberta, Draft, sem conflitos e sem merge. Não houve teste funcional real presumido nem operação DELETE.
+
+
+ATUALIZAÇÃO — CI #890 / ESTÁGIO E / PR #41 (2026-11-23)
+- CI #890 / run 45257102036: SUCCESS integral no commit 78f8809a779dde6eb4b9c762efa34ffae7999f8c. check-style/Spotless, testes unitários, Build APK Debug, Upload artifact e final-status aprovados.
+- Nenhuma release foi publicada; artefato gerado é APK Debug.
+- E5 permanece em andamento: transporte de SRAM isolado automatizado, sem integração funcional ao SaveSync ou validação com RomM real. E4 requer teste no telefone; E6/E7/E8/E9 seguem pendentes.
+- PR #41 continua aberta, Draft, sem conflitos e sem merge. Nenhuma operação DELETE foi executada.
+
+
+ATUALIZAÇÃO DE AUDITORIA — DEVICE SYNC SRAM / INSPEÇÃO SOMENTE LEITURA / CI #896 (2026-11-23)
+- CI #893 / run 45259888910: SUCCESS integral no commit a2a0a15583e4f31dcefebfc968fac5be8aad90a6; validou testes do manifesto local SRAM (.srm), cálculo MD5 e rejeição de arquivo ausente/vazio ou extensão não-SRAM.
+- Commit be33164313bf1103676ee62807082c823627e1e6 adiciona RomMDeviceSyncDiagnostics.inspectLocalSram: exige conta RomM conectada, vínculo verificado do jogo, ROM ID da conta, jogo inativo e dispositivo já registrado. A leitura é limitada a SaveStore.sramFile; stateFile não é acessado.
+- A negociação é diagnóstica e somente leitura: nenhuma operação Upload, Download, Conflict ou Delete é executada. A sessão é concluída; NoOp conta como concluído e demais operações são reportadas como não executadas.
+- CI #896 / run 45269216987: SUCCESS integral no commit be33164313bf1103676ee62807082c823627e1e6. Spotless, testes unitários, Build APK Debug, Upload artifact e final-status aprovados. https://github.com/izzyn0okami/Tandem/actions/runs/45269216987
+- Teste MockWebServer valida uma negociação contendo NoOp, Upload, Delete e Unknown, confirma zero operações executadas e conclusão da sessão.
+- Próximo passo: implementar registro do dispositivo por ação explícita na interface RomM. O diagnóstico atual depende de device_id previamente registrado; não deve haver registro silencioso. Persistir UUID somente após resposta válida.
+- E5 segue EM ANDAMENTO: integração ao SaveSync, transferência real e validação de interoperabilidade com servidor RomM ainda pendentes. Não ativar operações de sincronização nem substituir fluxo legado. Save states e memory cards permanecem fora do novo transporte.
+- E4 aguarda teste funcional no telefone; E6/E7/E8/E9 continuam pendentes. PR #41 permanece aberta, Draft e sem merge. Nenhum teste em aparelho/servidor real foi presumido.
+
+
+ATUALIZAÇÃO DE AUDITORIA — REGISTRO EXPLÍCITO DEVICE SYNC / CIs #898, #899 E #902 (2026-11-23)
+- CI #898 / run 45270416999: SUCCESS integral no commit e12ff87f8fb8e16e1fb7a5716cb6d2523bcccb6d; testes, formatação, Build APK Debug e final-status aprovados.
+- RomMScreen.kt agora oferece ação manual para registrar o dispositivo no Device Sync. A operação só ocorre após toque explícito do usuário; registra nome/modelo Android, plataforma e identificador estável do host. Persistência do device_id ocorre somente após resposta válida do RomM. Estados de carregamento, sucesso e erros são apresentados; HTTP 403 aponta a permissão devices.write.
+- CI #899 / run 45270513601: SUCCESS integral no commit bf27340fd31b1d5d0e756387e32f94bef18c7ae8; Spotless, testes unitários, Build APK Debug e final-status aprovados.
+- Commit automático Spotless 59794b07a757c6d1b7d8d02fd95c8e9236ba4e77 alterou somente a formatação de RomMScreen.kt. CI #902 / run 45270771615: SUCCESS integral no head formatado; check-style, testes unitários, Build APK Debug e final-status aprovados.
+- O registro explícito ainda não foi exercitado com servidor RomM real. A inspeção diagnóstica continua somente leitura e limitada a SRAM, e ainda não foi conectada à interface.
+- Próximo passo: apresentar ação de inspeção somente leitura nos detalhes do jogo, com pré-condições claras (vínculo RomM válido, conta conectada correspondente, dispositivo registrado e jogo fechado) e exibir resumo da negociação sem executar operações.
+- E5 continua EM ANDAMENTO: integração de transferência ao SaveSync, interoperabilidade real e testes no aparelho permanecem pendentes. Save states e memory cards não entram no novo transporte. DELETE automático proibido.
+- E4 aguarda validação funcional no telefone; E6/E7/E8/E9 seguem pendentes. PR #41 continua aberta, Draft, sem merge. Nenhum teste físico/servidor real foi presumido.
+
+## Atualização — interface de inspeção Device Sync e CI (2026-11-23)
+- CI #904 / run 45273721097: SUCCESS integral no commit d435f2df41257598b977a5e460ce9ca837c3943b.
+- GameScreens.kt agora apresenta “Inspecionar SRAM no RomM” somente para jogos locais Libretro com núcleo escolhido, conta conectada, dispositivo registrado e vínculo RomM verificado.
+- O resultado mostra SRAM local incluída ou não e as contagens das ações NoOp, Upload, Download, Conflict, Delete e Unknown. A mensagem deixa explícito que nenhuma operação foi aplicada; erros são exibidos e registrados em GameLog.
+- A operação usa RomMDeviceSyncDiagnostics.inspectLocalSram em IO. Nenhum upload/download/delete, resolução de conflito ou alteração de save é feito pela UI. O serviço bloqueia jogo ativo.
+- Commit 01b7a466cd214ae12e5804bbaf04cf7f013d468e; CI #905 / run 45275918318: SUCCESS integral, incluindo Spotless/check-style, testes unitários, Build APK Debug, Upload artifact e final-status.
+- Validação no telefone e contra servidor RomM real permanece pendente. Não presumir que o fluxo foi testado fora da CI.
+- PR #41 permanece Draft e sem merge. Próximo passo é validar registro e inspeção com servidor RomM real/aparelho; transferências continuam desligadas e isoladas. E5 segue em andamento; E4 e E6–E9 seguem pendentes.

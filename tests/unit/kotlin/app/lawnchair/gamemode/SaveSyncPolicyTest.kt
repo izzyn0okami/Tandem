@@ -17,6 +17,18 @@ class SaveSyncPolicyTest {
     }
 
     @Test
+    fun deviceSyncRegistrationIdentityIsStablePerServerAndAccount() {
+        val accountA = SaveSyncPolicy.deviceSyncStoreKey("https://romm.example", 41L)
+        val sameAccount = SaveSyncPolicy.deviceSyncStoreKey("https://romm.example", 41L)
+        val otherAccount = SaveSyncPolicy.deviceSyncStoreKey("https://romm.example", 42L)
+        val otherServer = SaveSyncPolicy.deviceSyncStoreKey("https://other.example", 41L)
+
+        assertEquals(accountA, sameAccount)
+        assertFalse(accountA == otherAccount)
+        assertFalse(accountA == otherServer)
+    }
+
+    @Test
     fun legacyAccountLinksMigrateOnlyWhenTheOriginalAccountIsProven() {
         assertTrue(SaveSyncPolicy.canMigrateAccountLinks(true, 41L, 41L, "old", "new"))
         assertFalse(SaveSyncPolicy.canMigrateAccountLinks(true, 41L, 42L, "old", "new"))
