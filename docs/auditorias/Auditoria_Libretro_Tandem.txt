@@ -4324,3 +4324,25 @@ Regras de segurança e compatibilidade:
 - CI verde não substitui teste funcional no telefone. Nenhum teste em aparelho será declarado sem confirmação do usuário.
 
 Estado inicial: implementação D3–D8 ainda não iniciada; auditoria estática e implementação serão registradas nesta PR por commits/CI. Nenhuma release ou merge autorizado.
+
+
+AUDITORIA ESTÁTICA INICIAL — ESTÁGIO D (2026-11-23)
+Arquivos inspecionados na base game-mode-m2-dev:
+- lawnchair/src/app/lawnchair/gamemode/BiosManager.kt
+- lawnchair/src/app/lawnchair/gamemode/GamePlatforms.kt
+- lawnchair/src/app/lawnchair/gamemode/RomMClient.kt
+
+Achados confirmados:
+- D3: download de firmware do RomM valida tamanho e CRC32/MD5/SHA-1 quando esses metadados vêm do servidor. BIOS já instaladas/importadas localmente não possuem catálogo de hashes/tamanhos de referência nem verificação local equivalente. Não inventar valores; referências devem vir de documentação oficial do núcleo.
+- D4: há implementação preexistente de biosGroups com semântica AND entre grupos e OR dentro de cada grupo; quando biosGroups está vazio, GamePlatform.bios é tratado como um único grupo OR. A PR deve preservar e testar esse comportamento, não duplicá-lo.
+- D5: requisitos são atualmente definidos em GamePlatforms.kt, por GamePlatform/coreId; há exceções biosKit para blueMSX e configurações específicas. Revisar cada requisito com a documentação do núcleo antes de mudar a lista.
+- D6: BiosManager.import usa arquivo .part e backup para substituir um arquivo individual; a verificação atual limita-se a arquivo não vazio e tamanho após rename. importKit copia com overwrite=true e ignora falhas por runCatching, sem staging transacional. downloadFromServer baixa somente BIOS ausentes, sem validar previamente o arquivo local existente contra referência oficial.
+- D7: RomMClient já implementa OAuth device pairing e lê device_type em atividade, mas a inspeção inicial não encontrou modelo/listagem de dispositivos registrados. Os scopes devices.read/devices.write já são solicitados no pareamento; isso não prova que os endpoints estejam implementados.
+- D8: a inspeção inicial não encontrou parsing de DeviceSchema.capabilities nem feature detection; a atividade só expõe device_type.
+
+Consequência para a implementação:
+- D4 é principalmente revisão de cobertura/testes e correção de eventuais requisitos, não reescrita da lógica AND/OR.
+- D3 exige uma tabela de referências verificáveis e validação de arquivos locais; valores sem fonte oficial permanecerão sem hash esperado.
+- D6 precisa tratar kits e arquivos individuais sem destruir cópias válidas, propagar erros e permitir recuperação.
+- D7/D8 dependem da confirmação do contrato real do RomM 5.4.1 antes de adicionar endpoints/campos.
+Nenhuma funcionalidade D3–D8 foi marcada como concluída nesta auditoria inicial.
