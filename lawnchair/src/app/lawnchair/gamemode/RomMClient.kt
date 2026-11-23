@@ -47,6 +47,10 @@ data class RemoteGame(
     val folder: Boolean = false,
     /** Descrição/sinopse do jogo, quando o RomM tiver (vem do provedor de metadados dele). */
     val summary: String? = null,
+    /** Propriedades pessoais fornecidas pelo RomM; o Tandem não as altera nesta etapa. */
+    val userData: RemoteGameUserData? = null,
+    /** Indica se existem notas visíveis para a conta atual no RomM. */
+    val hasNotes: Boolean = false,
 ) {
     /** Destino dentro da pasta de jogos: uma subpasta por plataforma (e uma pasta por jogo, se for de vários arquivos). */
     fun destination(root: File): File {
@@ -60,6 +64,22 @@ data class RemoteGame(
         return target
     }
 }
+
+/** Dados pessoais do usuário que o RomM inclui em cada ROM da biblioteca. Somente leitura. */
+data class RemoteGameUserData(
+    val createdAtMs: Long,
+    val updatedAtMs: Long,
+    val lastPlayedAtMs: Long?,
+    val isMainSibling: Boolean,
+    val backlogged: Boolean,
+    val nowPlaying: Boolean,
+    val hidden: Boolean,
+    val rating: Int,
+    val difficulty: Int,
+    val completion: Int,
+    val status: String?,
+    val pinnedMedia: List<String>,
+)
 
 /** Plataforma cadastrada no RomM, usada para filtros oficiais da API. */
 data class RemotePlatform(val id: Long, val slug: String, val name: String)
@@ -545,6 +565,32 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
             fileIds = fileIds,
             folder = folder,
             summary = item.optString("summary").ifEmpty { null },
+            userData = parseUserData(item.optJSONObject("rom_user")),
+            hasNotes = item.optBoolean("has_notes", false),
+        )
+    }
+
+    private fun parseUserData(json: JSONObject?): RemoteGameUserData? {
+        json ?: return null
+        fun nullableString(key: String): String? = json.optString(key)
+            .takeUnless { it.isBlank() || it.equals("null", ignoreCase = true) }
+        fun nullableTime(key: String): Long? = nullableString(key)?.let(::parseTime)
+        val pinned = json.optJSONArray("pinned_media")
+        return RemoteGameUserData(
+            createdAtMs = parseTime(json.optString("created_at")),
+            updatedAtMs = parseTime(json.optString("updated_at")),
+            lastPlayedAtMs = nullableTime("last_played"),
+            isMainSibling = json.optBoolean("is_main_sibling", false),
+            backlogged = json.optBoolean("backlogged", false),
+            nowPlaying = json.optBoolean("now_playing", false),
+            hidden = json.optBoolean("hidden", false),
+            rating = json.optInt("rating", 0),
+            difficulty = json.optInt("difficulty", 0),
+            completion = json.optInt("completion", 0),
+            status = nullableString("status"),
+            pinnedMedia = (0 until (pinned?.length() ?: 0)).mapNotNull { index ->
+                pinned?.optString(index)?.takeIf { it.isNotBlank() && it != "null" }
+            },
         )
     }
 
