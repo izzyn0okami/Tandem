@@ -369,6 +369,7 @@ private fun ServerManage(remote: RemoteLibrary) {
                                     } else {
                                         "Falha no registro do dispositivo (HTTP ${error.statusCode})."
                                     }
+
                                     else -> error.message ?: "Não foi possível registrar o dispositivo no RomM."
                                 }
                             }
