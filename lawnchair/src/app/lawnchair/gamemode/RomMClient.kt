@@ -65,6 +65,18 @@ data class RemoteGame(
     }
 }
 
+/** Nota de ROM retornada pelo RomM; visibilidade e autoria são decididas pelo servidor. */
+data class RemoteGameNote(
+    val id: Long,
+    val title: String,
+    val content: String,
+    val isPublic: Boolean,
+    val tags: List<String>,
+    val createdAtMs: Long,
+    val updatedAtMs: Long,
+    val username: String,
+)
+
 /** Dados pessoais do usuário que o RomM inclui em cada ROM da biblioteca. Somente leitura. */
 data class RemoteGameUserData(
     val createdAtMs: Long,
@@ -465,6 +477,34 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
             }
         }
         return games
+    }
+
+    /** Consulta notas visíveis da ROM no RomM; somente GET, sem escopo de escrita. */
+    fun listNotes(romId: Long): List<RemoteGameNote> {
+        require(romId > 0L) { "ID de jogo RomM inválido" }
+        val url = base.resolve("api/roms/$romId/notes")!!
+        return http.newCall(request(url).get().build()).execute().use { response ->
+            if (!response.isSuccessful) {
+                throw RomMHttpException(response.code, "Não foi possível carregar as notas do RomM (HTTP ${response.code})")
+            }
+            val array = org.json.JSONArray(response.body.string())
+            (0 until array.length()).map { index ->
+                val item = array.getJSONObject(index)
+                val tags = item.optJSONArray("tags")
+                RemoteGameNote(
+                    id = item.optLong("id"),
+                    title = item.optString("title"),
+                    content = item.optString("content"),
+                    isPublic = item.optBoolean("is_public", false),
+                    tags = (0 until (tags?.length() ?: 0)).mapNotNull { tagIndex ->
+                        tags?.optString(tagIndex)?.takeIf { it.isNotBlank() && it != "null" }
+                    },
+                    createdAtMs = parseTime(item.optString("created_at")),
+                    updatedAtMs = parseTime(item.optString("updated_at")),
+                    username = item.optString("username"),
+                )
+            }
+        }
     }
 
     private fun parseGame(item: JSONObject): RemoteGame? {
