@@ -4,6 +4,7 @@ import android.content.Context
 import java.io.File
 import java.io.FileOutputStream
 import java.io.InputStream
+import java.security.MessageDigest
 
 /**
  * BIOS dos consoles: ficam na pasta de sistema dos núcleos, com o nome exato que o núcleo espera.
@@ -153,27 +154,59 @@ object BiosManager {
         UNKNOWN,
     }
 
-    fun validateLocalFirmware(context: Context, client: RomMClient): Map<String, FirmwareIntegrity> {
+    fun validateLocalFirmware(context: Context, client: RomMClient? = null): Map<String, FirmwareIntegrity> {
         val results = linkedMapOf<String, FirmwareIntegrity>()
-        for (firmware in client.listFirmware()) {
-            val bios = canonical(File(firmware.fileName).name) ?: continue
+        val localBios = platformsWithBios()
+            .flatMap { platform -> platform.bios + platform.biosGroups.flatten() }
+            .distinctBy { it.name.lowercase() }
+        for (bios in localBios) {
             val file = File(systemDir(context), bios.name)
             if (!file.isFile) continue
-            val hasReference = firmware.sizeBytes != null ||
-                firmware.crcHash != null ||
-                firmware.md5Hash != null ||
-                firmware.sha1Hash != null
-            if (!hasReference) {
-                results[bios.name] = FirmwareIntegrity.UNKNOWN
-                continue
-            }
-            results[bios.name] = if (runCatching { client.verifyFirmwareFile(file, firmware) }.isSuccess) {
+            results[bios.name] = if (bios.md5Hash == null) {
+                FirmwareIntegrity.UNKNOWN
+            } else if (runCatching { verifyKnownMd5(file, bios) }.isSuccess) {
                 FirmwareIntegrity.VERIFIED
             } else {
                 FirmwareIntegrity.MISMATCH
             }
         }
+
+        // Quando não há hash oficial embutido, usa apenas metadados de integridade publicados pelo RomM.
+        if (client != null) {
+            for (firmware in client.listFirmware()) {
+                val bios = canonical(File(firmware.fileName).name) ?: continue
+                if (bios.md5Hash != null || bios.name !in results) continue
+                val file = File(systemDir(context), bios.name)
+                val hasReference = firmware.sizeBytes != null ||
+                    firmware.crcHash != null ||
+                    firmware.md5Hash != null ||
+                    firmware.sha1Hash != null
+                if (!hasReference) continue
+                results[bios.name] = if (runCatching { client.verifyFirmwareFile(file, firmware) }.isSuccess) {
+                    FirmwareIntegrity.VERIFIED
+                } else {
+                    FirmwareIntegrity.MISMATCH
+                }
+            }
+        }
         return results
+    }
+
+    private fun verifyKnownMd5(file: File, bios: BiosFile) {
+        val expected = bios.md5Hash ?: return
+        val digest = MessageDigest.getInstance("MD5")
+        file.inputStream().use { input ->
+            val buffer = ByteArray(64 * 1024)
+            while (true) {
+                val read = input.read(buffer)
+                if (read < 0) break
+                digest.update(buffer, 0, read)
+            }
+        }
+        val actual = digest.digest().joinToString("") { "%02x".format(it.toInt() and 0xff) }
+        check(actual.equals(expected, ignoreCase = true)) {
+            "Integridade da BIOS ${bios.name} inválida: MD5 não corresponde à referência oficial"
+        }
     }
 
     private fun canonical(name: String): BiosFile? {
@@ -199,6 +232,7 @@ object BiosManager {
                 output.fd.sync()
             }
             check(temp.isFile && temp.length() > 0L) { "Arquivo de BIOS vazio ou inválido" }
+            verifyKnownMd5(temp, bios)
             val importedLength = temp.length()
 
             if (backup.exists()) {
@@ -268,15 +302,19 @@ object BiosManager {
             val bios = canonical(File(firmware.fileName).name) ?: continue
             val target = File(systemDir(context), bios.name)
             if (target.isFile) {
-                val hasReference = firmware.sizeBytes != null ||
-                    firmware.crcHash != null ||
-                    firmware.md5Hash != null ||
-                    firmware.sha1Hash != null
-                // Sem referência de integridade, não substitui uma BIOS local potencialmente válida.
-                if (!hasReference || runCatching { client.verifyFirmwareFile(target, firmware) }.isSuccess) continue
+                val officialCheck = if (bios.md5Hash != null) {
+                    runCatching { verifyKnownMd5(target, bios) }.isSuccess
+                } else {
+                    val hasReference = firmware.sizeBytes != null ||
+                        firmware.crcHash != null ||
+                        firmware.md5Hash != null ||
+                        firmware.sha1Hash != null
+                    !hasReference || runCatching { client.verifyFirmwareFile(target, firmware) }.isSuccess
+                }
+                if (officialCheck) continue
             }
             target.parentFile?.mkdirs()
-            client.downloadFirmware(firmware, target)
+            client.downloadFirmware(firmware, target, expectedMd5 = bios.md5Hash)
             count++
         }
         return count
