@@ -16,8 +16,8 @@ A. BIBLIOTECA, PESQUISA E ORGANIZAÇÃO (PRIORIDADE ALTA)
 [EM ANDAMENTO] A2. Filtros por plataforma e múltiplas plataformas (platform_ids); implementação e CIs #659/#660 aprovadas; validação funcional no telefone pendente.
 [EM ANDAMENTO] A3. Filtros por coleção comum, inteligente e virtual; implementação e CIs #663/#665/#667 aprovadas; validação funcional no telefone pendente.
 [EM ANDAMENTO] A4. Filtros oficiais favorite, duplicate, last_played, has_ra, has_saves, has_states, verified e has_soundtrack; implementação e CI #669 aprovadas; validação funcional no telefone pendente. playable não foi exposto por representar execução no navegador RomM; missing/physical não se aplicam à biblioteca local.
-[PENDENTE] A5. Ordenação por nome, tamanho, lançamento, criação e avaliação; preservar relevância de busca quando não houver ordenação escolhida.
-[PENDENTE] A6. Paginação e carregamento eficiente para bibliotecas grandes.
+[PENDENTE] A5. Ordenação por nome, tamanho, lançamento, criação e avaliação; preservar relevância de busca. Antes de implementar, confirmar campos seguros na API 5.4.1: ordenação por colunas pessoais pode ocultar jogos sem registro do usuário.
+[EM ANDAMENTO] A6. Paginação API já implementada em páginas de 100 itens com offset até total/página vazia; falta carregamento incremental na interface para bibliotecas grandes.
 [EM ANDAMENTO] A7. Catálogo de coleções comuns (somente leitura); implementação e CIs #663/#665/#667 aprovadas; validação funcional no telefone pendente.
 [EM ANDAMENTO] A8. Catálogo de coleções inteligentes (somente leitura); implementação e CIs #663/#665/#667 aprovadas; validação funcional no telefone pendente.
 [EM ANDAMENTO] A9. Catálogo de coleções virtuais (somente leitura); implementação e CIs #663/#665/#667 aprovadas; validação funcional no telefone pendente.
@@ -233,3 +233,9 @@ ATUALIZAÇÃO — CI #669 DOS FILTROS PESSOAIS ROMM (2026-11-22)
 - Jobs de release ignorados; nenhuma release publicada.
 - A1, A2, A3 e A7–A10 seguem com implementação e CIs aprovadas, mas aguardam validação funcional no telefone.
 - PR #42 aberta/draft, sem merge; PR #41 aberta/draft e intocada.
+
+
+AUDITORIA — ORDENAÇÃO E PAGINAÇÃO (2026-11-22)
+- A6. Confirmado no RomMClient: paginação por limit=100 e offset, com leitura sequencial até total ou página vazia. A lista ainda é acumulada integralmente antes de aparecer; carregamento incremental na UI continua pendente.
+- A5. Continua pendente: confirmar os campos de ordenação seguros no backend RomM 5.4.1. Evitar ordenação por propriedades pessoais sem prova de que não exclui jogos sem registro de usuário.
+- A pesquisa continua preservando relevância do RomM (order_by vazio quando search_term é enviado).
