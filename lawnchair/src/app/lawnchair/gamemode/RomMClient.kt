@@ -145,6 +145,19 @@ data class RemoteAssociatedFile(
     val sha1Hash: String? = null,
 )
 
+/** Faixa de trilha sonora conforme GET /api/roms/{id}/soundtracks/metadata. */
+data class RemoteSoundtrackTrack(
+    val fileId: Long,
+    val fileName: String,
+    val sizeBytes: Long,
+    val title: String?,
+    val artist: String?,
+    val album: String?,
+    val trackNumber: Int?,
+    val discNumber: Int?,
+    val durationSeconds: Double?,
+)
+
 /**
  * Categorias que representam conteúdo de jogo executável/instalável.
  * Categorias auxiliares e categorias futuras desconhecidas ficam fora da ROM.
@@ -614,6 +627,48 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
     }
 
     /** Consulta notas visíveis da ROM no RomM; somente GET, sem escopo de escrita. */
+    /**
+     * Metadados das faixas associados à ROM. O conteúdo de cada faixa continua sendo servido
+     * pelo endpoint genérico de arquivo associado do RomM.
+     */
+    fun listSoundtracks(romId: Long): List<RemoteSoundtrackTrack> {
+        require(romId > 0L) { "ID de jogo RomM inválido" }
+        val url = base.resolve("api/roms/$romId/soundtracks/metadata")!!
+        return http.newCall(request(url).get().build()).execute().use { response ->
+            if (!response.isSuccessful) {
+                throw RomMHttpException(response.code, "Não foi possível carregar as trilhas do RomM (HTTP ${response.code})")
+            }
+            val array = org.json.JSONArray(response.body.string())
+            (0 until array.length()).mapNotNull { index ->
+                val item = array.optJSONObject(index) ?: return@mapNotNull null
+                val fileId = item.optLong("file_id", -1L)
+                val fileName = item.optString("file_name").takeIf { it.isNotBlank() && it != "null" }
+                if (fileId <= 0L || fileName == null) return@mapNotNull null
+                val meta = item.optJSONObject("track_meta")
+                RemoteSoundtrackTrack(
+                    fileId = fileId,
+                    fileName = fileName,
+                    sizeBytes = item.optLong("file_size_bytes", 0L),
+                    title = meta?.optString("title")?.takeUnless { it.isNullOrBlank() || it == "null" },
+                    artist = meta?.optString("artist")?.takeUnless { it.isNullOrBlank() || it == "null" },
+                    album = meta?.optString("album")?.takeUnless { it.isNullOrBlank() || it == "null" },
+                    trackNumber = meta?.optInt("track")?.takeIf { it > 0 },
+                    discNumber = meta?.optInt("disc")?.takeIf { it > 0 },
+                    durationSeconds = meta?.optDouble("duration_seconds")?.takeIf { it > 0.0 },
+                )
+            }
+        }
+    }
+
+    /** Baixa um arquivo associado usando o RomFile.id exigido pelo endpoint oficial. */
+    fun downloadAssociatedFile(file: RemoteAssociatedFile, target: File) {
+        require(file.id > 0L) { "ID de arquivo RomM inválido" }
+        val url = base.resolve("api/roms/${file.id}/files/content/")!!.newBuilder()
+            .addPathSegment(file.fileName)
+            .build()
+        downloadToFile(url, target, file.fileName)
+    }
+
     fun listNotes(romId: Long): List<RemoteGameNote> {
         require(romId > 0L) { "ID de jogo RomM inválido" }
         val url = base.resolve("api/roms/$romId/notes")!!
