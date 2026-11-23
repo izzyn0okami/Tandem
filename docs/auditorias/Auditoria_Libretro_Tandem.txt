@@ -4016,3 +4016,15 @@ CORREÇÃO DE ESCOPO A6 — PAGINAÇÃO VISUAL (2026-11-23)
 - A mudança de consulta invalida respostas antigas de load-more para não misturar resultados de pesquisas diferentes.
 - CI #690 (run 45099869403) identificou lint mutable-state-autoboxing em GameScreens.kt; corrigido com mutableIntStateOf no commit 23073cac01d62e619a8e1e0b235a1d2c38065ebe.
 - CI do head atual 23073cac ainda pendente.
+
+
+CONCLUSÃO DA PR #42 — 2026-11-23
+- PR #42 foi mesclada por squash na branch game-mode-m2-dev.
+- Merge commit: a33e7c6e0f911ae679bd5e2aa20752d43afe21fa.
+- Escopo integrado: A1–A13 da auditoria RomM, incluindo pesquisa/filtros, ordenação, paginação visual incremental, metadados/provedores/títulos alternativos, relações sibling_roms, arquivos associados, multidisco e EasyRPG.
+- Evidência de build: CI #695 / run 45100315003 aprovou testes unitários, Build APK e Upload artifact. A CI #692 / run 45100059843 também aprovou esses três passos.
+- Evidência de estilo final: CI #697 / run 45100517536 aprovou spotlessCheck. A etapa build-debug-apk da #697 ainda estava em andamento no momento do merge; monitorar conclusão.
+- Falhas intermediárias de Spotless foram corrigidas antes do merge: GamePlatforms/RomMClient/RomMCache e, por fim, condição de pesquisa em GameScreens.kt.
+- O commit de merge incluiu [skip ci] para evitar disparar tandem-release automaticamente no push para game-mode-m2-dev. A release tandem-latest existente permaneceu inalterada; nenhuma nova release foi publicada.
+- PR #41 continua aberta/draft, head fe01500afb2ce11b8e19bd8981e167ca6ea4b59f, e não foi modificada.
+- Pendências funcionais: testes no telefone; confirmar persistência/sincronização de saves nativos EasyRPG (.lsd) e dependência RTP 2000/2003 quando exigida. Nenhum código de SaveStore foi alterado.
