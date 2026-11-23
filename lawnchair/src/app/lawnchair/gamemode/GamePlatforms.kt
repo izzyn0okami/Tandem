@@ -190,7 +190,7 @@ object GamePlatforms {
             folderAliases = setOf("atari7800", "7800", "a78"),
             sortOrder = 81,
             raConsoleId = 51,
-            bios = listOf(BiosFile("7800 BIOS (U).rom", "Atari 7800 (EUA, opcional)")),
+            bios = listOf(BiosFile("7800 BIOS (U).rom", "Atari 7800 (EUA, opcional)", "0763f1ffb006ddbe32e52d497ee848ae")),
         ),
         GamePlatform(
             slug = "atari5200",
@@ -199,8 +199,8 @@ object GamePlatforms {
             extensions = setOf("a52"),
             folderAliases = setOf("atari5200", "5200", "a52"),
             sortOrder = 82,
-            bios = listOf(BiosFile("5200.rom", "Atari 5200")),
-            biosRequired = true,
+            bios = listOf(BiosFile("5200.rom", "Atari 5200 (opcional)", "281f20ea4320404ec820fb7ec0693b38")),
+            biosRequired = false,
         ),
         GamePlatform(
             slug = "lynx",
@@ -210,7 +210,7 @@ object GamePlatforms {
             folderAliases = setOf("lynx", "atarilynx", "lnx"),
             sortOrder = 83,
             raConsoleId = 13,
-            bios = listOf(BiosFile("lynxboot.img", "Atari Lynx (opcional)")),
+            bios = listOf(BiosFile("lynxboot.img", "Atari Lynx (opcional)", "fcd403db69f54290b51035d82f835e7b")),
         ),
         GamePlatform("jaguar", "Atari Jaguar", "virtualjaguar", setOf("j64", "jag"), setOf("jaguar", "atarijaguar", "j64"), 84),
         GamePlatform(
