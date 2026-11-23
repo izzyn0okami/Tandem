@@ -22,7 +22,9 @@ A. BIBLIOTECA, PESQUISA E ORGANIZAÇÃO (PRIORIDADE ALTA)
 [PENDENTE] A8. Catálogo de coleções inteligentes (somente leitura).
 [PENDENTE] A9. Catálogo de coleções virtuais (somente leitura).
 [PENDENTE] A10. Aplicação de uma coleção como filtro da biblioteca sem copiar sua lógica para o cliente.
-[PENDENTE] A11. Cache local seguro da biblioteca e dos filtros, sem substituir dados completos por resultados de pesquisa temporários.
+[CONCLUÍDO] A11. Cache local seguro: a pesquisa mantém resultados temporários separados e não sobrescreve a lista completa armazenada.
+[PENDENTE] A12. Metadados de jogos: dados de provedores, metadados manuais, títulos alternativos e agrupamento de versões.
+[PENDENTE] A13. Arquivos associados a ROMs, conjuntos multidisco e recursos EasyRPG; manter o agrupamento definido pelo RomM.
 
 B. DADOS PESSOAIS POR JOGO E ATIVIDADE (PRIORIDADE ALTA)
 [PENDENTE] B1. Consultar propriedades do usuário por ROM (favorito, avaliação, dificuldade, concluído, backlog, agora jogando, oculto e última partida).
@@ -145,3 +147,16 @@ Validação:
 - Não houve merge nem publicação de release.
 Próxima ação: validar CI, corrigir eventuais falhas e solicitar teste funcional na release antes de marcar A1 como concluída.
 
+
+ATUALIZAÇÃO — PR #42 ABERTA
+Data: 2026-11-23
+- PR #42: https://github.com/izzyn0okami/Tandem/pull/42
+- Estado: aberta, draft, sem merge.
+- Branch: feat/romm-library-search.
+- Head: 18735be5e2cca68e68cf7c25ce05b147dc5178b5.
+- Arquivos: GameScreens.kt, RomMClient.kt, checklist e log da auditoria.
+- A1: API e interface implementadas; CI e teste funcional na release pendentes.
+- A11: concluído no escopo da pesquisa: resultados temporários não substituem o cache completo.
+- Nenhuma funcionalidade existente removida.
+- Nenhuma alteração concorrente em GameModeActivity.kt, RemoteLibrary.kt ou SaveStore.kt.
+- PR #41 permanece aberta, draft e separada.
