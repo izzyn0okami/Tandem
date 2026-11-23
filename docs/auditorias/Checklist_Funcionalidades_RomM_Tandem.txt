@@ -239,3 +239,11 @@ AUDITORIA — ORDENAÇÃO E PAGINAÇÃO (2026-11-22)
 - A6. Confirmado no RomMClient: paginação por limit=100 e offset, com leitura sequencial até total ou página vazia. A lista ainda é acumulada integralmente antes de aparecer; carregamento incremental na UI continua pendente.
 - A5. Continua pendente: confirmar os campos de ordenação seguros no backend RomM 5.4.1. Evitar ordenação por propriedades pessoais sem prova de que não exclui jogos sem registro de usuário.
 - A pesquisa continua preservando relevância do RomM (order_by vazio quando search_term é enviado).
+
+
+AUDITORIA — DADOS PESSOAIS POR JOGO E NOTAS (2026-11-23)
+- [AUDITADO / IMPLEMENTAÇÃO PENDENTE] A11. Ler dados pessoais por jogo via rom_user no GET /api/roms: status, último acesso, avaliação, dificuldade, conclusão, backlog, em andamento, oculto, versão principal e mídias fixadas. Recomendação: somente leitura inicialmente; não solicitar roms.user.write.
+- [AUDITADO / IMPLEMENTAÇÃO PENDENTE] A12. Indicador e leitura de notas pessoais: has_notes na lista; GET /api/roms/{id}/notes sob demanda na tela de detalhes. O servidor decide propriedade/visibilidade. Escrita e exclusão de notas não fazem parte da primeira etapa.
+- Importante: favorite é filtro separado, não campo de RomUserData. Valores 0 de rating/difficulty/completion significam não definido.
+- Confirmação exata de compatibilidade com RomM 5.4.1 pendente: o código-fonte consultado foi commit público 1ab3a3625af1c75d17bdd75c6e88224226d9236c, mas a tag literal 5.4.1 não foi resolvida. Não implementar dependência de schema até confirmar a versão instalada.
+- PR #42 segue aberta/draft, sem merge. PR #41 permanece intocada.
