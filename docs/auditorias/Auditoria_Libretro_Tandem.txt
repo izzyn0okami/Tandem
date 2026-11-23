@@ -4460,3 +4460,32 @@ ATUALIZAÇÃO — PR #45 / CI #856 (2026-11-23)
 - [x] Artefato assembleLawnWithQuickstepGithubDebug: ID 14841653637; 46.290.536 bytes; SHA-256 d8e8d136445f882b7d6f6d62841694599b29471380f88a5b1a73640d859fc705; expira em 2027-02-21.
 - [ ] Testes funcionais no telefone com servidor RomM 5.4.x real continuam pendentes; CI verde não substitui validação no aparelho.
 - PR #45 permanece aberta, Draft e sem merge; PR #41 permanece aberta, Draft, pausada e intocada; D9 segue fora do escopo.
+
+
+AUDITORIA LIBRETRO — ESTÁGIO E (2026-11-23)
+Escopo: integração de sincronização WebDAV e classificação dos assets de save. Trabalho centralizado na PR #41, branch feat/save-conflict-resolution.
+
+RETROARCH CLOUD SYNC / WEBDAV
+- A documentação oficial descreve WebDAV multiplataforma, manifest.local e manifest.server e merge de três vias; o mecanismo usa manifestos/hashes para identificar divergências e não deve ser substituído por cópia cega.
+- Conflitos são preservados sem sobrescrita silenciosa, com resolução manual; a consistência dos caminhos de saves/states entre dispositivos é importante.
+- O código de referência usa GET, PUT, PROPFIND, MKCOL, MOVE e COPY. A implementação Tandem deve tratar erros e diferenças de comportamento entre servidores WebDAV.
+- A PoC planejada começa somente leitura. Qualquer teste de PUT/download será feito apenas em servidor controlado/mock com dados descartáveis. DELETE automático é proibido; não testar com saves reais.
+- Issues do RetroArch relatam respostas de upload/OPTIONS inconsistentes em alguns servidores; compatibilidade deve ser validada por comportamento real, não apenas por anúncio de WebDAV.
+Fontes:
+- https://docs.libretro.com/guides/retroarch-cloud-sync/
+- https://github.com/libretro/RetroArch/blob/master/network/cloud_sync/webdav.c
+- https://github.com/libretro/RetroArch/blob/master/tasks/task_cloudsync.c
+- https://github.com/libretro/RetroArch/issues/19457
+- https://github.com/libretro/RetroArch/issues/19486
+
+CLASSIFICAÇÃO DE SAVES
+- O modelo RomM/Tandem distingue saves/SRAM e save states em tipos e endpoints diferentes (/api/saves e /api/states).
+- SaveStore usa sram.srm e state1.state como arquivos locais distintos.
+- Memory cards não possuem categoria própria no modelo auditado. Permanecem fora do escopo de sincronização até que os caminhos usados pelos cores sejam mapeados e haja contrato explícito; não devem ser enviados como SRAM nem como save state.
+- Pendência: auditar paths de memory cards por core e adicionar testes negativos para impedir inclusão acidental em /api/saves ou /api/states.
+
+STATUS DE VALIDAÇÃO
+- CI #862 / run 45237286023: sucesso nos testes unitários, Build APK, Upload artifact, Spotless e final-status; execução antecedeu o commit automático de formatação.
+- Head formatado atual na PR #41: 462640b9db64428a3d78e11b3153e54beb8f5e8f.
+- CI #864 / run 45237591685 para esse head terminou action_required sem jobs; portanto não há CI completa confirmada no head atual.
+- PR #41 permanece aberta em Draft e sem merge. Testes funcionais no telefone e em servidor real continuam pendentes.
