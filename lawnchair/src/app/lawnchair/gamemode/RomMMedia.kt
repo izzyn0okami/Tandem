@@ -36,42 +36,46 @@ private val ROMM_IMAGE_EXTENSIONS = setOf("png", "jpg", "jpeg", "webp", "gif", "
 private val ROMM_DOCUMENT_EXTENSIONS = setOf("pdf", "md", "txt", "html", "htm")
 
 @Composable
-internal fun RomMMediaPanel(game: RemoteGame) {
+internal fun RomMMediaPanel(games: List<RemoteGame>) {
     val context = LocalContext.current
-    val screenshots = remember(game.id, game.associatedFiles) {
-        game.associatedFiles.filter {
+    val gameIds = remember(games) { games.map { it.id }.distinct() }
+    val associatedFiles = remember(games) { games.flatMap { it.associatedFiles }.distinctBy { it.id } }
+    val game = games.firstOrNull() ?: return
+    val screenshots = remember(associatedFiles) {
+        associatedFiles.filter {
             it.category == "screenshot" && File(it.fileName).extension.lowercase() in ROMM_IMAGE_EXTENSIONS
         }
     }
-    val manuals = remember(game.id, game.associatedFiles) {
-        game.associatedFiles.filter {
+    val manuals = remember(associatedFiles) {
+        associatedFiles.filter {
             it.category == "manual" && File(it.fileName).extension.lowercase() in ROMM_DOCUMENT_EXTENSIONS
         }
     }
-    val walkthroughs = remember(game.id, game.associatedFiles) {
-        game.associatedFiles.filter {
+    val walkthroughs = remember(associatedFiles) {
+        associatedFiles.filter {
             it.category == "walkthrough" && File(it.fileName).extension.lowercase() in ROMM_DOCUMENT_EXTENSIONS
         }
     }
-    var tracks by remember(game.id) { mutableStateOf<List<RemoteSoundtrackTrack>>(emptyList()) }
-    var tracksLoading by remember(game.id) { mutableStateOf(false) }
-    var tracksError by remember(game.id) { mutableStateOf<String?>(null) }
-    var selectedFile by remember(game.id) { mutableStateOf<RemoteAssociatedFile?>(null) }
-    var loadedFile by remember(game.id) { mutableStateOf<File?>(null) }
-    var previewError by remember(game.id) { mutableStateOf<String?>(null) }
-    var previewText by remember(game.id) { mutableStateOf<String?>(null) }
-    var previewBitmap by remember(game.id) { mutableStateOf<android.graphics.Bitmap?>(null) }
-    var audioReady by remember(game.id) { mutableStateOf(false) }
-    var audioPlaying by remember(game.id) { mutableStateOf(false) }
-    var audioPlayer by remember(game.id) { mutableStateOf<MediaPlayer?>(null) }
+    var tracks by remember(gameIds) { mutableStateOf<List<RemoteSoundtrackTrack>>(emptyList()) }
+    var tracksLoading by remember(gameIds) { mutableStateOf(false) }
+    var tracksError by remember(gameIds) { mutableStateOf<String?>(null) }
+    var selectedFile by remember(gameIds) { mutableStateOf<RemoteAssociatedFile?>(null) }
+    var loadedFile by remember(gameIds) { mutableStateOf<File?>(null) }
+    var previewError by remember(gameIds) { mutableStateOf<String?>(null) }
+    var previewText by remember(gameIds) { mutableStateOf<String?>(null) }
+    var previewBitmap by remember(gameIds) { mutableStateOf<android.graphics.Bitmap?>(null) }
+    var audioReady by remember(gameIds) { mutableStateOf(false) }
+    var audioPlaying by remember(gameIds) { mutableStateOf(false) }
+    var audioPlayer by remember(gameIds) { mutableStateOf<MediaPlayer?>(null) }
 
-    LaunchedEffect(game.id, RomMSettings.url(context), RomMSettings.token(context)) {
+    LaunchedEffect(gameIds, RomMSettings.url(context), RomMSettings.token(context)) {
         if (!RomMSettings.isConnected(context)) return@LaunchedEffect
         tracksLoading = true
         tracksError = null
         try {
             tracks = withContext(Dispatchers.IO) {
-                RomMClient(RomMSettings.url(context).orEmpty(), RomMSettings.token(context)).listSoundtracks(game.id)
+                val client = RomMClient(RomMSettings.url(context).orEmpty(), RomMSettings.token(context))
+                gameIds.flatMap { romId -> client.listSoundtracks(romId) }.distinctBy { it.fileId }
             }
         } catch (error: Exception) {
             tracksError = error.message ?: "Não foi possível consultar as trilhas."
@@ -291,8 +295,12 @@ private fun renderFirstPdfPage(file: File): android.graphics.Bitmap? {
         PdfRenderer(parcel).use { renderer ->
             if (renderer.pageCount == 0) return null
             renderer.openPage(0).use { page ->
-                val width = page.width.coerceAtMost(1800)
-                val height = (page.height.toFloat() * width / page.width).toInt().coerceAtLeast(1)
+                val scale = minOf(
+                    1800f / page.width,
+                    MAX_ROMM_PDF_PREVIEW_DIMENSION.toFloat() / maxOf(page.width, page.height),
+                )
+                val width = (page.width * scale).toInt().coerceIn(1, MAX_ROMM_PDF_PREVIEW_DIMENSION)
+                val height = (page.height * scale).toInt().coerceIn(1, MAX_ROMM_PDF_PREVIEW_DIMENSION)
                 val bitmap =
                     android.graphics.Bitmap.createBitmap(
                         width,
@@ -308,6 +316,7 @@ private fun renderFirstPdfPage(file: File): android.graphics.Bitmap? {
 
 private const val MAX_ROMM_TEXT_PREVIEW_CHARS = 500_000
 private const val MAX_ROMM_IMAGE_PREVIEW_DIMENSION = 2048
+private const val MAX_ROMM_PDF_PREVIEW_DIMENSION = 2048
 
 /** Decodifica imagens reduzidas para evitar carregar bitmaps gigantes na memória do launcher. */
 private fun decodePreviewImage(file: File): android.graphics.Bitmap? {
