@@ -1273,16 +1273,27 @@ internal fun SettingsScreen(
                                 fontWeight = FontWeight.SemiBold,
                             )
                             Text(
-                                listOfNotNull(device.platform, device.client, device.clientVersion?.let { "v$it" }).joinToString(" • ")
+                                listOfNotNull(device.platform, device.client, device.clientVersion?.let { "v$it" }, device.syncMode?.let { "sync $it" }).joinToString(" • ")
                                     .ifBlank { "Tipo não informado pelo servidor" },
                                 color = GameColors.textDim,
                                 fontSize = 12.sp,
                             )
                             Text(
-                                if (device.online) "Online" else "Offline ou sem conexão recente",
-                                color = if (device.online) GameColors.accent else GameColors.textDim,
+                                when (device.online) {
+                                    true -> "Online"
+                                    false -> "Offline"
+                                    null -> "Presença indisponível (instalação remota desativada no servidor)"
+                                },
+                                color = if (device.online == true) GameColors.accent else GameColors.textDim,
                                 fontSize = 12.sp,
                             )
+                            device.syncEnabled?.let { enabled ->
+                                Text(
+                                    if (enabled) "Sincronização habilitada" else "Sincronização desabilitada",
+                                    color = GameColors.textDim,
+                                    fontSize = 11.sp,
+                                )
+                            }
                             if (device.capabilities.isEmpty()) {
                                 Text("Capacidades não declaradas pelo servidor.", color = GameColors.textDim, fontSize = 12.sp)
                             } else {
