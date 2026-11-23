@@ -3,10 +3,26 @@ package app.lawnchair.gamemode
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
+import java.io.File
+import java.nio.file.Files
+import org.junit.After
 import org.junit.Assert.assertTrue
+import org.junit.Before
 import org.junit.Test
 
 class BiosManagerTest {
+    private lateinit var root: File
+
+    @Before
+    fun setUp() {
+        root = Files.createTempDirectory("tandem-bios-test").toFile()
+    }
+
+    @After
+    fun tearDown() {
+        root.deleteRecursively()
+    }
+
     private val biosA = BiosFile("bios-a.bin", "BIOS A")
     private val biosB = BiosFile("bios-b.bin", "BIOS B")
     private val biosC = BiosFile("bios-c.bin", "BIOS C")
@@ -86,6 +102,54 @@ class BiosManagerTest {
         assertEquals(listOf("Databases", "Machines"), msx.biosKit)
         assertEquals(2, intellivision.biosGroups.size)
         assertTrue(intellivision.biosGroups.all { it.size == 1 })
+    }
+
+    @Test
+    fun officialMd5VerifierAcceptsMatchingBytesAndRejectsCorruption() {
+        val file = File(root, "bios.bin").apply { writeText("abc") }
+        val known = BiosFile("bios.bin", "Known BIOS", "900150983cd24fb0d6963f7d28e17f72")
+        val incorrect = BiosFile("bios.bin", "Known BIOS", "00000000000000000000000000000000")
+
+        BiosManager.verifyKnownMd5(file, known)
+        assertTrue(runCatching { BiosManager.verifyKnownMd5(file, incorrect) }.isFailure)
+    }
+
+    @Test
+    fun kitImportReplacesAllRequiredFoldersAfterStaging() {
+        val platform = platform(kit = listOf("Databases", "Machines"))
+        val source = File(root, "source")
+        File(source, "Databases").apply { mkdirs() }
+        File(source, "Databases/new.dat").writeText("new database")
+        File(source, "Machines").apply { mkdirs() }
+        File(source, "Machines/msx.rom").writeText("machine data")
+        File(root, "system/Databases").apply { mkdirs() }
+        File(root, "system/Databases/old.dat").writeText("old database")
+
+        val copied = BiosManager.importKitFiles(File(root, "system"), platform, source)
+
+        assertEquals(2, copied)
+        assertFalse(File(root, "system/Databases/old.dat").exists())
+        assertEquals("new database", File(root, "system/Databases/new.dat").readText())
+        assertEquals("machine data", File(root, "system/Machines/msx.rom").readText())
+        assertFalse(File(root, "system").listFiles().orEmpty().any { it.name.startsWith(".bios-kit-") })
+    }
+
+    @Test
+    fun incompleteKitDoesNotTouchExistingInstallation() {
+        val platform = platform(kit = listOf("Databases", "Machines"))
+        val source = File(root, "incomplete")
+        File(source, "Databases").apply { mkdirs() }
+        File(source, "Databases/new.dat").writeText("new database")
+        val oldFile = File(root, "system/Databases/old.dat").apply {
+            parentFile?.mkdirs()
+            writeText("keep me")
+        }
+
+        assertTrue(runCatching {
+            BiosManager.importKitFiles(File(root, "system"), platform, source)
+        }.isFailure)
+        assertEquals("keep me", oldFile.readText())
+        assertFalse(File(root, "system/Machines").exists())
     }
 
     @Test
