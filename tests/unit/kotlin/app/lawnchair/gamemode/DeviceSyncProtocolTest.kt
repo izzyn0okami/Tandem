@@ -96,7 +96,7 @@ class DeviceSyncProtocolTest {
         val server = MockWebServer()
         server.start()
         try {
-            server.enqueue(MockResponse().setBody("""{"device_id":"device-123","name":"Tandem"}"""))
+            server.enqueue(MockResponse(body = """{"device_id":"device-123","name":"Tandem"}"""))
             val client = RomMDeviceSyncClient(server.url("/").toString(), "test-token", OkHttpClient())
             val registered = client.registerDevice(
                 DeviceSyncRegistration("Tandem Android", clientVersion = "1.0", hostname = "tandem-test"),
@@ -105,11 +105,11 @@ class DeviceSyncProtocolTest {
 
             assertEquals("device-123", registered.deviceId)
             assertEquals("POST", request.method)
-            assertEquals("/api/devices", request.path)
-            assertEquals("Bearer test-token", request.getHeader("Authorization"))
-            assertTrue(request.body.readUtf8().contains("\"sync_mode\":\"api\""))
+            assertEquals("/api/devices", request.url.encodedPath)
+            assertEquals("Bearer test-token", request.headers["Authorization"])
+            assertTrue(request.body!!.utf8().contains("\"sync_mode\":\"api\""))
         } finally {
-            server.shutdown()
+            server.close()
         }
     }
 
@@ -148,7 +148,7 @@ class DeviceSyncProtocolTest {
             assertEquals(2, payload.getInt("operations_completed"))
             assertEquals(1, payload.getInt("operations_failed"))
 
-            server.enqueue(MockResponse().setResponseCode(403).setBody("""{"detail":"forbidden"}"""))
+            server.enqueue(MockResponse(code = 403, body = """{"detail":"forbidden"}"""))
             val error = runCatching { client.registerDevice(DeviceSyncRegistration("Tandem", clientVersion = "1.0", hostname = "tandem")) }.exceptionOrNull()
             assertTrue(error is RomMHttpException)
             assertEquals(403, (error as RomMHttpException).statusCode)
