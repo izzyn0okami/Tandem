@@ -4279,3 +4279,16 @@ ATUALIZAÇÃO — PR #44 / CI #777 E #778 APROVADAS (2026-11-23)
 - [x] Auditoria de thumbnails na tag oficial RomM 5.4.1: screenshot.py só expõe upload e exclusão de screenshots; files.py expõe conteúdo original por RomFile.id. Não foi identificado endpoint de miniatura para arquivos associados. Não implementar geração local que force download de imagem original como preview; manter miniaturas como melhoria futura, sujeita a endpoint/contrato oficial.
 - [ ] Testes funcionais C1–C7 no telefone com servidor/conta RomM real continuam pendentes.
 - PR #44 segue aberta, draft e mergeable; sem merge/release. PR #41 segue aberta, draft e pausada, intocada.
+
+
+ATUALIZAÇÃO — PR #44 / GALERIA DE MINIATURAS E CI #788 (2026-11-23)
+- [x] Implementada galeria de screenshots com miniaturas temporárias geradas no cliente a partir do endpoint oficial de conteúdo de RomFile; não depende de endpoint dedicado de thumbnails.
+- [x] A galeria carrega no máximo 12 screenshots por jogo, sob demanda; miniaturas JPEG limitadas a 360 px, cache temporário com teto de 64 MiB e reutilização offline enquanto permanecerem no cache.
+- [x] Imagens originais são baixadas temporariamente com limite de 64 MiB por arquivo, decodificadas em resolução reduzida e removidas após a geração; arquivos .part/.range também são limpos.
+- [x] Commits da implementação: 101ee9d3fb85b5e2d1bcb52b9c8e330ee3eee3d9, 486fb956f7c99494faee4cfca48e4d1871e5ca48 e c78d16fb4c38e5132cac78ecf27bb1edfc99a6bd.
+- [x] CI #788 / run 45203232345: SUCCESS integral no commit c78d16fb4c38e5132cac78ecf27bb1edfc99a6bd; Spotless, testes unitários, build APK e final-status aprovados.
+- [x] Artefato CI #788: ID 14831843851; 46.268.205 bytes; SHA-256 ef127dc1a0a00bad7bf012c0a2a46564ccaf9ebdeb14073dc60d43647856cd0f; expira em 2027-02-21.
+- [x] Spotless criou commit automático d0d55b87b84b507c69552f2a9a337c3b738bb0b0 (apenas ordenação de imports e formatação em RomMMedia.kt).
+- [ ] CI #790 / run 45203546753, disparada para o head formatado d0d55b87b84b507c69552f2a9a337c3b738bb0b0, terminou com action_required e sem jobs; é necessária aprovação da execução pelo controle do GitHub Actions antes de validar o head final.
+- [ ] Teste funcional da galeria no telefone com servidor/conta RomM real permanece pendente.
+- PR #44 permanece aberta e em draft, sem merge ou release; PR #41 permanece aberta, em draft, pausada e intocada.
