@@ -4090,3 +4090,22 @@ C1 screenshots; C2 manuais; C3 walkthroughs; C4 trilhas sonoras; C5 integração
 
 PR #44 criada em draft: https://github.com/izzyn0okami/Tandem/pull/44.
 Implementação funcional e CI: pendentes. PR #41 permanece aberta e intocada; nenhuma alteração em SaveStore.kt ou GameModeActivity.kt planejada.
+
+
+CORREÇÃO DE CONTRATO ROMM 5.4.1 — C1–C6 (2026-11-23)
+A leitura direta da tag 5.4.1 confirmou e refinou os contratos:
+- Arquivo associado: GET /api/roms/{file_id}/files/content/{file_name}; o identificador do caminho é RomFile.id (ID interno do arquivo), não Rom.id. Exige roms.read e o servidor verifica a visibilidade da ROM pai.
+- Soundtracks: GET /api/roms/{rom_id}/soundtracks/metadata retorna file_id, file_name, file_size_bytes e track_meta. O conteúdo de áudio é servido pelo endpoint de arquivo associado acima; o endpoint suporta resposta inline/Range no servidor.
+- Patch: POST /api/roms/{base_file_id}/patch, em multipart/form-data. O caminho usa o ID do RomFile que contém a ROM base, não o ID da ROM. Campos: exatamente um entre patch_file_id (RomFile já na biblioteca) e patch_file (upload), opcionalmente output_file_name e archive_member_name. A resposta é o arquivo modificado em streaming; não é gravado automaticamente na biblioteca RomM.
+- Formatos de patch anunciados no código 5.4.1: .ips, .ups, .bps, .ppf, .rup, .aps, .bdf, .pmsr, .vcdiff e .xdelta. O heartbeat publica ROM_PATCHER.SUPPORTED_EXTENSIONS; preferir esse valor para compatibilidade com versões do servidor.
+- Categorias oficiais incluem game, dlc, hack, manual, walkthrough, patch, update, mod, demo, translation, prototype, cheat, soundtrack e screenshot. Para execução, aceitar apenas categorias conhecidas de jogo; patch é auxiliar, assim como manual/walkthrough/soundtrack/screenshot.
+- Imagens inline aceitas pelo RomM 5.4.1: png, jpg/jpeg, webp, gif, tiff/tif, bmp e avif.
+- Documentos inline aceitos: pdf, md, txt, html e htm. HTML é servido com CSP sandbox e nosniff; no Tandem, não executar HTML/JS. Exibir como texto simples é a opção segura inicial.
+- Vídeos inline aceitos pelo servidor: mp4, webm, ogv, mov e m4v; não foram aprovados como escopo do player C1–C4 nesta etapa.
+- Fonte primária: rommapp/romm tag 5.4.1 — backend/endpoints/roms/files.py, patch.py, soundtrack.py, backend/models/rom.py, backend/utils/media_types.py e backend/utils/rom_patcher/patcher.py.
+
+IMPLEMENTAÇÃO C6 — COMMIT 4CCCE4C (2026-11-23)
+- [x] Corrigido o filtro de categorias no arquivo principal, multidisco/multiarquivo e EasyRPG.
+- [x] Categoria patch e categorias auxiliares não são aceitas como ROM executável.
+- [ ] CI e testes automatizados pendentes.
+- [ ] Validação funcional no telefone pendente.
