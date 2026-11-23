@@ -48,7 +48,19 @@ data class BiosFile(val name: String, val label: String, val md5Hash: String? = 
 object GamePlatforms {
 
     val all = listOf(
-        GamePlatform("nes", "Nintendo Entertainment System", "fceumm", setOf("nes", "unf", "unif", "fds"), setOf("nes", "famicom", "fc"), 10, 7),
+        GamePlatform(
+            "nes",
+            "Nintendo Entertainment System",
+            "fceumm",
+            setOf("nes", "unf", "unif", "fds"),
+            setOf("nes", "famicom", "fc"),
+            10,
+            7,
+            bios = listOf(
+                BiosFile("disksys.rom", "Famicom Disk System (obrigatório para jogos FDS)", "ca30b50f880eb660a320674ed365ef7a"),
+                BiosFile("gamegenie.nes", "Game Genie (opcional)", "7f98d77d7a094ad7d069b74bd553ec98"),
+            ),
+        ),
         GamePlatform("snes", "Super Nintendo", "snes9x", setOf("sfc", "smc", "swc", "fig"), setOf("snes", "sfc", "superfamicom", "supernintendo"), 20, 3),
         GamePlatform(
             "gb",
