@@ -671,3 +671,59 @@ ATUALIZAÇÃO — ESTÁGIO D / PR #45 / CI #856 (2026-11-23)
 - [x] Artefato assembleLawnWithQuickstepGithubDebug: ID 14841653637; 46.290.536 bytes; SHA-256 d8e8d136445f882b7d6f6d62841694599b29471380f88a5b1a73640d859fc705; expira em 2027-02-21.
 - [ ] D3–D8: implementação e testes automatizados aprovados pela CI; testes funcionais no telefone com RomM 5.4.x real continuam pendentes.
 - PR #45 permanece aberta, Draft e sem merge; PR #41 permanece aberta, Draft, pausada e intocada; D9 segue fora do escopo.
+
+
+INÍCIO E REGISTRO DA AUDITORIA — ESTÁGIO E: SAVES, STATES E SINCRONIZAÇÃO (2026-11-23)
+PR/local único de trabalho: #41 — https://github.com/izzyn0okami/Tandem/pull/41
+Branch: feat/save-conflict-resolution
+Base: game-mode-m2-dev
+- [x] E1–E3: funcionalidades de listagem/transferência, identidade/isolamento por conta e snapshots/proteção contra sobrescrita já constam na base atual; não reimplementar sem novo achado.
+- [ ] E4: resolução explícita de conflitos — inspeção, escolha explícita, staging, SHA-256, backups dos dois conjuntos e rollback. A PR contém a implementação em validação; ainda não marcar como funcionalmente concluída.
+- [ ] E5: integração isolada do Device Sync Protocol RomM (registro, negotiate e complete), sem substituir o sincronizador atual.
+- [ ] E6: prova de conceito RetroArch Cloud Sync/WebDAV, inicialmente somente leitura.
+- [ ] E7: testes controlados WebDAV com servidor de teste/mock; sem DELETE automático.
+- [ ] E8: comparação arquitetural entre Device Sync e WebDAV.
+- [ ] E9: confirmar separação de SRAM, save states e memory cards.
+- [ ] E10: qualquer substituição do sincronizador atual depende de decisão explícita do usuário.
+
+ATUALIZAÇÃO DE BRANCH, CORREÇÃO E CI — 2026-11-23
+- PR #41 foi atualizada sobre a base mais recente game-mode-m2-dev; commits e arquivos de resolução de conflitos foram preservados.
+- Corrigido em SaveStore.kt o retorno Boolean do bloco try/catch, usando retorno explícito do resultado da operação.
+- CI #862 / run 45237286023 concluiu com sucesso: check-style/Spotless, testes unitários, Build APK, Upload artifact e final-status. O build gerou o APK Debug.
+- Atenção: CI #862 foi iniciada antes do commit automático de formatação. O head foi então atualizado pelo Spotless para 462640b9db64428a3d78e11b3153e54beb8f5e8f.
+- CI #864 / run 45237591685, associada ao head formatado 462640b9db64428a3d78e11b3153e54beb8f5e8f, terminou como action_required e não criou jobs. Portanto, ainda não há CI completa confirmada para o head exato atual. Não declarar validação integral do head.
+- PR #41 permanece aberta, Draft e mergeable; não foi mesclada. Testes funcionais em telefone/servidor RomM real continuam pendentes.
+
+E5 — CONTRATO DO DEVICE SYNC PROTOCOL ROMM (AUDITORIA DOCUMENTAL)
+- RomM documenta registro de dispositivo por POST /api/devices; device_id é UUID string. Não assumir disponibilidade de MAC confiável no Android; identidade deve usar identificador estável gerado pelo app/hostname.
+- Negociação por POST /api/sync/negotiate requer assets.read e devices.read; conclusão por POST /api/sync/sessions/{id}/complete requer devices.write.
+- Upload por POST /api/saves requer assets.write e, quando device_id é informado, devices.write; suporta session_id, content_hash MD5 e overwrite=false.
+- Download usa GET /api/saves/{id}/content; no fluxo não otimista, confirmar depois em POST /api/saves/{id}/downloaded.
+- A negociação pode retornar upload, download, conflict, delete e no_op. A operação delete é destrutiva e não será executada automaticamente. Não enviar listas de ROMs/arquivos não pretendidos nem habilitar restauração/apagamento implícito.
+- O cliente RomM atual já solicita scopes devices.read/devices.write e lista dispositivos, mas ainda não implementa registro, negotiate ou complete. O fluxo SaveSync atual usa listagem e upload/download tradicionais, sem session/device id.
+- Próxima implementação deve ser um adaptador isolado, coberto por testes, sem ativação automática nem substituição do fluxo existente até validação e decisão E10.
+- Sessão é por lançamento/negociação, não por arquivo individual; evitar polling ou negociação por save.
+Fonte primária: https://docs.romm.app/5.4.0/developers/device-sync-protocol/
+
+E6/E7 — RETROARCH CLOUD SYNC / WEBDAV (AUDITORIA DOCUMENTAL)
+- A documentação oficial do RetroArch descreve WebDAV multiplataforma, manifesto local e remoto e sincronização por comparação/merge de três vias; não é seguro reproduzir como simples cópia cega de arquivos.
+- O fluxo trabalha com hashes/manifestos e trata conflitos mantendo cópias em vez de sobrescrever silenciosamente; caminhos de save/state devem ser consistentes entre dispositivos.
+- O código de referência usa operações WebDAV como GET, PUT, PROPFIND, MKCOL, MOVE e COPY. A compatibilidade varia entre servidores; OPTIONS/status e respostas HTTP precisam ser tratados explicitamente.
+- A PoC deve começar somente leitura. PUT/download só em servidor controlado/mock e dados descartáveis, sem DELETE automático e sem tocar nos saves reais.
+- Issues do RetroArch documentam incompatibilidades de servidores com respostas de upload/OPTIONS; não presumir que todo WebDAV tenha comportamento uniforme.
+Fontes primárias: https://docs.libretro.com/guides/retroarch-cloud-sync/ ; https://github.com/libretro/RetroArch/blob/master/network/cloud_sync/webdav.c ; https://github.com/libretro/RetroArch/blob/master/tasks/task_cloudsync.c
+
+E9 — CLASSIFICAÇÃO DOS ARQUIVOS
+- RomMClient já distingue RemoteFileKind.Save e RemoteFileKind.State, com endpoints /api/saves e /api/states.
+- SaveStore mantém SRAM (sram.srm) e save state (state1.state) como arquivos locais separados.
+- Memory cards ainda não aparecem como terceiro tipo no modelo remoto/SaveStore. Devem permanecer explicitamente fora da sincronização até mapear caminhos reais por core e definir formato/semântica; não os classificar como SRAM nem como save state.
+- E9 continua pendente até auditoria dos caminhos efetivamente usados pelos cores e testes que garantam que memory cards não sejam enviados acidentalmente a /api/saves ou /api/states.
+
+PENDÊNCIAS E PRÓXIMOS PASSOS
+1. Resolver a exigência action_required da CI no head 462640b9db64428a3d78e11b3153e54beb8f5e8f; não considerar CI verde nesse head até jobs concluírem.
+2. Concluir validação técnica e de testes de E4.
+3. Implementar E5 como adaptador isolado, com testes e sem substituir o fluxo atual.
+4. Desenvolver PoC E6/E7 em modo seguro e controlado.
+5. Concluir comparação E8 e auditoria de caminhos E9.
+6. Manter E10 bloqueado até decisão explícita do usuário.
+7. Não fazer merge nem release sem autorização; testes no aparelho/servidor real só serão marcados após confirmação do usuário.
