@@ -4536,3 +4536,14 @@ ATUALIZAÇÃO — CI #890 / ESTÁGIO E / PR #41 (2026-11-23)
 - Nenhuma release foi publicada; artefato gerado é APK Debug.
 - E5 permanece em andamento: transporte de SRAM isolado automatizado, sem integração funcional ao SaveSync ou validação com RomM real. E4 requer teste no telefone; E6/E7/E8/E9 seguem pendentes.
 - PR #41 continua aberta, Draft, sem conflitos e sem merge. Nenhuma operação DELETE foi executada.
+
+
+ATUALIZAÇÃO DE AUDITORIA — DEVICE SYNC SRAM / INSPEÇÃO SOMENTE LEITURA / CI #896 (2026-11-23)
+- CI #893 / run 45259888910: SUCCESS integral no commit a2a0a15583e4f31dcefebfc968fac5be8aad90a6; validou testes do manifesto local SRAM (.srm), cálculo MD5 e rejeição de arquivo ausente/vazio ou extensão não-SRAM.
+- Commit be33164313bf1103676ee62807082c823627e1e6 adiciona RomMDeviceSyncDiagnostics.inspectLocalSram: exige conta RomM conectada, vínculo verificado do jogo, ROM ID da conta, jogo inativo e dispositivo já registrado. A leitura é limitada a SaveStore.sramFile; stateFile não é acessado.
+- A negociação é diagnóstica e somente leitura: nenhuma operação Upload, Download, Conflict ou Delete é executada. A sessão é concluída; NoOp conta como concluído e demais operações são reportadas como não executadas.
+- CI #896 / run 45269216987: SUCCESS integral no commit be33164313bf1103676ee62807082c823627e1e6. Spotless, testes unitários, Build APK Debug, Upload artifact e final-status aprovados. https://github.com/izzyn0okami/Tandem/actions/runs/45269216987
+- Teste MockWebServer valida uma negociação contendo NoOp, Upload, Delete e Unknown, confirma zero operações executadas e conclusão da sessão.
+- Próximo passo: implementar registro do dispositivo por ação explícita na interface RomM. O diagnóstico atual depende de device_id previamente registrado; não deve haver registro silencioso. Persistir UUID somente após resposta válida.
+- E5 segue EM ANDAMENTO: integração ao SaveSync, transferência real e validação de interoperabilidade com servidor RomM ainda pendentes. Não ativar operações de sincronização nem substituir fluxo legado. Save states e memory cards permanecem fora do novo transporte.
+- E4 aguarda teste funcional no telefone; E6/E7/E8/E9 continuam pendentes. PR #41 permanece aberta, Draft e sem merge. Nenhum teste em aparelho/servidor real foi presumido.
