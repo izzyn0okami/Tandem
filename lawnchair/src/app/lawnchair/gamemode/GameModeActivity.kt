@@ -179,8 +179,8 @@ private fun GameModeRoot(refreshKey: Int, onExit: () -> Unit) {
     var showScraper by remember { mutableStateOf(false) }
     var showServer by remember { mutableStateOf(false) }
     val remote = remember { RemoteLibrary(context, scope) }
-    val entries = remember(games, remote.displayGames, rootPath, version) {
-        buildEntries(context, games, remote.displayGames, File(rootPath))
+    val entries = remember(games, remote.games, rootPath, version) {
+        buildEntries(context, games, remote.games.orEmpty(), File(rootPath))
     }
     val detail = entries.firstOrNull { it.key == detailKey }
     val networkRequest = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {}
@@ -502,10 +502,6 @@ private fun GameModeRoot(refreshKey: Int, onExit: () -> Unit) {
                                 status = context.getString(R.string.game_mode_status_error, game.title)
                             }
                         },
-                        remoteSearchQuery = remote.searchQuery,
-                        remoteSearching = remote.searching,
-                        remoteSearchError = remote.searchError,
-                        onRemoteSearch = remote::search,
                         onRefresh = {
                             scanTick++
                             remote.requestRefresh()
