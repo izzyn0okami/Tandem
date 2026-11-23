@@ -347,7 +347,7 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
     private var skippedExtension = 0
 
     /** Lista ROMs compatíveis, respeitando o agrupamento e os arquivos associados pelo RomM. */
-    fun listGames(): List<RemoteGame> {
+    fun listGames(searchTerm: String? = null): List<RemoteGame> {
         serverTotal = 0
         skippedPlatforms.clear()
         skippedMulti = 0
@@ -355,15 +355,18 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
         val games = mutableListOf<RemoteGame>()
         var offset = 0
         while (true) {
-            val url = base.resolve("api/roms")!!.newBuilder()
-                .addQueryParameter("order_by", "name")
+            val query = searchTerm?.trim().orEmpty()
+            val urlBuilder = base.resolve("api/roms")!!.newBuilder()
+                // RomM ranks search results by relevance when order_by is empty.
+                .addQueryParameter("order_by", if (query.isEmpty()) "name" else "")
                 .addQueryParameter("order_dir", "asc")
                 .addQueryParameter("limit", PAGE_SIZE.toString())
                 .addQueryParameter("offset", offset.toString())
                 .addQueryParameter("with_char_index", "false")
                 .addQueryParameter("with_filter_values", "false")
                 .addQueryParameter("with_files", "true")
-                .build()
+            if (query.length >= 2) urlBuilder.addQueryParameter("search_term", query)
+            val url = urlBuilder.build()
             val json = longHttp.newCall(request(url).build()).execute().use { response ->
                 GameLog.log("romm", "GET api/roms offset=$offset -> ${response.code}")
                 if (!response.isSuccessful) throw IOException("Servidor respondeu ${response.code}")
