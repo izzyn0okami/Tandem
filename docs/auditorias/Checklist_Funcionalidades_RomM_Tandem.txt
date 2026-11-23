@@ -649,3 +649,8 @@ D5 — COMPLEMENTO DSi / REGIÃO / NEO GEO (2026-11-23)
 - [IMPLEMENTADO] UI informa cartuchos específicos necessários para alguns jogos Saturn; não os classifica incorretamente como BIOS.
 - [REVISÃO DOCUMENTAL CONCLUÍDA] Neo Geo continua no FBNeo com neogeo.zip; aes.zip pertence ao core Geolith e não deve ser exigido pelo core atual.
 - [PENDENTE / FORA DO MODELO ATUAL] Detecção automática de região por jogo e requisitos por título (incluindo cartuchos Saturn) exigem metadados confiáveis por jogo; não inferir de nomes de arquivos/pastas.
+
+CI / REVISÃO (2026-11-23)
+- Corrigido KDoc deslocado identificado pela CI #845.
+- CI #850 executando validação de Spotless, testes unitários e APK para o código atualizado (head de código 8e3b2c26a628556e8c9251d750cab521867c7b34). Aguardar conclusão antes de considerar CI verde.
+- PR #45 segue draft e sem merge; PR #41 permanece inalterada.
