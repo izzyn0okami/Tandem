@@ -290,7 +290,9 @@ object BiosManager {
         dir.walkTopDown().maxDepth(3).filter { it.isFile }.forEach { file ->
             val bios = canonical(file.name) ?: return@forEach
             if (has(context, bios)) return@forEach
-            file.inputStream().use { import(context, file.name, it) }?.let { count++ }
+            runCatching { file.inputStream().use { import(context, file.name, it) } }
+                .onSuccess { if (it != null) count++ }
+                .onFailure { GameLog.error("bios", "falha ao importar ${file.name} da pasta local", it) }
         }
         return count
     }
