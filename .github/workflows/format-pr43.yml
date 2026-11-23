@@ -1,12 +1,10 @@
-name: Format PR 43
+name: Format PR 43 with Spotless
 
 on:
-  push:
+  pull_request:
     branches:
-      - feat/romm-personal-game-data
-    paths:
-      - '.github/workflows/format-pr43.yml'
-      - 'lawnchair/src/app/lawnchair/gamemode/RomMGameData.kt'
+      - game-mode-m2-dev
+    types: [opened, synchronize, reopened]
 
 permissions:
   contents: write
@@ -18,12 +16,13 @@ concurrency:
 
 jobs:
   format:
-    if: github.ref == 'refs/heads/feat/romm-personal-game-data'
+    if: github.event.pull_request.number == 43 && github.event.pull_request.head.ref == 'feat/romm-personal-game-data' && github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
         with:
           ref: feat/romm-personal-game-data
+          repository: ${{ github.repository }}
       - uses: actions/setup-java@v6
         with:
           distribution: zulu
@@ -44,5 +43,3 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: gh workflow run ci.yml --ref feat/romm-personal-game-data
-
-# Trigger the temporary repository-side formatter.
