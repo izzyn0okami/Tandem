@@ -117,18 +117,24 @@ internal fun LibraryScreen(
         }
     }
     val recent = remember(version, games, normalizedSearch) {
-        if (normalizedSearch.isEmpty()) PlayHistory.recent(context, games).take(10)
-        else PlayHistory.recent(context, games).filter { it.title.contains(normalizedSearch, ignoreCase = true) }.take(10)
+        if (normalizedSearch.isEmpty()) {
+            PlayHistory.recent(context, games).take(10)
+        } else {
+            PlayHistory.recent(context, games).filter { it.title.contains(normalizedSearch, ignoreCase = true) }.take(10)
+        }
     }
     val entryByPath = remember(entries) { entries.flatMap { entry -> entry.locals.map { it.path to entry } }.toMap() }
     var platformFilter by remember { mutableStateOf<String?>(null) }
     val platforms = remember(entries) { entries.map { it.platform }.distinctBy { it.slug } }
     val searchedEntries = remember(entries, normalizedSearch, remoteSearchIds) {
-        if (normalizedSearch.isEmpty()) entries
-        else entries.filter { entry ->
-            entry.title.contains(normalizedSearch, ignoreCase = true) ||
-                entry.platform.name.contains(normalizedSearch, ignoreCase = true) ||
-                entry.group?.versions?.any { it.id in remoteSearchIds.orEmpty() } == true
+        if (normalizedSearch.isEmpty()) {
+            entries
+        } else {
+            entries.filter { entry ->
+                entry.title.contains(normalizedSearch, ignoreCase = true) ||
+                    entry.platform.name.contains(normalizedSearch, ignoreCase = true) ||
+                    entry.group?.versions?.any { it.id in remoteSearchIds.orEmpty() } == true
+            }
         }
     }
     val visible = remember(searchedEntries, platformFilter) {
