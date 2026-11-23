@@ -170,4 +170,129 @@ class DeviceSyncProtocolTest {
             }.isFailure,
         )
     }
+    @Test
+    fun uploadSaveUsesSafeQueryParametersAndMultipartSaveFile() {
+        val server = MockWebServer()
+        val file = java.io.File.createTempFile("device-sync-", ".srm")
+        file.writeBytes(byteArrayOf(1, 2, 3, 4))
+        server.start()
+        try {
+            server.enqueue(MockResponse(body = """{"id":91}"""))
+            val client = RomMDeviceSyncClient(server.url("/").toString(), "test-token")
+            client.uploadSave(42L, "device-123", 8L, "autosave", file)
+            val request = server.takeRequest()
+
+            assertEquals("POST", request.method)
+            assertEquals("/api/saves", request.url.encodedPath)
+            assertEquals("42", request.url.queryParameter("rom_id"))
+            assertEquals("device-123", request.url.queryParameter("device_id"))
+            assertEquals("8", request.url.queryParameter("session_id"))
+            assertEquals("autosave", request.url.queryParameter("slot"))
+            assertEquals("false", request.url.queryParameter("overwrite"))
+            assertEquals("false", request.url.queryParameter("autocleanup"))
+            assertEquals("Bearer test-token", request.headers["Authorization"])
+            assertTrue(request.body!!.utf8().contains("name=\"saveFile\""))
+            assertTrue(request.body!!.utf8().contains("device-sync-"))
+        } finally {
+            server.close()
+            file.delete()
+        }
+    }
+
+    @Test
+    fun uploadSaveSurfacesConflictWithoutRetryingAsOverwrite() {
+        val server = MockWebServer()
+        val file = java.io.File.createTempFile("device-sync-conflict-", ".srm")
+        file.writeBytes(byteArrayOf(9, 8, 7))
+        server.start()
+        try {
+            server.enqueue(MockResponse(code = 409, body = """{"detail":"conflict"}"""))
+            val client = RomMDeviceSyncClient(server.url("/").toString(), "test-token")
+            val error = runCatching { client.uploadSave(42L, "device-123", 8L, "autosave", file) }.exceptionOrNull()
+            val request = server.takeRequest()
+
+            assertTrue(error is RomMHttpException)
+            assertEquals(409, (error as RomMHttpException).statusCode)
+            assertEquals("false", request.url.queryParameter("overwrite"))
+        } finally {
+            server.close()
+            file.delete()
+        }
+    }
+
+    @Test
+    fun downloadSaveStagesAndVerifiesHashWithoutConfirmingIt() {
+        val server = MockWebServer()
+        val staging = java.io.File.createTempFile("device-sync-download-", ".part")
+        val payload = "sram-content"
+        val hash = java.security.MessageDigest.getInstance("MD5")
+            .digest(payload.toByteArray())
+            .joinToString("") { "%02x".format(it) }
+        server.start()
+        try {
+            server.enqueue(MockResponse(body = payload))
+            val client = RomMDeviceSyncClient(server.url("/").toString(), "test-token")
+            val actual = client.downloadSaveToStaging(91L, "device-123", 8L, hash, staging)
+            val request = server.takeRequest()
+
+            assertEquals(hash, actual)
+            assertEquals(payload, staging.readText())
+            assertEquals("/api/saves/91/content", request.url.encodedPath)
+            assertEquals("false", request.url.queryParameter("optimistic"))
+            assertEquals("device-123", request.url.queryParameter("device_id"))
+            assertEquals("8", request.url.queryParameter("session_id"))
+            assertEquals("GET", request.method)
+            assertTrue(server.requestCount == 1)
+        } finally {
+            server.close()
+            staging.delete()
+        }
+    }
+
+    @Test
+    fun downloadSaveRejectsWrongHashAndRemovesStagingFile() {
+        val server = MockWebServer()
+        val staging = java.io.File.createTempFile("device-sync-invalid-", ".part")
+        server.start()
+        try {
+            server.enqueue(MockResponse(body = "wrong-content"))
+            val client = RomMDeviceSyncClient(server.url("/").toString(), "test-token")
+            val result = runCatching {
+                client.downloadSaveToStaging(
+                    91L,
+                    "device-123",
+                    8L,
+                    "00000000000000000000000000000000",
+                    staging,
+                )
+            }
+
+            assertTrue(result.isFailure)
+            assertFalse(staging.exists())
+        } finally {
+            server.close()
+            staging.delete()
+        }
+    }
+
+    @Test
+    fun downloadedSaveIsConfirmedOnlyThroughSeparateEndpoint() {
+        val server = MockWebServer()
+        server.start()
+        try {
+            server.enqueue(MockResponse(body = "{}"))
+            val client = RomMDeviceSyncClient(server.url("/").toString(), "test-token")
+            client.confirmDownloaded(91L, "device-123", "0123456789abcdef0123456789abcdef")
+            val request = server.takeRequest()
+            val body = JSONObject(request.body!!.utf8())
+
+            assertEquals("POST", request.method)
+            assertEquals("/api/saves/91/downloaded", request.url.encodedPath)
+            assertEquals("device-123", body.getString("device_id"))
+            assertEquals("0123456789abcdef0123456789abcdef", body.getString("content_hash"))
+        } finally {
+            server.close()
+        }
+    }
+
 }
