@@ -90,6 +90,8 @@ internal fun LibraryScreen(
     val normalizedSearch = searchText.trim()
     var platformFilter by remember { mutableStateOf<String?>(null) }
     var remotePlatforms by remember { mutableStateOf<List<RemotePlatform>>(emptyList()) }
+    var remoteCollections by remember { mutableStateOf<List<RemoteCollection>>(emptyList()) }
+    var collectionFilter by remember { mutableStateOf<RemoteCollection?>(null) }
     var remoteSearchIds by remember { mutableStateOf<Set<Long>?>(null) }
     var remoteSearching by remember { mutableStateOf(false) }
     var remoteSearchError by remember { mutableStateOf("") }
@@ -104,14 +106,25 @@ internal fun LibraryScreen(
                 }
             }.onSuccess { remotePlatforms = it }
                 .onFailure { GameLog.log("romm", "falha ao carregar plataformas do RomM: ${it.message}") }
+            runCatching {
+                withContext(Dispatchers.IO) {
+                    RomMClient(
+                        RomMSettings.url(context).orEmpty(),
+                        RomMSettings.token(context),
+                    ).listCollections()
+                }
+            }.onSuccess { remoteCollections = it }
+                .onFailure { GameLog.log("romm", "falha ao carregar coleções do RomM: ${it.message}") }
         } else {
             remotePlatforms = emptyList()
+            remoteCollections = emptyList()
+            collectionFilter = null
         }
     }
-    LaunchedEffect(normalizedSearch, platformFilter, remotePlatforms, RomMSettings.url(context)) {
+    LaunchedEffect(normalizedSearch, platformFilter, collectionFilter, remotePlatforms, RomMSettings.url(context)) {
         remoteSearchIds = null
         remoteSearchError = ""
-        if (RomMSettings.isConnected(context) && (normalizedSearch.length >= 2 || platformFilter != null)) {
+        if (RomMSettings.isConnected(context) && (normalizedSearch.length >= 2 || platformFilter != null || collectionFilter != null)) {
             remoteSearching = true
             delay(350)
             try {
@@ -125,6 +138,7 @@ internal fun LibraryScreen(
                     ).listGames(
                         searchTerm = normalizedSearch.takeIf { it.length >= 2 },
                         platformIds = selectedPlatformIds,
+                        collection = collectionFilter,
                     ).map { it.id }.toSet()
                 }
                 remoteSearchIds = ids
@@ -148,11 +162,16 @@ internal fun LibraryScreen(
     }
     val entryByPath = remember(entries) { entries.flatMap { entry -> entry.locals.map { it.path to entry } }.toMap() }
     val platforms = remember(entries) { entries.map { it.platform }.distinctBy { it.slug } }
-    val searchedEntries = remember(entries, normalizedSearch, remoteSearchIds) {
-        if (normalizedSearch.isEmpty()) {
+    val searchedEntries = remember(entries, normalizedSearch, remoteSearchIds, collectionFilter) {
+        val collectionEntries = if (collectionFilter == null) {
             entries
         } else {
-            entries.filter { entry ->
+            entries.filter { entry -> entry.group?.versions?.any { it.id in remoteSearchIds.orEmpty() } == true }
+        }
+        if (normalizedSearch.isEmpty()) {
+            collectionEntries
+        } else {
+            collectionEntries.filter { entry ->
                 entry.title.contains(normalizedSearch, ignoreCase = true) ||
                     entry.platform.name.contains(normalizedSearch, ignoreCase = true) ||
                     entry.group?.versions?.any { it.id in remoteSearchIds.orEmpty() } == true
@@ -167,7 +186,7 @@ internal fun LibraryScreen(
             normalizedSearch.isEmpty() || it.title.contains(normalizedSearch, ignoreCase = true)
         }
     }
-    val showAndroid = platformFilter == null || platformFilter == ANDROID_FILTER
+    val showAndroid = collectionFilter == null && (platformFilter == null || platformFilter == ANDROID_FILTER)
     val hero = if (normalizedSearch.isEmpty()) recent.firstOrNull() ?: games.firstOrNull() else null
     val heroFocus = remember { FocusRequester() }
     LaunchedEffect(hero?.path) {
@@ -278,6 +297,30 @@ internal fun LibraryScreen(
                     }
                 }
             }
+            if (remoteCollections.isNotEmpty()) {
+                item(key = "romm-collections") {
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        SectionTitle("Coleções do RomM")
+                        LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                            item(key = "romm-collection-all") {
+                                PlatformChip(
+                                    "Todas",
+                                    collectionFilter == null,
+                                    chipModifier(collectionFilter == null, chipFocus),
+                                ) { collectionFilter = null }
+                            }
+                            items(remoteCollections, key = { "${it.kind}:${it.id}" }) { collection ->
+                                val selected = collectionFilter?.let { it.kind == collection.kind && it.id == collection.id } == true
+                                PlatformChip(
+                                    collection.name,
+                                    selected,
+                                    chipModifier(selected, chipFocus),
+                                ) { collectionFilter = if (selected) null else collection }
+                            }
+                        }
+                    }
+                }
+            }
             item(key = "platforms") {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     SectionTitle(stringResource(R.string.game_by_platform))
@@ -317,7 +360,7 @@ internal fun LibraryScreen(
                         row.forEach { entry -> EntryCard(entry, progress, syncVersion, onClick = { onOpen(entry) }) }
                     }
                 }
-            } else if (normalizedSearch.isNotEmpty() && !remoteSearching && visible.isEmpty() && androidSorted.isEmpty()) {
+            } else if ((normalizedSearch.isNotEmpty() || collectionFilter != null) && !remoteSearching && visible.isEmpty() && androidSorted.isEmpty()) {
                 item(key = "search-empty") {
                     Text("Nenhum jogo encontrado para esta pesquisa.", color = GameColors.textDim, fontSize = 14.sp)
                 }
