@@ -833,3 +833,12 @@ ATUALIZAÇÃO — PR #41 / CI #908 / MERGE (2026-11-23)
 REGISTRO DE PUBLICAÇÃO — 2026-11-23
 - O commit de documentação f12de51dc5646f37d572fb3032336d7b04f7f707 atualizou os dois logs após o merge da PR #41 e CI #908.
 - A publicação de tandem-latest ainda precisa ser executada/confirmada; a release consultada permanece no build 860 anterior. O fluxo tandem-release da CI depende de evento push na branch game-mode-m2-dev, não de workflow_dispatch.
+
+
+ATUALIZAÇÃO — TESTE NO TELEFONE / ESTÁGIO E (2026-11-23)
+- APK testado: 16.Dev.(#911), Android 17, Motorola Edge 30 Fusion.
+- E4: [PARCIALMENTE VALIDADO] PSX e SNES tiveram conflitos resolvidos por escolha explícita; os arquivos originais foram preservados em .conflict-backups. PSX: upload de SRAM e state confirmado pelo usuário; state remoto foi baixado e aplicado (HTTP 200, 4.456.448 bytes). Ainda falta recuperar o novo save esperado, especialmente autosave, e testar rollback. SNES: conflito/migração local validado, mas não houve sincronização remota.
+- E5: [EM ANDAMENTO] Teste real parcial. PSX enviou SRAM e state pelo fluxo legado, mas o novo save esperado/autosave não foi recuperado. SNES não gerou tentativa de upload; o log identificou identidade local, sem vínculo RomM verificado. A tela Device Sync usada anteriormente é apenas diagnóstico read-only; não executa transferências.
+- Auditoria identificou lacuna estrutural: upload legado não envia slot; RomM trata upload sem slot como arquivo manual/arquival (slot null), não como autosave. RemoteFile também ignora slot. A correção deve seguir o Device Sync Protocol para SRAM, com slot explícito e proteção de conflito; states permanecem separados e específicos do núcleo.
+- Release tandem-latest: build 911 publicado e testado. CIs #910/#911/#912: SUCCESS.
+- Próximo: corrigir integração/slot e tornar explícita a ausência de vínculo RomM em jogos locais. Não excluir nem sobrescrever saves para novos testes. Não marcar E4/E5 concluídos.
