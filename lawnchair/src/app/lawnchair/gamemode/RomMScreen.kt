@@ -295,8 +295,13 @@ private fun connect(address: String, code: String): Result<Triple<String, String
 /** Conexão com o servidor já feita: mostra o endereço, o estado da lista e os botões de atualizar, log e desconectar. */
 @Composable
 private fun ServerManage(remote: RemoteLibrary) {
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
     val exportLog = rememberLogExporter()
     val count = remote.games?.size
+    var registeredDeviceId by remember { mutableStateOf(RomMSettings.deviceSyncDeviceId(context)) }
+    var registeringDevice by remember { mutableStateOf(false) }
+    var deviceSyncMessage by remember { mutableStateOf("") }
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -314,6 +319,74 @@ private fun ServerManage(remote: RemoteLibrary) {
             if (remote.report.isNotEmpty()) Text(remote.report, color = GameColors.textDim, fontSize = 12.sp)
         }
         GameButton(stringResource(R.string.game_romm_refresh), onClick = { remote.requestRefresh() }, modifier = Modifier.width(260.dp))
+        if (registeredDeviceId == null) {
+            Text(
+                "Device Sync ainda não está registrado neste dispositivo para esta conta RomM.",
+                color = GameColors.textDim,
+                fontSize = 13.sp,
+            )
+            GameButton(
+                label = if (registeringDevice) "Registrando dispositivo..." else "Registrar dispositivo no Device Sync",
+                enabled = !registeringDevice,
+                primary = true,
+                modifier = Modifier.width(340.dp),
+                onClick = {
+                    scope.launch {
+                        registeringDevice = true
+                        deviceSyncMessage = ""
+                        val url = RomMSettings.url(context)
+                        val token = RomMSettings.token(context)
+                        if (url.isNullOrBlank() || token.isNullOrBlank()) {
+                            deviceSyncMessage = "A conexão RomM não está disponível. Reconecte a conta e tente novamente."
+                        } else {
+                            val androidId = Settings.Secure.getString(context.contentResolver, Settings.Secure.ANDROID_ID)
+                            val stableSuffix = androidId?.takeIf { it.isNotBlank() }
+                                ?: Integer.toHexString(Build.FINGERPRINT.hashCode())
+                            val deviceName = "${Build.MANUFACTURER} ${Build.MODEL}".trim().ifBlank { "Tandem Android" }
+                            val registration = DeviceSyncRegistration(
+                                name = deviceName,
+                                platform = "Android",
+                                client = "tandem",
+                                clientVersion = "1.0",
+                                hostname = "tandem-$stableSuffix",
+                            )
+                            val result = withContext(Dispatchers.IO) {
+                                runCatching { RomMDeviceSyncClient(url, token).registerDevice(registration) }
+                            }
+                            result.onSuccess { device ->
+                                runCatching { RomMSettings.saveDeviceSyncDeviceId(context, device.deviceId) }
+                                    .onSuccess {
+                                        registeredDeviceId = device.deviceId
+                                        deviceSyncMessage = "Dispositivo registrado com sucesso no RomM."
+                                    }
+                                    .onFailure { error ->
+                                        deviceSyncMessage = error.message ?: "O RomM registrou o dispositivo, mas não foi possível salvar o identificador local."
+                                    }
+                            }.onFailure { error ->
+                                deviceSyncMessage = when (error) {
+                                    is RomMHttpException -> if (error.statusCode == 403) {
+                                        "O RomM recusou o registro (HTTP 403). Verifique se a autorização da conta inclui a permissão devices.write."
+                                    } else {
+                                        "Falha no registro do dispositivo (HTTP ${error.statusCode})."
+                                    }
+                                    else -> error.message ?: "Não foi possível registrar o dispositivo no RomM."
+                                }
+                            }
+                        }
+                        registeringDevice = false
+                    }
+                },
+            )
+        } else {
+            Text(
+                "Device Sync registrado nesta conta. Identificador: $registeredDeviceId",
+                color = GameColors.textDim,
+                fontSize = 13.sp,
+            )
+        }
+        if (deviceSyncMessage.isNotEmpty()) {
+            Text(deviceSyncMessage, color = if (registeredDeviceId != null) GameColors.textDim else GameColors.danger, fontSize = 13.sp)
+        }
         GameButton(stringResource(R.string.game_log_export), onClick = exportLog, modifier = Modifier.width(260.dp))
         GameButton(stringResource(R.string.game_romm_disconnect), onClick = { remote.disconnect() }, danger = true, modifier = Modifier.width(260.dp))
     }
