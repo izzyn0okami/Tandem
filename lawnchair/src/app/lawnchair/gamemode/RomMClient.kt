@@ -231,11 +231,12 @@ data class RemoteDevice(
     val name: String,
     val client: String?,
     val platform: String?,
-    val deviceType: String?,
     val clientVersion: String?,
+    val syncMode: String?,
+    val syncEnabled: Boolean?,
     val lastSeen: String?,
     val capabilities: Map<String, Boolean>,
-    val online: Boolean,
+    val online: Boolean?,
 ) {
     /** null significa que o servidor não declarou essa capacidade. */
     fun supports(capability: String): Boolean? = capabilities[capability]
@@ -844,39 +845,53 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
      * Aceita tanto uma lista direta quanto o envelope paginado usado por algumas versões.
      */
     fun listDevices(): List<RemoteDevice> {
-        val onlineIds = listOnlineDeviceIds()
-        val url = base.resolve("api/devices")!!
-        return http.newCall(request(url).get().build()).execute().use { response ->
-            if (!response.isSuccessful) {
-                throw RomMHttpException(response.code, "Não foi possível listar dispositivos do RomM (HTTP ${response.code}); confira o escopo devices.read")
+        val onlineIds = onlineDeviceIdsOrNull()
+        val devices = mutableListOf<RemoteDevice>()
+        var offset = 0
+        var total: Int? = null
+        var pageLimit = 100
+
+        do {
+            val url = base.resolve("api/devices")!!
+                .newBuilder()
+                .addQueryParameter("limit", pageLimit.toString())
+                .addQueryParameter("offset", offset.toString())
+                .build()
+            val page = http.newCall(request(url).get().build()).execute().use { response ->
+                if (!response.isSuccessful) {
+                    throw RomMHttpException(response.code, "Não foi possível listar dispositivos do RomM (HTTP ${response.code}); confira o escopo devices.read")
+                }
+                val body = response.body.string()
+                val root = runCatching { JSONObject(body) }.getOrNull()
+                val items = root?.optJSONArray("items") ?: root?.optJSONArray("devices") ?: org.json.JSONArray(body)
+                Triple(root, items, body)
             }
-            val body = response.body.string()
-            val root = runCatching { JSONObject(body) }.getOrNull()
-            val array = root?.optJSONArray("items") ?: root?.optJSONArray("devices") ?: org.json.JSONArray(body)
-            (0 until array.length()).mapNotNull { index ->
-                val item = array.optJSONObject(index) ?: return@mapNotNull null
-                val id = item.optString("id").takeIf { it.isNotBlank() && it != "null" } ?: return@mapNotNull null
-                RemoteDevice(
-                    id = id,
-                    name = item.optString("name").takeUnless { it == "null" }.orEmpty(),
-                    client = item.optString("client").takeUnless { it == "null" },
-                    platform = item.optString("platform").takeUnless { it == "null" },
-                    deviceType = item.optString("device_type").takeUnless { it == "null" },
-                    clientVersion = item.optString("client_version").takeUnless { it == "null" },
-                    lastSeen = item.optString("last_seen").takeUnless { it == "null" },
-                    capabilities = parseDeviceCapabilities(item.optJSONObject("capabilities")),
-                    online = id in onlineIds,
-                )
+            val root = page.first
+            val items = page.second
+            if (root != null) {
+                total = root.optInt("total", total ?: -1).takeIf { it >= 0 }
+                pageLimit = root.optInt("limit", pageLimit).coerceAtLeast(1)
             }
-        }
+            for (index in 0 until items.length()) {
+                val item = items.optJSONObject(index) ?: continue
+                val id = item.optString("id").takeIf { it.isNotBlank() && it != "null" } ?: continue
+                devices += parseRemoteDevice(item, id, onlineIds)
+            }
+            if (root == null || items.length() == 0) break
+            val nextOffset = root.optInt("offset", offset) + items.length()
+            if (items.length() < pageLimit || (total != null && nextOffset >= total)) break
+            offset = nextOffset
+        } while (true)
+
+        return devices
     }
 
-    /** IDs dos dispositivos com conexão ativa ou claim recente. Exige devices.read. */
+    /** IDs dos dispositivos com socket ativo ou claim recente. 404 significa presença indisponível. */
     fun listOnlineDeviceIds(): Set<String> {
         val url = base.resolve("api/devices/online")!!
         return http.newCall(request(url).get().build()).execute().use { response ->
             if (!response.isSuccessful) {
-                throw RomMHttpException(response.code, "Não foi possível consultar dispositivos online (HTTP ${response.code}); confira o escopo devices.read")
+                throw RomMHttpException(response.code, "Não foi possível consultar dispositivos online (HTTP ${response.code}); confira devices.read e a configuração de instalação remota")
             }
             val array = org.json.JSONArray(response.body.string())
             (0 until array.length()).mapNotNull { index ->
@@ -889,28 +904,40 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
         }
     }
 
+    private fun onlineDeviceIdsOrNull(): Set<String>? = try {
+        listOnlineDeviceIds()
+    } catch (error: RomMHttpException) {
+        if (error.statusCode == 404) null else throw error
+    }
+
     /** Consulta individual; erros de autorização são propagados, sem fallback silencioso. */
     fun getDevice(deviceId: String): RemoteDevice {
         require(deviceId.isNotBlank()) { "ID de dispositivo inválido" }
-        val isOnline = deviceId in listOnlineDeviceIds()
+        val onlineIds = onlineDeviceIdsOrNull()
         val url = base.resolve("api/devices/${java.net.URLEncoder.encode(deviceId, "UTF-8")}")!!
         return http.newCall(request(url).get().build()).execute().use { response ->
             if (!response.isSuccessful) {
                 throw RomMHttpException(response.code, "Não foi possível consultar o dispositivo no RomM (HTTP ${response.code})")
             }
             val item = JSONObject(response.body.string())
-            RemoteDevice(
-                id = item.optString("id", deviceId),
-                name = item.optString("name").takeUnless { it == "null" }.orEmpty(),
-                client = item.optString("client").takeUnless { it == "null" },
-                platform = item.optString("platform").takeUnless { it == "null" },
-                deviceType = item.optString("device_type").takeUnless { it == "null" },
-                clientVersion = item.optString("client_version").takeUnless { it == "null" },
-                lastSeen = item.optString("last_seen").takeUnless { it == "null" },
-                capabilities = parseDeviceCapabilities(item.optJSONObject("capabilities")),
-                online = isOnline,
-            )
+            parseRemoteDevice(item, deviceId, onlineIds)
         }
+    }
+
+    private fun parseRemoteDevice(item: JSONObject, fallbackId: String, onlineIds: Set<String>?): RemoteDevice {
+        val id = item.optString("id", fallbackId)
+        return RemoteDevice(
+            id = id,
+            name = item.optString("name").takeUnless { it == "null" }.orEmpty(),
+            client = item.optString("client").takeUnless { it == "null" },
+            platform = item.optString("platform").takeUnless { it == "null" },
+            clientVersion = item.optString("client_version").takeUnless { it == "null" },
+            syncMode = item.optString("sync_mode").takeUnless { it == "null" },
+            syncEnabled = if (item.has("sync_enabled")) item.optBoolean("sync_enabled") else null,
+            lastSeen = item.optString("last_seen").takeUnless { it == "null" },
+            capabilities = parseDeviceCapabilities(item.optJSONObject("capabilities")),
+            online = onlineIds?.let { id in it },
+        )
     }
 
     private fun parseDeviceCapabilities(json: JSONObject?): Map<String, Boolean> {
