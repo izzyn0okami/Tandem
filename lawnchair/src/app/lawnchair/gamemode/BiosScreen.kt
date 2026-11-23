@@ -177,9 +177,15 @@ internal fun BiosScreen(rootPath: String) {
                         fontSize = 14.sp,
                         fontWeight = FontWeight.SemiBold,
                     )
-                    if (platform.slug == "scd" || platform.slug == "saturn") {
+                    if (platform.slug == "scd") {
                         Text(
-                            "BIOS regionais: confirme a região do jogo; um arquivo de outra região não garante compatibilidade.",
+                            "Sega CD: a BIOS deve corresponder à região do jogo (EUA, Europa ou Japão). A presença de outra região não garante compatibilidade.",
+                            color = GameColors.textDim,
+                            fontSize = 11.sp,
+                        )
+                    } else if (platform.slug == "saturn") {
+                        Text(
+                            "Saturn: use a BIOS correspondente à região do jogo (Japão ou EUA/Europa). Alguns títulos também exigem cartucho de expansão específico; o app não detecta isso automaticamente.",
                             color = GameColors.textDim,
                             fontSize = 11.sp,
                         )
