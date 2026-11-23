@@ -195,5 +195,6 @@ class BiosManagerTest {
         assertFalse(device.supports("remote_install")!!)
         assertTrue(device.supports("save_sync")!!)
         assertNull(device.supports("unknown_capability"))
+        assertNull(device.copy(online = null).online)
     }
 }
