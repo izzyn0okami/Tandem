@@ -794,8 +794,11 @@ internal fun GameDetailScreen(
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(top = 8.dp).width(520.dp)) {
                         Text("Notas do RomM", color = GameColors.text, fontSize = 16.sp, fontWeight = FontWeight.Bold)
                         when {
+
                             rommNotes == null -> Text("Carregando notas…", color = GameColors.textDim, fontSize = 12.sp)
+
                             rommNotes!!.isEmpty() -> Text("Não foi possível carregar as notas ou não há notas visíveis.", color = GameColors.textDim, fontSize = 12.sp)
+
                             else -> rommNotes!!.forEach { (versionName, note) ->
                                 Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
                                     Text(note.title, color = GameColors.text, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
