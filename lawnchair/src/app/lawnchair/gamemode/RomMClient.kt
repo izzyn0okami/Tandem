@@ -726,7 +726,7 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
                 if (!response.isSuccessful) {
                     val details = runCatching { response.peekBody(2048).string() }
                         .getOrDefault("")
-                        .replace(Regex("""(?i)(token|authorization|password)(\\s*[:=]\\s*)[^",\\s}]+"""), "$1$2[redacted]")
+                        .replace(Regex("""(?i)(token|authorization|password)(\s*[:=]\s*)[^",\\s}]+"""), "$1$2[redacted]")
                         .take(240)
                     val message = when (response.code) {
                         400 -> "O RomM rejeitou o patch. Verifique o formato, o tamanho e se ele corresponde à versão da ROM."
