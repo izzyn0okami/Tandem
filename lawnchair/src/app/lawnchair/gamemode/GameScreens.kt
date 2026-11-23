@@ -797,7 +797,9 @@ internal fun GameDetailScreen(
             }
         }.trim()
     }
-    val summary = remember(entry.key) { group?.versions?.firstOrNull()?.summary }
+    val summary = remember(entry.key, detailGames) {
+        detailGames.firstNotNullOfOrNull { game -> game.summary?.trim()?.takeIf { it.isNotBlank() } }
+    }
     val noteGames = remember(entry.key) { group?.versions?.filter { it.hasNotes }.orEmpty() }
     val rommNotes by produceState<List<Pair<String, RemoteGameNote>>?>(null, entry.key, RomMSettings.url(context), RomMSettings.token(context)) {
         value = if (noteGames.isEmpty() || !RomMSettings.isConnected(context)) {
@@ -954,6 +956,20 @@ internal fun GameDetailScreen(
                 coreUpdateMessage?.let { message ->
                     Text(text = message, color = GameColors.textDim, fontSize = 12.sp)
                 }
+                if (!summary.isNullOrBlank()) {
+                    Column(
+                        verticalArrangement = Arrangement.spacedBy(5.dp),
+                        modifier = Modifier.padding(top = 8.dp).width(520.dp),
+                    ) {
+                        Text("Descrição", color = GameColors.text, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                        Text(
+                            text = summary,
+                            color = GameColors.textDim,
+                            fontSize = 14.sp,
+                            lineHeight = 20.sp,
+                        )
+                    }
+                }
                 detailGames.firstOrNull()?.let { remoteGame ->
                     RomMGameDataPanel(
                         game = remoteGame,
@@ -963,14 +979,6 @@ internal fun GameDetailScreen(
                 }
                 detailGames.firstOrNull()?.let { remoteGame ->
                     RomMMediaPanel(games = detailGames)
-                }
-                if (!summary.isNullOrBlank()) {
-                    Text(
-                        text = summary,
-                        color = GameColors.textDim,
-                        fontSize = 14.sp,
-                        modifier = Modifier.padding(top = 6.dp).width(520.dp),
-                    )
                 }
                 if (isEasyRpgGame) {
                     Column(verticalArrangement = Arrangement.spacedBy(3.dp), modifier = Modifier.padding(top = 8.dp)) {
