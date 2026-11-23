@@ -9,23 +9,23 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.platform.LocalContext
+import java.text.DateFormat
+import java.util.Date
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import java.text.DateFormat
-import java.util.Date
 
 @Composable
 internal fun RomMGameDataPanel(
@@ -119,62 +119,62 @@ internal fun RomMGameDataPanel(
             Text("Ainda não há registro pessoal para este jogo. Salvar criará as propriedades da sua conta no RomM.", color = GameColors.textDim, fontSize = 12.sp)
         }
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                Column {
-                    Text("No backlog", color = GameColors.textDim, fontSize = 12.sp)
-                    Switch(checked = backlogged, onCheckedChange = { backlogged = it })
-                }
-                Column {
-                    Text("Jogando agora", color = GameColors.textDim, fontSize = 12.sp)
-                    Switch(checked = nowPlaying, onCheckedChange = { nowPlaying = it })
-                }
-                Column {
-                    Text("Oculto", color = GameColors.textDim, fontSize = 12.sp)
-                    Switch(checked = hidden, onCheckedChange = { hidden = it })
+            Column {
+                Text("No backlog", color = GameColors.textDim, fontSize = 12.sp)
+                Switch(checked = backlogged, onCheckedChange = { backlogged = it })
+            }
+            Column {
+                Text("Jogando agora", color = GameColors.textDim, fontSize = 12.sp)
+                Switch(checked = nowPlaying, onCheckedChange = { nowPlaying = it })
+            }
+            Column {
+                Text("Oculto", color = GameColors.textDim, fontSize = 12.sp)
+                Switch(checked = hidden, onCheckedChange = { hidden = it })
+            }
+        }
+        Text("Status", color = GameColors.textDim, fontSize = 12.sp)
+        val statusOptions = listOf(
+            "" to "Não definido",
+            "incomplete" to "Em andamento",
+            "finished" to "Finalizado",
+            "completed_100" to "100%",
+            "retired" to "Abandonado",
+            "never_playing" to "Nunca jogar",
+        )
+        statusOptions.chunked(3).forEach { options ->
+            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                options.forEach { (value, label) ->
+                    GameButton(label, onClick = { status = value }, enabled = !saving)
                 }
             }
-            Text("Status", color = GameColors.textDim, fontSize = 12.sp)
-            val statusOptions = listOf(
-                "" to "Não definido",
-                "incomplete" to "Em andamento",
-                "finished" to "Finalizado",
-                "completed_100" to "100%",
-                "retired" to "Abandonado",
-                "never_playing" to "Nunca jogar",
+        }
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            OutlinedTextField(
+                value = rating,
+                onValueChange = { rating = it.filter(Char::isDigit).take(2) },
+                label = { Text("Avaliação (0–10)") },
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                modifier = Modifier.width(150.dp),
+                singleLine = true,
             )
-            statusOptions.chunked(3).forEach { options ->
-                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    options.forEach { (value, label) ->
-                        GameButton(label, onClick = { status = value }, enabled = !saving)
-                    }
-                }
-            }
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedTextField(
-                    value = rating,
-                    onValueChange = { rating = it.filter(Char::isDigit).take(2) },
-                    label = { Text("Avaliação (0–10)") },
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                    modifier = Modifier.width(150.dp),
-                    singleLine = true,
-                )
-                OutlinedTextField(
-                    value = difficulty,
-                    onValueChange = { difficulty = it.filter(Char::isDigit).take(2) },
-                    label = { Text("Dificuldade (0–10)") },
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                    modifier = Modifier.width(150.dp),
-                    singleLine = true,
-                )
-                OutlinedTextField(
-                    value = completion,
-                    onValueChange = { completion = it.filter(Char::isDigit).take(3) },
-                    label = { Text("Conclusão (0–100)") },
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                    modifier = Modifier.width(160.dp),
-                    singleLine = true,
-                )
-            }
-            GameButton("Salvar dados pessoais", onClick = ::save, primary = true, enabled = !saving)
+            OutlinedTextField(
+                value = difficulty,
+                onValueChange = { difficulty = it.filter(Char::isDigit).take(2) },
+                label = { Text("Dificuldade (0–10)") },
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                modifier = Modifier.width(150.dp),
+                singleLine = true,
+            )
+            OutlinedTextField(
+                value = completion,
+                onValueChange = { completion = it.filter(Char::isDigit).take(3) },
+                label = { Text("Conclusão (0–100)") },
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                modifier = Modifier.width(160.dp),
+                singleLine = true,
+            )
+        }
+        GameButton("Salvar dados pessoais", onClick = ::save, primary = true, enabled = !saving)
         if (message.isNotBlank()) Text(message, color = if (message.startsWith("Falha") || message.contains("deve estar") || message.contains("não tem o escopo")) GameColors.danger else GameColors.textDim, fontSize = 11.sp)
 
         Text("Informações somente de leitura", color = GameColors.text, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
