@@ -412,3 +412,9 @@ ATUALIZAÇÃO C6 — FILTRO DE CATEGORIAS (2026-11-23)
 - [x] Categorias auxiliares (manual, walkthrough, soundtrack, screenshot, patch) e categorias desconhecidas ficam fora da seleção/download de ROM.
 - [x] Filtro aplicado ao arquivo plano principal, aos conjuntos multidisco/multiarquivo e ao EasyRPG.
 - [ ] CI, testes automatizados e validação no telefone pendentes.
+
+
+CI BASELINE PR #44 — RUN #713 (2026-11-23)
+- [x] CI #713 / run 45110270424 aprovou Spotless, testes unitários, build APK, upload do artefato e final-status.
+- A execução foi no head inicial 99b312693861f2c34cddeb20e7507eed2d01291c, antes do código C6; não valida o head atual.
+- [ ] CI do head atual e testes automatizados específicos de C6 pendentes.
