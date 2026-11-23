@@ -86,7 +86,7 @@ object BiosManager {
                 check(files.isNotEmpty()) { "A pasta '$folder' está vazia" }
                 files.forEach { file ->
                     val destination = File(stagedFolder, file.relativeTo(sourceFolder).path)
-                    check(destination.canonicalFile.toPath().startsWith(stagedFolder.canonicalFile.toPath())) {
+                    check(destination.canonicalPath.startsWith(stagedFolder.canonicalPath + File.separator)) {
                         "Caminho inválido dentro do kit '$folder'"
                     }
                     destination.parentFile?.mkdirs()
