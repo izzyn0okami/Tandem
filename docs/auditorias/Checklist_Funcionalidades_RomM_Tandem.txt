@@ -594,3 +594,18 @@ FECHAMENTO DO ESTÁGIO C — PR #44 (2026-11-23)
 - Artefato CI #791: ID 14834393287; SHA-256 bd094f2c0fc98dac8fd3b6f8442270e82440d117cf6d2b6896d9cd63ef8b5c53; 46.268.150 bytes; expira em 2027-02-21.
 - PR #41 (saves/conflicts) permanece aberta, em draft e pausada, sem alterações.
 - Nenhuma release publicada nesta operação.
+
+
+INÍCIO DO ESTÁGIO D — PR EM PREPARAÇÃO (2026-11-23)
+Branch: feat/romm-platforms-firmware-devices
+Base: game-mode-m2-dev @ 6adc110e0f2effb6d4be2a9a2abc6a8360cf8824
+- [EM ANDAMENTO] D3 — validar BIOS locais por tamanho e hashes oficiais quando houver referência confiável; não tratar nome de arquivo como prova de integridade.
+- [EM ANDAMENTO] D4 — representar alternativas (OR) e requisitos simultâneos (AND) sem alterar os requisitos existentes dos núcleos.
+- [EM ANDAMENTO] D5 — revisar requisitos por núcleo, preservando exceções específicas e kits de BIOS.
+- [EM ANDAMENTO] D6 — revisar importação, substituição segura, validação antes da promoção e recuperação de BIOS; nunca apagar a cópia válida antes de confirmar a nova.
+- [EM ANDAMENTO] D7 — inventariar e consultar dispositivos RomM por endpoints/scopes oficiais, sem misturar com o pareamento OAuth já existente.
+- [EM ANDAMENTO] D8 — detectar capacidades dos dispositivos a partir de dados explícitos do servidor; ausência de campo não significa capacidade suportada.
+- [AGUARDANDO DECISÃO] D9 — instalação remota de ROMs continua fora desta PR até definição de agente e cenário de uso.
+- D1 e D2 permanecem concluídos e não serão reimplementados.
+- PR #41 continua aberta/draft/pausada. Seus arquivos alterados são GameModeActivity.kt, SaveStore.kt e SaveStoreTest.kt; evitar alterações nesses arquivos.
+- Nenhum teste funcional em aparelho será marcado como concluído sem confirmação do usuário.
