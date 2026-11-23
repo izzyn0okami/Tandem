@@ -540,3 +540,15 @@ ATUALIZAÇÃO — ESTÁGIO C / PR #44 — CI #770 APROVADA (2026-11-23)
 - C1–C7 implementados; validação funcional no telefone com RomM real ainda pendente.
 - Pendências técnicas restantes: limites rígidos de tamanho para downloads de mídia e saída de patch, inclusive sem Content-Length; miniaturas de screenshots.
 - PR #44 continua aberta/draft; sem merge ou release. PR #41 continua aberta/draft e pausada.
+
+
+ATUALIZAÇÃO — C1–C7 / CI #774 E LIMITES DE TRANSFERÊNCIA (2026-11-23)
+- [x] CI #774 / run 45196635709: SUCCESS integral no commit 69587eecb61b1bc1c7101203443d5a634180db51.
+- [x] Spotless, testes unitários, Build APK, Upload artifact e final-status aprovados.
+- [x] Artefato assembleLawnWithQuickstepGithubDebug: ID 14830145630; 46.260.917 bytes; SHA-256 4ca5860f9fa9890bfa1856721a6cde4355d1e987ece09b1a58a41c693b5ec164; expira em 2027-02-21.
+- [x] Limite de 1 GiB para cada download de mídia, 1 GiB para upload local de patch e 4 GiB para resultado de patch; as verificações também interrompem streams sem Content-Length.
+- [x] Correção adicional: preflight de mídia acima de 1 GiB agora remove resíduos .part e .range antes de retornar erro; commit 49deac22a4c370e2ca564e438a5157884f756579.
+- [ ] CI da correção adicional ainda pendente.
+- [ ] C1 — miniaturas de screenshots: pendente; verificar primeiro se o RomM oferece endpoint oficial adequado.
+- [ ] C1–C7 — testes funcionais no telefone com servidor/conta RomM real permanecem pendentes.
+- PR #44 permanece aberta/draft e não deve ser mesclada sem autorização explícita. PR #41 permanece aberta/draft e pausada; saves fora do escopo.
