@@ -100,7 +100,7 @@ internal fun RomMMediaPanel(game: RemoteGame) {
             loadedFile = target
             when (File(file.fileName).extension.lowercase()) {
                 "png", "jpg", "jpeg", "webp", "gif", "tif", "tiff", "bmp", "avif" -> {
-                    previewBitmap = withContext(Dispatchers.IO) { BitmapFactory.decodeFile(target.absolutePath) }
+                    previewBitmap = withContext(Dispatchers.IO) { decodePreviewImage(target) }
                     if (previewBitmap == null) {
                         previewError = "O Android não conseguiu decodificar esta imagem."
                     }
@@ -115,7 +115,7 @@ internal fun RomMMediaPanel(game: RemoteGame) {
 
                 "md", "txt", "html", "htm" -> {
                     previewText = withContext(Dispatchers.IO) {
-                        target.inputStream().bufferedReader().use { it.readText().take(500_000) }
+                        readTextPreview(target)
                     }
                 }
             }
@@ -304,4 +304,38 @@ private fun renderFirstPdfPage(file: File): android.graphics.Bitmap? {
             }
         }
     }
+}
+
+
+private const val MAX_ROMM_TEXT_PREVIEW_CHARS = 500_000
+private const val MAX_ROMM_IMAGE_PREVIEW_DIMENSION = 2048
+
+/** Decodifica imagens reduzidas para evitar carregar bitmaps gigantes na memória do launcher. */
+private fun decodePreviewImage(file: File): android.graphics.Bitmap? {
+    val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+    BitmapFactory.decodeFile(file.absolutePath, bounds)
+    if (bounds.outWidth <= 0 || bounds.outHeight <= 0) return null
+
+    val largestDimension = maxOf(bounds.outWidth, bounds.outHeight)
+    var sampleSize = 1
+    while (largestDimension / sampleSize > MAX_ROMM_IMAGE_PREVIEW_DIMENSION) {
+        sampleSize *= 2
+    }
+    return BitmapFactory.decodeFile(
+        file.absolutePath,
+        BitmapFactory.Options().apply { inSampleSize = sampleSize },
+    )
+}
+
+/** Lê no máximo o limite de caracteres; não carrega o documento inteiro antes de truncar. */
+private fun readTextPreview(file: File): String = file.inputStream().bufferedReader().use { reader ->
+    val preview = StringBuilder(minOf(file.length(), MAX_ROMM_TEXT_PREVIEW_CHARS.toLong()).toInt())
+    val buffer = CharArray(8_192)
+    while (preview.length < MAX_ROMM_TEXT_PREVIEW_CHARS) {
+        val count = reader.read(buffer, 0, minOf(buffer.size, MAX_ROMM_TEXT_PREVIEW_CHARS - preview.length))
+        if (count < 0) break
+        preview.append(buffer, 0, count)
+    }
+    if (reader.read() >= 0) preview.append("\n\n[Conteúdo truncado para preservar a memória do aplicativo.]")
+    preview.toString()
 }
