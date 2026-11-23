@@ -3554,3 +3554,59 @@ PRÓXIMA ETAPA
 2. Auditar contratos de screenshots e demais assets pessoais para separar galeria do RomM de screenshots de RetroAchievements.
 3. Completar a matriz geral e revisar os escopos OAuth com rastreabilidade endpoint → chamada Tandem → necessidade.
 4. Apresentar ao usuário a matriz final de decisões, sem iniciar remoções ou substituições antes de sua aprovação.
+
+AUDITORIA AMPLA — ROMM × TANDEM (ETAPA 5: MEMORY CARDS, NETPLAY E MÚSICA)
+Data: 2026-11-22
+Branch: game-mode-m2-dev
+Fonte: código RomM tag 5.4.1 e busca por integração correspondente no repositório Tandem.
+PR #41 revalidada: aberta, draft, não mesclada, mergeable=false; branch feat/save-conflict-resolution. Nenhuma ação sobre a PR.
+
+1. MEMORY CARDS
+RomM 5.4.1:
+- GET/POST /api/memory-cards lista e cria cartões por usuário/emulador; GET /shared lista cartões compartilhados visíveis.
+- GET /{id}, /{id}/versions, /versions/{id}/content e /{id}/content permitem metadados, histórico e download.
+- POST /{id}/versions armazena nova versão; PUT altera nome/visibilidade; POST em /delete remove cartões próprios.
+- Escopos assets.read/assets.write.
+- O contrato explicita que o cartão é hidratado em um container no próximo streaming claim e recebe novas versões no save-and-exit. A funcionalidade é integrada ao ciclo de vida do streaming RomM, não é apenas um armazenamento genérico de arquivos.
+- O backend valida o formato/arquivo de cartão e recusa extensões específicas como .ps2 e .raw quando não há suporte downstream.
+Tandem:
+- Não foi encontrada chamada a /api/memory-cards.
+- A implementação local de saves/states trata arquivos SRAM/save state por ROM e núcleo; isso não equivale automaticamente a memory card de PlayStation ou outro periférico persistente.
+- O Tandem executa LibretroDroid localmente, sem o ciclo de container/claim/save-and-exit do RomM.
+Avaliação preliminar: NÃO SUBSTITUIR O SISTEMA ATUAL DE SAVES. O recurso RomM é acoplado ao streaming e não parece um serviço genérico pronto para o fluxo local. Possível integração futura exigiria mapear formatos e caminhos de memory card suportados pelos núcleos, sincronização segura e bloqueio de uso concorrente. Não misturar memory cards com SRAM/states e não habilitar sincronização até validar compatibilidade por núcleo.
+
+2. NETPLAY
+RomM 5.4.1:
+- GET /api/netplay/list?game_id=... lista salas abertas para uma ROM, com ocupação, limite de jogadores, nome do anfitrião e indicação de senha.
+- A lista filtra salas pelo ID do jogo e disponibilidade.
+- O endpoint de listagem usa roms.read; a comunicação/coordenação da sala é feita por infraestrutura de sockets e serviço netplay do servidor.
+Tandem:
+- Não foi encontrada integração com /api/netplay nem implementação de cliente de sala RomM.
+- Não foi identificada prova de que LibretroDroid neste projeto exponha suporte compatível com o protocolo de netplay do RomM.
+Avaliação preliminar: NÃO IMPLEMENTAR AINDA. A API de lista de salas não é, sozinha, protocolo completo de multiplayer para qualquer núcleo. Seria necessário comprovar compatibilidade entre o cliente RomM, o protocolo de sincronização de input/estado e o núcleo LibretroDroid selecionado. Não prometer multiplayer apenas porque o servidor expõe salas.
+
+3. MÚSICA, TRILHAS E PLAYLISTS
+RomM 5.4.1:
+- GET /api/music/tracks lista faixas de áudio associadas a ROMs, com filtros e paginação; rotas de artistas, álbuns, gêneros, anos, plataformas, jogos e estatísticas fornecem catálogo.
+- GET/POST/DELETE /api/music/favorites gerencia faixas favoritas.
+- /api/music/playlists oferece playlists privadas/públicas; endpoints permitem criar, editar, remover, listar faixas e reordenar.
+- Escopos: roms.read para catálogo; playlists.read/playlists.write para favoritos e playlists.
+Tandem:
+- Não foi encontrada integração com catálogo de música, favoritos ou playlists.
+- O motor LibretroDroid reproduz áudio do jogo, mas isso não equivale a um player de trilhas sonoras hospedadas no RomM.
+Avaliação preliminar: OPCIONAL / FORA DO NÚCLEO DO LAUNCHER. Pode ser um player independente no futuro, mas exigiria interface de biblioteca de áudio, reprodução em segundo plano, controles de mídia, foco de áudio e suporte a formatos. Não inserir no fluxo de emulação nem duplicar playlist do servidor. Só implementar se o usuário desejar explicitamente essa função.
+
+4. DISTINÇÕES IMPORTANTES
+- Save SRAM, save state e memory card são tipos diferentes de persistência. Não devem ser agrupados em um único modelo apenas porque todos são arquivos.
+- Memory Cards RomM são atualmente parte do ciclo de streaming remoto; Device Sync/WebDAV não devem ser presumidos como compatibilidade automática para esse recurso.
+- A lista de salas netplay não comprova compatibilidade de protocolo com LibretroDroid.
+- Música do jogo reproduzida pelo núcleo é diferente de faixas de soundtrack administradas pelo RomM.
+- Nenhuma chamada, tela ou permissão foi adicionada ao Tandem.
+- Não houve CI, build ou teste funcional nesta etapa.
+- Nenhuma funcionalidade foi removida.
+
+PRÓXIMAS ETAPAS / FECHAMENTO DA AUDITORIA
+1. Conferir sockets e recursos auxiliares para confirmar se há outros contratos relevantes ao cliente Android.
+2. Fazer revisão final da matriz RomM × Tandem, com classificação por domínio, dependências e riscos de duplicação.
+3. Fazer inventário final de scopes OAuth e justificar cada um com endpoints efetivamente utilizados e funcionalidades aprovadas.
+4. Apresentar ao usuário as decisões pendentes, sem iniciar remoção, substituição ou implementação estrutural até sua aprovação.
