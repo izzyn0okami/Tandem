@@ -961,6 +961,9 @@ internal fun GameDetailScreen(
                         localLastPlayedMs = history.lastPlayedMs,
                     )
                 }
+                detailGames.firstOrNull()?.let { remoteGame ->
+                    RomMMediaPanel(game = remoteGame)
+                }
                 if (!summary.isNullOrBlank()) {
                     Text(
                         text = summary,
