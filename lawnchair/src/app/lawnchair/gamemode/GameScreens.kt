@@ -180,8 +180,10 @@ internal fun LibraryScreen(
         remoteSearchError = ""
         if (
             RomMSettings.isConnected(context) &&
-            (normalizedSearch.length >= 2 || platformFilter != null || collectionFilter != null ||
-                remoteFilters.isActive || sortBy.isNotEmpty())
+                (
+                    normalizedSearch.length >= 2 || platformFilter != null || collectionFilter != null ||
+                        remoteFilters.isActive || sortBy.isNotEmpty()
+                    )
         ) {
             remoteSearching = true
             delay(350)
