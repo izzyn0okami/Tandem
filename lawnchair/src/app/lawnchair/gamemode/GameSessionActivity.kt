@@ -181,15 +181,25 @@ class GameSessionActivity : ComponentActivity() {
             finish()
             return
         }
+        val effectiveSavesDirectory = GameFolders.dir(this, FolderKind.Saves)
         val data = GLRetroViewData(this).apply {
             coreFilePath = corePath
             gameFilePath = loadPath
             systemDirectory = GameFolders.dir(this@GameSessionActivity, FolderKind.Bios).absolutePath
-            savesDirectory = GameFolders.dir(this@GameSessionActivity, FolderKind.Saves).absolutePath
+            savesDirectory = effectiveSavesDirectory.absolutePath
             saveRAMState = store.readSram()
             // Opções que o usuário salvou para este núcleo.
             variables = CoreRegistry.variables(this@GameSessionActivity, coreId)
         }
+        SavePathDiagnostics.log(
+            context = this,
+            coreId = coreId,
+            platformSlug = platformSlug,
+            romPath = romPath,
+            gameIdentity = stableIdentity,
+            effectiveDirectory = effectiveSavesDirectory,
+            saveStore = store,
+        )
 
         val view = GLRetroView(this, data)
         retroView = view
