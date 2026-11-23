@@ -3845,3 +3845,16 @@ IMPLEMENTAÇÃO — FILTROS PESSOAIS/METADADOS ROMM (2026-11-23)
 - Não foram expostos playable, missing ou physical: playable no RomM significa jogável no navegador, não compatibilidade com LibretroDroid; missing/physical não correspondem à biblioteca local que o Tandem executa.
 - Commits: RomMClient 45ade77430b426dde1216314acbb027f565aa854; GameScreens 5fbaa74f6caf6e7269b84a8ba4a769694cd9c1c8.
 - CI e validação funcional dos filtros ainda pendentes.
+
+
+CI APROVADA — FILTROS PESSOAIS/METADADOS ROMM (2026-11-22)
+- PR #42, branch feat/romm-library-search, head validado: f175d8e18a14697523d97b60122f7f8499b87782.
+- CI #669: SUCCESS — https://github.com/izzyn0okami/Tandem/actions/runs/45092605779
+- build-debug-apk: sucesso; testes unitários, Build APK e Upload artifact aprovados.
+- check-style: sucesso; spotlessCheck aprovado.
+- final-status: sucesso.
+- send-notifications, crowdin-auto-merge, nightly-release e tandem-release foram ignorados; nenhuma release publicada.
+- Os filtros oficiais favorite, duplicate, last_played, has_ra, has_saves, has_states, verified e has_soundtrack passaram pela CI.
+- A4: implementação e CI aprovadas; validação funcional no telefone pendente.
+- A1, A2, A3 e A7–A10: implementações e CIs anteriores aprovadas; validação funcional no telefone continua pendente.
+- PR #42 permanece aberta, draft e sem merge. PR #41 permanece aberta, draft e intocada por decisão do usuário.
