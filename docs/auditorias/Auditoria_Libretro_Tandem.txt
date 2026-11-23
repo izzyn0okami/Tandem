@@ -4310,7 +4310,7 @@ ATUALIZAÇÃO FINAL — ESTÁGIO C / PR #44 MESCLADA (2026-11-23)
 
 INÍCIO DA AUDITORIA — ESTÁGIO D: PLATAFORMAS, FIRMWARE E DISPOSITIVOS (2026-11-23)
 Branch: feat/romm-platforms-firmware-devices
-Base: game-mode-m2-dev @ 6adc110e0f2effb6d4be2a9a2abc6a8360cf8824
+Base: game-mode-m2-dev @ 71855794702fa30518dcf01bcd6f072fc9cad47a (commit de fechamento após o merge da PR #44: 6adc110e0f2effb6d4be2a9a2abc6a8360cf8824)
 Escopo: D3–D8. D1 (consulta de plataformas/metadados) e D2 (consulta/download de firmware) já constam como concluídos no checklist e não serão repetidos. D9 permanece aguardando decisão do usuário.
 
 Regras de segurança e compatibilidade:
