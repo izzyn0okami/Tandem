@@ -951,8 +951,7 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
         return parseDeclaredCapabilities(values)
     }
 
-    internal fun parseDeclaredCapabilities(values: Map<String, Any?>): Map<String, Boolean> =
-        values.mapNotNull { (key, value) -> (value as? Boolean)?.let { key to it } }.toMap()
+    internal fun parseDeclaredCapabilities(values: Map<String, Any?>): Map<String, Boolean> = values.mapNotNull { (key, value) -> (value as? Boolean)?.let { key to it } }.toMap()
 
     /** Sessões atualmente ativas no RomM. A API não fornece aqui um histórico encerrado. */
     fun listActivity(): List<RemoteActivity> {

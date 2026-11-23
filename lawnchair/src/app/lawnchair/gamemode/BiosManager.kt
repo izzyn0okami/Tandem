@@ -31,8 +31,7 @@ object BiosManager {
     private fun requiredBiosGroups(platform: GamePlatform): List<List<BiosFile>> = platform.biosGroups.ifEmpty { listOf(platform.bios) }
 
     /** O jogo pode rodar? BIOS opcionais dispensam arquivos; requisitos explícitos usam AND/OR. */
-    fun isReady(context: Context, platform: GamePlatform): Boolean =
-        isReady(platform, hasBios = { has(context, it) }, isKitReady = { kitReady(context, platform) })
+    fun isReady(context: Context, platform: GamePlatform): Boolean = isReady(platform, hasBios = { has(context, it) }, isKitReady = { kitReady(context, platform) })
 
     internal fun isReady(
         platform: GamePlatform,
@@ -40,7 +39,9 @@ object BiosManager {
         isKitReady: () -> Boolean,
     ): Boolean = when {
         !platform.biosRequired -> true
+
         platform.biosKit != null -> isKitReady()
+
         else -> requiredBiosGroups(platform).let { groups ->
             groups.isNotEmpty() && groups.all { group -> group.any(hasBios) }
         }
@@ -67,8 +68,7 @@ object BiosManager {
      * existirem dentro de [source], em qualquer nível até 2 pastas de profundidade. Devolve quantos
      * arquivos foram copiados.
      */
-    fun importKit(context: Context, platform: GamePlatform, source: File): Int =
-        importKitFiles(systemDir(context), platform, source)
+    fun importKit(context: Context, platform: GamePlatform, source: File): Int = importKitFiles(systemDir(context), platform, source)
 
     internal fun importKitFiles(systemRoot: File, platform: GamePlatform, source: File): Int {
         val kit = platform.biosKit ?: return 0
