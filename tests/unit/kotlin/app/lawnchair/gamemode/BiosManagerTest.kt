@@ -94,6 +94,10 @@ class BiosManagerTest {
         val coleco = GamePlatforms.all.single { it.slug == "coleco" }
         val msx = GamePlatforms.all.single { it.slug == "msx" }
         val intellivision = GamePlatforms.all.single { it.slug == "intellivision" }
+        val lynx = GamePlatforms.all.single { it.slug == "lynx" }
+        val gba = GamePlatforms.all.single { it.slug == "gba" }
+        val gameBoy = GamePlatforms.all.single { it.slug == "gb" }
+        val masterSystem = GamePlatforms.all.single { it.slug == "sms" }
 
         assertFalse(atari5200.biosRequired)
         assertEquals("281f20ea4320404ec820fb7ec0693b38", atari5200.bios.single().md5Hash)
@@ -102,6 +106,12 @@ class BiosManagerTest {
         assertEquals(listOf("Databases", "Machines"), msx.biosKit)
         assertEquals(2, intellivision.biosGroups.size)
         assertTrue(intellivision.biosGroups.all { it.size == 1 })
+        assertTrue(lynx.biosRequired)
+        assertEquals("fcd403db69f54290b51035d82f835e7b", lynx.bios.single().md5Hash)
+        assertFalse(gba.biosRequired)
+        assertEquals("a860e8c0b6d573d191e4ec7db1b1e4f6", gba.bios.single().md5Hash)
+        assertEquals("32fbbd84168d3482956eb3c5051637f5", gameBoy.bios.single().md5Hash)
+        assertEquals(3, masterSystem.bios.size)
     }
 
     @Test
