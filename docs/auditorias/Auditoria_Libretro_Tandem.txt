@@ -4180,3 +4180,16 @@ ATUALIZAÇÃO — CI #739 / PR #44 (2026-11-23)
 - [ ] C5: aplicação de patches pelo endpoint oficial RomM continua pendente.
 - [ ] C1–C7: validação funcional no telefone permanece pendente; CI não substitui teste real.
 - PR #44 permanece aberta e em draft, sem merge. PR #41 permanece aberta, em draft e pausada.
+
+
+ATUALIZAÇÃO — CI #745 / PR #44 (2026-11-23)
+- [x] CI #745 / run 45184325837: SUCCESS — https://github.com/izzyn0okami/Tandem/actions/runs/45184325837.
+- [x] check-style: Spotless Apply e spotlessCheck aprovados; a automação executou a formatação e confirmou o resultado.
+- [x] build-debug-apk: testes unitários, compilação do APK e upload do artefato aprovados.
+- [x] final-status aprovado.
+- Jobs de notificação, Crowdin e publicação de releases ignorados; nenhuma release publicada.
+- O log do job de estilo identificou o commit verificado no runner como b8a594ea514ff44cadb5342986c68b1eac6e22ed; a automação não encontrou alterações adicionais para commitar após Spotless Apply.
+- PR #44 permanece aberta, em draft e sem merge; PR #41 permanece aberta, em draft e pausada.
+- [ ] C1–C4: testes específicos de mídia e validação funcional no telefone continuam pendentes; permanecem pendentes as melhorias de miniaturas, paginação PDF e seek/progresso do áudio.
+- [ ] C5: aplicação de patches via endpoint oficial RomM continua pendente.
+- [ ] C1–C7: validação funcional no telefone permanece pendente; CI aprovada não substitui teste real.
