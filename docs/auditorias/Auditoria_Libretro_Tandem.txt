@@ -4567,3 +4567,14 @@ ATUALIZAÇÃO DE AUDITORIA — REGISTRO EXPLÍCITO DEVICE SYNC / CIs #898, #899 
 - Commit 01b7a466cd214ae12e5804bbaf04cf7f013d468e; CI #905 / run 45275918318: SUCCESS integral, incluindo Spotless/check-style, testes unitários, Build APK Debug, Upload artifact e final-status.
 - Validação no telefone e contra servidor RomM real permanece pendente. Não presumir que o fluxo foi testado fora da CI.
 - PR #41 permanece Draft e sem merge. Próximo passo é validar registro e inspeção com servidor RomM real/aparelho; transferências continuam desligadas e isoladas. E5 segue em andamento; E4 e E6–E9 seguem pendentes.
+
+
+ATUALIZAÇÃO — PR #41 / CI #908 / MERGE (2026-11-23)
+- CI #908 / run 45277639149: SUCCESS integral após reexecução da job de build. check-style/Spotless, testes unitários, Build APK Debug, Upload artifact e final-status aprovados. A falha inicial foi transitória durante a instalação do CMake 3.22.1 (arquivo ZIP inválido); a reexecução concluiu com sucesso.
+- PR #41 foi convertida de Draft para Ready for review e mesclada por squash em game-mode-m2-dev. Commit de merge: e80af4e957ba29d879c87ed3208d6c86d44b9f87. PR fechada como merged.
+- A branch game-mode-m2-dev foi verificada e aponta para o commit e80af4e957ba29d879c87ed3208d6c86d44b9f87.
+- A Release tandem-latest ainda aponta para build 860 / commit antigo 23551d2b5c0f6483b4f66326f443db704c013979. Portanto, o merge não publicou o APK novo; publicação permanece pendente e deve ser confirmada por atualização real da Release.
+- E4 continua aguardando validação funcional no telefone, incluindo conflito, escolha, backups e rollback.
+- E5 permanece em andamento: adaptador e inspeção somente leitura passaram pela CI, mas falta integração segura ao SaveSync e interoperabilidade/validação com servidor RomM real e telefone. Não ativar transferências reais sem validação.
+- E6/E7/E8/E9 permanecem pendentes. E10 continua dependente de decisão explícita do usuário. Não há DELETE automático; save states e memory cards permanecem fora do transporte SRAM isolado.
+- Próximo passo: investigar/acompanhar o fluxo de publicação da Release tandem-latest e, depois, validar o APK no telefone. Não declarar o estágio E concluído apenas com CI e merge.
