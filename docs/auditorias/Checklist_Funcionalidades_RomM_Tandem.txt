@@ -623,3 +623,12 @@ PR #45: https://github.com/izzyn0okami/Tandem/pull/45
 - CI #804: Spotless aprovado; testes unitários/build ainda em execução na última consulta. A CI final deve cobrir o HEAD mais recente da PR.
 - PR #41 permanece aberta/draft/pausada e sem alterações.
 - D9 permanece fora do escopo e aguardando decisão.
+
+D5 — COMPLEMENTO DE CATÁLOGO (2026-11-23)
+- mGBA: BIOS opcionais para GB/GBC/GBA catalogadas com hashes.
+- Genesis Plus GX: BIOS opcionais de Mega Drive, Master System e Game Gear catalogadas; Sega CD regional mantido como requisito por região.
+- melonDS: BIOS/firmware DS marcados opcionais; DSi não é tratado como modo equivalente.
+- Handy: lynxboot.img corrigido para obrigatório.
+- ProSystem: BIOS Atari 7800 opcional.
+- FCEUmm: disksys.rom obrigatório somente para conteúdo FDS; Game Genie opcional; plataforma NES não bloqueada por BIOS.
+- D5 ainda não concluído: falta tratar disponibilidade por região para Sega CD/Saturn e a separação de modos DSi/Neo Geo AES/MVS.
