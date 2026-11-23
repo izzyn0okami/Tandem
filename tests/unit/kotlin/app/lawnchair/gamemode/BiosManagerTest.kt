@@ -1,5 +1,6 @@
 package app.lawnchair.gamemode
 
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -69,6 +70,22 @@ class BiosManagerTest {
         val required = platform(kit = listOf("Databases", "Machines"))
         assertFalse(ready(required, kitReady = false))
         assertTrue(ready(required, kitReady = true))
+    }
+
+    @Test
+    fun auditedCoreCatalogKeepsOptionalAndRequiredFirmwareAccurate() {
+        val atari5200 = GamePlatforms.all.single { it.slug == "atari5200" }
+        val coleco = GamePlatforms.all.single { it.slug == "coleco" }
+        val msx = GamePlatforms.all.single { it.slug == "msx" }
+        val intellivision = GamePlatforms.all.single { it.slug == "intellivision" }
+
+        assertFalse(atari5200.biosRequired)
+        assertEquals("281f20ea4320404ec820fb7ec0693b38", atari5200.bios.single().md5Hash)
+        assertTrue(coleco.biosRequired)
+        assertEquals("2c66f5911e5b42b8ebe113403548eee7", coleco.bios.single().md5Hash)
+        assertEquals(listOf("Databases", "Machines"), msx.biosKit)
+        assertEquals(2, intellivision.biosGroups.size)
+        assertTrue(intellivision.biosGroups.all { it.size == 1 })
     }
 
     @Test
