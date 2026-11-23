@@ -177,6 +177,13 @@ internal fun BiosScreen(rootPath: String) {
                         fontSize = 14.sp,
                         fontWeight = FontWeight.SemiBold,
                     )
+                    if (platform.slug == "scd" || platform.slug == "saturn") {
+                        Text(
+                            "BIOS regionais: confirme a região do jogo; um arquivo de outra região não garante compatibilidade.",
+                            color = GameColors.textDim,
+                            fontSize = 11.sp,
+                        )
+                    }
                     (platform.bios + platform.biosGroups.flatten()).distinctBy { it.name.lowercase() }.forEach { file ->
                         val present = remember(tick) { BiosManager.has(context, file) }
                         Text(
