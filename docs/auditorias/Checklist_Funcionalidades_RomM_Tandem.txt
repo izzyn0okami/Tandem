@@ -661,3 +661,13 @@ CI #850 — RESULTADO (2026-11-23)
 - [PENDENTE] CI #854 está action_required e não iniciou jobs. Aguardar autorização/execução no head atual antes de marcar CI verde.
 - [PENDENTE] Testes no aparelho com servidor RomM real.
 - PR #45 continua Draft e sem merge; PR #41 continua intocada.
+
+
+ATUALIZAÇÃO — ESTÁGIO D / PR #45 / CI #856 (2026-11-23)
+- [x] CI #856 / run 45222135704: SUCCESS integral no commit 019f4d4b08c44fa4c6a8e88a29263ada120ca748 — https://github.com/izzyn0okami/Tandem/actions/runs/45222135704.
+- [x] check-style: Spotless Apply, commit/reexecução e verificação final de formatação aprovados.
+- [x] build-debug-apk: testes unitários, Build APK e Upload artifact aprovados.
+- [x] final-status aprovado; jobs opcionais de notificações/Crowdin/release ignorados; nenhuma release publicada.
+- [x] Artefato assembleLawnWithQuickstepGithubDebug: ID 14841653637; 46.290.536 bytes; SHA-256 d8e8d136445f882b7d6f6d62841694599b29471380f88a5b1a73640d859fc705; expira em 2027-02-21.
+- [ ] D3–D8: implementação e testes automatizados aprovados pela CI; testes funcionais no telefone com RomM 5.4.x real continuam pendentes.
+- PR #45 permanece aberta, Draft e sem merge; PR #41 permanece aberta, Draft, pausada e intocada; D9 segue fora do escopo.
