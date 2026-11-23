@@ -727,3 +727,19 @@ PENDÊNCIAS E PRÓXIMOS PASSOS
 5. Concluir comparação E8 e auditoria de caminhos E9.
 6. Manter E10 bloqueado até decisão explícita do usuário.
 7. Não fazer merge nem release sem autorização; testes no aparelho/servidor real só serão marcados após confirmação do usuário.
+
+
+ATUALIZAÇÃO — ESTÁGIO E / PR #41 / CI #870 (2026-11-23)
+- [x] CI #870 / run 45241324702: SUCCESS integral no head 4907685ad9a35a9589353dc74b933c59faaa6cef — https://github.com/izzyn0okami/Tandem/actions/runs/45241324702.
+- [x] check-style: Spotless Apply, commit/reexecução e verificação final de formatação aprovados.
+- [x] build-debug-apk: testes unitários, Build APK e Upload artifact aprovados; artefato Debug publicado.
+- [x] final-status aprovado; jobs opcionais de notificações/Crowdin/release ignorados; nenhuma release publicada.
+- [x] Correção da falha #866/#868: testes JVM usavam stubs Android de org.json; adicionada testImplementation org.json:json:20240303 no build.gradle. Os testes unitários passaram na CI #870.
+- PR #41 continua aberta, Draft, mergeable e sem merge. Head validado: 4907685ad9a35a9589353dc74b933c59faaa6cef; base game-mode-m2-dev.
+- E5: adaptador inicial RomMDeviceSyncClient.kt e testes de parsing/payload DeviceSyncProtocolTest.kt presentes. Ainda faltam testes HTTP com MockWebServer, persistência isolada do device_id por conta, montagem dos dados locais/transferência de bytes e validação com servidor RomM real. Não ativar nem substituir o sincronizador atual.
+- E4: CI verde confirma compilação e testes existentes, mas não substitui validação funcional de conflito/rollback no telefone; manter em andamento.
+- E6/E7: PoC WebDAV ainda pendente; começar somente leitura e usar mock/dados descartáveis para escrita. Proibido DELETE automático.
+- E8: comparação arquitetural pendente de registro formal.
+- E9: SRAM e save states separados; mapear memory cards por core e criar testes negativos antes de qualquer sincronização.
+- E10: qualquer substituição do sincronizador atual depende de decisão explícita do usuário.
+- Testes no telefone e servidor RomM real continuam pendentes; não presumir validação funcional.
