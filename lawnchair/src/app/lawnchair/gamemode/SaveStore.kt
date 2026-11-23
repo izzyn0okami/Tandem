@@ -314,10 +314,16 @@ internal object GameIdentityResolver {
                         val hasConflict = preAccountSources.any { (coreId, source) ->
                             hasConflictingFiles(source, File(File(savesRoot, coreId), stableDirectoryName))
                         }
-                        if (hasConflict) return LegacyMigrationPlan(emptyMap(), ambiguous = true, conflictSources = preAccountSources.filter { (coreId, source) ->
-                            val target = File(File(savesRoot, coreId), stableDirectoryName)
-                            source.isDirectory && target.isDirectory && hasConflictingFiles(source, target)
-                        })
+                        if (hasConflict) {
+                            return LegacyMigrationPlan(
+                                emptyMap(),
+                                ambiguous = true,
+                                conflictSources = preAccountSources.filter { (coreId, source) ->
+                                    val target = File(File(savesRoot, coreId), stableDirectoryName)
+                                    source.isDirectory && target.isDirectory && hasConflictingFiles(source, target)
+                                },
+                            )
+                        }
                         val alreadyClaimed = preAccountSources.all { (coreId, source) ->
                             isVerifiedLegacyCopy(source, File(File(savesRoot, coreId), stableDirectoryName))
                         }
@@ -351,10 +357,16 @@ internal object GameIdentityResolver {
                     val hasConflict = localSources.any { (coreId, source) ->
                         hasConflictingFiles(source, File(File(savesRoot, coreId), stableDirectoryName))
                     }
-                    if (hasConflict) return LegacyMigrationPlan(emptyMap(), ambiguous = true, conflictSources = localSources.filter { (coreId, source) ->
-                        val target = File(File(savesRoot, coreId), stableDirectoryName)
-                        source.isDirectory && target.isDirectory && hasConflictingFiles(source, target)
-                    })
+                    if (hasConflict) {
+                        return LegacyMigrationPlan(
+                            emptyMap(),
+                            ambiguous = true,
+                            conflictSources = localSources.filter { (coreId, source) ->
+                                val target = File(File(savesRoot, coreId), stableDirectoryName)
+                                source.isDirectory && target.isDirectory && hasConflictingFiles(source, target)
+                            },
+                        )
+                    }
                     return LegacyMigrationPlan(localSources, ambiguous = false)
                 }
             }
@@ -394,10 +406,16 @@ internal object GameIdentityResolver {
             val hasConflict = sources.any { (coreId, source) ->
                 hasConflictingFiles(source, File(File(savesRoot, coreId), stableDirectoryName))
             }
-            if (hasConflict) return LegacyMigrationPlan(emptyMap(), ambiguous = true, conflictSources = sources.filter { (coreId, source) ->
-                    val target = File(File(savesRoot, coreId), stableDirectoryName)
-                    source.isDirectory && target.isDirectory && hasConflictingFiles(source, target)
-                })
+            if (hasConflict) {
+                return LegacyMigrationPlan(
+                    emptyMap(),
+                    ambiguous = true,
+                    conflictSources = sources.filter { (coreId, source) ->
+                        val target = File(File(savesRoot, coreId), stableDirectoryName)
+                        source.isDirectory && target.isDirectory && hasConflictingFiles(source, target)
+                    },
+                )
+            }
             val alreadyClaimed = sources.all { (coreId, source) ->
                 isVerifiedLegacyCopy(source, File(File(savesRoot, coreId), stableDirectoryName))
             }
@@ -482,10 +500,14 @@ internal object GameIdentityResolver {
                 val right = targetFiles[relative]
                 val chosen = when {
                     left == null -> right!!
+
                     right == null -> left
+
                     left.length() == right.length() && fileHash(left) == fileHash(right) ->
                         if (preferSource) left else right
+
                     preferSource -> left
+
                     else -> right
                 }
                 val destination = File(temp, relative)
@@ -514,14 +536,18 @@ internal object GameIdentityResolver {
             val left = sourceFiles.getValue(relative)
             val right = targetFiles.getValue(relative)
             val same = left.length() == right.length() && fileHash(left) == fileHash(right)
-            if (same) null else SaveConflictFileInfo(
-                coreId = coreId,
-                path = relative,
-                sourceBytes = left.length(),
-                targetBytes = right.length(),
-                sourceModified = left.lastModified(),
-                targetModified = right.lastModified(),
-            )
+            if (same) {
+                null
+            } else {
+                SaveConflictFileInfo(
+                    coreId = coreId,
+                    path = relative,
+                    sourceBytes = left.length(),
+                    targetBytes = right.length(),
+                    sourceModified = left.lastModified(),
+                    targetModified = right.lastModified(),
+                )
+            }
         }
     }
 
@@ -543,7 +569,9 @@ internal object GameIdentityResolver {
         if (gameIdentity.startsWith("romm-") &&
             !gameIdentity.startsWith("romm-legacy-") &&
             !isCurrentAccountGameIdentity(context, romFile, gameIdentity)
-        ) return false
+        ) {
+            return false
+        }
 
         val savesRoot = GameFolders.dir(context, FolderKind.Saves)
         val rootCanonical = runCatching { savesRoot.canonicalFile }.getOrNull() ?: return false
@@ -592,12 +620,16 @@ internal object GameIdentityResolver {
                     !targetParent.canonicalFile.toPath().startsWith(rootCanonical.toPath()) ||
                     !target.canonicalFile.toPath().startsWith(rootCanonical.toPath()) ||
                     !source.isDirectory || !target.isDirectory || !hasConflictingFiles(source, target)
-                ) return false
+                ) {
+                    return false
+                }
 
                 val backup = File(savesRoot, ".conflict-backups/$gameIdentity/$coreId/$stamp")
                 if (!copyTree(source, File(backup, "legado")) ||
                     !copyTree(target, File(backup, "atual"))
-                ) return false
+                ) {
+                    return false
+                }
 
                 val temp = File(targetParent, ".${target.name}.conflict-$stamp")
                 val rollback = File(targetParent, ".${target.name}.rollback-$stamp")
@@ -619,7 +651,9 @@ internal object GameIdentityResolver {
                 if (gameIdentity.startsWith("romm-") &&
                     !gameIdentity.startsWith("romm-legacy-") &&
                     !isCurrentAccountGameIdentity(context, romFile, gameIdentity)
-                ) throw IOException("A conta RomM mudou durante a resolução do conflito")
+                ) {
+                    throw IOException("A conta RomM mudou durante a resolução do conflito")
+                }
                 if (!item.target.renameTo(item.rollback)) throw IOException("Não foi possível proteger o destino atual")
                 if (!item.temp.renameTo(item.target)) {
                     item.rollback.renameTo(item.target)
@@ -634,13 +668,17 @@ internal object GameIdentityResolver {
             if (gameIdentity.startsWith("romm-") &&
                 !gameIdentity.startsWith("romm-legacy-") &&
                 !isCurrentAccountGameIdentity(context, romFile, gameIdentity)
-            ) throw IOException("A conta RomM mudou antes da conclusão")
+            ) {
+                throw IOException("A conta RomM mudou antes da conclusão")
+            }
 
             for (item in prepared) {
                 if (gameIdentity.startsWith("romm-") &&
                     !gameIdentity.startsWith("romm-legacy-") &&
                     !isCurrentAccountGameIdentity(context, romFile, gameIdentity)
-                ) throw IOException("A conta RomM mudou antes do arquivamento final")
+                ) {
+                    throw IOException("A conta RomM mudou antes do arquivamento final")
+                }
                 if (item.source.exists()) {
                     if (!item.source.renameTo(item.archive)) {
                         throw IOException("Não foi possível arquivar o diretório legado sem removê-lo")
@@ -651,7 +689,9 @@ internal object GameIdentityResolver {
             if (gameIdentity.startsWith("romm-") &&
                 !gameIdentity.startsWith("romm-legacy-") &&
                 !isCurrentAccountGameIdentity(context, romFile, gameIdentity)
-            ) throw IOException("A conta RomM mudou antes da conclusão")
+            ) {
+                throw IOException("A conta RomM mudou antes da conclusão")
+            }
             prepared.forEach { it.rollback.deleteRecursively() }
             GameLog.log(
                 "saves",
