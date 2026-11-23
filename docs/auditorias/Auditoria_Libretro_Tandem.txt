@@ -4489,3 +4489,14 @@ STATUS DE VALIDAÇÃO
 - Head formatado atual na PR #41: 462640b9db64428a3d78e11b3153e54beb8f5e8f.
 - CI #864 / run 45237591685 para esse head terminou action_required sem jobs; portanto não há CI completa confirmada no head atual.
 - PR #41 permanece aberta em Draft e sem merge. Testes funcionais no telefone e em servidor real continuam pendentes.
+
+
+ATUALIZAÇÃO DE AUDITORIA — ESTÁGIO E / PR #41 / CI #870 (2026-11-23)
+- CI #870 / run 45241324702: SUCCESS integral no commit 4907685ad9a35a9589353dc74b933c59faaa6cef. Jobs check-style, build-debug-apk e final-status concluídos com sucesso: https://github.com/izzyn0okami/Tandem/actions/runs/45241324702.
+- check-style aprovou Spotless após aplicação e verificação final. build-debug-apk aprovou testes unitários, compilação e upload do APK Debug.
+- Falhas anteriores #866/#868: três testes JVM falharam porque org.json vinha dos stubs Android. Correção: dependência testImplementation org.json:json:20240303 no build.gradle. CI #870 confirmou os testes aprovados.
+- E5: RomMDeviceSyncClient.kt fornece registro, negotiate, complete e parsing; DeviceSyncProtocolTest.kt cobre payload limitado a ROM IDs explícitos, restore_unlisted=false, validação de MD5/session_id e reconhecimento de delete sem executá-lo.
+- Pendências E5: testes HTTP/mock server, persistência device_id separada por conta, montagem de saves locais e transferência de bytes, tratamento completo de respostas HTTP/scopes e validação contra servidor RomM real. Adaptador ainda não integrado/ativado no fluxo atual.
+- E6/E7: WebDAV continua em fase de auditoria; PoC somente leitura primeiro, depois escrita apenas em servidor mock/controlado com dados descartáveis. Nunca executar DELETE automático nem tocar saves reais.
+- E9: SRAM e save states continuam separados. Memory cards fora da sincronização até mapear caminhos por core e testar exclusão do fluxo /api/saves e /api/states.
+- PR #41 permanece aberta, Draft e sem merge. Head validado: 4907685ad9a35a9589353dc74b933c59faaa6cef. CI verde não substitui teste funcional em telefone/servidor real.
