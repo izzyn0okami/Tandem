@@ -88,21 +88,44 @@ internal fun LibraryScreen(
     val chipFocus = remember { FocusRequester() }
     var searchText by remember { mutableStateOf("") }
     val normalizedSearch = searchText.trim()
+    var platformFilter by remember { mutableStateOf<String?>(null) }
+    var remotePlatforms by remember { mutableStateOf<List<RemotePlatform>>(emptyList()) }
     var remoteSearchIds by remember { mutableStateOf<Set<Long>?>(null) }
     var remoteSearching by remember { mutableStateOf(false) }
     var remoteSearchError by remember { mutableStateOf("") }
-    LaunchedEffect(normalizedSearch, RomMSettings.url(context)) {
+    LaunchedEffect(RomMSettings.url(context), RomMSettings.isConnected(context)) {
+        if (RomMSettings.isConnected(context)) {
+            runCatching {
+                withContext(Dispatchers.IO) {
+                    RomMClient(
+                        RomMSettings.url(context).orEmpty(),
+                        RomMSettings.token(context),
+                    ).listPlatforms()
+                }
+            }.onSuccess { remotePlatforms = it }
+                .onFailure { GameLog.log("romm", "falha ao carregar plataformas do RomM: ${it.message}") }
+        } else {
+            remotePlatforms = emptyList()
+        }
+    }
+    LaunchedEffect(normalizedSearch, platformFilter, remotePlatforms, RomMSettings.url(context)) {
         remoteSearchIds = null
         remoteSearchError = ""
-        if (normalizedSearch.length >= 2 && RomMSettings.isConnected(context)) {
+        if (RomMSettings.isConnected(context) && (normalizedSearch.length >= 2 || platformFilter != null)) {
             remoteSearching = true
-            delay(500)
+            delay(350)
             try {
+                val selectedPlatformIds = platformFilter?.let { slug ->
+                    remotePlatforms.filter { GamePlatforms.fromRomM(it.slug)?.slug == slug }.map { it.id }
+                }.orEmpty()
                 val ids = withContext(Dispatchers.IO) {
                     RomMClient(
                         RomMSettings.url(context).orEmpty(),
                         RomMSettings.token(context),
-                    ).listGames(searchTerm = normalizedSearch).map { it.id }.toSet()
+                    ).listGames(
+                        searchTerm = normalizedSearch.takeIf { it.length >= 2 },
+                        platformIds = selectedPlatformIds,
+                    ).map { it.id }.toSet()
                 }
                 remoteSearchIds = ids
             } catch (cancelled: CancellationException) {
@@ -110,7 +133,7 @@ internal fun LibraryScreen(
             } catch (error: Exception) {
                 remoteSearchError = error.message ?: error.toString()
             } finally {
-                if (searchText.trim() == normalizedSearch) remoteSearching = false
+                remoteSearching = false
             }
         } else {
             remoteSearching = false
@@ -124,7 +147,6 @@ internal fun LibraryScreen(
         }
     }
     val entryByPath = remember(entries) { entries.flatMap { entry -> entry.locals.map { it.path to entry } }.toMap() }
-    var platformFilter by remember { mutableStateOf<String?>(null) }
     val platforms = remember(entries) { entries.map { it.platform }.distinctBy { it.slug } }
     val searchedEntries = remember(entries, normalizedSearch, remoteSearchIds) {
         if (normalizedSearch.isEmpty()) {
