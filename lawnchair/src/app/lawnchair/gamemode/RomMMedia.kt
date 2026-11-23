@@ -10,9 +10,9 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
@@ -152,7 +152,11 @@ internal fun RomMMediaPanel(games: List<RemoteGame>) {
                     } else {
                         null
                     }
-                    if (bitmap != null) thumbnails[screenshot.id] = bitmap else if (cached == null) failedCount++
+                    if (bitmap != null) {
+                        thumbnails[screenshot.id] = bitmap
+                    } else if (cached == null) {
+                        failedCount++
+                    }
                 }
                 trimRomMScreenshotCache(cacheDirectory)
                 Pair(thumbnails, failedCount)
@@ -508,8 +512,7 @@ private const val MAX_ROMM_SCREENSHOTS_IN_GALLERY = 12
 private const val MAX_ROMM_SCREENSHOT_THUMBNAIL_DIMENSION = 360
 private const val MAX_ROMM_TEXT_PREVIEW_CHARS = 500_000
 
-private fun screenshotThumbnailFile(directory: File, screenshot: RemoteAssociatedFile): File =
-    File(directory, "screenshot-${screenshot.id}-${screenshot.sizeBytes}.jpg")
+private fun screenshotThumbnailFile(directory: File, screenshot: RemoteAssociatedFile): File = File(directory, "screenshot-${screenshot.id}-${screenshot.sizeBytes}.jpg")
 
 /** Gera uma miniatura pequena sem manter o arquivo original no cache. */
 private fun decodeScreenshotThumbnail(file: File): android.graphics.Bitmap? {
