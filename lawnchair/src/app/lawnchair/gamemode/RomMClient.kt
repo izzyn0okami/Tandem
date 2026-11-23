@@ -659,6 +659,110 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
         }
     }
 
+    /** Extensões anunciadas pelo heartbeat; RomM 5.4.x usa a lista compatível abaixo. */
+    fun listSupportedPatchExtensions(): Set<String> {
+        val fallback = setOf("ips", "ups", "bps", "ppf", "rup", "aps", "bdf", "pmsr", "vcdiff", "xdelta")
+        val url = base.resolve("api/heartbeat")!!
+        return http.newCall(request(url).get().build()).execute().use { response ->
+            if (!response.isSuccessful) return@use fallback
+            val heartbeat = runCatching { JSONObject(response.body.string()) }.getOrNull()
+                ?: return@use fallback
+            val advertised = heartbeat.optJSONObject("ROM_PATCHER")
+                ?.optJSONArray("SUPPORTED_EXTENSIONS")
+                ?: return@use fallback
+            (0 until advertised.length()).mapNotNull { index ->
+                advertised.optString(index)
+                    .trim()
+                    .removePrefix(".")
+                    .lowercase()
+                    .takeIf { it.matches(Regex("[a-z0-9]+")) }
+            }.toSet().ifEmpty { fallback }
+        }
+    }
+
+    /**
+     * Aplica um patch no servidor e grava o stream retornado em um arquivo temporário.
+     * Exatamente uma origem deve ser informada: patch já armazenado no RomM ou arquivo local.
+     */
+    fun applyPatch(
+        baseFileId: Long,
+        patchFileId: Long?,
+        patchUpload: File?,
+        outputFileName: String,
+        target: File,
+    ) {
+        require(baseFileId > 0L) { "ID do arquivo base inválido" }
+        require((patchFileId != null) xor (patchUpload != null)) {
+            "Selecione um patch existente ou um arquivo local"
+        }
+        require(patchFileId == null || patchFileId > 0L) { "ID do patch inválido" }
+        require(patchUpload == null || patchUpload.isFile) { "Arquivo de patch não encontrado" }
+        require(outputFileName.isNotBlank() && File(outputFileName).name == outputFileName) {
+            "Nome de saída inválido"
+        }
+
+        val multipart = MultipartBody.Builder()
+            .setType(MultipartBody.FORM)
+            .addFormDataPart("output_file_name", outputFileName)
+            .apply {
+                if (patchFileId != null) {
+                    addFormDataPart("patch_file_id", patchFileId.toString())
+                } else {
+                    val upload = checkNotNull(patchUpload)
+                    addFormDataPart(
+                        "patch_file",
+                        upload.name,
+                        upload.asRequestBody("application/octet-stream".toMediaType()),
+                    )
+                }
+            }
+            .build()
+        val url = base.resolve("api/roms/$baseFileId/patch")!!
+        target.parentFile?.mkdirs()
+        val temp = File(target.parentFile, "${target.name}.part")
+        temp.delete()
+        try {
+            http.newCall(request(url).post(multipart).build()).execute().use { response ->
+                if (!response.isSuccessful) {
+                    val details = runCatching { response.peekBody(2048).string() }
+                        .getOrDefault("")
+                        .replace(Regex("""(?i)(token|authorization|password)(\\s*[:=]\\s*)[^",\\s}]+"""), "$1$2[redacted]")
+                        .take(240)
+                    val message = when (response.code) {
+                        400 -> "O RomM rejeitou o patch. Verifique o formato, o tamanho e se ele corresponde à versão da ROM."
+                        403 -> "O token RomM não tem permissão para ler a ROM ou aplicar o patch."
+                        404 -> "A ROM base ou o patch não foi encontrado no RomM."
+                        else -> "Não foi possível aplicar o patch no RomM (HTTP ${response.code})."
+                    }
+                    throw RomMHttpException(response.code, if (details.isBlank()) message else "$message $details")
+                }
+                val body = response.body ?: throw IOException("O RomM retornou um arquivo vazio.")
+                val expectedBytes = body.contentLength()
+                if (expectedBytes > 0L) {
+                    val availableBytes = StatFs(checkNotNull(temp.parentFile).absolutePath).availableBytes
+                    if (availableBytes < expectedBytes + MINIMUM_FREE_SPACE_BYTES) {
+                        throw IOException("Espaço insuficiente para salvar a ROM modificada.")
+                    }
+                }
+                body.byteStream().use { input ->
+                    FileOutputStream(temp).use { output ->
+                        val buffer = ByteArray(64 * 1024)
+                        while (true) {
+                            val count = input.read(buffer)
+                            if (count < 0) break
+                            output.write(buffer, 0, count)
+                        }
+                    }
+                }
+            }
+            check(temp.isFile && temp.length() > 0L) { "O RomM não retornou uma ROM modificada válida." }
+            RomMFileReplacement.replaceFile(temp, target)
+        } catch (error: Exception) {
+            temp.delete()
+            throw error
+        }
+    }
+
     /** Baixa um arquivo associado usando o RomFile.id exigido pelo endpoint oficial. */
     fun downloadAssociatedFile(file: RemoteAssociatedFile, target: File) {
         require(file.id > 0L) { "ID de arquivo RomM inválido" }
