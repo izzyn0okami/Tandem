@@ -4624,3 +4624,15 @@ IMPLEMENTAÇÃO — DIAGNÓSTICO READ-ONLY DE CAMINHOS DE SAVES (2026-11-23)
 - Nenhuma PR foi criada ainda; nenhuma alteração funcional em sincronização RomM; estágio E permanece EM ANDAMENTO.
 
 - PR #46 aberta como Draft: https://github.com/izzyn0okami/Tandem/pull/46. Base game-mode-m2-dev; head feat/save-path-diagnostics. A PR está em revisão/validação, sem merge.
+
+
+ATUALIZAÇÃO — PR #46 / MERGE E CI #922 (2026-11-23)
+- PR #46 — Add read-only save path diagnostics — foi mesclada por squash em game-mode-m2-dev após autorização explícita do usuário.
+- URL: https://github.com/izzyn0okami/Tandem/pull/46
+- Commit de merge: fdcb65150e308993a62d13b466d58ef2f3b7fcc5.
+- Head integrado: dc0acc8b35cbe7152ad40c6859d40a3257341670.
+- CI #922 / run 45290324888 (tentativa 2): SUCCESS integral no head dc0acc8b35cbe7152ad40c6859d40a3257341670. check-style/Spotless, testes unitários, Build APK Debug, Upload artifact e final-status aprovados. Jobs opcionais de release/notificação foram ignorados por se tratar de pull_request; nenhuma release foi publicada nesta execução.
+- A implementação registra somente metadados de caminhos e saves; não lê conteúdo nem cria, modifica, copia, move, renomeia, sobrescreve ou exclui saves. Não altera sincronização RomM/Device Sync.
+- A CI da PR comprova compilação e testes automatizados, não o funcionamento no telefone. Próxima validação: instalar o APK gerado, testar sessões PSX e SNES e exportar game_log.txt para análise dos diretórios reais.
+- E4/E5 continuam EM ANDAMENTO. Não presumir sincronização corrigida; não ativar transferências Device Sync nem apagar/substituir saves. Save states e memory cards permanecem fora do transporte SRAM isolado.
+- A PR #46 está fechada e mesclada. A publicação tandem-latest e a CI de push após merge ainda precisam ser verificadas separadamente.
