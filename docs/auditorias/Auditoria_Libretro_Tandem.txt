@@ -3180,3 +3180,116 @@ PRÓXIMA ETAPA
 - Identificar um mecanismo oficial preferencial para cada tipo de dado (SRAM e save states), evitando duplicidade.
 - Confirmar a versão e os recursos habilitados na instância real do usuário antes de fechar o desenho.
 - A PR #41 continua aberta e deve ser coordenada antes de mudanças sobrepostas no fluxo de saves.
+
+
+AUDITORIA AMPLA — MATRIZ DE CAPACIDADES ROMM × TANDEM (ETAPA 1: INVENTÁRIO)
+Data: 2026-11-22
+Branch: game-mode-m2-dev
+Commit-base desta etapa: 535726b972ad23a7b168f5ec4914cd7ff209b172
+PRs abertas verificadas antes da auditoria: PR #41 (draft, aberta, não mesclada; branch feat/save-conflict-resolution). Nenhuma nova PR criada.
+Referência de API: código-fonte oficial RomM tag 5.4.1; documentação 5.4.0 da mesma linha quando aplicável.
+
+DIRETRIZ DO USUÁRIO
+O Tandem é principalmente um cliente para RomM. Deve aproveitar as funcionalidades e contratos existentes no RomM antes de criar lógica própria. A decisão sobre manter, adaptar, substituir ou remover funcionalidades só será tomada após a matriz completa; esta etapa não remove nem altera funcionalidades.
+
+INVENTÁRIO DE DOMÍNIOS DISPONÍVEIS NO ROMM 5.4.1
+A árvore oficial backend/endpoints da tag 5.4.1 contém recursos para:
+- autenticação, tokens de cliente e identidade/perfil;
+- ROMs, arquivos de ROM, metadados manuais, notas, patches, screenshots, trilhas sonoras, manuais, walkthroughs, uploads e EasyRPG;
+- plataformas e firmware;
+- coleções;
+- assets do usuário: saves, states e screenshots;
+- dispositivos, pareamento, instalação remota de ROMs e sincronização;
+- RetroArch Cloud Sync via WebDAV;
+- sessões de jogo e atividade;
+- pesquisa, recomendações e estatísticas;
+- notificações e canais de notificação;
+- permissões/grupos, usuários, auditoria e logs;
+- tarefas de biblioteca/configuração;
+- netplay;
+- streaming;
+- memory cards;
+- música e playlists;
+- feeds e integrações auxiliares;
+- heartbeat/configuração e sockets em tempo real.
+A existência de endpoint não significa que seja apropriado ao escopo do Tandem; cada domínio será classificado como essencial, útil, opcional, fora de escopo ou sem suporte técnico no LibretroDroid.
+
+INVENTÁRIO DO CLIENTE TANDEM — CÓDIGO ATUAL
+Arquivos centrais inspecionados nesta etapa:
+- RomMClient.kt
+- RemoteLibrary.kt
+- RomMCache.kt
+- RomMCovers.kt
+- RomMVersions.kt
+- RomMScreen.kt
+- SaveSync.kt
+- RomMSaveSyncWorker.kt
+- BiosManager.kt
+- GameLibrary.kt
+- PlayHistory.kt
+- GameModeActivity.kt
+- RetroAchievements.kt
+- ArtBox.kt
+- ThumbnailScraper.kt
+- ScraperScreen.kt
+- GameFolders.kt
+- LibraryEntry.kt
+
+Chamadas RomM identificadas em RomMClient.kt:
+- GET /api/users/me — identificação da conta (me.read).
+- GET /api/heartbeat — conectividade/diagnóstico.
+- POST /api/client-tokens/exchange — troca do código de pareamento.
+- POST /api/auth/device/init e POST /api/auth/device/token — pareamento OAuth de dispositivo.
+- GET /api/roms — listagem paginada; lê metadados básicos, plataforma, arquivos associados e capas.
+- GET /api/platforms — usado para enumerar firmware por plataforma.
+- GET /api/firmware/{id}/content/{file_name} — download de firmware.
+- GET /api/roms/{id}/content/{file_name} e rotas de arquivos associados — download de jogos.
+- GET /api/saves e GET /api/states — listagem de assets de jogo.
+- GET /api/saves/{id}/content e GET /api/states/{id}/content — download de assets.
+- POST/PUT /api/saves e /api/states — upload/criação e atualização direta de assets.
+O cliente solicita os escopos me.read, platforms.read, roms.read, roms.user.read, roms.user.write, assets.read, assets.write, firmware.read, devices.read e devices.write. A auditoria posterior deverá conferir a menor permissão necessária e quais escopos não estão efetivamente utilizados.
+
+FUNCIONALIDADES ROMM JÁ CONSUMIDAS
+- Conexão por código de pareamento e OAuth de dispositivo.
+- Identificação do usuário RomM e isolamento local de conta/servidor.
+- Listagem da biblioteca remota com paginação.
+- Download de ROMs, arquivos agrupados/multidisco e recuperação de transferências.
+- Capas do RomM com cache local.
+- Sinopse básica quando disponível.
+- Download de firmware com verificação de tamanho e hashes publicados pelo servidor.
+- Listagem/download/upload direto de saves e states por ROM.
+- Cache local da listagem remota.
+- Agrupamento local de variantes por heurística de título/arquivo.
+
+FUNCIONALIDADES PRÓPRIAS OU EXTERNAS IDENTIFICADAS
+- Catálogo local de plataformas, extensões, núcleos e requisitos de BIOS.
+- Scanner e organização da biblioteca local.
+- Gestão de núcleos Libretro, opções e execução via LibretroDroid.
+- Mapeamento de controles, sessão, overlays e diagnóstico local.
+- RetroAchievements, integração externa independente.
+- Histórico de jogo local (PlayHistory), sem sincronização RomM identificada nesta etapa.
+- Scraper externo de imagens para jogos locais (ThumbnailScraper), além das capas obtidas do RomM.
+- Agrupamento de versões local (RomMVersions).
+- Gerenciamento local de saves, snapshots, backups, migração de identidade e Worker.
+Esses itens não devem ser classificados como duplicados até comparar seus equivalentes exatos no RomM e verificar se o recurso do servidor atende ao fluxo de jogo Android.
+
+PRIMEIRAS LACUNAS PARA INVESTIGAÇÃO
+- O Tandem não consome coleções (normais, inteligentes ou virtuais).
+- Não foi identificada leitura/gravação de dados por usuário por ROM (rating, notas, favoritos/pinned media, playtime).
+- Não foi identificada integração de sessões de jogo/atividade com o servidor; PlayHistory parece local.
+- Não foi identificada leitura de screenshots, manuais, walkthroughs, trilhas sonoras, vídeos ou demais recursos de mídia do ROMM.
+- Não foi identificada utilização das APIs de recomendações, estatísticas, notificações, canais, audit events ou feeds.
+- Não foi identificada utilização da API de memory cards, música/playlists, netplay ou streaming.
+- O uso de firmware está limitado à listagem agregada por plataformas e download; o catálogo de requisitos de BIOS do Tandem é local e requer comparação.
+- A biblioteca remota usa listagem genérica /api/roms e filtragem local por plataformas/extensões; verificar recursos de filtros, pesquisa, coleções e compatibilidade declarada do servidor.
+- A sincronização usa endpoints diretos de assets; não utiliza Device Sync Protocol nem WebDAV Cloud Sync.
+- O cliente não utiliza ainda os endpoints de instalação remota por dispositivo.
+
+PRÓXIMAS ETAPAS DA AUDITORIA
+1. Comparar schemas, endpoints, escopos e semântica de todos os domínios RomM 5.4.1 com as classes do Tandem.
+2. Para cada domínio, registrar: recurso do RomM, uso atual no Tandem, lacuna, utilidade para um cliente Android Libretro, dependências/limitações e recomendação preliminar.
+3. Comparar em especial ROM metadata/media, collections, user-ROM data, play sessions, firmware, device installs, saves/states, WebDAV e Device Sync.
+4. Separar recursos próprios do launcher/LibretroDroid dos serviços que pertencem ao RomM.
+5. Só depois apresentar ao usuário a matriz de decisão manter/adaptar/substituir/remover/não implementar.
+6. Não remover funcionalidades nem iniciar implementação estrutural durante a fase de inventário.
+7. Coordenar mudanças em SaveSync.kt, RomMClient.kt e GameModeActivity.kt com a PR #41, que permanece aberta.
