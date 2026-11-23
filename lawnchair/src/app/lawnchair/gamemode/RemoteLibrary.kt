@@ -11,8 +11,6 @@ import androidx.compose.runtime.snapshots.SnapshotStateMap
 import com.android.launcher3.R
 import java.io.File
 import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -37,19 +35,6 @@ internal class RemoteLibrary(private val context: Context, private val scope: Co
         private set
     var report by mutableStateOf("")
         private set
-    var searchQuery by mutableStateOf("")
-        private set
-    var searchResults by mutableStateOf<List<RemoteGame>?>(null)
-        private set
-    var searching by mutableStateOf(false)
-        private set
-    var searchError by mutableStateOf("")
-        private set
-
-    /** Lista exibida: resultados de pesquisa temporários nunca substituem o cache completo. */
-    val displayGames: List<RemoteGame> get() = searchResults ?: games.orEmpty()
-
-    private var searchJob: Job? = null
 
     /** Sobe a cada pedido de atualização; a biblioteca reage a ele. */
     var tick by mutableIntStateOf(0)
@@ -75,50 +60,10 @@ internal class RemoteLibrary(private val context: Context, private val scope: Co
     }
 
     fun disconnect() {
-        searchJob?.cancel()
-        searchQuery = ""
-        searchResults = null
-        searchError = ""
         RomMSettings.clear(context)
         connected = false
         games = null
         error = ""
-    }
-
-    /**
-     * Pesquisa no próprio RomM (search_term), com debounce. Resultados temporários não são
-     * gravados no cache da biblioteca completa e uma resposta antiga nunca substitui a mais nova.
-     */
-    fun search(query: String) {
-        searchQuery = query
-        searchJob?.cancel()
-        val normalized = query.trim()
-        searchError = ""
-        if (normalized.length < 2) {
-            searchResults = null
-            searching = false
-            return
-        }
-        val requestedQuery = normalized
-        searchJob = scope.launch {
-            delay(500)
-            searching = true
-            try {
-                val fetched = withContext(Dispatchers.IO) {
-                    RomMClient(url, RomMSettings.token(context)).listGames(searchTerm = requestedQuery)
-                }
-                if (searchQuery.trim() == requestedQuery) searchResults = fetched
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: Exception) {
-                if (searchQuery.trim() == requestedQuery) {
-                    searchResults = emptyList()
-                    searchError = e.message ?: e.toString()
-                }
-            } finally {
-                if (searchQuery.trim() == requestedQuery) searching = false
-            }
-        }
     }
 
     /** Atualiza a lista do servidor, no máximo a cada 5 minutos, salvo pedido explícito. */
