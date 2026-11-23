@@ -4069,3 +4069,23 @@ ATUALIZAÇÃO — PR #43 / B1–B6 ROMM MESCLADA (2026-11-23)
 - [ ] Teste funcional no telefone com conta RomM real: edição de propriedades, escopo roms.user.write, sessões ativas e apresentação visual.
 - [ ] Confirmar comportamento com controle/TV e campos numéricos.
 - PR #41 permanece aberta e pausada, sem alterações; saves continuam fora do escopo.
+
+
+AUDITORIA C1–C7 — MÍDIAS E CONTEÚDO ASSOCIADO (2026-11-23)
+Branch: feat/romm-media-content
+Base: game-mode-m2-dev @ 72148e2950f4b637eac126806675387faeb54fea
+Decisão do usuário: visualizadores e player integrados ao Tandem (não abrir aplicativos externos).
+
+API de referência: RomM 5.4.1 (tag oficial rommapp/romm).
+- Arquivos associados já são fornecidos em RomSchema.files, com id, file_name, file_size_bytes, category, hashes e metadados.
+- GET /api/roms/{rom_file_id}/files/content/{file_name} serve o conteúdo do arquivo; ROMS_READ é o scope de leitura. A rota verifica visibilidade da ROM pai e escolhe Content-Type/disposition a partir do registro confiável.
+- Categorias de documentos: manual e walkthrough. O RomM permite servi-los inline quando o formato é permitido.
+- Soundtrack tem endpoint GET /api/roms/{id}/soundtracks/metadata, que retorna file_id, file_name, file_size_bytes e metadados de faixa; conteúdo é servido inline e suporta Range/seek.
+- Screenshots são arquivos associados da categoria screenshot; consumir os IDs e conteúdo sem criar cópia persistente paralela.
+- Patch: POST /api/roms/{id}/patch aplica patch no servidor. Aceita patch_file_id (patch já na biblioteca) ou patch_file enviado no multipart; retorna ROM modificada. Não criar patcher local redundante.
+- Categorias de arquivos auxiliares devem permanecer fora da seleção/execução de ROMs; revisar também filtros EasyRPG e multidisco para não incluir manuais, guias, trilhas ou screenshots.
+
+Escopo aprovado:
+C1 screenshots; C2 manuais; C3 walkthroughs; C4 trilhas sonoras; C5 integração com patcher do RomM e identificação de formatos; C6 isolamento dos arquivos auxiliares; C7 visualizador de imagens/documentos e player de áudio integrados ao Tandem.
+
+Implementação e CI: pendentes no início desta PR. PR #41 permanece aberta e intocada; nenhuma alteração em SaveStore.kt ou GameModeActivity.kt planejada.
