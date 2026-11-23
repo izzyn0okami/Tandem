@@ -913,7 +913,7 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
         }
     }
 
-    private fun parseDeviceCapabilities(json: JSONObject?): Map<String, Boolean> = buildMap {
+    internal fun parseDeviceCapabilities(json: JSONObject?): Map<String, Boolean> = buildMap {
         if (json == null) return@buildMap
         val keys = json.keys()
         while (keys.hasNext()) {
