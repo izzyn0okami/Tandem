@@ -178,3 +178,11 @@ CICLO E4 / PR #41 — CI COM FALHA
 - Falharam Run unit tests e spotlessCheck; final-status também falhou.
 - PR #41 continua aberta e draft. Investigar logs e corrigir antes de avançar.
 - Nenhum merge ou release.
+
+
+ATUALIZAÇÃO — FILTRO DE PLATAFORMA ROMM (2026-11-23)
+- [EM ANDAMENTO] A2. Filtro de plataforma integrado à API oficial: implementados GET /api/platforms para obter IDs internos e platform_ids repetido em GET /api/roms; LibraryScreen envia a plataforma selecionada ao RomM. Aguarda CI e validação funcional.
+- A1. Pesquisa remota: CI anterior #45089462426 aprovada; validação funcional no telefone ainda pendente.
+- PR #42 continua aberta e draft; sem merge.
+- PR #41 deve permanecer aberta e draft até retomarmos explicitamente o trabalho em saves. Nenhuma alteração nessa PR nesta etapa.
+- CI da nova implementação: #45090587588, inicialmente queued.
