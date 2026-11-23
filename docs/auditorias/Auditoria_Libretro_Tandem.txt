@@ -3943,3 +3943,15 @@ ATUALIZAÇÃO — A12 / CI #676 E CORREÇÃO DE FORMATAÇÃO (2026-11-23)
 - Nova CI #678 / run #45095702464: disparada para o commit corretivo; estado queued na última consulta. Aguardar resultado antes de marcar A12 como aprovada.
 - PR #42 continua aberta/draft, sem merge. PR #41 continua aberta/draft e intocada, conforme decisão do usuário.
 - A12 ainda aguarda CI verde e validação funcional no telefone; nenhum teste funcional foi presumido.
+
+
+CI APROVADA — PR #42 / NOTAS ROMM A12 (2026-11-22)
+- Commit validado: fa8f720896a76e03d4b04ac3df17231fd681ee9b.
+- CI #681: SUCCESS — https://github.com/izzyn0okami/Tandem/actions/runs/45096446767.
+- check-style: sucesso; ./gradlew spotlessCheck aprovado.
+- build-debug-apk: testes unitários, Build APK e Upload artifact aprovados.
+- final-status: sucesso.
+- send-notifications, crowdin-auto-merge, tandem-release e nightly-release ignorados; nenhuma release publicada.
+- A12: implementação inicial de leitura de notas e apresentação em detalhes aprovada pela CI. Ainda requer validação funcional no telefone, incluindo carregamento por versão e tratamento claro de lista vazia versus falha de consulta.
+- PR #42 permanece aberta, draft e sem merge.
+- PR #41 permanece aberta, draft e intocada; a etapa de saves continua pausada por decisão do usuário.
