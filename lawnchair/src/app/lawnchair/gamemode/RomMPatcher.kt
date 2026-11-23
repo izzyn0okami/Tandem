@@ -202,51 +202,51 @@ internal fun RomMPatcherPanel(games: List<RemoteGame>) {
                     false,
                 ) {
                     if (!isApplying) {
-                    isApplying = true
-                    status = "Enviando solicitação ao RomM…"
-                    error = null
-                    val patchUri = localPatchUri
-                    val patchId = selectedPatchId
-                    val patchName = localPatchName
-                    scope.launch {
-                        var uploadFile: File? = null
-                        try {
-                            val output = withContext(Dispatchers.IO) {
-                                val directory = File(context.cacheDir, "romm-patched").apply { mkdirs() }
-                                val extension = baseExtension.ifBlank { "rom" }
-                                val target = File.createTempFile("patched-", ".$extension", directory)
-                                if (patchUri != null) {
-                                    val name = patchName ?: "patch"
-                                    val patchExtension = File(name).extension.lowercase()
-                                    uploadFile = File.createTempFile("patch-upload-", ".$patchExtension", directory)
-                                    val input = context.contentResolver.openInputStream(patchUri)
-                                        ?: throw IOException("Não foi possível ler o patch selecionado.")
-                                    input.use { source ->
-                                        uploadFile!!.outputStream().use { destination -> source.copyTo(destination) }
+                        isApplying = true
+                        status = "Enviando solicitação ao RomM…"
+                        error = null
+                        val patchUri = localPatchUri
+                        val patchId = selectedPatchId
+                        val patchName = localPatchName
+                        scope.launch {
+                            var uploadFile: File? = null
+                            try {
+                                val output = withContext(Dispatchers.IO) {
+                                    val directory = File(context.cacheDir, "romm-patched").apply { mkdirs() }
+                                    val extension = baseExtension.ifBlank { "rom" }
+                                    val target = File.createTempFile("patched-", ".$extension", directory)
+                                    if (patchUri != null) {
+                                        val name = patchName ?: "patch"
+                                        val patchExtension = File(name).extension.lowercase()
+                                        uploadFile = File.createTempFile("patch-upload-", ".$patchExtension", directory)
+                                        val input = context.contentResolver.openInputStream(patchUri)
+                                            ?: throw IOException("Não foi possível ler o patch selecionado.")
+                                        input.use { source ->
+                                            uploadFile!!.outputStream().use { destination -> source.copyTo(destination) }
+                                        }
                                     }
+                                    RomMClient(RomMSettings.url(context).orEmpty(), RomMSettings.token(context))
+                                        .applyPatch(
+                                            baseFileId = checkNotNull(baseFileId),
+                                            patchFileId = patchId,
+                                            patchUpload = uploadFile,
+                                            outputFileName = suggestedName,
+                                            target = target,
+                                        )
+                                    target
                                 }
-                                RomMClient(RomMSettings.url(context).orEmpty(), RomMSettings.token(context))
-                                    .applyPatch(
-                                        baseFileId = checkNotNull(baseFileId),
-                                        patchFileId = patchId,
-                                        patchUpload = uploadFile,
-                                        outputFileName = suggestedName,
-                                        target = target,
-                                    )
-                                target
+                                readyFile = output
+                                readyFileName = suggestedName
+                                status = "Patch aplicado. Escolha onde salvar a nova ROM."
+                                saveOutputPicker.launch(suggestedName)
+                            } catch (failure: Exception) {
+                                error = failure.message ?: "Não foi possível aplicar o patch."
+                                status = null
+                            } finally {
+                                uploadFile?.delete()
+                                isApplying = false
                             }
-                            readyFile = output
-                            readyFileName = suggestedName
-                            status = "Patch aplicado. Escolha onde salvar a nova ROM."
-                            saveOutputPicker.launch(suggestedName)
-                        } catch (failure: Exception) {
-                            error = failure.message ?: "Não foi possível aplicar o patch."
-                            status = null
-                        } finally {
-                            uploadFile?.delete()
-                            isApplying = false
                         }
-                    }
                     }
                 }
             } else {

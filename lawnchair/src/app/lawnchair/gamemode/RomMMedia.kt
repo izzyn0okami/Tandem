@@ -47,8 +47,10 @@ internal fun RomMMediaPanel(games: List<RemoteGame>) {
     val hasPatchBase = !game.folder && !game.isEasyRpgGame && (
         game.fileId != null ||
             associatedFiles.any {
-                (it.fileName.equals(game.fileName, ignoreCase = true) ||
-                    it.fileName.equals(game.serverName, ignoreCase = true)) &&
+                (
+                    it.fileName.equals(game.fileName, ignoreCase = true) ||
+                        it.fileName.equals(game.serverName, ignoreCase = true)
+                    ) &&
                     isRomMPlayableFileCategory(it.category)
             }
         )
