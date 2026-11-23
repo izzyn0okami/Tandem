@@ -864,7 +864,7 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
                 val body = response.body.string()
                 val root = runCatching { JSONObject(body) }.getOrNull()
                 val items = root?.optJSONArray("items") ?: root?.optJSONArray("devices") ?: org.json.JSONArray(body)
-                Triple(root, items, body)
+                root to items
             }
             val root = page.first
             val items = page.second
