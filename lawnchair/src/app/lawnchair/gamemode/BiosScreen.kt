@@ -51,8 +51,13 @@ internal fun BiosScreen(rootPath: String) {
         }
         if (path == null) return@rememberLauncherForActivityResult
         scope.launch {
-            val copied = withContext(Dispatchers.IO) { BiosManager.importKit(context, platform, File(path)) }
-            message = context.getString(R.string.game_bios_kit_imported, copied)
+            try {
+                val copied = withContext(Dispatchers.IO) { BiosManager.importKit(context, platform, File(path)) }
+                message = context.getString(R.string.game_bios_kit_imported, copied)
+            } catch (error: Exception) {
+                GameLog.error("bios", "falha ao importar kit de ${platform.slug}", error)
+                message = "Kit não importado: ${error.message ?: "erro inesperado"}"
+            }
             tick++
         }
     }
@@ -61,16 +66,22 @@ internal fun BiosScreen(rootPath: String) {
         scope.launch {
             val added = withContext(Dispatchers.IO) {
                 uris.count { uri ->
-                    val name = context.contentResolver.query(uri, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)
-                        ?.use { if (it.moveToFirst()) it.getString(0) else null }
-                    val input = context.contentResolver.openInputStream(uri)
-                    name != null && input != null && input.use { BiosManager.import(context, name, it) } != null
+                    runCatching {
+                        val name = context.contentResolver.query(uri, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)
+                            ?.use { if (it.moveToFirst()) it.getString(0) else null }
+                        val input = context.contentResolver.openInputStream(uri)
+                        name != null && input != null && input.use { BiosManager.import(context, name, it) } != null
+                    }.onFailure { GameLog.error("bios", "arquivo BIOS rejeitado durante importação", it) }
+                        .getOrDefault(false)
                 }
             }
             message = context.getString(R.string.game_bios_added, added, uris.size)
+            if (added < uris.size) message += " ${uris.size - added} arquivo(s) rejeitado(s); consulte o log."
             tick++
         }
     }
+
+    val integrityByBios = remember(tick) { BiosManager.validateLocalFirmware(context) }
 
     Column(
         modifier = Modifier.fillMaxSize().padding(horizontal = 24.dp, vertical = 4.dp),
@@ -164,6 +175,23 @@ internal fun BiosScreen(rootPath: String) {
                             color = if (present) GameColors.success else GameColors.textDim,
                             fontSize = 12.sp,
                         )
+                        if (present) {
+                            val integrity = integrityByBios[file.name] ?: BiosManager.FirmwareIntegrity.UNKNOWN
+                            val status = when (integrity) {
+                                BiosManager.FirmwareIntegrity.VERIFIED -> "MD5 confirmado"
+                                BiosManager.FirmwareIntegrity.MISMATCH -> "MD5 divergente — arquivo não confiável"
+                                BiosManager.FirmwareIntegrity.UNKNOWN -> "Hash de referência indisponível"
+                            }
+                            Text(
+                                text = status,
+                                color = when (integrity) {
+                                    BiosManager.FirmwareIntegrity.VERIFIED -> GameColors.success
+                                    BiosManager.FirmwareIntegrity.MISMATCH -> GameColors.danger
+                                    BiosManager.FirmwareIntegrity.UNKNOWN -> GameColors.textDim
+                                },
+                                fontSize = 11.sp,
+                            )
+                        }
                     }
                 }
             }
