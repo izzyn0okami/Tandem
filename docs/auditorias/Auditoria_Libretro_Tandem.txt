@@ -4612,3 +4612,15 @@ AUDITORIA — CAMINHOS E PASTA PERSONALIZÁVEL DE SAVES (2026-11-23)
 - CI de documentação será registrada após a conclusão do workflow acionado por esta atualização. Nenhuma PR foi criada; nenhuma mudança funcional foi feita.
 - Achado adicional de risco: FoldersScreen usa OpenDocumentTree apenas para obter o URI, converte-o em caminho físico por StorageAccess.treeUriToPath e não guarda o URI nem sua permissão persistente. O acesso externo depende de MANAGE_EXTERNAL_STORAGE (StorageAccess.isGranted). A própria tela pode apenas exibir um aviso de que o acesso é necessário; GameFolders.dir valida diretório/gravação e pode retornar ao padrão interno se o caminho personalizado não for utilizável. Assim, uma pasta escolhida no seletor pode não ser efetivamente utilizável sem a permissão ampla do Android, apesar de o caminho continuar configurado.
 - Este risco é mais relevante que a hipótese de RomM exigir raiz do app: o servidor RomM recebe bytes por HTTP e não acessa a pasta Android. A incompatibilidade potencial é local, entre permissão/caminho escolhido, diretório informado ao core e diretório que SaveStore usa.
+
+
+IMPLEMENTAÇÃO — DIAGNÓSTICO READ-ONLY DE CAMINHOS DE SAVES (2026-11-23)
+- Branch de trabalho: feat/save-path-diagnostics, criada a partir de game-mode-m2-dev após verificar que não havia PR aberta.
+- Adicionada SavePathDiagnostics.kt e chamada no início da sessão de jogo.
+- O registro inclui pasta personalizada configurada, pasta padrão, caminho efetivo, indicação de fallback, MANAGE_EXTERNAL_STORAGE, caminho entregue ao LibretroDroid, diretório e arquivos SRAM/state do SaveStore, além de listagem limitada de metadados na raiz e na pasta do núcleo.
+- O diagnóstico não lê conteúdo de arquivos e não cria, move, renomeia, sobrescreve ou exclui saves.
+- Alteração ainda não validada por CI nem no telefone. A compilação e testes automatizados precisam passar; depois, validar PSX e SNES e exportar game_log.txt para análise.
+- Limitação: a listagem é limitada a 40 entradas por pasta e não faz varredura recursiva; não pretende identificar automaticamente qualquer convenção de nome específica de cada core.
+- Nenhuma PR foi criada ainda; nenhuma alteração funcional em sincronização RomM; estágio E permanece EM ANDAMENTO.
+
+- PR #46 aberta como Draft: https://github.com/izzyn0okami/Tandem/pull/46. Base game-mode-m2-dev; head feat/save-path-diagnostics. A PR está em revisão/validação, sem merge.

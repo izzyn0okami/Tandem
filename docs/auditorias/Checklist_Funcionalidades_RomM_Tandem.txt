@@ -852,3 +852,13 @@ AUDITORIA — COMPATIBILIDADE DA PASTA DE SAVES (2026-11-23)
 - Próximo passo: diagnóstico read-only do caminho efetivo e dos arquivos presentes por núcleo, seguido de teste PSX/SNES no aparelho. Não migrar, apagar ou substituir saves automaticamente. Estágio E permanece EM ANDAMENTO.
 - Achado adicional: a seleção de pasta converte o URI do seletor Android em caminho físico, sem persistir a permissão SAF. O acesso externo depende da permissão ampla MANAGE_EXTERNAL_STORAGE; sem ela, a tela pode avisar, e GameFolders.dir pode usar a pasta interna padrão se o caminho personalizado não estiver gravável. Verificar permissão e caminho efetivo antes de atribuir falha ao protocolo RomM.
 - RomM não exige acesso à raiz/pasta local do aplicativo: recebe os arquivos enviados pela rede. O risco identificado é exclusivamente de localização/permissão local entre Android, LibretroDroid e SaveStore.
+
+
+ATUALIZAÇÃO — DIAGNÓSTICO DE CAMINHOS DE SAVES (2026-11-23)
+- Implementação inicial em feat/save-path-diagnostics: SavePathDiagnostics.kt registra automaticamente, ao iniciar uma sessão, o caminho efetivo da pasta Saves e se houve fallback da pasta personalizada para a interna.
+- Registra a permissão MANAGE_EXTERNAL_STORAGE, o caminho informado a LibretroDroid, o diretório do SaveStore, existência/tamanho dos arquivos sram.srm e state1.state e metadados limitados dos arquivos diretamente na raiz e na pasta do núcleo.
+- Somente leitura: não abre conteúdo, não grava arquivo de teste, não move, copia, renomeia, sobrescreve ou exclui saves.
+- CI, revisão de código e teste real em PSX/SNES ainda pendentes. O diagnóstico deve ser validado no aparelho e o log exportado antes de qualquer correção de sincronização.
+- E4/E5 continuam em andamento; não há autorização para ativar transferência Device Sync nem apagar/substituir arquivos. Nenhuma PR criada até este registro.
+
+- PR #46 aberta como Draft: https://github.com/izzyn0okami/Tandem/pull/46. Base game-mode-m2-dev; head feat/save-path-diagnostics. Aguardando CI e revisão; sem merge.
