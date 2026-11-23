@@ -777,18 +777,23 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
     }
 
     /** Baixa um arquivo associado usando o RomFile.id exigido pelo endpoint oficial. */
-    fun downloadAssociatedFile(file: RemoteAssociatedFile, target: File) {
+    fun downloadAssociatedFile(
+        file: RemoteAssociatedFile,
+        target: File,
+        maxBytes: Long = MAX_ROMM_MEDIA_DOWNLOAD_BYTES,
+    ) {
         require(file.id > 0L) { "ID de arquivo RomM inválido" }
+        require(maxBytes > 0L) { "Limite de download inválido" }
         val url = base.resolve("api/roms/${file.id}/files/content/")!!.newBuilder()
             .addPathSegment(file.fileName)
             .build()
-        if (file.sizeBytes > MAX_ROMM_MEDIA_DOWNLOAD_BYTES) {
+        if (file.sizeBytes > maxBytes) {
             val partial = File(target.parentFile, "${target.name}.part")
             partial.delete()
             File(partial.parentFile, "${partial.name}.range").delete()
-            throw IOException("O arquivo " + file.fileName + " excede o limite de download de 1 GiB.")
+            throw IOException("O arquivo ${file.fileName} excede o limite de download de ${maxBytes / (1024L * 1024L)} MiB.")
         }
-        downloadToFile(url, target, file.fileName, MAX_ROMM_MEDIA_DOWNLOAD_BYTES)
+        downloadToFile(url, target, file.fileName, maxBytes)
     }
 
     fun listNotes(romId: Long): List<RemoteGameNote> {
