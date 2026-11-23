@@ -186,3 +186,11 @@ ATUALIZAÇÃO — FILTRO DE PLATAFORMA ROMM (2026-11-23)
 - PR #42 continua aberta e draft; sem merge.
 - PR #41 deve permanecer aberta e draft até retomarmos explicitamente o trabalho em saves. Nenhuma alteração nessa PR nesta etapa.
 - CI da nova implementação: #45090587588, inicialmente queued.
+
+
+ATUALIZAÇÃO — CI DO FILTRO DE PLATAFORMA (2026-11-23)
+- [EM ANDAMENTO] A2. Filtro de plataforma via API oficial RomM: código implementado e CIs #659 e #660 aprovadas (testes unitários, Build APK, Upload artifact, Spotless e final-status). Falta validação funcional no telefone.
+- A1. Pesquisa remota: CI #45089462426 aprovada; validação funcional no telefone ainda pendente.
+- PR #42 continua aberta/draft, sem merge.
+- PR #41 continua aberta/draft e intocada por decisão do usuário.
+- Nenhuma release publicada.
