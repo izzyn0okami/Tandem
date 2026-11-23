@@ -4164,3 +4164,19 @@ ATUALIZAÇÃO — CI #733 / PR #44 (2026-11-23)
 - [ ] Melhorias pendentes: miniaturas de screenshots, navegação entre páginas PDF e seek/progresso do áudio; revisar lifecycle/formats do player e agregação de arquivos entre versões.
 - [ ] C5 — integração do patcher oficial RomM permanece pendente.
 - PR #44 permanece aberta e em draft, sem merge; PR #41 continua aberta e pausada.
+
+
+ATUALIZAÇÃO — CI #739 / PR #44 (2026-11-23)
+- [x] CI #739 / run 45180850010: SUCCESS no head ac425eca971e94a2774430655d8b23f50be2eb4f.
+- [x] check-style: Spotless Apply e spotlessCheck aprovados.
+- [x] build-debug-apk: testes unitários, compilação do APK e upload do artefato aprovados.
+- [x] final-status aprovado.
+- Jobs send-notifications, crowdin-auto-merge, tandem-release e nightly-release ignorados; nenhuma release publicada.
+- [x] Correção de descrição: selecionar o primeiro summary não vazio entre todas as versões do jogo; seção própria “Descrição” posicionada após as informações básicas.
+- [x] Parser normaliza summaries, descartando valores vazios e o texto literal “null”.
+- [x] Correções de agregação de mídias entre versões e limite de dimensões da prévia PDF estão incluídas no histórico de commits coberto por esta CI.
+- [ ] A descrição depende de metadados preenchidos no RomM; não há geração automática de texto ausente.
+- [ ] C1–C4: miniaturas de screenshots, navegação multipágina PDF, seek/progresso de áudio, revisão do lifecycle/formatos e testes específicos continuam pendentes.
+- [ ] C5: aplicação de patches pelo endpoint oficial RomM continua pendente.
+- [ ] C1–C7: validação funcional no telefone permanece pendente; CI não substitui teste real.
+- PR #44 permanece aberta e em draft, sem merge. PR #41 permanece aberta, em draft e pausada.
