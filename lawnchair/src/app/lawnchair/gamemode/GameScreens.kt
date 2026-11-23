@@ -1177,6 +1177,33 @@ internal fun SettingsScreen(
     var iidbStatus by remember { mutableStateOf("") }
     var checkingIidb by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
+    var remoteDevices by remember { mutableStateOf<List<RemoteDevice>?>(null) }
+    var remoteDevicesLoading by remember { mutableStateOf(false) }
+    var remoteDevicesError by remember { mutableStateOf("") }
+    val refreshRemoteDevices = {
+        if (!RomMSettings.isConnected(context)) {
+            remoteDevices = null
+            remoteDevicesError = "Conecte-se ao RomM para consultar os dispositivos."
+        } else if (!remoteDevicesLoading) {
+            scope.launch {
+                remoteDevicesLoading = true
+                remoteDevicesError = ""
+                runCatching {
+                    withContext(Dispatchers.IO) {
+                        RomMClient(RomMSettings.url(context).orEmpty(), RomMSettings.token(context)).listDevices()
+                    }
+                }.onSuccess { remoteDevices = it }
+                    .onFailure { error ->
+                        if (error is CancellationException) throw error
+                        remoteDevicesError = error.message ?: "Não foi possível consultar os dispositivos."
+                    }
+                remoteDevicesLoading = false
+            }
+        }
+    }
+    LaunchedEffect(RomMSettings.url(context), RomMSettings.token(context), RomMSettings.isConnected(context)) {
+        if (RomMSettings.isConnected(context)) refreshRemoteDevices() else remoteDevices = null
+    }
     var scraper by remember { mutableStateOf(GameModeSettings.isScraperEnabled(context)) }
     var raRichPresenceVisible by remember { mutableStateOf(GameModeSettings.isRaRichPresenceVisible(context)) }
     val toggleRaRichPresence = {
@@ -1217,6 +1244,74 @@ internal fun SettingsScreen(
 
         SettingsSection(stringResource(R.string.game_mode_section_online))
         GameButton(stringResource(R.string.game_server_open), onOpenServer)
+        if (RomMSettings.isConnected(context)) {
+            Text("Dispositivos registrados no RomM", color = GameColors.text, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
+            GameButton(
+                if (remoteDevicesLoading) "Atualizando dispositivos…" else "Atualizar dispositivos",
+                refreshRemoteDevices,
+                enabled = !remoteDevicesLoading,
+            )
+            if (remoteDevicesError.isNotEmpty()) {
+                Text(remoteDevicesError, color = GameColors.danger, fontSize = 12.sp)
+            }
+            remoteDevices?.let { devices ->
+                if (devices.isEmpty()) {
+                    Text("Nenhum dispositivo registrado foi retornado pelo servidor.", color = GameColors.textDim, fontSize = 12.sp)
+                } else {
+                    devices.forEach { device ->
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .background(GameColors.surface, RoundedCornerShape(12.dp))
+                                .padding(12.dp),
+                            verticalArrangement = Arrangement.spacedBy(4.dp),
+                        ) {
+                            Text(
+                                device.name.ifBlank { "Dispositivo ${device.id}" },
+                                color = GameColors.text,
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.SemiBold,
+                            )
+                            Text(
+                                listOfNotNull(device.platform, device.client, device.clientVersion?.let { "v$it" }, device.syncMode?.let { "sync $it" }).joinToString(" • ")
+                                    .ifBlank { "Tipo não informado pelo servidor" },
+                                color = GameColors.textDim,
+                                fontSize = 12.sp,
+                            )
+                            Text(
+                                when (device.online) {
+                                    true -> "Online"
+                                    false -> "Offline"
+                                    null -> "Presença indisponível (endpoint de dispositivos online não disponível)"
+                                },
+                                color = if (device.online == true) GameColors.accent else GameColors.textDim,
+                                fontSize = 12.sp,
+                            )
+                            device.syncEnabled?.let { enabled ->
+                                Text(
+                                    if (enabled) "Sincronização habilitada" else "Sincronização desabilitada",
+                                    color = GameColors.textDim,
+                                    fontSize = 11.sp,
+                                )
+                            }
+                            if (device.capabilities.isEmpty()) {
+                                Text("Capacidades não declaradas pelo servidor.", color = GameColors.textDim, fontSize = 12.sp)
+                            } else {
+                                device.capabilities.toSortedMap().forEach { (capability, supported) ->
+                                    Text(
+                                        "$capability: ${if (supported) "suportado" else "não suportado"}",
+                                        color = GameColors.textDim,
+                                        fontSize = 11.sp,
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        } else {
+            Text("Conecte-se ao RomM para consultar os dispositivos registrados.", color = GameColors.textDim, fontSize = 12.sp)
+        }
         GameButton(stringResource(R.string.game_sgdb_open), onOpenScraper)
         SettingsSwitchRow(label = stringResource(R.string.game_mode_scraper), checked = scraper, onToggle = toggleScraper)
         SettingsSwitchRow(label = "Exibir Rich Presence durante o jogo", checked = raRichPresenceVisible, onToggle = toggleRaRichPresence)

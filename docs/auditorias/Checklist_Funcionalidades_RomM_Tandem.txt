@@ -594,3 +594,80 @@ FECHAMENTO DO ESTÁGIO C — PR #44 (2026-11-23)
 - Artefato CI #791: ID 14834393287; SHA-256 bd094f2c0fc98dac8fd3b6f8442270e82440d117cf6d2b6896d9cd63ef8b5c53; 46.268.150 bytes; expira em 2027-02-21.
 - PR #41 (saves/conflicts) permanece aberta, em draft e pausada, sem alterações.
 - Nenhuma release publicada nesta operação.
+
+
+INÍCIO DO ESTÁGIO D — PR EM PREPARAÇÃO (2026-11-23)
+Branch: feat/romm-platforms-firmware-devices
+Base: game-mode-m2-dev @ 71855794702fa30518dcf01bcd6f072fc9cad47a (commit de fechamento após o merge da PR #44: 6adc110e0f2effb6d4be2a9a2abc6a8360cf8824)
+- [EM ANDAMENTO] D3 — validar BIOS locais por tamanho e hashes oficiais quando houver referência confiável; não tratar nome de arquivo como prova de integridade.
+- [EM ANDAMENTO] D4 — representar alternativas (OR) e requisitos simultâneos (AND) sem alterar os requisitos existentes dos núcleos.
+- [EM ANDAMENTO] D5 — revisar requisitos por núcleo, preservando exceções específicas e kits de BIOS.
+- [EM ANDAMENTO] D6 — revisar importação, substituição segura, validação antes da promoção e recuperação de BIOS; nunca apagar a cópia válida antes de confirmar a nova.
+- [EM ANDAMENTO] D7 — inventariar e consultar dispositivos RomM por endpoints/scopes oficiais, sem misturar com o pareamento OAuth já existente.
+- [EM ANDAMENTO] D8 — detectar capacidades dos dispositivos a partir de dados explícitos do servidor; ausência de campo não significa capacidade suportada.
+- [AGUARDANDO DECISÃO] D9 — instalação remota de ROMs continua fora desta PR até definição de agente e cenário de uso.
+- D1 e D2 permanecem concluídos e não serão reimplementados.
+- PR #41 continua aberta/draft/pausada. Seus arquivos alterados são GameModeActivity.kt, SaveStore.kt e SaveStoreTest.kt; evitar alterações nesses arquivos.
+- Nenhum teste funcional em aparelho será marcado como concluído sem confirmação do usuário.
+
+
+ATUALIZAÇÃO DO ESTÁGIO D — IMPLEMENTAÇÃO EM REVISÃO (2026-11-23)
+PR #45: https://github.com/izzyn0okami/Tandem/pull/45
+- [IMPLEMENTADO / CI PENDENTE] D3 — MD5 oficial embutido para BIOS documentadas; importação local rejeita hash divergente; downloads validam contra hash oficial ou metadados RomM antes de substituir; estado UNKNOWN quando não há referência confiável; tela mostra o resultado.
+- [IMPLEMENTADO / CI PENDENTE] D4 — regra AND/OR isolada e coberta por testes unitários, preservando compatibilidade da lista bios legada.
+- [PARCIAL / REVISÃO PENDENTE] D5 — requisitos cruzados com docs oficiais. Corrigido Atari 5200 (5200.rom opcional no núcleo a5200); ampliadas alternativas de 3DO e PlayStation; demais requisitos conferidos. Falta decidir/refinar indicação por região em Sega CD e Saturn.
+- [IMPLEMENTADO / CI PENDENTE] D6 — importação de kits em staging, promoção após validação, backup e rollback; importação individual valida MD5 antes de substituir; testes de sucesso e kit incompleto.
+- [IMPLEMENTADO / CI PENDENTE] D7 — inventário de dispositivos, IDs online e consulta individual pelos endpoints RomM documentados; tela de configurações exibe dispositivos e erros de escopo.
+- [IMPLEMENTADO / CI PENDENTE] D8 — capacidades booleanas explícitas exibidas na tela; ausência é desconhecida, não suporte; testes de parser e semântica.
+- [ ] Testes funcionais no telefone com RomM 5.4.x real — pendentes; não marcar como concluídos sem confirmação do usuário.
+- CI #804: Spotless aprovado; testes unitários/build ainda em execução na última consulta. A CI final deve cobrir o HEAD mais recente da PR.
+- PR #41 permanece aberta/draft/pausada e sem alterações.
+- D9 permanece fora do escopo e aguardando decisão.
+
+D5 — COMPLEMENTO DE CATÁLOGO (2026-11-23)
+- mGBA: BIOS opcionais para GB/GBC/GBA catalogadas com hashes.
+- Genesis Plus GX: BIOS opcionais de Mega Drive, Master System e Game Gear catalogadas; Sega CD regional mantido como requisito por região.
+- melonDS: BIOS/firmware DS marcados opcionais; DSi não é tratado como modo equivalente.
+- Handy: lynxboot.img corrigido para obrigatório.
+- ProSystem: BIOS Atari 7800 opcional.
+- FCEUmm: disksys.rom obrigatório somente para conteúdo FDS; Game Genie opcional; plataforma NES não bloqueada por BIOS.
+- D5 ainda não concluído: falta tratar disponibilidade por região para Sega CD/Saturn e a separação de modos DSi/Neo Geo AES/MVS.
+
+D7/D8 — AJUSTE AO CONTRATO OFICIAL (2026-11-23)
+- GET /api/devices é paginado; o cliente percorre items/total/limit/offset.
+- 404 em /api/devices/online indica presença indisponível (por exemplo, DEVICE_INSTALL_ENABLED desativado); não marcar o aparelho como offline. 403 continua sendo erro de escopo.
+- Inventário usa campos DeviceSchema documentados: platform, client, client_version, sync_mode, sync_enabled, last_seen e capabilities.
+
+REGISTRO DE CI — 2026-11-23
+- CI #804 passou integralmente no commit intermediário 3dab2566c5d26ee84a0e800850cee81c527e7da6; não valida as alterações posteriores.
+- CI #825/#826 tiveram falha somente no push de formatação automático (non-fast-forward por concorrência). O commit Spotless foi publicado em 4449d8d213b124a5dbf4ff3f9230a31254665b51.
+- CI #837 aguarda execução para validar o estado formatado; manter PR draft até sucesso.
+
+D5 — COMPLEMENTO DSi / REGIÃO / NEO GEO (2026-11-23)
+- [IMPLEMENTADO] melonDS: adicionados os cinco arquivos DSi documentados como opcionais pelo core melonds; teste garante que ausência não bloqueia execução.
+- [IMPLEMENTADO] UI informa a necessidade de BIOS regional correspondente em Sega CD e Saturn, sem afirmar detecção automática de região por jogo.
+- [IMPLEMENTADO] UI informa cartuchos específicos necessários para alguns jogos Saturn; não os classifica incorretamente como BIOS.
+- [REVISÃO DOCUMENTAL CONCLUÍDA] Neo Geo continua no FBNeo com neogeo.zip; aes.zip pertence ao core Geolith e não deve ser exigido pelo core atual.
+- [PENDENTE / FORA DO MODELO ATUAL] Detecção automática de região por jogo e requisitos por título (incluindo cartuchos Saturn) exigem metadados confiáveis por jogo; não inferir de nomes de arquivos/pastas.
+
+CI / REVISÃO (2026-11-23)
+- Corrigido KDoc deslocado identificado pela CI #845.
+- CI #850 executando validação de Spotless, testes unitários e APK para o código atualizado (head de código 8e3b2c26a628556e8c9251d750cab521867c7b34). Aguardar conclusão antes de considerar CI verde.
+- PR #45 segue draft e sem merge; PR #41 permanece inalterada.
+
+CI #850 — RESULTADO (2026-11-23)
+- [SUCESSO] build-debug-apk: testes unitários, montagem do APK e upload do artefato concluídos.
+- [PARCIAL] Spotless aplicou formatação e o commit automático e2f5fbc46c967df320f6bb609ca1e2d6f23d2cc8 está no branch; o push da etapa de automação reportou non-fast-forward/concorrência.
+- [PENDENTE] CI #854 está action_required e não iniciou jobs. Aguardar autorização/execução no head atual antes de marcar CI verde.
+- [PENDENTE] Testes no aparelho com servidor RomM real.
+- PR #45 continua Draft e sem merge; PR #41 continua intocada.
+
+
+ATUALIZAÇÃO — ESTÁGIO D / PR #45 / CI #856 (2026-11-23)
+- [x] CI #856 / run 45222135704: SUCCESS integral no commit 019f4d4b08c44fa4c6a8e88a29263ada120ca748 — https://github.com/izzyn0okami/Tandem/actions/runs/45222135704.
+- [x] check-style: Spotless Apply, commit/reexecução e verificação final de formatação aprovados.
+- [x] build-debug-apk: testes unitários, Build APK e Upload artifact aprovados.
+- [x] final-status aprovado; jobs opcionais de notificações/Crowdin/release ignorados; nenhuma release publicada.
+- [x] Artefato assembleLawnWithQuickstepGithubDebug: ID 14841653637; 46.290.536 bytes; SHA-256 d8e8d136445f882b7d6f6d62841694599b29471380f88a5b1a73640d859fc705; expira em 2027-02-21.
+- [ ] D3–D8: implementação e testes automatizados aprovados pela CI; testes funcionais no telefone com RomM 5.4.x real continuam pendentes.
+- PR #45 permanece aberta, Draft e sem merge; PR #41 permanece aberta, Draft, pausada e intocada; D9 segue fora do escopo.

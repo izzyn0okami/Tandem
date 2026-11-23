@@ -4306,3 +4306,157 @@ ATUALIZAÇÃO FINAL — ESTÁGIO C / PR #44 MESCLADA (2026-11-23)
 - [ ] Testes funcionais no telefone com servidor/conta RomM real serão realizados na versão Latest; não foram executados nesta auditoria e não são alegados como concluídos.
 - PR #41 permanece aberta/draft e pausada; não foi alterada.
 - Nenhuma release foi publicada manualmente nesta operação.
+
+
+INÍCIO DA AUDITORIA — ESTÁGIO D: PLATAFORMAS, FIRMWARE E DISPOSITIVOS (2026-11-23)
+Branch: feat/romm-platforms-firmware-devices
+Base: game-mode-m2-dev @ 71855794702fa30518dcf01bcd6f072fc9cad47a (commit de fechamento após o merge da PR #44: 6adc110e0f2effb6d4be2a9a2abc6a8360cf8824)
+Escopo: D3–D8. D1 (consulta de plataformas/metadados) e D2 (consulta/download de firmware) já constam como concluídos no checklist e não serão repetidos. D9 permanece aguardando decisão do usuário.
+
+Regras de segurança e compatibilidade:
+- Validar BIOS por hash/tamanho somente quando existir referência oficial ou de fonte primária identificável; não inferir integridade pelo nome.
+- Preservar semântica OR (alternativas) e AND (arquivos simultâneos) dos requisitos por núcleo.
+- Auditar requisitos por núcleo, não assumir que plataforma define todos os requisitos.
+- Importação/substituição deve usar staging temporário, validar antes de promover e preservar/restaurar a cópia anterior em caso de falha.
+- Dispositivos RomM devem ser consultados separadamente do fluxo OAuth de pareamento já existente; scopes ausentes devem gerar estado explícito, sem falha silenciosa.
+- Feature detection somente a partir de capacidades retornadas explicitamente pelo servidor; não presumir suporte.
+- PR #41 permanece intocada; evitar GameModeActivity.kt, SaveStore.kt e SaveStoreTest.kt.
+- CI verde não substitui teste funcional no telefone. Nenhum teste em aparelho será declarado sem confirmação do usuário.
+
+Estado inicial: implementação D3–D8 ainda não iniciada; auditoria estática e implementação serão registradas nesta PR por commits/CI. Nenhuma release ou merge autorizado.
+
+
+AUDITORIA ESTÁTICA INICIAL — ESTÁGIO D (2026-11-23)
+Arquivos inspecionados na base game-mode-m2-dev:
+- lawnchair/src/app/lawnchair/gamemode/BiosManager.kt
+- lawnchair/src/app/lawnchair/gamemode/GamePlatforms.kt
+- lawnchair/src/app/lawnchair/gamemode/RomMClient.kt
+
+Achados confirmados:
+- D3: download de firmware do RomM valida tamanho e CRC32/MD5/SHA-1 quando esses metadados vêm do servidor. BIOS já instaladas/importadas localmente não possuem catálogo de hashes/tamanhos de referência nem verificação local equivalente. Não inventar valores; referências devem vir de documentação oficial do núcleo.
+- D4: há implementação preexistente de biosGroups com semântica AND entre grupos e OR dentro de cada grupo; quando biosGroups está vazio, GamePlatform.bios é tratado como um único grupo OR. A PR deve preservar e testar esse comportamento, não duplicá-lo.
+- D5: requisitos são atualmente definidos em GamePlatforms.kt, por GamePlatform/coreId; há exceções biosKit para blueMSX e configurações específicas. Revisar cada requisito com a documentação do núcleo antes de mudar a lista.
+- D6: BiosManager.import usa arquivo .part e backup para substituir um arquivo individual; a verificação atual limita-se a arquivo não vazio e tamanho após rename. importKit copia com overwrite=true e ignora falhas por runCatching, sem staging transacional. downloadFromServer baixa somente BIOS ausentes, sem validar previamente o arquivo local existente contra referência oficial.
+- D7: RomMClient já implementa OAuth device pairing e lê device_type em atividade, mas a inspeção inicial não encontrou modelo/listagem de dispositivos registrados. Os scopes devices.read/devices.write já são solicitados no pareamento; isso não prova que os endpoints estejam implementados.
+- D8: a inspeção inicial não encontrou parsing de DeviceSchema.capabilities nem feature detection; a atividade só expõe device_type.
+
+Consequência para a implementação:
+- D4 é principalmente revisão de cobertura/testes e correção de eventuais requisitos, não reescrita da lógica AND/OR.
+- D3 exige uma tabela de referências verificáveis e validação de arquivos locais; valores sem fonte oficial permanecerão sem hash esperado.
+- D6 precisa tratar kits e arquivos individuais sem destruir cópias válidas, propagar erros e permitir recuperação.
+- D7/D8 dependem da confirmação do contrato real do RomM 5.4.1 antes de adicionar endpoints/campos.
+Nenhuma funcionalidade D3–D8 foi marcada como concluída nesta auditoria inicial.
+
+
+ATUALIZAÇÃO DE IMPLEMENTAÇÃO — ESTÁGIO D (2026-11-23)
+Branch: feat/romm-platforms-firmware-devices | PR #45 | CI inicial #804 em execução no momento desta atualização.
+
+D3 — VALIDAÇÃO DE FIRMWARE/BIOS
+- Adicionado md5Hash opcional a BiosFile e referências MD5 publicadas pela documentação oficial Libretro para arquivos conhecidos: Sega CD (Genesis Plus GX), PlayStation (PCSX ReARMed), Saturn (Beetle Saturn), Dreamcast boot ROM (Flycast), 3DO (Opera), Intellivision (FreeIntv), ColecoVision (GearColeco), Atari 5200/7800 e Lynx (libretro-core-info/database).
+- A importação manual e a varredura da pasta local rejeitam arquivos cujo MD5 oficial conhecido não corresponde. A varredura continua após um arquivo inválido e registra a falha.
+- Downloads do RomM recebem a referência oficial esperada quando disponível e validam antes de substituir o arquivo anterior. BIOS locais sem hash oficial podem ser validadas por metadados de integridade publicados pelo RomM; sem referência confiável ficam como UNKNOWN, nunca como válidas por nome.
+- Tela de BIOS agora diferencia MD5 confirmado, MD5 divergente e ausência de hash de referência.
+
+D4 — SEMÂNTICA AND/OR
+- A regra existente foi isolada em função pura para testes, mantendo: OR dentro de cada grupo, AND entre grupos; a lista antiga bios sem grupos explícitos continua um grupo OR; kits seguem verificação própria.
+- Testes adicionados para lista antiga OR, grupos AND/OR, requisitos vazios, BIOS opcionais e kits.
+
+D5 — REQUISITOS POR NÚCLEO
+- Auditoria oficial confirma: Sega CD tem BIOS regional obrigatória por jogo/região; PCSX ReARMed aceita fallback HLE e BIOS reais melhoram compatibilidade; Saturn exige BIOS regional por jogo; Flycast BIOS de boot opcional; Opera exige uma BIOS de sistema entre alternativas; FreeIntv exige exec.bin E grom.bin; GearColeco exige colecovision.rom; blueMSX exige Databases E Machines.
+- Corrigido Atari 5200: o núcleo configurado é a5200 e o arquivo oficial a5200_libretro.info marca 5200.rom como opcional. O app não deve bloquear jogos sem esse arquivo.
+- A lista de 3DO e PlayStation foi ampliada com alternativas documentadas e hashes.
+- PENDENTE: revisar se o indicador geral de BIOS por plataforma deve diferenciar disponibilidade regional por jogo (Sega CD/Saturn). A tela lista os arquivos regionais individualmente; a regra geral atual indica presença de pelo menos uma alternativa e não promete compatibilidade de todas as regiões.
+
+D6 — IMPORTAÇÃO SEGURA
+- importKit foi substituído por transação em staging: exige todas as pastas do kit, copia e valida antes de mover a instalação anterior para backup, promove todas as pastas e reverte em caso de falha. Backups são mantidos se uma restauração falhar.
+- Importação individual preserva a versão anterior, valida arquivo e MD5 conhecido antes da promoção. A UI captura erros e não deixa exceções de importação escaparem da rotina de seleção.
+- Testes adicionados para importação completa do kit, ausência de pasta obrigatória sem alteração da instalação, e validação MD5.
+
+D7 — DISPOSITIVOS ROMM
+- Implementados GET /api/devices, GET /api/devices/online e GET /api/devices/{id}; erros HTTP e falta de devices.read são apresentados explicitamente, sem fallback silencioso.
+- A tela de configurações lista nome, cliente/plataforma, versão e estado online.
+
+D8 — CAPACIDADES
+- RemoteDevice preserva somente capacidades booleanas explicitamente declaradas. supports(capability) retorna null quando a chave não veio do servidor; ausência não equivale a suporte.
+- A tela exibe capacidades suportadas/não suportadas e informa quando o servidor não declarou nenhuma. Teste cobre true/false e valores não booleanos ignorados.
+
+FONTES PRIMÁRIAS CONSULTADAS
+- https://docs.libretro.com/library/bios/
+- https://docs.libretro.com/library/genesis_plus_gx/
+- https://docs.libretro.com/library/pcsx_rearmed/
+- https://docs.libretro.com/library/beetle_saturn/
+- https://docs.libretro.com/library/flycast/
+- https://docs.libretro.com/library/opera/
+- https://docs.libretro.com/library/freeintv/
+- https://docs.libretro.com/library/gearcoleco/
+- https://docs.libretro.com/library/bluemsx/
+- https://github.com/libretro/libretro-core-info/blob/master/a5200_libretro.info
+- RomM 5.4.x: https://docs.romm.app/5.4.0/developers/api-authentication/ e documentação de API/Devices.
+
+CI/VALIDAÇÃO
+- Spotless da CI #804 concluiu com sucesso. O job de testes unitários/build ainda estava em execução; o resultado final não foi declarado.
+- Testes funcionais no telefone e validação contra servidor RomM real continuam pendentes.
+- D3/D4/D6/D7/D8 implementados nesta branch, aguardando CI final e revisão. D5 parcialmente concluído, com revisão regional pendente.
+- PR #41 permanece aberta/draft e intocada. Nenhum merge ou release autorizado.
+
+
+COMPLEMENTO DA AUDITORIA D5 — CATÁLOGO DE NÚCLEOS (2026-11-23)
+- mGBA: Game Boy, Game Boy Color e Game Boy Advance têm BIOS opcionais; adicionados gb_bios.bin, gbc_bios.bin e gba_bios.bin com MD5 oficiais.
+- Genesis Plus GX: adicionados bios_MD.bin, bios_E.sms, bios_U.sms, bios_J.sms e bios.gg como opcionais; os três BIOS de Sega CD continuam regionais e obrigatórios para jogos da região correspondente.
+- melonDS: bios7.bin, bios9.bin e firmware.bin são opcionais no modo DS; adicionados MD5 conhecidos para bios7 e bios9. DSi possui requisitos diferentes, mas o catálogo atual não representa um modo DSi separado; não presumir que os arquivos DS bastem para DSi.
+- Handy: lynxboot.img é obrigatório; corrigido o status anterior de opcional para obrigatório.
+- ProSystem: 7800 BIOS (U).rom é opcional; hash oficial já registrado.
+- FCEUmm: disksys.rom é obrigatório somente para jogos FDS; adicionado como item condicional sem bloquear a plataforma NES inteira. gamegenie.nes é opcional para o acessório Game Genie.
+- Atari 5200 (a5200): 5200.rom opcional, corrigido anteriormente.
+- Testes de catálogo ampliados para Lynx obrigatório, mGBA opcional e FDS condicional.
+Fontes adicionais: https://docs.libretro.com/library/mgba/ ; https://docs.libretro.com/library/melonds/ ; https://docs.libretro.com/library/handy/ ; https://docs.libretro.com/library/prosystem/ ; https://docs.libretro.com/library/fceumm/ ; https://docs.libretro.com/library/genesis_plus_gx/ .
+D5 permanece parcialmente pendente para auditoria de BIOS regionais por jogo (Sega CD/Saturn) e para avaliar se o app deve separar modos DSi e Neo Geo AES/MVS em vez de um único estado por plataforma.
+
+
+COMPLEMENTO D7/D8 — CONTRATO REAL DO ROMM (2026-11-23)
+- Conferido no backend architecture oficial: GET /api/devices usa LimitOffsetPage (items/total/limit/offset); inventário agora percorre todas as páginas com limit/offset, sem limitar a primeira página.
+- GET /api/devices/online retorna IDs dos dispositivos com socket vivo ou claim recente e pode responder 404 quando DEVICE_INSTALL_ENABLED está desativado. O cliente agora trata esse 404 como presença DESCONHECIDA (online=null), não como offline nem como falha de autorização; 403 e demais erros continuam visíveis.
+- Modelo RemoteDevice atualizado para campos documentados name/platform/client/client_version/sync_mode/sync_enabled/last_seen/capabilities. O estado de sincronização é mostrado na tela. Campo device_type não faz parte do esquema documentado e deixou de ser usado.
+- D8 continua limitado a flags booleanas explicitamente presentes em capabilities; ausência da chave retorna null.
+Fonte técnica: https://github.com/rommapp/romm/blob/master/docs/BACKEND_ARCHITECTURE.md (seções 5, 6.11 e Devices namespace).
+
+
+REGISTRO DE CI — ESTÁGIO D (2026-11-23)
+- CI #804: sucesso (check-style, build-debug-apk e final-status), commit testado 3dab2566c5d26ee84a0e800850cee81c527e7da6. Este commit é intermediário e antecede parte das últimas alterações de catálogo, paginação de dispositivos e testes; não é a validação final da PR.
+- CI #825 e #826: os jobs de formatação falharam no push automático de Spotless por rejeição non-fast-forward, pois as execuções concorrentes tentaram publicar commits de formatação no mesmo branch. O commit automático de formatação foi posteriormente publicado como 4449d8d213b124a5dbf4ff3f9230a31254665b51.
+- CI #837: permanece na fila para validar a PR; o build dos jobs anteriores ainda não havia terminado na última consulta.
+- O estágio D permanece em draft e sem merge até que uma CI no head formatado atual conclua com sucesso. Testes funcionais no telefone continuam pendentes.
+
+
+COMPLEMENTO D5 — DSi, REGIÃO E NEO GEO (2026-11-23)
+- melonDS (core atual "melonds"): adicionados ao catálogo como opcionais dsi_bios7.bin, dsi_bios9.bin, dsi_firmware.bin, dsi_nand.bin e dsi_sd_card.bin. A documentação específica de melonDS lista os cinco como opcionais; ausência não bloqueia DS/DSi. Teste unitário garante presença no catálogo e readiness sem qualquer BIOS.
+- Não foi criado um modo DSi separado: a plataforma atual usa o core melonds e a documentação deste core classifica os cinco arquivos DSi como opcionais. O conjunto de requisitos obrigatórios do core melonds_ds é diferente, mas não é o core configurado nesta plataforma; não misturar contratos de núcleos distintos.
+- Sega CD: BIOS EUA/Europa/Japão são alternativas de região, mas a compatibilidade depende da região do jogo. A UI agora explicita essa limitação. Não há classificação regional confiável por jogo na camada atual, portanto não inferir região a partir de nome ou pasta.
+- Saturn: BIOS Japão e EUA/Europa continuam alternativas; a UI agora explica que a região deve corresponder ao jogo. A documentação Beetle Saturn também identifica cartuchos ROM específicos para The King of Fighters '95 e Ultraman; eles não foram adicionados à lista de BIOS, pois são ROMs de cartucho de jogo, não firmware geral, e não há detector por título. A UI informa que esses casos exigem cartucho específico.
+- Neo Geo: a plataforma permanece com o core fbneo e seu arquivo de BIOS neogeo.zip. A documentação FBNeo trata o neogeo como conjunto de BIOS do sistema arcade e não define um requisito separado de aes.zip. O core Geolith, por outro lado, distingue aes.zip (AES) de neogeo.zip (MVS/UniBIOS). Não alterar o core nem criar falsos requisitos AES sem decisão funcional; essa separação fica fora do escopo da configuração FBNeo atual.
+- Arquivos alterados nesta atualização: GamePlatforms.kt (cinco DSi opcionais), BiosScreen.kt (avisos regionais e cartucho Saturn), BiosManagerTest.kt (teste de DSi opcional).
+Fontes primárias: https://docs.libretro.com/library/melonds/ ; https://docs.libretro.com/library/melonds_ds/ ; https://docs.libretro.com/library/genesis_plus_gx/ ; https://docs.libretro.com/library/beetle_saturn/ ; https://docs.libretro.com/library/fbneo/ ; https://docs.libretro.com/library/geolith/ .
+
+
+REGISTRO DE CORREÇÃO E CI — 2026-11-23 (continuação)
+- CI #845 identificou erro ktlint standard:kdoc em RomMClient.kt: o KDoc original da classe ficou deslocado após inserir o parser de capabilities. A documentação foi reposicionada junto à classe; parser permanece com KDoc próprio.
+- CI #850 foi disparada para o head de código 8e3b2c26a628556e8c9251d750cab521867c7b34, incluindo correção KDoc, os cinco arquivos DSi opcionais, avisos de região/cartuchos Saturn e teste unitário. Na última consulta, os jobs de Spotless e testes unitários/build ainda estavam em execução; nenhum resultado final foi declarado.
+- Após o código, os logs e descrição da PR foram atualizados. O head atual da PR é bcad0fb6d7e646c7f46a43e0d4a13e800a995dc8 (commits posteriores somente de documentação/descrição; CI #850 executa o commit de código correspondente).
+- PR #45 continua draft, sem merge. PR #41 continua intocada. Testes em aparelho continuam pendentes.
+
+
+CI #850 E SPOTLESS — 2026-11-23
+- Job build-debug-apk (assembleLawnWithQuickstepGithubDebug): SUCCESS. Etapas Run unit tests, Build APK e Upload artifact concluídas com sucesso. Artefato assembleLawnWithQuickstepGithubDebug publicado (46.290.641 bytes).
+- Job check-style: Spotless aplicou formatação e gerou commit automático e2f5fbc46c967df320f6bb609ca1e2d6f23d2cc8. A etapa Commit formatting and rerun CI falhou no push por atualização concorrente/non-fast-forward; o commit de formatação, porém, apareceu depois no branch.
+- A execução subsequente CI #854, no commit e2f5fbc46c967df320f6bb609ca1e2d6f23d2cc8, terminou com conclusion action_required e nenhum job. É necessário autorizar a execução no GitHub Actions (se o GitHub mostrar a ação de aprovação) ou gerar nova execução por commit não-bot. Não considerar a CI completa até check-style e build/teste executarem no head atual.
+- PR #45 permanece Draft e mergeable, sem merge. PR #41 permanece aberta/draft e intocada. Teste funcional em aparelho com RomM real ainda pendente.
+
+
+ATUALIZAÇÃO — PR #45 / CI #856 (2026-11-23)
+- [x] CI #856 / run 45222135704: SUCCESS integral no commit 019f4d4b08c44fa4c6a8e88a29263ada120ca748 — https://github.com/izzyn0okami/Tandem/actions/runs/45222135704.
+- [x] check-style: Spotless Apply, commit/reexecução e verificação final de formatação aprovados.
+- [x] build-debug-apk: testes unitários, Build APK e Upload artifact aprovados.
+- [x] final-status aprovado; jobs opcionais de notificações/Crowdin/release ignorados; nenhuma release publicada.
+- [x] Artefato assembleLawnWithQuickstepGithubDebug: ID 14841653637; 46.290.536 bytes; SHA-256 d8e8d136445f882b7d6f6d62841694599b29471380f88a5b1a73640d859fc705; expira em 2027-02-21.
+- [ ] Testes funcionais no telefone com servidor RomM 5.4.x real continuam pendentes; CI verde não substitui validação no aparelho.
+- PR #45 permanece aberta, Draft e sem merge; PR #41 permanece aberta, Draft, pausada e intocada; D9 segue fora do escopo.

@@ -39,7 +39,7 @@ data class GamePlatform(
 )
 
 /** Um arquivo de BIOS esperado na pasta de sistema do núcleo. */
-data class BiosFile(val name: String, val label: String)
+data class BiosFile(val name: String, val label: String, val md5Hash: String? = null)
 
 /**
  * Plataformas que o motor atual (M3) sabe jogar. A decisão segue a lógica do Argosy: o nome da
@@ -48,10 +48,40 @@ data class BiosFile(val name: String, val label: String)
 object GamePlatforms {
 
     val all = listOf(
-        GamePlatform("nes", "Nintendo Entertainment System", "fceumm", setOf("nes", "unf", "unif", "fds"), setOf("nes", "famicom", "fc"), 10, 7),
+        GamePlatform(
+            "nes",
+            "Nintendo Entertainment System",
+            "fceumm",
+            setOf("nes", "unf", "unif", "fds"),
+            setOf("nes", "famicom", "fc"),
+            10,
+            7,
+            bios = listOf(
+                BiosFile("disksys.rom", "Famicom Disk System (obrigatório para jogos FDS)", "ca30b50f880eb660a320674ed365ef7a"),
+                BiosFile("gamegenie.nes", "Game Genie (opcional)", "7f98d77d7a094ad7d069b74bd553ec98"),
+            ),
+        ),
         GamePlatform("snes", "Super Nintendo", "snes9x", setOf("sfc", "smc", "swc", "fig"), setOf("snes", "sfc", "superfamicom", "supernintendo"), 20, 3),
-        GamePlatform("gb", "Game Boy", "mgba", setOf("gb"), setOf("gb", "gameboy"), 30, 4),
-        GamePlatform("gbc", "Game Boy Color", "mgba", setOf("gbc"), setOf("gbc", "gameboycolor"), 31, 6),
+        GamePlatform(
+            "gb",
+            "Game Boy",
+            "mgba",
+            setOf("gb"),
+            setOf("gb", "gameboy"),
+            30,
+            4,
+            bios = listOf(BiosFile("gb_bios.bin", "Game Boy BIOS (opcional)", "32fbbd84168d3482956eb3c5051637f5")),
+        ),
+        GamePlatform(
+            "gbc",
+            "Game Boy Color",
+            "mgba",
+            setOf("gbc"),
+            setOf("gbc", "gameboycolor"),
+            31,
+            6,
+            bios = listOf(BiosFile("gbc_bios.bin", "Game Boy Color BIOS (opcional)", "dbfce9db9deaa2567f6a84fde55f9680")),
+        ),
         GamePlatform(
             slug = "gba",
             name = "Game Boy Advance",
@@ -60,11 +90,42 @@ object GamePlatforms {
             folderAliases = setOf("gba", "gameboyadvance"),
             sortOrder = 32,
             raConsoleId = 5,
-            bios = listOf(BiosFile("gba_bios.bin", "Game Boy Advance (opcional)")),
+            bios = listOf(BiosFile("gba_bios.bin", "Game Boy Advance (opcional)", "a860e8c0b6d573d191e4ec7db1b1e4f6")),
         ),
-        GamePlatform("genesis", "Mega Drive / Genesis", "genesis_plus_gx", setOf("md", "gen", "smd"), setOf("genesis", "megadrive", "md", "segagenesis", "segamegadrive"), 40, 1),
-        GamePlatform("sms", "Master System", "genesis_plus_gx", setOf("sms"), setOf("sms", "mastersystem", "segamastersystem"), 41, 11),
-        GamePlatform("gg", "Game Gear", "genesis_plus_gx", setOf("gg"), setOf("gg", "gamegear", "segagamegear"), 42, 15),
+        GamePlatform(
+            "genesis",
+            "Mega Drive / Genesis",
+            "genesis_plus_gx",
+            setOf("md", "gen", "smd"),
+            setOf("genesis", "megadrive", "md", "segagenesis", "segamegadrive"),
+            40,
+            1,
+            bios = listOf(BiosFile("bios_MD.bin", "Mega Drive boot ROM (opcional)", "45e298905a08f9cfb38fd504cd6dbc84")),
+        ),
+        GamePlatform(
+            "sms",
+            "Master System",
+            "genesis_plus_gx",
+            setOf("sms"),
+            setOf("sms", "mastersystem", "segamastersystem"),
+            41,
+            11,
+            bios = listOf(
+                BiosFile("bios_E.sms", "Master System Europa (opcional)", "840481177270d5642a14ca71ee72844c"),
+                BiosFile("bios_U.sms", "Master System EUA (opcional)", "840481177270d5642a14ca71ee72844c"),
+                BiosFile("bios_J.sms", "Master System Japão (opcional)", "24a519c53f67b00640d0048ef7089105"),
+            ),
+        ),
+        GamePlatform(
+            "gg",
+            "Game Gear",
+            "genesis_plus_gx",
+            setOf("gg"),
+            setOf("gg", "gamegear", "segagamegear"),
+            42,
+            15,
+            bios = listOf(BiosFile("bios.gg", "Game Gear BIOS (opcional)", "672e104c3be3a238301aceffc3b23fd6")),
+        ),
         GamePlatform("32x", "Sega 32X", "picodrive", setOf("32x"), setOf("32x", "sega32x"), 43),
         GamePlatform(
             slug = "scd",
@@ -76,9 +137,9 @@ object GamePlatforms {
             discBased = true,
             discCompanionExtensions = setOf("bin", "wav"),
             bios = listOf(
-                BiosFile("bios_CD_U.bin", "Sega CD (EUA)"),
-                BiosFile("bios_CD_E.bin", "Mega CD (Europa)"),
-                BiosFile("bios_CD_J.bin", "Mega CD (Japão)"),
+                BiosFile("bios_CD_U.bin", "Sega CD (EUA)", "854b9150240a198070150e4566ae1290"),
+                BiosFile("bios_CD_E.bin", "Mega CD (Europa)", "e66fa1dc5820d254611fdcdba0662372"),
+                BiosFile("bios_CD_J.bin", "Mega CD (Japão)", "278a9397d192149e84e820ac621a8edd"),
             ),
             biosRequired = true,
         ),
@@ -93,10 +154,13 @@ object GamePlatforms {
             discBased = true,
             discCompanionExtensions = setOf("bin", "img", "sub", "sbi", "ccd", "wav"),
             bios = listOf(
-                BiosFile("scph5501.bin", "PlayStation (EUA) v3.0"),
-                BiosFile("scph5500.bin", "PlayStation (Japão)"),
-                BiosFile("scph5502.bin", "PlayStation (Europa)"),
-                BiosFile("scph1001.bin", "PlayStation (EUA) v2.0"),
+                BiosFile("scph5501.bin", "PlayStation (EUA) v3.0", "490f666e1afb15b7362b406ed1cea246"),
+                BiosFile("scph5500.bin", "PlayStation (Japão)", "8dd7d5296a650fac7319bce665a6a53c"),
+                BiosFile("scph5502.bin", "PlayStation (Europa)", "32736f17079d0b2b7024407c39bd3050"),
+                BiosFile("scph1001.bin", "PlayStation (EUA) v2.0", "924e392ed05558ffdb115408c263dccf"),
+                BiosFile("scph101.bin", "PlayStation (EUA) v4.4", "6e3735ff4c7dc899ee98981385f6f3d0"),
+                BiosFile("scph7001.bin", "PlayStation (EUA) v4.1", "1e68c231d0896b7eadcad1d7d8e76129"),
+                BiosFile("PSXONPSP660.bin", "PlayStation (PSP, região livre)", "c53ca5908936d412331790f4426c6c33"),
             ),
         ),
         GamePlatform("pce", "PC Engine / TurboGrafx-16", "mednafen_pce_fast", setOf("pce"), setOf("pce", "tg16", "pcengine", "turbografx16", "turbografx"), 70, 8),
@@ -114,8 +178,8 @@ object GamePlatforms {
             discBased = true,
             discCompanionExtensions = setOf("bin", "img", "sub", "wav"),
             bios = listOf(
-                BiosFile("sega_101.bin", "Saturn (Japão)"),
-                BiosFile("mpr-17933.bin", "Saturn (EUA/Europa)"),
+                BiosFile("sega_101.bin", "Saturn (Japão)", "85ec9ca47d8f6807718151cbcca8b964"),
+                BiosFile("mpr-17933.bin", "Saturn (EUA/Europa)", "3240872c70984b6cbfda1586cab68dbe"),
             ),
             biosRequired = true,
         ),
@@ -129,7 +193,7 @@ object GamePlatforms {
             discBased = true,
             discCompanionExtensions = setOf("bin", "raw", "wav"),
             bios = listOf(
-                BiosFile("dc/dc_boot.bin", "Dreamcast (boot ROM)"),
+                BiosFile("dc/dc_boot.bin", "Dreamcast (boot ROM)", "e10c53c2f8b90bab96ead2d368858623"),
                 BiosFile("dc/dc_flash.bin", "Dreamcast (flash)"),
             ),
         ),
@@ -141,9 +205,14 @@ object GamePlatforms {
             folderAliases = setOf("nds", "ds", "nintendods", "dsi"),
             sortOrder = 33,
             bios = listOf(
-                BiosFile("bios7.bin", "DS ARM7 (opcional)"),
-                BiosFile("bios9.bin", "DS ARM9 (opcional)"),
+                BiosFile("bios7.bin", "DS ARM7 (opcional)", "df692a80a5b1bc90728bc3dfc76cd948"),
+                BiosFile("bios9.bin", "DS ARM9 (opcional)", "a392174eb3e572fed6447e956bde4b25"),
                 BiosFile("firmware.bin", "DS firmware (opcional)"),
+                BiosFile("dsi_bios7.bin", "DSi ARM7 (opcional)"),
+                BiosFile("dsi_bios9.bin", "DSi ARM9 (opcional)"),
+                BiosFile("dsi_firmware.bin", "DSi firmware (opcional)"),
+                BiosFile("dsi_nand.bin", "DSi NAND (opcional)"),
+                BiosFile("dsi_sd_card.bin", "DSi cartão SD (opcional)"),
             ),
         ),
         GamePlatform(
@@ -164,7 +233,18 @@ object GamePlatforms {
             sortOrder = 62,
             discBased = true,
             discCompanionExtensions = setOf("bin"),
-            bios = listOf(BiosFile("panafz10.bin", "3DO FZ-10")),
+            bios = listOf(
+                BiosFile("panafz10.bin", "3DO Panasonic FZ-10", "51f2f43ae2f3508a14d9f56597e2d3ce"),
+                BiosFile("panafz1.bin", "3DO Panasonic FZ-1", "f47264dd47fe30f73ab3c010015c155b"),
+                BiosFile("panafz10-norsa.bin", "3DO Panasonic FZ-10 (RSA Patch)", "1477bda80dc33731a65468c1f5bcbee9"),
+                BiosFile("panafz10e-anvil.bin", "3DO Panasonic FZ-10-E Anvil", "a48e6746bd7edec0f40cff078f0bb19f"),
+                BiosFile("panafz10e-anvil-norsa.bin", "3DO Panasonic FZ-10-E Anvil (RSA Patch)", "cf11bbb5a16d7af9875cca9de9a15e09"),
+                BiosFile("panafz1j.bin", "3DO Panasonic FZ-1J", "a496cfdded3da562759be3561317b605"),
+                BiosFile("panafz1j-norsa.bin", "3DO Panasonic FZ-1J (RSA Patch)", "f6c71de7470d16abe4f71b1444883dc8"),
+                BiosFile("goldstar.bin", "3DO Goldstar GDO-101M", "8639fd5e549bd6238cfee79e3e749114"),
+                BiosFile("sanyotry.bin", "3DO Sanyo IMP-21J TRY", "35fa1a1ebaaeea286dc5cd15487c13ea"),
+                BiosFile("3do_arcade_saot.bin", "3DO Arcade Shootout At Old Tucson", "8970fc987ab89a7f64da9f8a8c4333ff"),
+            ),
             biosRequired = true,
         ),
         GamePlatform("vb", "Virtual Boy", "mednafen_vb", setOf("vb", "vboy"), setOf("vb", "virtualboy", "vboy"), 92, 28),
@@ -176,7 +256,7 @@ object GamePlatforms {
             folderAliases = setOf("atari7800", "7800", "a78"),
             sortOrder = 81,
             raConsoleId = 51,
-            bios = listOf(BiosFile("7800 BIOS (U).rom", "Atari 7800 (EUA, opcional)")),
+            bios = listOf(BiosFile("7800 BIOS (U).rom", "Atari 7800 (EUA, opcional)", "0763f1ffb006ddbe32e52d497ee848ae")),
         ),
         GamePlatform(
             slug = "atari5200",
@@ -185,8 +265,8 @@ object GamePlatforms {
             extensions = setOf("a52"),
             folderAliases = setOf("atari5200", "5200", "a52"),
             sortOrder = 82,
-            bios = listOf(BiosFile("5200.rom", "Atari 5200")),
-            biosRequired = true,
+            bios = listOf(BiosFile("5200.rom", "Atari 5200 (opcional)", "281f20ea4320404ec820fb7ec0693b38")),
+            biosRequired = false,
         ),
         GamePlatform(
             slug = "lynx",
@@ -196,7 +276,8 @@ object GamePlatforms {
             folderAliases = setOf("lynx", "atarilynx", "lnx"),
             sortOrder = 83,
             raConsoleId = 13,
-            bios = listOf(BiosFile("lynxboot.img", "Atari Lynx (opcional)")),
+            bios = listOf(BiosFile("lynxboot.img", "Atari Lynx (obrigatório)", "fcd403db69f54290b51035d82f835e7b")),
+            biosRequired = true,
         ),
         GamePlatform("jaguar", "Atari Jaguar", "virtualjaguar", setOf("j64", "jag"), setOf("jaguar", "atarijaguar", "j64"), 84),
         GamePlatform(
@@ -271,7 +352,7 @@ object GamePlatforms {
             folderAliases = setOf("coleco", "colecovision", "col"),
             sortOrder = 85,
             raConsoleId = 44,
-            bios = listOf(BiosFile("colecovision.rom", "ColecoVision")),
+            bios = listOf(BiosFile("colecovision.rom", "ColecoVision", "2c66f5911e5b42b8ebe113403548eee7")),
             biosRequired = true,
         ),
         GamePlatform(
@@ -294,8 +375,8 @@ object GamePlatforms {
             sortOrder = 86,
             raConsoleId = 45,
             bios = listOf(
-                BiosFile("exec.bin", "Intellivision (Executive)"),
-                BiosFile("grom.bin", "Intellivision (GROM)"),
+                BiosFile("exec.bin", "Intellivision (Executive)", "62e761035cb657903761800f4437b8af"),
+                BiosFile("grom.bin", "Intellivision (GROM)", "0cd5946c6473e42e8e4c2137785e427f"),
             ),
             biosGroups = listOf(
                 listOf(BiosFile("exec.bin", "Intellivision (Executive)")),
