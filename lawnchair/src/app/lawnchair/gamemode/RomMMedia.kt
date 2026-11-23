@@ -153,7 +153,14 @@ internal fun RomMMediaPanel(game: RemoteGame) {
         }
     }
 
-    if (screenshots.isEmpty() && manuals.isEmpty() && walkthroughs.isEmpty() && tracks.isEmpty() && !tracksLoading && tracksError == null) {
+    if (
+        screenshots.isEmpty() &&
+        manuals.isEmpty() &&
+        walkthroughs.isEmpty() &&
+        tracks.isEmpty() &&
+        !tracksLoading &&
+        tracksError == null
+    ) {
         return
     }
 
@@ -239,7 +246,11 @@ internal fun RomMMediaPanel(game: RemoteGame) {
                         modifier = Modifier.fillMaxWidth().heightIn(max = 420.dp),
                     )
                     if (File(file.name).extension.lowercase() == "pdf") {
-                        Text("Visualização integrada · primeira página do PDF", color = GameColors.textDim, fontSize = 11.sp)
+                        Text(
+                            "Visualização integrada · primeira página do PDF",
+                            color = GameColors.textDim,
+                            fontSize = 11.sp,
+                        )
                     }
                 }
                 previewText != null -> {
@@ -250,7 +261,11 @@ internal fun RomMMediaPanel(game: RemoteGame) {
                         modifier = Modifier.fillMaxWidth().heightIn(max = 360.dp).verticalScroll(rememberScrollState()),
                     )
                     if (File(file.name).extension.lowercase() in setOf("html", "htm")) {
-                        Text("HTML exibido como texto; scripts e conteúdo ativo não são executados.", color = GameColors.textDim, fontSize = 11.sp)
+                        Text(
+                            "HTML exibido como texto; scripts e conteúdo ativo não são executados.",
+                            color = GameColors.textDim,
+                            fontSize = 11.sp,
+                        )
                     }
                 }
             }
@@ -270,7 +285,12 @@ private fun renderFirstPdfPage(file: File): android.graphics.Bitmap? {
             renderer.openPage(0).use { page ->
                 val width = page.width.coerceAtMost(1800)
                 val height = (page.height.toFloat() * width / page.width).toInt().coerceAtLeast(1)
-                val bitmap = android.graphics.Bitmap.createBitmap(width, height, android.graphics.Bitmap.Config.ARGB_8888)
+                val bitmap =
+                    android.graphics.Bitmap.createBitmap(
+                        width,
+                        height,
+                        android.graphics.Bitmap.Config.ARGB_8888,
+                    )
                 page.render(bitmap, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
                 return bitmap
             }
