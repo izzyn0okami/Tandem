@@ -225,6 +225,22 @@ data class RemoteFirmware(
     val sha1Hash: String? = null,
 )
 
+/** Dispositivo registrado no RomM. Capacidades ausentes permanecem desconhecidas. */
+data class RemoteDevice(
+    val id: String,
+    val name: String,
+    val client: String?,
+    val platform: String?,
+    val deviceType: String?,
+    val clientVersion: String?,
+    val lastSeen: String?,
+    val capabilities: Map<String, Boolean>,
+    val online: Boolean,
+) {
+    /** null significa que o servidor não declarou essa capacidade. */
+    fun supports(capability: String): Boolean? = capabilities[capability]
+}
+
 enum class RemoteFileKind(val path: String, val part: String) {
     Save("saves", "saveFile"),
     State("states", "stateFile"),
@@ -820,6 +836,89 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
                     username = item.optString("username"),
                 )
             }
+        }
+    }
+
+    /**
+     * Lista dispositivos registrados na conta. Exige devices.read.
+     * Aceita tanto uma lista direta quanto o envelope paginado usado por algumas versões.
+     */
+    fun listDevices(): List<RemoteDevice> {
+        val onlineIds = listOnlineDeviceIds()
+        val url = base.resolve("api/devices")!!
+        return http.newCall(request(url).get().build()).execute().use { response ->
+            if (!response.isSuccessful) {
+                throw RomMHttpException(response.code, "Não foi possível listar dispositivos do RomM (HTTP ${response.code}); confira o escopo devices.read")
+            }
+            val body = response.body.string()
+            val root = runCatching { JSONObject(body) }.getOrNull()
+            val array = root?.optJSONArray("items") ?: root?.optJSONArray("devices") ?: org.json.JSONArray(body)
+            (0 until array.length()).mapNotNull { index ->
+                val item = array.optJSONObject(index) ?: return@mapNotNull null
+                val id = item.optString("id").takeIf { it.isNotBlank() && it != "null" } ?: return@mapNotNull null
+                RemoteDevice(
+                    id = id,
+                    name = item.optString("name").takeUnless { it == "null" }.orEmpty(),
+                    client = item.optString("client").takeUnless { it == "null" },
+                    platform = item.optString("platform").takeUnless { it == "null" },
+                    deviceType = item.optString("device_type").takeUnless { it == "null" },
+                    clientVersion = item.optString("client_version").takeUnless { it == "null" },
+                    lastSeen = item.optString("last_seen").takeUnless { it == "null" },
+                    capabilities = parseDeviceCapabilities(item.optJSONObject("capabilities")),
+                    online = id in onlineIds,
+                )
+            }
+        }
+    }
+
+    /** IDs dos dispositivos com conexão ativa ou claim recente. Exige devices.read. */
+    fun listOnlineDeviceIds(): Set<String> {
+        val url = base.resolve("api/devices/online")!!
+        return http.newCall(request(url).get().build()).execute().use { response ->
+            if (!response.isSuccessful) {
+                throw RomMHttpException(response.code, "Não foi possível consultar dispositivos online (HTTP ${response.code}); confira o escopo devices.read")
+            }
+            val array = org.json.JSONArray(response.body.string())
+            (0 until array.length()).mapNotNull { index ->
+                when (val value = array.opt(index)) {
+                    is String -> value.takeIf { it.isNotBlank() && it != "null" }
+                    is Number -> value.toLong().toString()
+                    else -> null
+                }
+            }.toSet()
+        }
+    }
+
+    /** Consulta individual; erros de autorização são propagados, sem fallback silencioso. */
+    fun getDevice(deviceId: String): RemoteDevice {
+        require(deviceId.isNotBlank()) { "ID de dispositivo inválido" }
+        val url = base.resolve("api/devices/${java.net.URLEncoder.encode(deviceId, "UTF-8")}")!!
+        return http.newCall(request(url).get().build()).execute().use { response ->
+            if (!response.isSuccessful) {
+                throw RomMHttpException(response.code, "Não foi possível consultar o dispositivo no RomM (HTTP ${response.code})")
+            }
+            val item = JSONObject(response.body.string())
+            RemoteDevice(
+                id = item.optString("id", deviceId),
+                name = item.optString("name").takeUnless { it == "null" }.orEmpty(),
+                client = item.optString("client").takeUnless { it == "null" },
+                platform = item.optString("platform").takeUnless { it == "null" },
+                deviceType = item.optString("device_type").takeUnless { it == "null" },
+                clientVersion = item.optString("client_version").takeUnless { it == "null" },
+                lastSeen = item.optString("last_seen").takeUnless { it == "null" },
+                capabilities = parseDeviceCapabilities(item.optJSONObject("capabilities")),
+                online = false,
+            )
+        }
+    }
+
+    private fun parseDeviceCapabilities(json: JSONObject?): Map<String, Boolean> = buildMap {
+        if (json == null) return@buildMap
+        val keys = json.keys()
+        while (keys.hasNext()) {
+            val key = keys.next()
+            val value = json.opt(key)
+            if (value is Boolean) put(key, value)
         }
     }
 
@@ -1664,7 +1763,7 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
             onProgress = {},
         )
         try {
-            verifyFirmwareIntegrity(temp, firmware)
+            verifyFirmwareFile(temp, firmware)
         } catch (error: Exception) {
             temp.delete()
             File(temp.parentFile, "${temp.name}.range").delete()
@@ -1675,7 +1774,8 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
     }
 
     /** Compara o arquivo recebido com tamanho e hashes publicados pelo RomM, quando disponíveis. */
-    private fun verifyFirmwareIntegrity(file: File, firmware: RemoteFirmware) {
+    internal fun verifyFirmwareFile(file: File, firmware: RemoteFirmware) {
+        check(file.isFile && file.length() > 0L) { "Arquivo de firmware ausente ou vazio: ${firmware.fileName}" }
         firmware.sizeBytes?.let { expected ->
             check(file.length() == expected) {
                 "Firmware ${firmware.fileName} incompleto: recebidos ${file.length()} de $expected bytes"
