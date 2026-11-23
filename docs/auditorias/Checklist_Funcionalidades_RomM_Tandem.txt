@@ -35,12 +35,12 @@ B. DADOS PESSOAIS POR JOGO E ATIVIDADE (PRIORIDADE ALTA)
 [AGUARDANDO DECISÃO] B6. Definir quais estados pessoais serão editáveis no Tandem e quais serão apenas informativos.
 
 C. MÍDIAS E CONTEÚDO ASSOCIADO (PRIORIDADE MÉDIA)
-[EM ANDAMENTO] C1. Exibir screenshots do RomM usando arquivos associados e conteúdo servido pelo endpoint oficial; visualizador integrado pendente.
-[EM ANDAMENTO] C2. Consultar manuais via categoria manual e abrir no visualizador integrado; formatos suportados e progresso de leitura a validar.
-[EM ANDAMENTO] C3. Consultar walkthroughs via categoria walkthrough e abrir no visualizador integrado.
-[EM ANDAMENTO] C4. Consultar metadados pelo endpoint oficial de soundtrack e reproduzir faixas no player integrado.
-[EM ANDAMENTO] C5. Integrar a aplicação de patches pelo POST /api/roms/{id}/patch; confirmar formatos aceitos e UX para patch da biblioteca ou upload temporário.
-[EM ANDAMENTO] C6. Preservar categorias auxiliares fora da seleção de ROMs e revisar filtros de multidisco/EasyRPG.
+[IMPLEMENTADO — CI APROVADA; TESTE REAL PENDENTE] C1. Screenshots do RomM listados e exibidos no visualizador integrado; miniaturas ainda pendentes.
+[IMPLEMENTADO — CI APROVADA; TESTE REAL PENDENTE] C2. Manuais via categoria manual, visualizador integrado e navegação multipágina PDF.
+[IMPLEMENTADO — CI APROVADA; TESTE REAL PENDENTE] C3. Walkthroughs via categoria walkthrough e visualizador integrado; HTML/HTM exibido como texto inerte.
+[IMPLEMENTADO — CI APROVADA; TESTE REAL PENDENTE] C4. Metadados de soundtrack e reprodução no player integrado com play/pause, progresso e seek.
+[IMPLEMENTADO — CI APROVADA; TESTE REAL PENDENTE] C5. Aplicação pelo endpoint oficial do RomM, patch da biblioteca ou upload local e salvamento em destino escolhido, sem sobrescrever a ROM original.
+[IMPLEMENTADO — CI APROVADA; TESTE REAL PENDENTE] C6. Categorias auxiliares excluídas da seleção de ROMs, inclusive multidisco/multiarquivo e EasyRPG.
 [CONCLUÍDO — DECISÃO] C7. O usuário escolheu visualizadores de imagens/documentos e player de áudio integrados ao Tandem; implementação incluída nesta PR.
 
 D. PLATAFORMAS, FIRMWARE E DISPOSITIVOS
@@ -515,3 +515,17 @@ ATUALIZAÇÃO — CI #762 / PR #44 / C1–C7 (2026-11-23)
 - [ ] C1: miniaturas de screenshots ainda não implementadas; lista atual seleciona por nome.
 - [ ] Testes funcionais C1–C7 no telefone com servidor/conta RomM real permanecem pendentes; CI verde não substitui teste no aparelho.
 - PR #44 continua aberta, em draft e sem merge. PR #41 continua aberta, em draft, pausada e intocada.
+
+
+
+ATUALIZAÇÃO — CI #765 E REVISÃO ESTÁTICA (2026-11-23)
+- [x] CI #765 / run 45192312336: SUCCESS integral no head 2c332343434c6bbb1d2b345186a98ecc5a6234d6; Spotless, testes unitários, Build APK, Upload artifact e final-status aprovados.
+- [x] Artefato assembleLawnWithQuickstepGithubDebug: ID 14826477982; 46.258.784 bytes; SHA-256 43d18ec952144f1d82547e711a7b43774c625e42e316cc88539cea3287d9e181; expira em 2027-02-21.
+- [x] CI #766 e #767 também concluídas com sucesso no mesmo head.
+- [x] C1–C6: implementação integrada presente na PR #44; C7: decisão de experiência integrada concluída.
+- [x] Revisão estática: associação dos patches à versão da ROM selecionada e limpeza dos temporários em falhas verificadas.
+- [x] Revisão estática: lifecycle do MediaPlayer possui descarte/liberação; PDF fecha recursos; prévias de imagem/PDF e leitura de texto possuem limites de memória.
+- [ ] C1: miniaturas de screenshots continuam pendentes.
+- [ ] Implementar limite rígido de tamanho para downloads de mídia e patch, inclusive quando Content-Length não é informado; o cache atual de 256 MiB é uma política de limpeza posterior, não um limite por arquivo.
+- [ ] Validação funcional C1–C7 no telefone com servidor/conta RomM real e testes específicos de mídia pendentes.
+- PR #44 permanece aberta e em draft, sem merge ou release. PR #41 permanece aberta, em draft e pausada, sem alterações.
