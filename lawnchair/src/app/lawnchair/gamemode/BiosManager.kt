@@ -195,7 +195,7 @@ object BiosManager {
         return results
     }
 
-    private fun verifyKnownMd5(file: File, bios: BiosFile) {
+    internal fun verifyKnownMd5(file: File, bios: BiosFile) {
         val expected = bios.md5Hash ?: return
         val digest = MessageDigest.getInstance("MD5")
         file.inputStream().use { input ->
