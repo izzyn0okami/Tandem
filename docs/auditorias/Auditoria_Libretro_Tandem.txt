@@ -4220,3 +4220,23 @@ ATUALIZAÇÃO — CI #762 / PR #44 / C1–C7 (2026-11-23)
 - [ ] C1: miniaturas de screenshots ainda não implementadas; lista atual seleciona por nome.
 - [ ] Testes funcionais C1–C7 no telefone com servidor/conta RomM real permanecem pendentes; CI verde não substitui teste no aparelho.
 - PR #44 continua aberta, em draft e sem merge. PR #41 continua aberta, em draft, pausada e intocada.
+
+
+
+ATUALIZAÇÃO — CI #765 E REVISÃO ESTÁTICA C1–C7 (2026-11-23)
+- [x] CI #765 / run 45192312336: SUCCESS integral no head 2c332343434c6bbb1d2b345186a98ecc5a6234d6 — https://github.com/izzyn0okami/Tandem/actions/runs/45192312336.
+- [x] check-style: Spotless Apply, commit automático quando necessário e Verify formatting aprovados.
+- [x] build-debug-apk: testes unitários, Build APK e Upload artifact aprovados.
+- [x] final-status aprovado.
+- [x] Artefato assembleLawnWithQuickstepGithubDebug gerado: ID 14826477982, 46.258.784 bytes, SHA-256 43d18ec952144f1d82547e711a7b43774c625e42e316cc88539cea3287d9e181; expira em 2027-02-21.
+- [x] Execuções adicionais #766 / run 45192323837 e #767 / run 45192419420 também concluíram com sucesso no mesmo head; não foi necessário novo rerun.
+- Jobs de notificação, Crowdin e releases foram ignorados; nenhuma release foi publicada.
+- [x] Revisão estática: patches associados estão restritos aos arquivos da versão selecionada (game.associatedFiles).
+- [x] Revisão estática: arquivo temporário de saída do patch é removido em falha; upload local temporário é removido no finally.
+- [x] Revisão estática: MediaPlayer é criado no DisposableEffect associado ao arquivo/categoria, recebe guard contra callback após descarte e é parado/liberado no onDispose.
+- [x] Revisão estática: PdfRenderer/ParcelFileDescriptor são fechados com use; imagem e prévia PDF têm dimensão limitada; leitura de texto é limitada a 500.000 caracteres.
+- [ ] Limite rígido de tamanho por download de mídia ainda não está implementado. O cache de 256 MiB remove arquivos antigos após o download, mas preserva o arquivo atual e não impede que um único arquivo exceda esse limite; respostas sem Content-Length também precisam de limite durante o stream.
+- [ ] Aplicação de patch: preflight de espaço depende de Content-Length; upload local e resposta sem tamanho declarado ainda não têm limite explícito de tamanho.
+- [ ] C1: miniaturas/galeria visual de screenshots ainda não implementadas; seleção permanece por nome.
+- [ ] Testes específicos de mídia e validação funcional C1–C7 no telefone com servidor/conta RomM real permanecem pendentes.
+- PR #44 permanece aberta, em draft e sem merge; PR #41 permanece aberta, em draft, pausada e intocada.
