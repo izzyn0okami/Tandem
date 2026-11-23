@@ -115,6 +115,8 @@ class BiosManagerTest {
         assertEquals(3, masterSystem.bios.size)
         assertEquals("ca30b50f880eb660a320674ed365ef7a", nes.bios.first().md5Hash)
         assertFalse(nes.biosRequired)
+        assertFalse(BiosManager.isReady(lynx, hasBios = { false }, isKitReady = { false }))
+        assertTrue(BiosManager.isReady(nes, hasBios = { false }, isKitReady = { false }))
     }
 
     @Test
