@@ -1,5 +1,8 @@
 package app.lawnchair.gamemode
 
+import mockwebserver3.MockResponse
+import mockwebserver3.MockWebServer
+import okhttp3.OkHttpClient
 import org.json.JSONObject
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -86,6 +89,72 @@ class DeviceSyncProtocolTest {
         assertEquals(DeviceSyncAction.Conflict, parsed.operations[1].action)
         assertNull(parsed.operations[0].saveId)
         assertFalse(parsed.operations.any { it.action == DeviceSyncAction.Unknown })
+    }
+
+    @Test
+    fun registerDeviceSendsAuthenticatedRequestToOfficialEndpoint() {
+        val server = MockWebServer()
+        server.start()
+        try {
+            server.enqueue(MockResponse().setBody("""{"device_id":"device-123","name":"Tandem"}"""))
+            val client = RomMDeviceSyncClient(server.url("/").toString(), "test-token", OkHttpClient())
+            val registered = client.registerDevice(
+                DeviceSyncRegistration("Tandem Android", clientVersion = "1.0", hostname = "tandem-test"),
+            )
+            val request = server.takeRequest()
+
+            assertEquals("device-123", registered.deviceId)
+            assertEquals("POST", request.method)
+            assertEquals("/api/devices", request.path)
+            assertEquals("Bearer test-token", request.getHeader("Authorization"))
+            assertTrue(request.body.readUtf8().contains("\"sync_mode\":\"api\""))
+        } finally {
+            server.shutdown()
+        }
+    }
+
+    @Test
+    fun negotiateSendsExplicitRomScopeAndDoesNotRestoreUnlistedGames() {
+        val server = MockWebServer()
+        server.start()
+        try {
+            server.enqueue(MockResponse().setBody("""{"session_id":8,"operations":[]}"""))
+            val client = RomMDeviceSyncClient(server.url("/").toString(), "test-token")
+            val result = client.negotiate("device-123", emptyList(), setOf(42L))
+            val request = server.takeRequest()
+            val payload = JSONObject(request.body.readUtf8())
+
+            assertEquals(8L, result.sessionId)
+            assertEquals("/api/sync/negotiate", request.path)
+            assertEquals("POST", request.method)
+            assertEquals(42L, payload.getJSONArray("rom_ids").getLong(0))
+            assertFalse(payload.getBoolean("restore_unlisted"))
+        } finally {
+            server.shutdown()
+        }
+    }
+
+    @Test
+    fun completeSendsOperationCountsAndHttpErrorsAreSurfaced() {
+        val server = MockWebServer()
+        server.start()
+        try {
+            server.enqueue(MockResponse().setBody("{}"))
+            val client = RomMDeviceSyncClient(server.url("/").toString(), "test-token")
+            client.complete(8L, operationsCompleted = 2, operationsFailed = 1)
+            val request = server.takeRequest()
+            val payload = JSONObject(request.body.readUtf8())
+            assertEquals("/api/sync/sessions/8/complete", request.path)
+            assertEquals(2, payload.getInt("operations_completed"))
+            assertEquals(1, payload.getInt("operations_failed"))
+
+            server.enqueue(MockResponse().setResponseCode(403).setBody("""{"detail":"forbidden"}"""))
+            val error = runCatching { client.registerDevice(DeviceSyncRegistration("Tandem", clientVersion = "1.0", hostname = "tandem")) }.exceptionOrNull()
+            assertTrue(error is RomMHttpException)
+            assertEquals(403, (error as RomMHttpException).statusCode)
+        } finally {
+            server.shutdown()
+        }
     }
 
     @Test
