@@ -828,3 +828,8 @@ ATUALIZAÇÃO — PR #41 / CI #908 / MERGE (2026-11-23)
 - E5 permanece em andamento: adaptador e inspeção somente leitura passaram pela CI, mas falta integração segura ao SaveSync e interoperabilidade/validação com servidor RomM real e telefone. Não ativar transferências reais sem validação.
 - E6/E7/E8/E9 permanecem pendentes. E10 continua dependente de decisão explícita do usuário. Não há DELETE automático; save states e memory cards permanecem fora do transporte SRAM isolado.
 - Próximo passo: investigar/acompanhar o fluxo de publicação da Release tandem-latest e, depois, validar o APK no telefone. Não declarar o estágio E concluído apenas com CI e merge.
+
+
+REGISTRO DE PUBLICAÇÃO — 2026-11-23
+- O commit de documentação f12de51dc5646f37d572fb3032336d7b04f7f707 atualizou os dois logs após o merge da PR #41 e CI #908.
+- A publicação de tandem-latest ainda precisa ser executada/confirmada; a release consultada permanece no build 860 anterior. O fluxo tandem-release da CI depende de evento push na branch game-mode-m2-dev, não de workflow_dispatch.
