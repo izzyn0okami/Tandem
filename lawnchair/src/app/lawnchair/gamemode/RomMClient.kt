@@ -100,6 +100,17 @@ data class RemoteGameUserData(
     val pinnedMedia: List<String>,
 )
 
+/** Sessão atualmente ativa publicada pelo RomM. Não representa histórico de sessões encerradas. */
+data class RemoteActivity(
+    val userId: Long,
+    val username: String,
+    val romId: Long,
+    val romName: String,
+    val platformName: String,
+    val deviceType: String,
+    val startedAtMs: Long,
+)
+
 /** Metadados agregados pelo RomM a partir dos provedores e de edição manual. */
 data class RemoteGameMetadata(
     val genres: List<String> = emptyList(),
@@ -607,6 +618,51 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
                     updatedAtMs = parseTime(item.optString("updated_at")),
                     username = item.optString("username"),
                 )
+            }
+        }
+    }
+
+    /** Sessões atualmente ativas no RomM. A API não fornece aqui um histórico encerrado. */
+    fun listActivity(): List<RemoteActivity> {
+        val url = base.resolve("api/activity")!!
+        return http.newCall(request(url).get().build()).execute().use { response ->
+            if (!response.isSuccessful) {
+                throw RomMHttpException(response.code, "Não foi possível consultar a atividade do RomM (HTTP ${response.code})")
+            }
+            val array = org.json.JSONArray(response.body.string())
+            (0 until array.length()).mapNotNull { index ->
+                val item = array.optJSONObject(index) ?: return@mapNotNull null
+                val romId = item.optLong("rom_id", -1L)
+                if (romId <= 0L) return@mapNotNull null
+                RemoteActivity(
+                    userId = item.optLong("user_id", -1L),
+                    username = item.optString("username"),
+                    romId = romId,
+                    romName = item.optString("rom_name"),
+                    platformName = item.optString("platform_name"),
+                    deviceType = item.optString("device_type"),
+                    startedAtMs = parseTime(item.optString("started_at")),
+                )
+            }
+        }
+    }
+
+    /** Atualiza somente os campos pessoais permitidos pelo endpoint oficial /props. */
+    fun updateUserProperties(romId: Long, properties: Map<String, Any?>) {
+        require(romId > 0L) { "ID de jogo RomM inválido" }
+        require(properties.isNotEmpty()) { "Nenhuma propriedade foi informada" }
+        val body = JSONObject().apply {
+            properties.forEach { (key, value) -> put(key, value ?: JSONObject.NULL) }
+        }.toString().toRequestBody("application/json".toMediaType())
+        val url = base.resolve("api/roms/$romId/props")!!
+        http.newCall(request(url).put(body).build()).execute().use { response ->
+            if (!response.isSuccessful) {
+                val reason = if (response.code == 403) {
+                    "O token RomM não tem o escopo roms.user.write. Será necessário autorizar novamente o Tandem."
+                } else {
+                    "Não foi possível atualizar os dados pessoais no RomM (HTTP ${response.code})"
+                }
+                throw RomMHttpException(response.code, reason)
             }
         }
     }
