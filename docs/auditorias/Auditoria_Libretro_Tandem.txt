@@ -3741,3 +3741,11 @@ CHECKLIST CENTRAL DA AUDITORIA E IMPLEMENTAÇÃO ROMM × TANDEM
 - A pesquisa foi conectada ao campo da biblioteca; resultados temporários não substituem nem sobrescrevem o cache completo.
 - Estado em 2026-11-23: código em andamento; CI e teste no telefone pendentes.
 - PR #41 permanece aberta e draft; não houve alteração nos arquivos de sessão/saves nesta implementação.
+
+ATUALIZAÇÃO DE IMPLEMENTAÇÃO — 2026-11-23
+- Checklist completo: docs/auditorias/Checklist_Funcionalidades_RomM_Tandem.txt.
+- PR #42 aberta em draft: https://github.com/izzyn0okami/Tandem/pull/42.
+- Pesquisa de biblioteca usa search_term no endpoint oficial GET /api/roms e mantém resultados temporários fora do cache completo.
+- CI ainda não iniciou/retornou execução na consulta realizada; validação funcional na release pendente.
+- O checklist marca A11 concluído no escopo de proteção do cache e A1 em andamento até CI e teste funcional.
+- PR #41 continua aberta e não foi modificada.
