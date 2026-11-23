@@ -488,3 +488,15 @@ ATUALIZAÇÃO — CI #745 / PR #44 (2026-11-23)
 - [ ] C1–C4: testes específicos de mídia e validação funcional no telefone continuam pendentes; permanecem pendentes as melhorias de miniaturas, paginação PDF e seek/progresso do áudio.
 - [ ] C5: aplicação de patches via endpoint oficial RomM continua pendente.
 - [ ] C1–C7: validação funcional no telefone permanece pendente; CI aprovada não substitui teste real.
+
+
+REVISÃO ESTÁTICA C1–C4 — ATUALIZAÇÃO APÓS CI #745 (2026-11-23)
+- [x] Confirmado no código atual de RomMMedia.kt: navegação multipágina de PDF (contagem e controles anterior/próxima).
+- [x] Confirmado no código atual: barra de progresso/posição e seek para áudio.
+- [x] Confirmado no código atual: decodificação reduzida de imagens, limite de dimensão para prévia PDF e leitura progressiva de texto limitada a 500.000 caracteres.
+- [x] Confirmado no código atual: arquivos associados agregados entre as versões de detailGames e trilhas consultadas por cada Rom.id; downloads de arquivos usam RomFile.id.
+- [ ] C1: miniaturas/galeria visual de screenshots ainda não implementadas; seleção atual é por nome em chips.
+- [ ] C1–C4: revisão final do lifecycle do MediaPlayer, limites reais de tamanho de download/cache e testes específicos de mídia ainda pendentes.
+- [ ] C1–C7: teste funcional no telefone continua pendente; sucesso de CI não comprova reprodução/decodificação em aparelho real.
+- [ ] C5: integração de aplicação de patches continua pendente; a resposta do endpoint é stream e não pode sobrescrever a ROM original.
+- Esta atualização corrige o status de pendências antigas: paginação PDF e seek/progresso de áudio não são mais pendências de implementação, mas continuam sem validação funcional no telefone.
