@@ -4041,3 +4041,16 @@ ATUALIZAÇÃO — CI #697 E PREPARAÇÃO DA TANDEM-LATEST (2026-11-22)
 - [ ] Confirmar execução bem-sucedida do job tandem-release e conferir o APK publicado.
 - [ ] Validação funcional no telefone continua pendente; CI verde não substitui teste no aparelho.
 - PR #41 permanece aberta/draft e intocada, conforme decisão do usuário.
+
+
+IMPLEMENTAÇÃO B1–B6 — INÍCIO DA PR (2026-11-23)
+- PR de trabalho: feat/romm-personal-game-data → game-mode-m2-dev.
+- B1: dados pessoais RomM exibidos na tela de detalhes.
+- B2: edição de status, backlog, jogando agora, oculto, avaliação, dificuldade e conclusão via PUT /api/roms/{id}/props; usa roms.user.write já solicitado no pareamento.
+- B3: leitura de sessões ativas via GET /api/activity; a API não representa histórico encerrado.
+- B4: duração e última sessão local continuam sob responsabilidade do PlayHistory; a última partida RomM permanece informativa e somente leitura nesta etapa.
+- B5: notas e etiquetas continuam em leitura sob demanda por versão; sem escrita/exclusão.
+- B6: datas de criação/atualização, última partida, versão principal e mídias fixadas são somente leitura.
+- [ ] CI e testes automatizados.
+- [ ] Validar com conta RomM real no telefone, incluindo permissões de escrita e ausência de sessão ativa.
+- PR #41 permanece aberta/draft e intocada.

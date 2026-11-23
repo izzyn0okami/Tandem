@@ -368,3 +368,15 @@ ATUALIZAÇÃO DE STATUS — PR #42 / CI #697 (2026-11-22)
 - [ ] Publicação da tandem-latest: aguardar a CI disparada por este commit documental e confirmar o job tandem-release.
 - [ ] Testes funcionais no telefone permanecem pendentes para os recursos que exigem validação real.
 - PR #41 permanece aberta/draft e pausada; nenhuma alteração em saves foi feita.
+
+
+B1–B6 — DADOS PESSOAIS, ATIVIDADE E NOTAS ROMM
+- [x] B1 — Exibir dados pessoais do jogo já fornecidos em rom_user.
+- [x] B2 — Editar status, backlog, jogando atualmente, oculto, avaliação, dificuldade e percentual de conclusão pela API oficial PUT /api/roms/{id}/props.
+- [x] B3 — Consultar sessões ativas pela API oficial GET /api/activity, filtrando o jogo atual.
+- [x] B4 — Preservar duração e última sessão medidas localmente pelo PlayHistory; apresentar separadamente a última partida informada pelo RomM.
+- [x] B5 — Manter notas e etiquetas em leitura sob demanda; sem duplicar armazenamento ou criar escrita local.
+- [x] B6 — Separar visualmente campos editáveis dos campos informativos: created_at, updated_at, last_played, is_main_sibling e pinned_media.
+- [ ] Executar CI da PR e corrigir eventuais falhas.
+- [ ] Testar no telefone com conta RomM real, inclusive escopo roms.user.write e sessões ativas.
+- [ ] Confirmar comportamento visual com controle/TV e campos numéricos.

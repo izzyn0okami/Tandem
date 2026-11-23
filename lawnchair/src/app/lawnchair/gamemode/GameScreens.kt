@@ -954,6 +954,13 @@ internal fun GameDetailScreen(
                 coreUpdateMessage?.let { message ->
                     Text(text = message, color = GameColors.textDim, fontSize = 12.sp)
                 }
+                detailGames.firstOrNull()?.let { remoteGame ->
+                    RomMGameDataPanel(
+                        game = remoteGame,
+                        localPlaytimeMs = history.playtimeMs,
+                        localLastPlayedMs = history.lastPlayedMs,
+                    )
+                }
                 if (!summary.isNullOrBlank()) {
                     Text(
                         text = summary,
