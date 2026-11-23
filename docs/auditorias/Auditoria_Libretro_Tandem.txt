@@ -4292,3 +4292,17 @@ ATUALIZAÇÃO — PR #44 / GALERIA DE MINIATURAS E CI #788 (2026-11-23)
 - [ ] CI #790 / run 45203546753, disparada para o head formatado d0d55b87b84b507c69552f2a9a337c3b738bb0b0, terminou com action_required e sem jobs; é necessária aprovação da execução pelo controle do GitHub Actions antes de validar o head final.
 - [ ] Teste funcional da galeria no telefone com servidor/conta RomM real permanece pendente.
 - PR #44 permanece aberta e em draft, sem merge ou release; PR #41 permanece aberta, em draft, pausada e intocada.
+
+
+ATUALIZAÇÃO FINAL — ESTÁGIO C / PR #44 MESCLADA (2026-11-23)
+- [x] CI #791 / run 45206755310: SUCCESS integral no head ad072478916f792f2f271634fc6ea2a3bc5a17a8.
+- [x] check-style / Spotless: sucesso.
+- [x] build-debug-apk: testes unitários, Build APK e Upload artifact: sucesso.
+- [x] final-status: sucesso; jobs de release/notificações/Crowdin ignorados; nenhuma release publicada.
+- [x] Artefato assembleLawnWithQuickstepGithubDebug: ID 14834393287; 46.268.150 bytes; SHA-256 bd094f2c0fc98dac8fd3b6f8442270e82440d117cf6d2b6896d9cd63ef8b5c53; expira em 2027-02-21.
+- [x] PR #44 marcada ready e mesclada por squash após autorização explícita do usuário.
+- [x] Merge commit na game-mode-m2-dev: 6adc110e0f2effb6d4be2a9a2abc6a8360cf8824.
+- [x] Implementação C1–C7 integrada: screenshots e miniaturas temporárias, visualizadores de manuais/walkthroughs, player de soundtrack, aplicação de patches via RomM com saída separada, filtro de arquivos auxiliares e experiência integrada.
+- [ ] Testes funcionais no telefone com servidor/conta RomM real serão realizados na versão Latest; não foram executados nesta auditoria e não são alegados como concluídos.
+- PR #41 permanece aberta/draft e pausada; não foi alterada.
+- Nenhuma release foi publicada manualmente nesta operação.
