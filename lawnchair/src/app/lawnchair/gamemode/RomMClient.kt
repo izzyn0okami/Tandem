@@ -1150,10 +1150,10 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
             downloadFolder(game, target, onProgress)
             return
         }
-        // A rota /files/content também recebe o ID da ROM (Rom.id), não o ID do arquivo.
-        // fileId apenas indica que selecionamos um arquivo específico dentro da ROM.
+        // A rota /files/content usa o ID interno do RomFile, não Rom.id.
+        // ROMs com um único arquivo usam fileId; conjuntos usam /content com file_ids.
         val url = if (game.fileId != null) {
-            base.resolve("api/roms/${game.id}/files/content/")!!.newBuilder()
+            base.resolve("api/roms/${game.fileId}/files/content/")!!.newBuilder()
                 .addPathSegment(game.fileName)
                 .build()
         } else {
