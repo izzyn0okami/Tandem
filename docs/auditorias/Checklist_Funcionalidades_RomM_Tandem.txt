@@ -215,3 +215,11 @@ ROBUSTEZ DE COLEÇÕES — 2026-11-23
 - A consulta de coleções é renovada quando servidor/token/conta mudam; os dados da conta anterior são limpos antes da nova consulta.
 - Falha de permissão ou rede passa a ser exibida na tela, em vez de apenas desaparecer a lista de coleções.
 - Commit: 0e927443881826a650dd03829542d6d070dee627; CI pendente.
+
+
+ATUALIZAÇÃO — CI DAS COLEÇÕES E FILTROS ROMM (2026-11-23)
+- Coleções manuais/inteligentes/virtuais, escopo collections.read e atualização ao trocar conta: CIs #663, #665 e #667 aprovadas (check-style, build-debug-apk e final-status). Nenhuma release publicada. Teste funcional pendente.
+- [EM ANDAMENTO] A4. Filtros pessoais/metadados oficiais RomM: implementados chips para favorite, duplicate, last_played, has_ra, has_saves, has_states, verified e has_soundtrack. Aguarda CI e validação funcional.
+- Não implementar playable como capacidade local: o RomM define o campo como jogável no navegador. Não aplicar missing/physical ao catálogo de jogos executáveis locais.
+- A1/A2/A3 e A7–A10 seguem aguardando validação funcional no telefone, apesar das CIs aprovadas.
+- PR #42 permanece aberta/draft, sem merge; PR #41 permanece aberta/draft e intocada.
