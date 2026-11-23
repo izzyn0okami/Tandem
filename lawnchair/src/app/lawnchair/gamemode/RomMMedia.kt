@@ -143,7 +143,6 @@ internal fun RomMMediaPanel(games: List<RemoteGame>) {
                             }
                             decoded
                         } catch (_: Exception) {
-                            failedCount++
                             null
                         } finally {
                             sourceFile.delete()
@@ -155,7 +154,7 @@ internal fun RomMMediaPanel(games: List<RemoteGame>) {
                     }
                     if (bitmap != null) thumbnails[screenshot.id] = bitmap else if (cached == null) failedCount++
                 }
-                trimRomMScreenshotCache(cacheDirectory, screenshots.take(MAX_ROMM_SCREENSHOTS_IN_GALLERY).map { screenshotThumbnailFile(cacheDirectory, it) }.toSet())
+                trimRomMScreenshotCache(cacheDirectory)
                 Pair(thumbnails, failedCount)
             }
             screenshotThumbnails = result.first
@@ -335,6 +334,13 @@ internal fun RomMMediaPanel(games: List<RemoteGame>) {
                         }
                     }
                 }
+            }
+            if (screenshots.size > MAX_ROMM_SCREENSHOTS_IN_GALLERY) {
+                Text(
+                    "Pré-visualização dos primeiros $MAX_ROMM_SCREENSHOTS_IN_GALLERY de ${screenshots.size} screenshots.",
+                    color = GameColors.textDim,
+                    fontSize = 11.sp,
+                )
             }
             if (screenshotThumbnailsLoading) {
                 Text("Carregando miniaturas…", color = GameColors.textDim, fontSize = 11.sp)
@@ -523,11 +529,11 @@ private fun decodeScreenshotThumbnail(file: File): android.graphics.Bitmap? {
 }
 
 /** Mantém somente as miniaturas recentes, respeitando o limite do cache temporário. */
-private fun trimRomMScreenshotCache(directory: File, keep: Set<File>) {
+private fun trimRomMScreenshotCache(directory: File) {
     val files = directory.listFiles()?.filter { it.isFile && it.extension == "jpg" } ?: return
     var totalBytes = files.sumOf { it.length() }
     if (totalBytes <= MAX_ROMM_SCREENSHOT_CACHE_BYTES) return
-    files.filterNot { it in keep }.sortedBy { it.lastModified() }.forEach { file ->
+    files.sortedBy { it.lastModified() }.forEach { file ->
         if (totalBytes <= MAX_ROMM_SCREENSHOT_CACHE_BYTES) return
         val size = file.length()
         if (file.delete()) totalBytes -= size
