@@ -78,22 +78,43 @@ internal fun LibraryScreen(
     onPlay: (LocalGame) -> Unit,
     onOpen: (LibraryEntry) -> Unit,
     onLaunchAndroid: (AndroidGame) -> Unit,
+    remoteSearchQuery: String,
+    remoteSearching: Boolean,
+    remoteSearchError: String,
+    onRemoteSearch: (String) -> Unit,
     onRefresh: () -> Unit,
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val listState = rememberLazyListState()
     val chipFocus = remember { FocusRequester() }
-    val recent = remember(version, games) { PlayHistory.recent(context, games).take(10) }
+    var searchText by remember { mutableStateOf(remoteSearchQuery) }
+    LaunchedEffect(remoteSearchQuery) { searchText = remoteSearchQuery }
+    val normalizedSearch = searchText.trim()
+    val recent = remember(version, games, normalizedSearch) {
+        if (normalizedSearch.isEmpty()) PlayHistory.recent(context, games).take(10)
+        else PlayHistory.recent(context, games).filter { it.title.contains(normalizedSearch, ignoreCase = true) }.take(10)
+    }
     val entryByPath = remember(entries) { entries.flatMap { entry -> entry.locals.map { it.path to entry } }.toMap() }
     var platformFilter by remember { mutableStateOf<String?>(null) }
     val platforms = remember(entries) { entries.map { it.platform }.distinctBy { it.slug } }
-    val visible = remember(entries, platformFilter) {
-        if (platformFilter == null) entries else entries.filter { it.platform.slug == platformFilter }
+    val searchedEntries = remember(entries, normalizedSearch) {
+        if (normalizedSearch.isEmpty()) entries
+        else entries.filter {
+            it.title.contains(normalizedSearch, ignoreCase = true) ||
+                it.platform.name.contains(normalizedSearch, ignoreCase = true)
+        }
     }
-    val androidSorted = remember(androidGames, version) { AndroidGames.sortedByRecent(context, androidGames) }
-    val showAndroid = platformFilter == null || platformFilter == ANDROID_FILTER
-    val hero = recent.firstOrNull() ?: games.firstOrNull()
+    val visible = remember(searchedEntries, platformFilter) {
+        if (platformFilter == null) searchedEntries else searchedEntries.filter { it.platform.slug == platformFilter }
+    }
+    val androidSorted = remember(androidGames, version, normalizedSearch) {
+        AndroidGames.sortedByRecent(context, androidGames).filter {
+            normalizedSearch.isEmpty() || it.title.contains(normalizedSearch, ignoreCase = true)
+        }
+    }
+    val showAndroid = (platformFilter == null || platformFilter == ANDROID_FILTER) && normalizedSearch.isEmpty()
+    val hero = if (normalizedSearch.isEmpty()) recent.firstOrNull() ?: games.firstOrNull() else null
     val heroFocus = remember { FocusRequester() }
     LaunchedEffect(hero?.path) {
         if (hero != null) runCatching { heroFocus.requestFocus() }
@@ -129,7 +150,7 @@ internal fun LibraryScreen(
         }
     }
 
-    if (entries.isEmpty() && androidGames.isEmpty()) {
+    if (entries.isEmpty() && androidGames.isEmpty() && normalizedSearch.isEmpty()) {
         Column(modifier = Modifier.fillMaxSize().padding(24.dp)) {
             Text(
                 text = stringResource(R.string.game_mode_empty_library),
@@ -163,6 +184,22 @@ internal fun LibraryScreen(
             verticalArrangement = Arrangement.spacedBy(14.dp),
             contentPadding = PaddingValues(horizontal = 24.dp, vertical = 4.dp),
         ) {
+            item(key = "romm-search") {
+                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    OutlinedTextField(
+                        value = searchText,
+                        onValueChange = {
+                            searchText = it
+                            onRemoteSearch(it)
+                        },
+                        label = { Text("Pesquisar jogos no RomM e no aparelho") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                    if (remoteSearching) Text("Pesquisando no RomM…", color = GameColors.textDim, fontSize = 12.sp)
+                    if (remoteSearchError.isNotEmpty()) Text("Pesquisa no RomM indisponível: $remoteSearchError", color = GameColors.danger, fontSize = 12.sp)
+                }
+            }
             if (hero != null) {
                 item(key = "hero") {
                     HeroSection(
@@ -178,7 +215,7 @@ internal fun LibraryScreen(
                     )
                 }
             }
-            if (recent.isNotEmpty()) {
+            if (normalizedSearch.isEmpty() && recent.isNotEmpty()) {
                 item(key = "recent") {
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         SectionTitle(stringResource(R.string.game_recent))
@@ -228,6 +265,10 @@ internal fun LibraryScreen(
                     Row(horizontalArrangement = Arrangement.spacedBy(CARD_GAP)) {
                         row.forEach { entry -> EntryCard(entry, progress, syncVersion, onClick = { onOpen(entry) }) }
                     }
+                }
+            } else if (normalizedSearch.isNotEmpty() && !remoteSearching && visible.isEmpty() && androidSorted.isEmpty()) {
+                item(key = "search-empty") {
+                    Text("Nenhum jogo encontrado para esta pesquisa.", color = GameColors.textDim, fontSize = 14.sp)
                 }
             }
         }
