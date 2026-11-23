@@ -360,3 +360,11 @@ MERGE CONCLUÍDO — PR #42 (2026-11-23)
 - A5, A6, A12 e A13 permanecem EM ANDAMENTO até validação funcional no telefone. A13 também mantém pendentes a validação dos saves .lsd e RTP 2000/2003.
 - Nenhuma release publicada; o commit de merge contém [skip ci] para impedir a publicação automática disparada por push em game-mode-m2-dev.
 - PR #41 permanece aberta/draft, sem alterações, conforme decisão do usuário.
+
+
+ATUALIZAÇÃO DE STATUS — PR #42 / CI #697 (2026-11-22)
+- [x] PR #42 integrada à branch game-mode-m2-dev por squash.
+- [x] CI #697 / run 45100517536 confirmada como SUCCESS integral: estilo, testes unitários, APK, artefato e final-status.
+- [ ] Publicação da tandem-latest: aguardar a CI disparada por este commit documental e confirmar o job tandem-release.
+- [ ] Testes funcionais no telefone permanecem pendentes para os recursos que exigem validação real.
+- PR #41 permanece aberta/draft e pausada; nenhuma alteração em saves foi feita.
