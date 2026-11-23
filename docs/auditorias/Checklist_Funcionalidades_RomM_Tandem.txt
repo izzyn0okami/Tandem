@@ -194,3 +194,13 @@ ATUALIZAÇÃO — CI DO FILTRO DE PLATAFORMA (2026-11-23)
 - PR #42 continua aberta/draft, sem merge.
 - PR #41 continua aberta/draft e intocada por decisão do usuário.
 - Nenhuma release publicada.
+
+
+ATUALIZAÇÃO — COLEÇÕES ROMM (2026-11-23)
+- [EM ANDAMENTO] A3. Filtros por coleção manual, inteligente e virtual: consulta dos três recursos oficiais e envio do filtro correspondente em GET /api/roms implementados; aguarda CI e teste funcional.
+- [EM ANDAMENTO] A7. Catálogo de coleções manuais (somente leitura): consulta e apresentação em chips implementadas; aguarda CI/teste.
+- [EM ANDAMENTO] A8. Catálogo de coleções inteligentes (somente leitura): consulta e apresentação em chips implementadas; aguarda CI/teste.
+- [EM ANDAMENTO] A9. Catálogo de coleções virtuais (somente leitura): consulta dos cinco tipos documentados e apresentação em chips implementadas; aguarda CI/teste.
+- [EM ANDAMENTO] A10. Aplicar coleção como filtro: usa collection_id, smart_collection_id ou virtual_collection_id no endpoint oficial GET /api/roms; aguarda CI/teste.
+- A2. Filtro de plataforma: código e CIs #659/#660 aprovados; validação funcional no telefone pendente.
+- PR #42 aberta/draft, sem merge. PR #41 aberta/draft e intocada.
