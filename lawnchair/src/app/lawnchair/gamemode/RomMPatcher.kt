@@ -34,7 +34,7 @@ internal fun RomMPatcherPanel(games: List<RemoteGame>) {
     val scope = rememberCoroutineScope()
     val game = games.firstOrNull() ?: return
     val gameIds = remember(games) { games.map { it.id }.distinct() }
-    val files = remember(games) { games.flatMap { it.associatedFiles }.distinctBy { it.id } }
+    val files = remember(game) { game.associatedFiles.distinctBy { it.id } }
     val baseFile = remember(gameIds, files) {
         files.firstOrNull { it.id == game.fileId }
             ?: files.firstOrNull {
@@ -225,15 +225,20 @@ internal fun RomMPatcherPanel(games: List<RemoteGame>) {
                                             uploadFile!!.outputStream().use { destination -> source.copyTo(destination) }
                                         }
                                     }
-                                    RomMClient(RomMSettings.url(context).orEmpty(), RomMSettings.token(context))
-                                        .applyPatch(
-                                            baseFileId = checkNotNull(baseFileId),
-                                            patchFileId = patchId,
-                                            patchUpload = uploadFile,
-                                            outputFileName = suggestedName,
-                                            target = target,
-                                        )
-                                    target
+                                    try {
+                                        RomMClient(RomMSettings.url(context).orEmpty(), RomMSettings.token(context))
+                                            .applyPatch(
+                                                baseFileId = checkNotNull(baseFileId),
+                                                patchFileId = patchId,
+                                                patchUpload = uploadFile,
+                                                outputFileName = suggestedName,
+                                                target = target,
+                                            )
+                                        target
+                                    } catch (failure: Exception) {
+                                        target.delete()
+                                        throw failure
+                                    }
                                 }
                                 readyFile = output
                                 readyFileName = suggestedName
