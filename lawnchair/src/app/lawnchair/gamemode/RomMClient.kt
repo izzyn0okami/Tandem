@@ -697,6 +697,9 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
         }
         require(patchFileId == null || patchFileId > 0L) { "ID do patch inválido" }
         require(patchUpload == null || patchUpload.isFile) { "Arquivo de patch não encontrado" }
+        require(patchUpload == null || patchUpload.length() <= MAX_ROMM_PATCH_UPLOAD_BYTES) {
+            "O patch local excede o limite de 1 GiB."
+        }
         require(outputFileName.isNotBlank() && File(outputFileName).name == outputFileName) {
             "Nome de saída inválido"
         }
@@ -738,19 +741,27 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
                 }
                 val body = response.body ?: throw IOException("O RomM retornou um arquivo vazio.")
                 val expectedBytes = body.contentLength()
+                if (expectedBytes > MAX_ROMM_PATCH_RESULT_BYTES) {
+                    throw IOException("A ROM modificada excede o limite de 4 GiB.")
+                }
                 if (expectedBytes > 0L) {
                     val availableBytes = StatFs(checkNotNull(temp.parentFile).absolutePath).availableBytes
                     if (availableBytes < expectedBytes + MINIMUM_FREE_SPACE_BYTES) {
                         throw IOException("Espaço insuficiente para salvar a ROM modificada.")
                     }
                 }
+                var receivedBytes = 0L
                 body.byteStream().use { input ->
                     FileOutputStream(temp).use { output ->
                         val buffer = ByteArray(64 * 1024)
                         while (true) {
                             val count = input.read(buffer)
                             if (count < 0) break
+                            if (receivedBytes > MAX_ROMM_PATCH_RESULT_BYTES - count) {
+                                throw IOException("A ROM modificada excede o limite de 4 GiB.")
+                            }
                             output.write(buffer, 0, count)
+                            receivedBytes += count
                         }
                     }
                 }
@@ -769,7 +780,10 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
         val url = base.resolve("api/roms/${file.id}/files/content/")!!.newBuilder()
             .addPathSegment(file.fileName)
             .build()
-        downloadToFile(url, target, file.fileName)
+        if (file.sizeBytes > MAX_ROMM_MEDIA_DOWNLOAD_BYTES) {
+            throw IOException("O arquivo " + file.fileName + " excede o limite de download de 1 GiB.")
+        }
+        downloadToFile(url, target, file.fileName, MAX_ROMM_MEDIA_DOWNLOAD_BYTES)
     }
 
     fun listNotes(romId: Long): List<RemoteGameNote> {
@@ -1197,9 +1211,15 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
         description: String,
         estimateRequiredSpace: (Long) -> Long,
         onProgress: (Long) -> Unit,
+        maxBytes: Long? = null,
     ): Long {
         val validatorFile = File(temp.parentFile, "${temp.name}.range")
         var offset = temp.length().takeIf { temp.isFile } ?: 0L
+        if (maxBytes != null && offset > maxBytes) {
+            temp.delete()
+            validatorFile.delete()
+            offset = 0L
+        }
         if (offset > 0L && !validatorFile.isFile) {
             GameLog.log("romm", "sem validador HTTP salvo; descartando parcial para evitar juntar versões diferentes: $description")
             temp.delete()
@@ -1253,6 +1273,11 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
                     val rangeTotal = rangeMatch?.groupValues?.get(3)?.takeUnless { it == "*" }?.toLongOrNull()
                     val responseLength = response.body.contentLength()
                     val expectedTotal = rangeTotal ?: responseLength.takeIf { it >= 0L }?.let { it + writeOffset } ?: -1L
+                    if (maxBytes != null && expectedTotal > maxBytes) {
+                        temp.delete()
+                        validatorFile.delete()
+                        throw IOException("O arquivo " + description + " excede o limite de download de 1 GiB.")
+                    }
                     val requiredSpace = estimateRequiredSpace(expectedTotal.takeIf { it > 0L } ?: 0L)
                     requireAvailableSpace(
                         checkNotNull(temp.parentFile),
@@ -1267,6 +1292,11 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
                             while (true) {
                                 val read = input.read(buffer)
                                 if (read < 0) break
+                                if (maxBytes != null && downloaded > maxBytes - read) {
+                                    temp.delete()
+                                    validatorFile.delete()
+                                    throw IOException("O arquivo " + description + " excede o limite de download de 1 GiB.")
+                                }
                                 output.write(buffer, 0, read)
                                 downloaded += read
                                 onProgress(downloaded)
@@ -1676,7 +1706,7 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
         GameLog.log("romm", "integridade do firmware confirmada: ${firmware.fileName}; verificações=${expectedHashes.map { it.first }}")
     }
 
-    private fun downloadToFile(url: HttpUrl, target: File, description: String) {
+    private fun downloadToFile(url: HttpUrl, target: File, description: String, maxBytes: Long? = null) {
         target.parentFile?.mkdirs()
         val temp = File(target.parentFile, "${target.name}.part")
         try {
@@ -1686,6 +1716,7 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
                 description,
                 estimateRequiredSpace = { it },
                 onProgress = {},
+                maxBytes = maxBytes,
             )
             RomMFileReplacement.replaceFile(temp, target)
             File(temp.parentFile, "${temp.name}.range").delete()
@@ -1816,6 +1847,9 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
         const val PAGE_SIZE = 100
         const val MINIMUM_FREE_SPACE_BYTES = 32L * 1024L * 1024L
         const val MAX_COVER_FAILURE_LOGS = 8
+        const val MAX_ROMM_MEDIA_DOWNLOAD_BYTES = 1024L * 1024L * 1024L
+        const val MAX_ROMM_PATCH_UPLOAD_BYTES = 1024L * 1024L * 1024L
+        const val MAX_ROMM_PATCH_RESULT_BYTES = 4L * 1024L * 1024L * 1024L
         val coverFailuresLogged = AtomicInteger()
         val DEVICE_SCOPES = listOf(
             "me.read",
