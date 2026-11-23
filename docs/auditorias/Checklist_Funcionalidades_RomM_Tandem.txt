@@ -283,3 +283,12 @@ ATUALIZAÇÃO A12 — CI #681 APROVADA (2026-11-22)
 - [x] final-status aprovado; jobs de release/notificação ignorados, nenhuma release publicada.
 - [ ] Testar no telefone a leitura de notas RomM, inclusive carregamento por versão e distinção entre ausência de notas e erro de consulta.
 - PR #42 continua aberta/draft, sem merge. PR #41 continua aberta/draft e intocada.
+
+
+ATUALIZAÇÃO — CI #682 DOS REGISTROS DOCUMENTAIS (2026-11-22)
+- [x] CI #682 / run 45097240159: SUCCESS — https://github.com/izzyn0okami/Tandem/actions/runs/45097240159.
+- [x] spotlessCheck aprovado.
+- [x] Testes unitários, Build APK, Upload artifact e final-status aprovados.
+- [x] Jobs de release/notificações ignorados; nenhuma release publicada.
+- Os commits documentais da auditoria e checklist estão validados pela CI.
+- PR #42 continua aberta/draft, sem merge; PR #41 continua aberta/draft e intocada.
