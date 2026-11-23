@@ -892,6 +892,7 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
     /** Consulta individual; erros de autorização são propagados, sem fallback silencioso. */
     fun getDevice(deviceId: String): RemoteDevice {
         require(deviceId.isNotBlank()) { "ID de dispositivo inválido" }
+        val isOnline = deviceId in listOnlineDeviceIds()
         val url = base.resolve("api/devices/${java.net.URLEncoder.encode(deviceId, "UTF-8")}")!!
         return http.newCall(request(url).get().build()).execute().use { response ->
             if (!response.isSuccessful) {
@@ -907,7 +908,7 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
                 clientVersion = item.optString("client_version").takeUnless { it == "null" },
                 lastSeen = item.optString("last_seen").takeUnless { it == "null" },
                 capabilities = parseDeviceCapabilities(item.optJSONObject("capabilities")),
-                online = false,
+                online = isOnline,
             )
         }
     }
