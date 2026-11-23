@@ -4443,3 +4443,10 @@ REGISTRO DE CORREÇÃO E CI — 2026-11-23 (continuação)
 - CI #850 foi disparada para o head de código 8e3b2c26a628556e8c9251d750cab521867c7b34, incluindo correção KDoc, os cinco arquivos DSi opcionais, avisos de região/cartuchos Saturn e teste unitário. Na última consulta, os jobs de Spotless e testes unitários/build ainda estavam em execução; nenhum resultado final foi declarado.
 - Após o código, os logs e descrição da PR foram atualizados. O head atual da PR é bcad0fb6d7e646c7f46a43e0d4a13e800a995dc8 (commits posteriores somente de documentação/descrição; CI #850 executa o commit de código correspondente).
 - PR #45 continua draft, sem merge. PR #41 continua intocada. Testes em aparelho continuam pendentes.
+
+
+CI #850 E SPOTLESS — 2026-11-23
+- Job build-debug-apk (assembleLawnWithQuickstepGithubDebug): SUCCESS. Etapas Run unit tests, Build APK e Upload artifact concluídas com sucesso. Artefato assembleLawnWithQuickstepGithubDebug publicado (46.290.641 bytes).
+- Job check-style: Spotless aplicou formatação e gerou commit automático e2f5fbc46c967df320f6bb609ca1e2d6f23d2cc8. A etapa Commit formatting and rerun CI falhou no push por atualização concorrente/non-fast-forward; o commit de formatação, porém, apareceu depois no branch.
+- A execução subsequente CI #854, no commit e2f5fbc46c967df320f6bb609ca1e2d6f23d2cc8, terminou com conclusion action_required e nenhum job. É necessário autorizar a execução no GitHub Actions (se o GitHub mostrar a ação de aprovação) ou gerar nova execução por commit não-bot. Não considerar a CI completa até check-style e build/teste executarem no head atual.
+- PR #45 permanece Draft e mergeable, sem merge. PR #41 permanece aberta/draft e intocada. Teste funcional em aparelho com RomM real ainda pendente.
