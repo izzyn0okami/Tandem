@@ -61,6 +61,7 @@ internal fun RomMPatcherPanel(games: List<RemoteGame>) {
 
     val openPatchPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         if (uri != null) {
+            selectedServerPatch = null
             val name = queryDisplayName(context, uri) ?: uri.lastPathSegment?.substringAfterLast('/') ?: "patch"
             val extension = File(name).extension.lowercase()
             if (extension !in supportedExtensions) {
