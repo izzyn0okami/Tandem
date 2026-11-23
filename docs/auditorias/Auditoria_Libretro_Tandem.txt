@@ -4088,4 +4088,5 @@ API de referência: RomM 5.4.1 (tag oficial rommapp/romm).
 Escopo aprovado:
 C1 screenshots; C2 manuais; C3 walkthroughs; C4 trilhas sonoras; C5 integração com patcher do RomM e identificação de formatos; C6 isolamento dos arquivos auxiliares; C7 visualizador de imagens/documentos e player de áudio integrados ao Tandem.
 
-Implementação e CI: pendentes no início desta PR. PR #41 permanece aberta e intocada; nenhuma alteração em SaveStore.kt ou GameModeActivity.kt planejada.
+PR #44 criada em draft: https://github.com/izzyn0okami/Tandem/pull/44.
+Implementação funcional e CI: pendentes. PR #41 permanece aberta e intocada; nenhuma alteração em SaveStore.kt ou GameModeActivity.kt planejada.
