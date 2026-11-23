@@ -51,6 +51,13 @@ data class RemoteGame(
     val userData: RemoteGameUserData? = null,
     /** Indica se existem notas visíveis para a conta atual no RomM. */
     val hasNotes: Boolean = false,
+    val alternativeNames: List<String> = emptyList(),
+    val metadata: RemoteGameMetadata? = null,
+    val providerIds: Map<String, String> = emptyMap(),
+    val siblingIds: Set<Long> = emptySet(),
+    val mainSiblingId: Long? = null,
+    val associatedFiles: List<RemoteAssociatedFile> = emptyList(),
+    val isEasyRpgGame: Boolean = false,
 ) {
     /** Destino dentro da pasta de jogos: uma subpasta por plataforma (e uma pasta por jogo, se for de vários arquivos). */
     fun destination(root: File): File {
@@ -91,6 +98,48 @@ data class RemoteGameUserData(
     val completion: Int,
     val status: String?,
     val pinnedMedia: List<String>,
+)
+
+/** Metadados agregados pelo RomM a partir dos provedores e de edição manual. */
+data class RemoteGameMetadata(
+    val genres: List<String> = emptyList(),
+    val franchises: List<String> = emptyList(),
+    val collections: List<String> = emptyList(),
+    val companies: List<String> = emptyList(),
+    val publishers: List<String> = emptyList(),
+    val developers: List<String> = emptyList(),
+    val gameModes: List<String> = emptyList(),
+    val ageRatings: List<String> = emptyList(),
+    val playerCount: String? = null,
+    val firstReleaseDate: Long? = null,
+    val averageRating: Double? = null,
+    val hasManualMetadata: Boolean = false,
+) {
+    val hasContent: Boolean
+        get() = genres.isNotEmpty() || franchises.isNotEmpty() || collections.isNotEmpty() ||
+            companies.isNotEmpty() || publishers.isNotEmpty() || developers.isNotEmpty() ||
+            gameModes.isNotEmpty() || ageRatings.isNotEmpty() || !playerCount.isNullOrBlank() ||
+            firstReleaseDate != null || averageRating != null
+}
+
+/** Arquivo associado a uma ROM segundo a classificação oficial do RomM. */
+data class RemoteAssociatedFile(
+    val id: Long,
+    val fileName: String,
+    val sizeBytes: Long,
+    val category: String?,
+    val isTopLevel: Boolean,
+    val crcHash: String? = null,
+    val md5Hash: String? = null,
+    val sha1Hash: String? = null,
+)
+
+/** Página de IDs da biblioteca; permite carregar resultados progressivamente. */
+data class RemoteGameIdPage(
+    val ids: List<Long>,
+    val total: Int,
+    val nextOffset: Int,
+    val hasMore: Boolean,
 )
 
 /** Plataforma cadastrada no RomM, usada para filtros oficiais da API. */
@@ -479,6 +528,61 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
         return games
     }
 
+    /**
+     * Consulta uma página da biblioteca sem carregar arquivos associados.
+     * A ordenação usa somente campos públicos e estáveis do RomM; não usa colunas pessoais.
+     */
+    fun listGameIdsPage(
+        searchTerm: String? = null,
+        platformIds: List<Long> = emptyList(),
+        collection: RemoteCollection? = null,
+        filters: RemoteGameFilters = RemoteGameFilters(),
+        orderBy: String = "",
+        orderDir: String = "asc",
+        offset: Int = 0,
+        limit: Int = PAGE_SIZE,
+    ): RemoteGameIdPage {
+        require(offset >= 0) { "Offset de biblioteca inválido" }
+        val query = searchTerm?.trim().orEmpty()
+        val builder = base.resolve("api/roms")!!.newBuilder()
+            .addQueryParameter("order_by", orderBy)
+            .addQueryParameter("order_dir", if (orderDir.equals("desc", ignoreCase = true)) "desc" else "asc")
+            .addQueryParameter("limit", limit.coerceIn(1, PAGE_SIZE).toString())
+            .addQueryParameter("offset", offset.toString())
+            .addQueryParameter("with_char_index", "false")
+            .addQueryParameter("with_filter_values", "false")
+            .addQueryParameter("with_rom_id_index", "false")
+            .addQueryParameter("with_total", "true")
+            .addQueryParameter("with_files", "false")
+        if (query.length >= 2) builder.addQueryParameter("search_term", query)
+        platformIds.distinct().forEach { id -> builder.addQueryParameter("platform_ids", id.toString()) }
+        when (collection?.kind) {
+            "manual" -> builder.addQueryParameter("collection_id", collection.id)
+            "smart" -> builder.addQueryParameter("smart_collection_id", collection.id)
+            "virtual" -> builder.addQueryParameter("virtual_collection_id", collection.id)
+        }
+        if (filters.favorites) builder.addQueryParameter("favorite", "true")
+        if (filters.duplicates) builder.addQueryParameter("duplicate", "true")
+        if (filters.played) builder.addQueryParameter("last_played", "true")
+        if (filters.retroAchievements) builder.addQueryParameter("has_ra", "true")
+        if (filters.saves) builder.addQueryParameter("has_saves", "true")
+        if (filters.states) builder.addQueryParameter("has_states", "true")
+        if (filters.verified) builder.addQueryParameter("verified", "true")
+        if (filters.soundtracks) builder.addQueryParameter("has_soundtrack", "true")
+
+        val json = longHttp.newCall(request(builder.build()).build()).execute().use { response ->
+            if (!response.isSuccessful) throw IOException("Servidor respondeu ${response.code}")
+            JSONObject(response.body.string())
+        }
+        val items = json.optJSONArray("items") ?: org.json.JSONArray()
+        val ids = (0 until items.length()).mapNotNull { index ->
+            items.optJSONObject(index)?.optLong("id", -1L)?.takeIf { it > 0L }
+        }
+        val nextOffset = offset + items.length()
+        val total = json.optInt("total", nextOffset)
+        return RemoteGameIdPage(ids, total, nextOffset, nextOffset < total)
+    }
+
     /** Consulta notas visíveis da ROM no RomM; somente GET, sem escopo de escrita. */
     fun listNotes(romId: Long): List<RemoteGameNote> {
         require(romId > 0L) { "ID de jogo RomM inválido" }
@@ -509,7 +613,9 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
 
     private fun parseGame(item: JSONObject): RemoteGame? {
         val slug = item.optString("platform_slug")
+        val isEasyRpgGame = item.optBoolean("is_easyrpg_game", false)
         val platform = GamePlatforms.fromRomM(slug)
+            ?: if (isEasyRpgGame) GamePlatforms.bySlug("easyrpg") else null
         if (platform == null) {
             if (skippedPlatforms[slug.ifEmpty { "?" }] == null) GameLog.log("romm", "plataforma ignorada: '$slug'")
             skippedPlatforms[slug.ifEmpty { "?" }] = (skippedPlatforms[slug.ifEmpty { "?" }] ?: 0) + 1
@@ -519,15 +625,17 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
         // que o próprio servidor informa não possuírem arquivo no disco.
         if (item.has("has_file_on_disk") && !item.optBoolean("has_file_on_disk")) return null
         val serverName = item.optString("fs_name").ifEmpty { return null }
+        val associatedFiles = parseAssociatedFiles(item.optJSONArray("files"))
         val allowed = platform.extensions + if (platform.discBased) emptySet() else GamePlatforms.genericExtensions
         // Arquivos só são tratados como um conjunto quando pertencem à mesma ROM no RomM.
         // Extensões auxiliares continuam válidas como ROMs independentes se o servidor
         // as cadastrou assim; não inferimos relação com outros registros pelo nome.
-        val discFiles = allowed + platform.discCompanionExtensions
+        val discFiles = allowed + platform.discCompanionExtensions + if (isEasyRpgGame) setOf("ldb") else emptySet()
         val serverExtension = File(serverName).extension.lowercase()
         val flat = serverExtension in discFiles &&
             !item.optBoolean("has_multiple_files", false) &&
-            !item.optBoolean("has_nested_single_file", false)
+            !item.optBoolean("has_nested_single_file", false) &&
+            !isEasyRpgGame
         if (platform.discBased && File(serverName).extension.lowercase() in setOf("cue", "gdi")) {
             val files = item.optJSONArray("files")
             val fileSummary = (0 until (files?.length() ?: 0)).take(12).map { index ->
@@ -546,7 +654,23 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
         var fileId: Long? = null
         var fileIds: List<Long> = emptyList()
         var folder = false
-        if (!flat) {
+        if (isEasyRpgGame) {
+            // EasyRPG é uma pasta RPG Maker 2000/2003. Preservamos os arquivos de jogo
+            // associados, mas excluímos mídias auxiliares que não pertencem ao pacote executável.
+            val gameFiles = associatedFiles.filter { file ->
+                file.category == null || file.category !in setOf("manual", "walkthrough", "soundtrack", "screenshot")
+            }
+            val main = gameFiles.firstOrNull { it.fileName.equals("RPG_RT.ldb", ignoreCase = true) }
+                ?: gameFiles.firstOrNull { File(it.fileName).extension.equals("ldb", ignoreCase = true) }
+            if (main == null) {
+                skippedExtension++
+                GameLog.log("romm", "EasyRPG sem RPG_RT.ldb: rom=${item.optLong("id", -1L)}")
+                return null
+            }
+            folder = true
+            fileName = main.fileName
+            fileIds = gameFiles.map { it.id }.distinct()
+        } else if (!flat) {
             val files = item.optJSONArray("files")
             val playable = (0 until (files?.length() ?: 0)).map { files!!.getJSONObject(it) }.filter {
                 val name = it.optString("file_name")
@@ -586,6 +710,10 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
                 fileId = playable.single().getLong("id")
             }
         }
+        val siblings = item.optJSONArray("sibling_roms")
+        val siblingItems = (0 until (siblings?.length() ?: 0)).mapNotNull { siblings?.optJSONObject(it) }
+        val mainSiblingId = siblingItems.firstOrNull { it.optBoolean("is_main_sibling", false) }?.optLong("id")?.takeIf { it > 0L }
+        val siblingIds = siblingItems.mapNotNull { it.optLong("id", -1L).takeIf { id -> id > 0L } }.toSet()
         return RemoteGame(
             id = item.getLong("id"),
             title = item.optString("name").ifEmpty { File(fileName).nameWithoutExtension },
@@ -607,6 +735,13 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
             summary = item.optString("summary").ifEmpty { null },
             userData = parseUserData(item.optJSONObject("rom_user")),
             hasNotes = item.optBoolean("has_notes", false),
+            alternativeNames = readStringArray(item.optJSONArray("alternative_names")),
+            metadata = parseMetadata(item),
+            providerIds = parseProviderIds(item),
+            siblingIds = siblingIds,
+            mainSiblingId = mainSiblingId,
+            associatedFiles = associatedFiles,
+            isEasyRpgGame = isEasyRpgGame,
         )
     }
 
@@ -632,6 +767,98 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
                 pinned?.optString(index)?.takeIf { it.isNotBlank() && it != "null" }
             },
         )
+    }
+
+    private fun readStringArray(array: org.json.JSONArray?): List<String> =
+        (0 until (array?.length() ?: 0)).mapNotNull { index ->
+            array?.optString(index)?.takeIf { it.isNotBlank() && !it.equals("null", ignoreCase = true) }
+        }.distinct()
+
+    private fun parseAssociatedFiles(array: org.json.JSONArray?): List<RemoteAssociatedFile> =
+        (0 until (array?.length() ?: 0)).mapNotNull { index ->
+            val item = array?.optJSONObject(index) ?: return@mapNotNull null
+            val id = item.optLong("id", -1L)
+            val name = item.optString("file_name").takeIf { it.isNotBlank() && it != "null" }
+            if (id <= 0L || name == null) return@mapNotNull null
+            RemoteAssociatedFile(
+                id = id,
+                fileName = name,
+                sizeBytes = item.optLong("file_size_bytes", 0L),
+                category = item.optString("category").takeUnless { it.isBlank() || it == "null" }?.lowercase(),
+                isTopLevel = item.optBoolean("is_top_level", false),
+                crcHash = item.optString("crc_hash").takeUnless { it.isBlank() || it == "null" },
+                md5Hash = item.optString("md5_hash").takeUnless { it.isBlank() || it == "null" },
+                sha1Hash = item.optString("sha1_hash").takeUnless { it.isBlank() || it == "null" },
+            )
+        }
+
+    private fun parseMetadata(item: JSONObject): RemoteGameMetadata? {
+        val provider = item.optJSONObject("metadatum")
+        val manual = item.optJSONObject("manual_metadata")
+        if (provider == null && manual == null) return null
+        fun values(key: String): List<String> =
+            (readStringArray(provider?.optJSONArray(key)) + readStringArray(manual?.optJSONArray(key))).distinct()
+        fun stringValue(key: String): String? {
+            val manualValue = manual?.optString(key)
+            val providerValue = provider?.optString(key)
+            return sequenceOf(manualValue, providerValue).firstOrNull {
+                !it.isNullOrBlank() && !it.equals("null", ignoreCase = true)
+            }
+        }
+        fun longValue(key: String): Long? {
+            val source = if (manual?.has(key) == true && !manual.isNull(key)) manual else provider
+            return source?.takeIf { it.has(key) && !it.isNull(key) }?.optLong(key)
+        }
+        fun doubleValue(key: String): Double? {
+            val source = if (manual?.has(key) == true && !manual.isNull(key)) manual else provider
+            val value = source?.takeIf { it.has(key) && !it.isNull(key) }?.optDouble(key, Double.NaN)
+            return value?.takeIf { it.isFinite() }
+        }
+        val result = RemoteGameMetadata(
+            genres = values("genres"),
+            franchises = values("franchises"),
+            collections = values("collections"),
+            companies = values("companies"),
+            publishers = values("publishers"),
+            developers = values("developers"),
+            gameModes = values("game_modes"),
+            ageRatings = values("age_ratings"),
+            playerCount = stringValue("player_count"),
+            firstReleaseDate = longValue("first_release_date"),
+            averageRating = doubleValue("average_rating"),
+            hasManualMetadata = manual != null && (
+                values("genres").isNotEmpty() || values("franchises").isNotEmpty() ||
+                    values("collections").isNotEmpty() || values("companies").isNotEmpty() ||
+                    values("publishers").isNotEmpty() || values("developers").isNotEmpty() ||
+                    values("game_modes").isNotEmpty() || values("age_ratings").isNotEmpty() ||
+                    stringValue("player_count") != null || longValue("first_release_date") != null
+                ),
+        )
+        return result.takeIf { it.hasContent || it.hasManualMetadata }
+    }
+
+    private fun parseProviderIds(item: JSONObject): Map<String, String> {
+        val fields = listOf(
+            "igdb_id" to "IGDB",
+            "sgdb_id" to "SteamGridDB",
+            "moby_id" to "MobyGames",
+            "ss_id" to "ScreenScraper",
+            "ra_id" to "RetroAchievements",
+            "launchbox_id" to "LaunchBox",
+            "hasheous_id" to "Hasheous",
+            "tgdb_id" to "TheGamesDB",
+            "flashpoint_id" to "Flashpoint",
+            "hltb_id" to "HowLongToBeat",
+            "demozoo_id" to "Demozoo",
+            "pouet_id" to "Pouet",
+            "csdb_id" to "CSDb",
+            "steam_id" to "Steam",
+            "gamelist_id" to "Gamelist",
+            "libretro_id" to "Libretro",
+        )
+        return fields.mapNotNull { (field, label) ->
+            item.optString(field).takeUnless { it.isBlank() || it == "null" }?.let { label to it }
+        }.toMap()
     }
 
     private var coverSamples = 0
