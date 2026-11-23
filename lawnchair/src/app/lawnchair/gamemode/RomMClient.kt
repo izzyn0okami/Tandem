@@ -1243,6 +1243,7 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
         val DEVICE_SCOPES = listOf(
             "me.read",
             "platforms.read",
+            "collections.read",
             "roms.read",
             "roms.user.read",
             "roms.user.write",
