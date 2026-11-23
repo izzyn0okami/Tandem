@@ -632,3 +632,8 @@ D5 — COMPLEMENTO DE CATÁLOGO (2026-11-23)
 - ProSystem: BIOS Atari 7800 opcional.
 - FCEUmm: disksys.rom obrigatório somente para conteúdo FDS; Game Genie opcional; plataforma NES não bloqueada por BIOS.
 - D5 ainda não concluído: falta tratar disponibilidade por região para Sega CD/Saturn e a separação de modos DSi/Neo Geo AES/MVS.
+
+D7/D8 — AJUSTE AO CONTRATO OFICIAL (2026-11-23)
+- GET /api/devices é paginado; o cliente percorre items/total/limit/offset.
+- 404 em /api/devices/online indica presença indisponível (por exemplo, DEVICE_INSTALL_ENABLED desativado); não marcar o aparelho como offline. 403 continua sendo erro de escopo.
+- Inventário usa campos DeviceSchema documentados: platform, client, client_version, sync_mode, sync_enabled, last_seen e capabilities.
