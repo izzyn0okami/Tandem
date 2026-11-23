@@ -1,0 +1,45 @@
+name: Format PR 43 with Spotless
+
+on:
+  pull_request:
+    branches:
+      - game-mode-m2-dev
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: write
+  actions: write
+
+concurrency:
+  group: format-pr43
+  cancel-in-progress: false
+
+jobs:
+  format:
+    if: github.event.pull_request.number == 43 && github.event.pull_request.head.ref == 'feat/romm-personal-game-data' && github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: feat/romm-personal-game-data
+          repository: ${{ github.repository }}
+      - uses: actions/setup-java@v6
+        with:
+          distribution: zulu
+          java-version: 21
+      - uses: gradle/actions/setup-gradle@v6
+      - name: Apply the repository formatter
+        run: ./gradlew spotlessApply
+      - name: Commit only the affected Kotlin file
+        run: |
+          if ! git diff --quiet -- lawnchair/src/app/lawnchair/gamemode/RomMGameData.kt; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add lawnchair/src/app/lawnchair/gamemode/RomMGameData.kt
+            git commit -m "style: apply Spotless to RomM game data panel"
+            git push origin HEAD:feat/romm-personal-game-data
+          fi
+      - name: Dispatch the regular CI for the formatted branch
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run ci.yml --ref feat/romm-personal-game-data
