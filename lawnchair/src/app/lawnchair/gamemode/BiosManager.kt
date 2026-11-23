@@ -30,13 +30,18 @@ object BiosManager {
     private fun requiredBiosGroups(platform: GamePlatform): List<List<BiosFile>> = platform.biosGroups.ifEmpty { listOf(platform.bios) }
 
     /** O jogo pode rodar? BIOS opcionais dispensam arquivos; requisitos explícitos usam AND/OR. */
-    fun isReady(context: Context, platform: GamePlatform): Boolean = when {
+    fun isReady(context: Context, platform: GamePlatform): Boolean =
+        isReady(platform, hasBios = { has(context, it) }, isKitReady = { kitReady(context, platform) })
+
+    internal fun isReady(
+        platform: GamePlatform,
+        hasBios: (BiosFile) -> Boolean,
+        isKitReady: () -> Boolean,
+    ): Boolean = when {
         !platform.biosRequired -> true
-
-        platform.biosKit != null -> kitReady(context, platform)
-
+        platform.biosKit != null -> isKitReady()
         else -> requiredBiosGroups(platform).let { groups ->
-            groups.isNotEmpty() && groups.all { group -> group.any { has(context, it) } }
+            groups.isNotEmpty() && groups.all { group -> group.any(hasBios) }
         }
     }
 
