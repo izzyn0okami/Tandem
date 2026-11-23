@@ -626,6 +626,20 @@ internal fun GameDetailScreen(
     val firstFocus = remember { FocusRequester() }
     val manyVersions = (group?.versions?.size ?: 0) > 1
     val summary = remember(entry.key) { group?.versions?.firstOrNull()?.summary }
+    val noteGames = remember(entry.key) { group?.versions?.filter { it.hasNotes }.orEmpty() }
+    val rommNotes by produceState<List<Pair<String, RemoteGameNote>>?>(null, entry.key, RomMSettings.url(context), RomMSettings.token(context)) {
+        value = if (noteGames.isEmpty() || !RomMSettings.isConnected(context)) {
+            emptyList()
+        } else {
+            runCatching {
+                withContext(Dispatchers.IO) {
+                    val client = RomMClient(RomMSettings.url(context).orEmpty(), RomMSettings.token(context))
+                    noteGames.flatMap { game -> client.listNotes(game.id).map { game.fileName to it } }
+                }
+            }.onFailure { GameLog.error("romm", "falha ao carregar notas de ${entry.title}", it) }
+                .getOrNull()
+        }
+    }
     val chosenCoreId = remember(entry.platform.slug) { CoreRegistry.chosen(context, entry.platform) }
     val syncStatus by produceState<SaveSyncStatus?>(null, local?.path, chosenCoreId, syncVersion) {
         value = local?.let { SaveSync.status(context, it.path, chosenCoreId) }
@@ -775,6 +789,33 @@ internal fun GameDetailScreen(
                         fontSize = 14.sp,
                         modifier = Modifier.padding(top = 6.dp).width(520.dp),
                     )
+                }
+                if (noteGames.isNotEmpty()) {
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(top = 8.dp).width(520.dp)) {
+                        Text("Notas do RomM", color = GameColors.text, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                        when {
+                            rommNotes == null -> Text("Carregando notas…", color = GameColors.textDim, fontSize = 12.sp)
+                            rommNotes!!.isEmpty() -> Text("Não foi possível carregar as notas ou não há notas visíveis.", color = GameColors.textDim, fontSize = 12.sp)
+                            else -> rommNotes!!.forEach { (versionName, note) ->
+                                Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                                    Text(note.title, color = GameColors.text, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
+                                    if (note.content.isNotBlank()) Text(note.content, color = GameColors.textDim, fontSize = 12.sp)
+                                    if (note.tags.isNotEmpty()) Text(note.tags.joinToString(" · "), color = GameColors.accent, fontSize = 11.sp)
+                                    Text(
+                                        text = buildString {
+                                            if (note.username.isNotBlank()) append(note.username)
+                                            if (versionName.isNotBlank()) {
+                                                if (isNotEmpty()) append(" • ")
+                                                append(versionName)
+                                            }
+                                        },
+                                        color = GameColors.textDim,
+                                        fontSize = 10.sp,
+                                    )
+                                }
+                            }
+                        }
+                    }
                 }
                 AchievementSummaryRow(
                     platform = entry.platform,
