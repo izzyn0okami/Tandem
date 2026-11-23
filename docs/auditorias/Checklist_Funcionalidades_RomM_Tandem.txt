@@ -405,3 +405,10 @@ IMPLEMENTAÇÃO C1–C7 — PR EM PREPARAÇÃO (2026-11-23)
 - C6: categorias manual, walkthrough, soundtrack e screenshot não podem ser selecionadas como ROM executável; patch também permanece auxiliar.
 - Não alterar SaveStore.kt ou GameModeActivity.kt; PR #41 permanece aberta, draft e pausada.
 - CI, testes automatizados e teste no telefone: pendentes.
+
+
+ATUALIZAÇÃO C6 — FILTRO DE CATEGORIAS (2026-11-23)
+- [x] Implementado filtro positivo de categorias executáveis: game, dlc, hack, update, mod, demo, translation, prototype e cheat; arquivos sem categoria continuam aceitos.
+- [x] Categorias auxiliares (manual, walkthrough, soundtrack, screenshot, patch) e categorias desconhecidas ficam fora da seleção/download de ROM.
+- [x] Filtro aplicado ao arquivo plano principal, aos conjuntos multidisco/multiarquivo e ao EasyRPG.
+- [ ] CI, testes automatizados e validação no telefone pendentes.
