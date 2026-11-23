@@ -105,6 +105,9 @@ object CoreRegistry {
         "intellivision" to listOf(
             core("freeintv", "FreeIntv", "Padrão"),
         ),
+        "easyrpg" to listOf(
+            core("easyrpg", "EasyRPG Player", "RPG Maker 2000/2003"),
+        ),
     )
 
     private fun gbCores() = listOf(

@@ -319,8 +319,8 @@ object GamePlatforms {
             slug = "easyrpg",
             name = "EasyRPG (RPG Maker 2000/2003)",
             coreId = "easyrpg",
-            extensions = setOf("ldb"),
-            folderAliases = setOf("easyrpg", "rpgmaker2k", "rpgmaker2000", "rpgmaker2003", "rpgmaker2k3"),
+            extensions = setOf("ldb", "zip", "lzh", "easyrpg"),
+            folderAliases = setOf("easyrpg", "rpgmaker", "rpgmaker2k", "rpgmaker2000", "rpgmaker2003", "rpgmaker2k3"),
             sortOrder = 99,
         ),
     )
