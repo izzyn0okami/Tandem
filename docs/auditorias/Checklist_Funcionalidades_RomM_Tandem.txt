@@ -1,0 +1,121 @@
+CHECKLIST GERAL — FUNCIONALIDADES DA AUDITORIA ROMM × TANDEM
+Projeto: izzyn0okami/Tandem
+Branch de implementação: feat/romm-library-search
+Base: game-mode-m2-dev
+Documento de acompanhamento vivo. Atualizar após cada funcionalidade concluída, CI, PR ou validação do usuário.
+
+LEGENDA
+[CONCLUÍDO] Implementado e validado conforme a evidência indicada.
+[EM ANDAMENTO] Implementação iniciada, ainda não concluída.
+[PENDENTE] Analisado, ainda não implementado.
+[AGUARDANDO DECISÃO] Exige escolha explícita do usuário.
+[FORA DO ESCOPO INICIAL] Não implementar nesta primeira sequência; pode ser reconsiderado.
+
+A. BIBLIOTECA, PESQUISA E ORGANIZAÇÃO (PRIORIDADE ALTA)
+[EM ANDAMENTO] A1. Pesquisa de ROMs pelo endpoint oficial GET /api/roms (search_term).
+[PENDENTE] A2. Filtros por plataforma e múltiplas plataformas (platform_ids).
+[PENDENTE] A3. Filtros por coleção comum, inteligente e virtual.
+[PENDENTE] A4. Filtros de favoritos, correspondência de metadados, duplicados, jogabilidade, saves, states e outros critérios suportados pelo RomM.
+[PENDENTE] A5. Ordenação por nome, tamanho, lançamento, criação e avaliação; preservar relevância de busca quando não houver ordenação escolhida.
+[PENDENTE] A6. Paginação e carregamento eficiente para bibliotecas grandes.
+[PENDENTE] A7. Catálogo de coleções comuns (somente leitura).
+[PENDENTE] A8. Catálogo de coleções inteligentes (somente leitura).
+[PENDENTE] A9. Catálogo de coleções virtuais (somente leitura).
+[PENDENTE] A10. Aplicação de uma coleção como filtro da biblioteca sem copiar sua lógica para o cliente.
+[PENDENTE] A11. Cache local seguro da biblioteca e dos filtros, sem substituir dados completos por resultados de pesquisa temporários.
+
+B. DADOS PESSOAIS POR JOGO E ATIVIDADE (PRIORIDADE ALTA)
+[PENDENTE] B1. Consultar propriedades do usuário por ROM (favorito, avaliação, dificuldade, concluído, backlog, agora jogando, oculto e última partida).
+[PENDENTE] B2. Atualizar propriedades do usuário pela API RomM, somente após definir a experiência de interface.
+[PENDENTE] B3. Consultar histórico/atividade do RomM.
+[PENDENTE] B4. Integrar sessões e duração de jogo, preservando medição local precisa quando necessário.
+[PENDENTE] B5. Notas e etiquetas por jogo (começar com leitura).
+[AGUARDANDO DECISÃO] B6. Definir quais estados pessoais serão editáveis no Tandem e quais serão apenas informativos.
+
+C. MÍDIAS E CONTEÚDO ASSOCIADO (PRIORIDADE MÉDIA)
+[PENDENTE] C1. Exibir screenshots do RomM.
+[PENDENTE] C2. Consultar manuais e instruções.
+[PENDENTE] C3. Consultar walkthroughs.
+[PENDENTE] C4. Consultar trilhas sonoras.
+[PENDENTE] C5. Investigar patches e formatos de aplicação.
+[PENDENTE] C6. Manter mídias auxiliares fora da lista de ROMs executáveis.
+[AGUARDANDO DECISÃO] C7. Definir se o Tandem terá visualizador de imagens/documentos e player de áudio próprio.
+
+D. PLATAFORMAS, FIRMWARE E DISPOSITIVOS
+[CONCLUÍDO] D1. Consulta de plataformas e metadados básicos.
+[CONCLUÍDO] D2. Consulta e download de firmware disponibilizado pelo RomM, com validação já existente a revisar por núcleo.
+[PENDENTE] D3. Validar BIOS existentes por hashes/tamanhos oficiais quando disponíveis.
+[PENDENTE] D4. Distinguir BIOS alternativas (OR) de conjuntos simultâneos (AND).
+[PENDENTE] D5. Revisar requisitos de BIOS por núcleo, não apenas por plataforma.
+[PENDENTE] D6. Revisar importação, substituição segura e recuperação de BIOS.
+[PENDENTE] D7. Registro/consulta de dispositivos RomM, separado do pareamento OAuth já existente.
+[PENDENTE] D8. Feature detection de capacidades do dispositivo.
+[AGUARDANDO DECISÃO] D9. Instalação remota de ROMs em dispositivos; depende de agente e cenário de uso concretos.
+
+E. SAVES, STATES E SINCRONIZAÇÃO
+[CONCLUÍDO] E1. Listagem/download/upload de saves e states pelos endpoints RomM atuais.
+[CONCLUÍDO] E2. Identidade estável por conta/jogo e isolamento por conta.
+[CONCLUÍDO] E3. Snapshots imutáveis e proteção contra sobrescrita silenciosa.
+[EM ANDAMENTO] E4. Resolução explícita de conflitos de saves — PR #41 aberta, draft, sem merge.
+[PENDENTE] E5. Device Sync Protocol oficial (negotiate/complete), após estabilização e validação do fluxo atual.
+[PENDENTE] E6. Prova de conceito RetroArch Cloud Sync/WebDAV em modo somente leitura.
+[PENDENTE] E7. Testes controlados de upload/download WebDAV sem DELETE automático.
+[PENDENTE] E8. Comparar Device Sync e WebDAV para decidir arquitetura por tipo de asset.
+[PENDENTE] E9. Manter save states separados de SRAM e memory cards.
+[AGUARDANDO DECISÃO] E10. Definir se e quando substituir partes do sincronizador atual pelo protocolo oficial.
+
+F. ESTATÍSTICAS, RECOMENDAÇÕES E NOTIFICAÇÕES
+[PENDENTE] F1. Consultar estatísticas do RomM sem duplicar os cálculos do servidor.
+[PENDENTE] F2. Consultar recomendações personalizadas do RomM.
+[PENDENTE] F3. Consultar notificações do RomM.
+[PENDENTE] F4. Avaliar atualização/dispensa de notificações.
+[PENDENTE] F5. Avaliar canais de notificação e Apprise; sem editor administrativo inicialmente.
+[FORA DO ESCOPO INICIAL] F6. Replicar painel administrativo, logs e auditoria do RomM.
+
+G. RECURSOS ESPECIALIZADOS
+[FORA DO ESCOPO INICIAL] G1. Feeds externos (WebRCade, PKGi, Tinfoil etc.); manter API nativa do RomM como fonte.
+[FORA DO ESCOPO INICIAL] G2. Tarefas administrativas de scan, limpeza e manutenção.
+[FORA DO ESCOPO INICIAL] G3. Streaming remoto do RomM; não substitui LibretroDroid local.
+[FORA DO ESCOPO INICIAL] G4. Netplay; compatibilidade LibretroDroid ainda não comprovada.
+[PENDENTE] G5. Memory cards: estudar formatos, versões e limitações antes de qualquer integração.
+[FORA DO ESCOPO INICIAL] G6. Música, artistas, álbuns e playlists; exigiria player independente.
+[PENDENTE] G7. Sockets/eventos em tempo real; adotar apenas quando REST não atender a uma necessidade concreta.
+[FORA DO ESCOPO INICIAL] G8. Administração de usuários, permissões, grupos, canais e tarefas do servidor.
+
+H. AUTENTICAÇÃO, PERMISSÕES E COMPATIBILIDADE DA API
+[CONCLUÍDO] H1. Inventário dos endpoints RomM usados atualmente.
+[CONCLUÍDO] H2. Identificação dos scopes necessários para os fluxos atuais.
+[CONCLUÍDO] H3. Identificação de scopes solicitados sem uso atual (roms.user.read/write e devices.read/write).
+[PENDENTE] H4. Implementar detecção clara de permissões ausentes e instruções de reconexão.
+[PENDENTE] H5. Revisar expiração, revogação e renovação de tokens; não há renovação automática identificada.
+[PENDENTE] H6. Revisar diferenças entre token manual e token do fluxo de dispositivo.
+[PENDENTE] H7. Manter compatibilidade com RomM 5.4.1 e tratar respostas 401/403/404 sem duplicar registros.
+
+I. LIBRETRO E EXECUÇÃO LOCAL
+[CONCLUÍDO] I1. Integração LibretroDroid no mesmo processo do launcher.
+[CONCLUÍDO] I2. Arquitetura ARM64 intencional para o aparelho-alvo.
+[CONCLUÍDO] I3. RetroAchievements: autenticação, identificação, sessão, Hardcore/Softcore, desbloqueios, Rich Presence, leaderboards e persistência.
+[CONCLUÍDO] I4. Overlays/notificações RetroAchievements validados no telefone.
+[CONCLUÍDO] I5. Correção de overflow em achievements.cpp.
+[CONCLUÍDO] I6. Seleção ambígua de ROM em ZIP corrigida na PR #6 mesclada; testes funcionais específicos no aparelho devem permanecer rastreados separadamente.
+[PENDENTE] I7. Validar ZIP com uma ROM, múltiplas ROMs, nenhuma ROM compatível e arquivo corrompido.
+[PENDENTE] I8. Validar ZIPs de sistemas discBased e formatos ZIP nativos.
+[PENDENTE] I9. Revisar plataforma nula ou sem extensões.
+[PENDENTE] I10. Revisar cobertura e formatos multidisco.
+[PENDENTE] I11. Atualização, versionamento, hash e integridade dos núcleos.
+[PENDENTE] I12. Apresentação e seleção de núcleos alternativos.
+[PENDENTE] I13. Compatibilidade real dos núcleos no aparelho; disponibilidade de build não é prova de funcionamento.
+[PENDENTE] I14. Robustez de áudio, vídeo, controles, ciclo de vida e falhas nativas.
+[PENDENTE] I15. Diagnóstico, recuperação e isolamento de falhas.
+[PENDENTE] I16. Ampliar testes automatizados para catálogo, ROM, BIOS, instalação de núcleos e sessão.
+
+REGRAS DE EXECUÇÃO
+1. Implementar por etapas pequenas e independentes, aproveitando a API RomM.
+2. Não remover recursos existentes sem auditoria comparativa e decisão do usuário.
+3. Verificar PRs abertas antes de criar nova PR e evitar alterações concorrentes.
+4. Não mesclar PR sem autorização explícita.
+5. Atualizar este checklist imediatamente após cada funcionalidade concluída; registrar commit, arquivos, CI, testes e pendências.
+6. CI bem-sucedida não equivale a teste funcional no telefone.
+7. Registrar testes no aparelho somente após confirmação do usuário.
+8. A PR #41 afeta GameModeActivity.kt e SaveStore.kt; coordenar mudanças nesses arquivos enquanto estiver aberta.
+9. O primeiro ciclo de implementação prioriza pesquisa/filtros da biblioteca e coleções em modo somente leitura.
