@@ -609,3 +609,17 @@ Base: game-mode-m2-dev @ 6adc110e0f2effb6d4be2a9a2abc6a8360cf8824
 - D1 e D2 permanecem concluídos e não serão reimplementados.
 - PR #41 continua aberta/draft/pausada. Seus arquivos alterados são GameModeActivity.kt, SaveStore.kt e SaveStoreTest.kt; evitar alterações nesses arquivos.
 - Nenhum teste funcional em aparelho será marcado como concluído sem confirmação do usuário.
+
+
+ATUALIZAÇÃO DO ESTÁGIO D — IMPLEMENTAÇÃO EM REVISÃO (2026-11-23)
+PR #45: https://github.com/izzyn0okami/Tandem/pull/45
+- [IMPLEMENTADO / CI PENDENTE] D3 — MD5 oficial embutido para BIOS documentadas; importação local rejeita hash divergente; downloads validam contra hash oficial ou metadados RomM antes de substituir; estado UNKNOWN quando não há referência confiável; tela mostra o resultado.
+- [IMPLEMENTADO / CI PENDENTE] D4 — regra AND/OR isolada e coberta por testes unitários, preservando compatibilidade da lista bios legada.
+- [PARCIAL / REVISÃO PENDENTE] D5 — requisitos cruzados com docs oficiais. Corrigido Atari 5200 (5200.rom opcional no núcleo a5200); ampliadas alternativas de 3DO e PlayStation; demais requisitos conferidos. Falta decidir/refinar indicação por região em Sega CD e Saturn.
+- [IMPLEMENTADO / CI PENDENTE] D6 — importação de kits em staging, promoção após validação, backup e rollback; importação individual valida MD5 antes de substituir; testes de sucesso e kit incompleto.
+- [IMPLEMENTADO / CI PENDENTE] D7 — inventário de dispositivos, IDs online e consulta individual pelos endpoints RomM documentados; tela de configurações exibe dispositivos e erros de escopo.
+- [IMPLEMENTADO / CI PENDENTE] D8 — capacidades booleanas explícitas exibidas na tela; ausência é desconhecida, não suporte; testes de parser e semântica.
+- [ ] Testes funcionais no telefone com RomM 5.4.x real — pendentes; não marcar como concluídos sem confirmação do usuário.
+- CI #804: Spotless aprovado; testes unitários/build ainda em execução na última consulta. A CI final deve cobrir o HEAD mais recente da PR.
+- PR #41 permanece aberta/draft/pausada e sem alterações.
+- D9 permanece fora do escopo e aguardando decisão.
