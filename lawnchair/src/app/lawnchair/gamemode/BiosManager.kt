@@ -67,10 +67,13 @@ object BiosManager {
      * existirem dentro de [source], em qualquer nível até 2 pastas de profundidade. Devolve quantos
      * arquivos foram copiados.
      */
-    fun importKit(context: Context, platform: GamePlatform, source: File): Int {
+    fun importKit(context: Context, platform: GamePlatform, source: File): Int =
+        importKitFiles(systemDir(context), platform, source)
+
+    internal fun importKitFiles(systemRoot: File, platform: GamePlatform, source: File): Int {
         val kit = platform.biosKit ?: return 0
         if (kit.isEmpty()) return 0
-        val root = systemDir(context).apply { mkdirs() }
+        val root = systemRoot.apply { mkdirs() }
         val suffix = "${platform.slug}-${System.nanoTime()}"
         val stagingRoot = File(root, ".bios-kit-stage-$suffix")
         val backupRoot = File(root, ".bios-kit-backup-$suffix")
