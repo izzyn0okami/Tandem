@@ -1,12 +1,16 @@
 package app.lawnchair.gamemode
 
+import java.io.File
 import java.io.IOException
+import java.security.MessageDigest
 import java.util.concurrent.TimeUnit
 import okhttp3.HttpUrl
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.MultipartBody
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import okhttp3.RequestBody.Companion.asRequestBody
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONArray
 import org.json.JSONObject
@@ -230,5 +234,105 @@ class RomMDeviceSyncClient(
             .toString()
             .toRequestBody(jsonType)
         executeJson(request("api/sync/sessions/$sessionId/complete").post(body).build())
+    }
+
+    /**
+     * Envia uma SRAM como save do Device Sync. Nunca sobrescreve e desativa a limpeza
+     * automática do servidor para preservar versões anteriores.
+     */
+    fun uploadSave(
+        romId: Long,
+        deviceId: String,
+        sessionId: Long,
+        slot: String,
+        file: File,
+    ): JSONObject {
+        require(romId > 0L && sessionId > 0L)
+        require(deviceId.isNotBlank() && slot.isNotBlank())
+        require(file.isFile && file.length() > 0L) { "O save local está ausente ou vazio." }
+        val contentHash = md5(file)
+        val url = base.resolve("api/saves")!!.newBuilder()
+            .addQueryParameter("rom_id", romId.toString())
+            .addQueryParameter("slot", slot)
+            .addQueryParameter("device_id", deviceId)
+            .addQueryParameter("session_id", sessionId.toString())
+            .addQueryParameter("content_hash", contentHash)
+            .addQueryParameter("overwrite", "false")
+            .addQueryParameter("autocleanup", "false")
+            .build()
+        val body = MultipartBody.Builder()
+            .setType(MultipartBody.FORM)
+            .addFormDataPart(
+                "saveFile",
+                file.name,
+                file.asRequestBody("application/octet-stream".toMediaType()),
+            )
+            .build()
+        return executeJson(request(url.encodedPath).url(url).post(body).build())
+    }
+
+    /**
+     * Baixa para um arquivo de staging. Não promove o arquivo nem confirma o download:
+     * o chamador deve aplicar o save com segurança e só então chamar confirmDownloaded.
+     */
+    fun downloadSaveToStaging(
+        saveId: Long,
+        deviceId: String,
+        sessionId: Long,
+        expectedContentHash: String,
+        stagingFile: File,
+    ): String {
+        require(saveId > 0L && sessionId > 0L && deviceId.isNotBlank())
+        require(expectedContentHash.matches(Regex("[a-fA-F0-9]{32}"))) {
+            "O hash MD5 esperado do servidor é inválido."
+        }
+        val url = base.resolve("api/saves/$saveId/content")!!.newBuilder()
+            .addQueryParameter("device_id", deviceId)
+            .addQueryParameter("session_id", sessionId.toString())
+            .addQueryParameter("optimistic", "false")
+            .build()
+        stagingFile.parentFile?.mkdirs()
+        try {
+            http.newCall(request(url.encodedPath).url(url).get().build()).execute().use { response ->
+                if (!response.isSuccessful) {
+                    throw RomMHttpException(response.code, "RomM Device Sync respondeu HTTP ${response.code}")
+                }
+                val body = response.body ?: throw IOException("O RomM retornou um save sem conteúdo.")
+                stagingFile.outputStream().use { output -> body.byteStream().use { input -> input.copyTo(output) } }
+            }
+            val actualHash = md5(stagingFile)
+            if (!actualHash.equals(expectedContentHash, ignoreCase = true)) {
+                throw IOException("O hash MD5 do save baixado não corresponde ao informado pelo RomM.")
+            }
+            return actualHash
+        } catch (error: Exception) {
+            stagingFile.delete()
+            throw error
+        }
+    }
+
+    /** Confirma ao RomM somente depois que o chamador aplicou o arquivo baixado com sucesso. */
+    fun confirmDownloaded(saveId: Long, deviceId: String, contentHashMd5: String) {
+        require(saveId > 0L && deviceId.isNotBlank())
+        require(contentHashMd5.matches(Regex("[a-fA-F0-9]{32}")))
+        val body = JSONObject()
+            .put("device_id", deviceId)
+            .put("content_hash", contentHashMd5.lowercase())
+            .toString()
+            .toRequestBody(jsonType)
+        executeJson(request("api/saves/$saveId/downloaded").post(body).build())
+    }
+
+    private fun md5(file: File): String {
+        val digest = MessageDigest.getInstance("MD5")
+        file.inputStream().buffered().use { input ->
+            val buffer = ByteArray(64 * 1024)
+            while (true) {
+                val read = input.read(buffer)
+                if (read < 0) break
+                digest.update(buffer, 0, read)
+            }
+        }
+        return digest.digest().joinToString("") { "%02x".format(it) }
     }
 }
