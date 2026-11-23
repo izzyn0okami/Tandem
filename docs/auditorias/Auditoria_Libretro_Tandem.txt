@@ -3682,3 +3682,54 @@ Avaliação preliminar:
 - Nenhum scope foi removido/adicionado; nenhuma chamada funcional foi alterada.
 - Não houve CI, build ou teste funcional nesta etapa.
 - Nenhuma funcionalidade foi removida.
+
+
+AUDITORIA COMPLEMENTAR — USO REAL DOS SCOPES E CICLO DE PAREAMENTO ROMM
+Data: 2026-11-22
+Branch: game-mode-m2-dev
+Arquivos inspecionados:
+- lawnchair/src/app/lawnchair/gamemode/RomMClient.kt
+- lawnchair/src/app/lawnchair/gamemode/RomMScreen.kt
+- lawnchair/src/app/lawnchair/gamemode/RomMSaveSyncWorker.kt
+- lawnchair/src/app/lawnchair/gamemode/RomMCache.kt
+
+1. CONFIRMAÇÃO DO LOCAL DE SOLICITAÇÃO DOS SCOPES
+- DEVICE_SCOPES está definido em RomMClient.kt e é enviado por beginDevicePairing() para POST /api/auth/device/init no campo requested_scopes.
+- A lista efetivamente solicitada é: me.read, platforms.read, roms.read, roms.user.read, roms.user.write, assets.read, assets.write, firmware.read, devices.read, devices.write.
+- Não foi encontrado outro conjunto de scopes em RomMScreen, RomMSaveSyncWorker ou RomMCache.
+- O fluxo de aprovação recebe access_token e o salva junto com URL do servidor e accountId.
+- O fluxo manual usa POST /api/client-tokens/exchange, recebe raw_token e também salva o token; não envia requested_scopes no pedido do Tandem. Os escopos desse token manual dependem da configuração/geração do código no RomM, portanto não se pode afirmar que sejam iguais aos do pareamento de dispositivo.
+
+2. USO COMPROVADO DOS SCOPES
+- me.read: usado indiretamente por currentUserId() para validar a identidade e isolar a conta RomM.
+- platforms.read: necessário para consultar /api/platforms.
+- roms.read: necessário para consultar a biblioteca e baixar ROMs.
+- assets.read/write: usados no fluxo de listagem, download e envio de saves/states.
+- firmware.read: necessário para consultar/baixar firmware.
+- roms.user.read e roms.user.write: permanecem apenas na lista solicitada; não foi encontrada chamada correspondente a endpoints /api/roms/{id}/user ou equivalente nos arquivos de integração inspecionados.
+- devices.read e devices.write: permanecem apenas na lista solicitada; não há registro/consulta/edição de dispositivo via /api/devices nem negociação Device Sync no cliente atual.
+- A solicitação de um scope não prova que o cliente o utiliza.
+
+3. RENOVAÇÃO E REVOGAÇÃO
+- O código inspecionado armazena e reutiliza o token obtido no pareamento/troca.
+- Não foi localizado fluxo explícito de refresh/renovação de token, reemissão automática ou revogação no cliente.
+- A desconexão/remoção local da conta não deve ser confundida com revogação do token no servidor.
+- O comportamento de expiração/revogação é tratado pelas respostas HTTP do RomM; o cliente não possui rotina identificada de renovação automática.
+- A auditoria não altera tokens existentes nem reduz escopos retroativamente.
+
+4. CONCLUSÃO E RECOMENDAÇÃO
+- Há evidência suficiente para classificar roms.user.read, roms.user.write, devices.read e devices.write como scopes atualmente não utilizados pelo Tandem.
+- Não remover nesta etapa: a redução pode exigir novo pareamento, afetar tokens já emitidos ou mudar compatibilidade entre versões; primeiro deve ser decidida a adoção dos recursos RomM correspondentes.
+- Se for aprovada a integração de dados pessoais por ROM, roms.user.read/write passam a ter finalidade clara.
+- Se for aprovada a integração Device Sync, devices.read/write podem ser necessários; não adicionar essa integração enquanto a resolução local de conflitos e a estratégia de sincronização não estiverem estabilizadas.
+- O token manual e o token de pareamento por dispositivo não possuem o mesmo mecanismo de solicitação de scopes no cliente; documentar essa diferença na futura revisão do fluxo de conexão.
+- Nenhuma alteração funcional, remoção de scope, CI, build ou teste foi realizada nesta etapa.
+
+5. SITUAÇÃO DE PR E CONFLITOS
+- Consulta atual: PR #41 continua aberta, em draft, sem merge, branch feat/save-conflict-resolution.
+- Head: fe01500afb2ce11b8e19bd8981e167ca6ea4b59f.
+- Base: game-mode-m2-dev, commit d72604cc9edebba3ff6786facb705a8e88e51aae.
+- O endpoint de PR informa merge_commit_sha preenchido, mas state permanece open e merged_at=null; portanto não considerar mesclada.
+- Não iniciar alterações concorrentes em SaveSync.kt, SaveStore.kt ou GameModeActivity.kt enquanto a PR #41 estiver em aberto sem primeiro coordenar seu conteúdo.
+- Nenhuma ação foi tomada na PR #41 e não houve merge.
+
