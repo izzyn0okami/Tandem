@@ -101,11 +101,15 @@ internal fun RomMMediaPanel(game: RemoteGame) {
             when (File(file.fileName).extension.lowercase()) {
                 "png", "jpg", "jpeg", "webp", "gif", "tif", "tiff", "bmp", "avif" -> {
                     previewBitmap = withContext(Dispatchers.IO) { BitmapFactory.decodeFile(target.absolutePath) }
-                    if (previewBitmap == null) previewError = "O Android não conseguiu decodificar esta imagem."
+                    if (previewBitmap == null) {
+                        previewError = "O Android não conseguiu decodificar esta imagem."
+                    }
                 }
                 "pdf" -> {
                     previewBitmap = withContext(Dispatchers.IO) { renderFirstPdfPage(target) }
-                    if (previewBitmap == null) previewError = "Não foi possível abrir a primeira página deste PDF."
+                    if (previewBitmap == null) {
+                        previewError = "Não foi possível abrir a primeira página deste PDF."
+                    }
                 }
                 "md", "txt", "html", "htm" -> {
                     previewText = withContext(Dispatchers.IO) {
