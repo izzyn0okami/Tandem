@@ -204,3 +204,8 @@ ATUALIZAÇÃO — COLEÇÕES ROMM (2026-11-23)
 - [EM ANDAMENTO] A10. Aplicar coleção como filtro: usa collection_id, smart_collection_id ou virtual_collection_id no endpoint oficial GET /api/roms; aguarda CI/teste.
 - A2. Filtro de plataforma: código e CIs #659/#660 aprovados; validação funcional no telefone pendente.
 - PR #42 aberta/draft, sem merge. PR #41 aberta/draft e intocada.
+
+
+AJUSTE DE PERMISSÃO — COLEÇÕES ROMM (2026-11-23)
+- Incluído o escopo OAuth collections.read na solicitação de permissões do pareamento de dispositivo, necessário para GET /api/collections, /smart e /virtual.
+- Tokens já emitidos não recebem novas permissões automaticamente; reautorização poderá ser necessária. CI e teste funcional pendentes.
