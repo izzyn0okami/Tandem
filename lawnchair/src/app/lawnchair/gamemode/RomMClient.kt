@@ -333,14 +333,14 @@ object RomMSettings {
     }
 }
 
-/**
- * Cliente mínimo da API do RomM: conecta por código de pareamento (ou token), lista jogos e baixa
- * arquivos. Chamadas são bloqueantes: rodar em Dispatchers.IO.
- */
 /** Mantém apenas flags booleanas explícitas do DeviceSchema; valores ausentes ou de outro tipo são desconhecidos. */
 internal fun parseDeclaredDeviceCapabilities(values: Map<String, Any?>): Map<String, Boolean> =
     values.mapNotNull { (key, value) -> (value as? Boolean)?.let { key to it } }.toMap()
 
+/**
+ * Cliente mínimo da API do RomM: conecta por código de pareamento (ou token), lista jogos e baixa
+ * arquivos. Chamadas são bloqueantes: rodar em Dispatchers.IO.
+ */
 class RomMClient(private val baseUrl: String, private val token: String?) {
 
     val baseAddress: String get() = baseUrl.trimEnd('/')
