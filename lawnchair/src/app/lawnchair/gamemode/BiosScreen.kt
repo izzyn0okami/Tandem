@@ -54,6 +54,8 @@ internal fun BiosScreen(rootPath: String) {
             try {
                 val copied = withContext(Dispatchers.IO) { BiosManager.importKit(context, platform, File(path)) }
                 message = context.getString(R.string.game_bios_kit_imported, copied)
+            } catch (error: CancellationException) {
+                throw error
             } catch (error: Exception) {
                 GameLog.error("bios", "falha ao importar kit de ${platform.slug}", error)
                 message = "Kit não importado: ${error.message ?: "erro inesperado"}"
@@ -69,8 +71,11 @@ internal fun BiosScreen(rootPath: String) {
                     runCatching {
                         val name = context.contentResolver.query(uri, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)
                             ?.use { if (it.moveToFirst()) it.getString(0) else null }
-                        val input = context.contentResolver.openInputStream(uri)
-                        name != null && input != null && input.use { BiosManager.import(context, name, it) } != null
+                        if (name == null) {
+                            false
+                        } else {
+                            context.contentResolver.openInputStream(uri)?.use { BiosManager.import(context, name, it) != null } ?: false
+                        }
                     }.onFailure { GameLog.error("bios", "arquivo BIOS rejeitado durante importação", it) }
                         .getOrDefault(false)
                 }
