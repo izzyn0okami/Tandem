@@ -598,7 +598,7 @@ FECHAMENTO DO ESTÁGIO C — PR #44 (2026-11-23)
 
 INÍCIO DO ESTÁGIO D — PR EM PREPARAÇÃO (2026-11-23)
 Branch: feat/romm-platforms-firmware-devices
-Base: game-mode-m2-dev @ 6adc110e0f2effb6d4be2a9a2abc6a8360cf8824
+Base: game-mode-m2-dev @ 71855794702fa30518dcf01bcd6f072fc9cad47a (commit de fechamento após o merge da PR #44: 6adc110e0f2effb6d4be2a9a2abc6a8360cf8824)
 - [EM ANDAMENTO] D3 — validar BIOS locais por tamanho e hashes oficiais quando houver referência confiável; não tratar nome de arquivo como prova de integridade.
 - [EM ANDAMENTO] D4 — representar alternativas (OR) e requisitos simultâneos (AND) sem alterar os requisitos existentes dos núcleos.
 - [EM ANDAMENTO] D5 — revisar requisitos por núcleo, preservando exceções específicas e kits de BIOS.
