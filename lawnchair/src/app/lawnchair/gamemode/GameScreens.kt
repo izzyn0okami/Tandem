@@ -1282,7 +1282,7 @@ internal fun SettingsScreen(
                                 when (device.online) {
                                     true -> "Online"
                                     false -> "Offline"
-                                    null -> "Presença indisponível (instalação remota desativada no servidor)"
+                                    null -> "Presença indisponível (endpoint de dispositivos online não disponível)"
                                 },
                                 color = if (device.online == true) GameColors.accent else GameColors.textDim,
                                 fontSize = 12.sp,
