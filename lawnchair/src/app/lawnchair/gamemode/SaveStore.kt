@@ -15,6 +15,16 @@ internal data class LegacyMigrationPlan(
     val sources: Map<String, File>,
     val ambiguous: Boolean,
     val confirmationSources: Map<String, File> = emptyMap(),
+    val conflictSources: Map<String, File> = emptyMap(),
+)
+
+internal data class SaveConflictFileInfo(
+    val coreId: String,
+    val path: String,
+    val sourceBytes: Long,
+    val targetBytes: Long,
+    val sourceModified: Long,
+    val targetModified: Long,
 )
 
 internal data class RomMConnectionSnapshot(
@@ -304,7 +314,10 @@ internal object GameIdentityResolver {
                         val hasConflict = preAccountSources.any { (coreId, source) ->
                             hasConflictingFiles(source, File(File(savesRoot, coreId), stableDirectoryName))
                         }
-                        if (hasConflict) return LegacyMigrationPlan(emptyMap(), ambiguous = true)
+                        if (hasConflict) return LegacyMigrationPlan(emptyMap(), ambiguous = true, conflictSources = preAccountSources.filter { (coreId, source) ->
+                            val target = File(File(savesRoot, coreId), stableDirectoryName)
+                            source.isDirectory && target.isDirectory && hasConflictingFiles(source, target)
+                        })
                         val alreadyClaimed = preAccountSources.all { (coreId, source) ->
                             isVerifiedLegacyCopy(source, File(File(savesRoot, coreId), stableDirectoryName))
                         }
@@ -338,7 +351,10 @@ internal object GameIdentityResolver {
                     val hasConflict = localSources.any { (coreId, source) ->
                         hasConflictingFiles(source, File(File(savesRoot, coreId), stableDirectoryName))
                     }
-                    if (hasConflict) return LegacyMigrationPlan(emptyMap(), ambiguous = true)
+                    if (hasConflict) return LegacyMigrationPlan(emptyMap(), ambiguous = true, conflictSources = localSources.filter { (coreId, source) ->
+                        val target = File(File(savesRoot, coreId), stableDirectoryName)
+                        source.isDirectory && target.isDirectory && hasConflictingFiles(source, target)
+                    })
                     return LegacyMigrationPlan(localSources, ambiguous = false)
                 }
             }
@@ -378,7 +394,10 @@ internal object GameIdentityResolver {
             val hasConflict = sources.any { (coreId, source) ->
                 hasConflictingFiles(source, File(File(savesRoot, coreId), stableDirectoryName))
             }
-            if (hasConflict) return LegacyMigrationPlan(emptyMap(), ambiguous = true)
+            if (hasConflict) return LegacyMigrationPlan(emptyMap(), ambiguous = true, conflictSources = sources.filter { (coreId, source) ->
+                    val target = File(File(savesRoot, coreId), stableDirectoryName)
+                    source.isDirectory && target.isDirectory && hasConflictingFiles(source, target)
+                })
             val alreadyClaimed = sources.all { (coreId, source) ->
                 isVerifiedLegacyCopy(source, File(File(savesRoot, coreId), stableDirectoryName))
             }
@@ -431,9 +450,230 @@ internal object GameIdentityResolver {
         }
         if (hasConflict) {
             runCatching { GameLog.log("saves", "migração legada com arquivos conflitantes; ambos os diretórios foram preservados") }
-            return LegacyMigrationPlan(emptyMap(), ambiguous = true)
+            return LegacyMigrationPlan(
+                emptyMap(),
+                ambiguous = true,
+                conflictSources = sources.filter { (coreId, source) ->
+                    val target = File(File(savesRoot, coreId), stableDirectoryName)
+                    source.isDirectory && target.isDirectory && hasConflictingFiles(source, target)
+                },
+            )
         }
         return LegacyMigrationPlan(sources, ambiguous = false)
+    }
+
+    internal fun stageLegacyConflictResolution(
+        source: File,
+        target: File,
+        temp: File,
+        preferSource: Boolean,
+    ): Boolean {
+        if (!source.isDirectory || !target.isDirectory) return false
+        if (temp.exists() && !temp.deleteRecursively()) return false
+        if (!temp.mkdirs()) return false
+        return runCatching {
+            val sourceFiles = source.walkTopDown().filter { it.isFile }
+                .associateBy { it.relativeTo(source).path }
+            val targetFiles = target.walkTopDown().filter { it.isFile }
+                .associateBy { it.relativeTo(target).path }
+            val expected = linkedMapOf<String, String>()
+            for (relative in (sourceFiles.keys + targetFiles.keys).toSortedSet()) {
+                val left = sourceFiles[relative]
+                val right = targetFiles[relative]
+                val chosen = when {
+                    left == null -> right!!
+                    right == null -> left
+                    left.length() == right.length() && fileHash(left) == fileHash(right) ->
+                        if (preferSource) left else right
+                    preferSource -> left
+                    else -> right
+                }
+                val destination = File(temp, relative)
+                check(destination.parentFile?.let { it.exists() || it.mkdirs() } == true)
+                chosen.copyTo(destination)
+                val hash = fileHash(chosen)
+                check(fileHash(destination) == hash)
+                expected[relative] = hash
+            }
+            val actual = temp.walkTopDown().filter { it.isFile }
+                .associate { it.relativeTo(temp).path to fileHash(it) }
+            actual == expected
+        }.getOrDefault(false)
+    }
+
+    internal fun inspectLegacyConflicts(
+        savesRoot: File,
+        stableDirectoryName: String,
+        sources: Map<String, File>,
+    ): List<SaveConflictFileInfo> = sources.flatMap { (coreId, source) ->
+        val target = File(File(savesRoot, coreId), stableDirectoryName)
+        if (!source.isDirectory || !target.isDirectory) return@flatMap emptyList()
+        val sourceFiles = source.walkTopDown().filter { it.isFile }.associateBy { it.relativeTo(source).path }
+        val targetFiles = target.walkTopDown().filter { it.isFile }.associateBy { it.relativeTo(target).path }
+        (sourceFiles.keys intersect targetFiles.keys).sorted().mapNotNull { relative ->
+            val left = sourceFiles.getValue(relative)
+            val right = targetFiles.getValue(relative)
+            val same = left.length() == right.length() && fileHash(left) == fileHash(right)
+            if (same) null else SaveConflictFileInfo(
+                coreId = coreId,
+                path = relative,
+                sourceBytes = left.length(),
+                targetBytes = right.length(),
+                sourceModified = left.lastModified(),
+                targetModified = right.lastModified(),
+            )
+        }
+    }
+
+    /**
+     * Resolves all conflicting core directories as one user-approved operation.
+     * Both original trees are copied and hash-verified into a recovery area before any target changes.
+     */
+    @Synchronized
+    fun resolveLegacyConflicts(
+        context: Context,
+        romFile: File,
+        platformSlug: String?,
+        gameIdentity: String,
+        sources: Map<String, File>,
+        preferSource: Boolean,
+    ): Boolean {
+        if (sources.isEmpty() || !romFile.isFile) return false
+        if (resolve(context, romFile, platformSlug) != gameIdentity) return false
+        if (gameIdentity.startsWith("romm-") &&
+            !gameIdentity.startsWith("romm-legacy-") &&
+            !isCurrentAccountGameIdentity(context, romFile, gameIdentity)
+        ) return false
+
+        val savesRoot = GameFolders.dir(context, FolderKind.Saves)
+        val rootCanonical = runCatching { savesRoot.canonicalFile }.getOrNull() ?: return false
+        data class Prepared(
+            val coreId: String,
+            val source: File,
+            val target: File,
+            val temp: File,
+            val rollback: File,
+            val backup: File,
+            val archive: File,
+        )
+        val stamp = System.currentTimeMillis()
+        val prepared = mutableListOf<Prepared>()
+        val promoted = mutableListOf<Prepared>()
+        val archived = mutableListOf<Prepared>()
+
+        fun directoryHash(directory: File): String {
+            val digest = MessageDigest.getInstance("SHA-256")
+            directory.walkTopDown().filter { it.isFile }.sortedBy { it.relativeTo(directory).path }.forEach { file ->
+                digest.update(file.relativeTo(directory).path.toByteArray(Charsets.UTF_8))
+                digest.update(fileHash(file).toByteArray(Charsets.US_ASCII))
+            }
+            return digest.digest().toHex()
+        }
+
+        fun copyTree(from: File, to: File): Boolean {
+            if (!from.isDirectory || (!to.exists() && !to.mkdirs())) return false
+            return runCatching {
+                from.walkTopDown().filter { it.isFile }.forEach { file ->
+                    val destination = File(to, file.relativeTo(from).path)
+                    check(destination.parentFile?.let { it.exists() || it.mkdirs() } == true)
+                    file.copyTo(destination, overwrite = true)
+                    check(fileHash(file) == fileHash(destination))
+                }
+                directoryHash(from) == directoryHash(to)
+            }.getOrDefault(false)
+        }
+
+        return try {
+            for ((coreId, source) in sources) {
+                val target = File(File(savesRoot, coreId), gameIdentity)
+                val sourceCanonical = source.canonicalFile
+                val targetParent = target.parentFile ?: return false
+                if (!sourceCanonical.toPath().startsWith(rootCanonical.toPath()) ||
+                    !targetParent.canonicalFile.toPath().startsWith(rootCanonical.toPath()) ||
+                    !target.canonicalFile.toPath().startsWith(rootCanonical.toPath()) ||
+                    !source.isDirectory || !target.isDirectory || !hasConflictingFiles(source, target)
+                ) return false
+
+                val backup = File(savesRoot, ".conflict-backups/$gameIdentity/$coreId/$stamp")
+                if (!copyTree(source, File(backup, "legado")) ||
+                    !copyTree(target, File(backup, "atual"))
+                ) return false
+
+                val temp = File(targetParent, ".${target.name}.conflict-$stamp")
+                val rollback = File(targetParent, ".${target.name}.rollback-$stamp")
+                if (!stageLegacyConflictResolution(source, target, temp, preferSource)) {
+                    throw IOException("Não foi possível preparar e verificar o conjunto escolhido")
+                }
+                prepared += Prepared(
+                    coreId = coreId,
+                    source = source,
+                    target = target,
+                    temp = temp,
+                    rollback = rollback,
+                    backup = backup,
+                    archive = File(backup, "legado-original"),
+                )
+            }
+
+            for (item in prepared) {
+                if (gameIdentity.startsWith("romm-") &&
+                    !gameIdentity.startsWith("romm-legacy-") &&
+                    !isCurrentAccountGameIdentity(context, romFile, gameIdentity)
+                ) throw IOException("A conta RomM mudou durante a resolução do conflito")
+                if (!item.target.renameTo(item.rollback)) throw IOException("Não foi possível proteger o destino atual")
+                if (!item.temp.renameTo(item.target)) {
+                    item.rollback.renameTo(item.target)
+                    throw IOException("Não foi possível aplicar o conjunto escolhido")
+                }
+                promoted += item
+            }
+
+            if (resolve(context, romFile, platformSlug) != gameIdentity) {
+                throw IOException("A identidade do jogo mudou durante a resolução")
+            }
+            if (gameIdentity.startsWith("romm-") &&
+                !gameIdentity.startsWith("romm-legacy-") &&
+                !isCurrentAccountGameIdentity(context, romFile, gameIdentity)
+            ) throw IOException("A conta RomM mudou antes da conclusão")
+
+            for (item in prepared) {
+                if (gameIdentity.startsWith("romm-") &&
+                    !gameIdentity.startsWith("romm-legacy-") &&
+                    !isCurrentAccountGameIdentity(context, romFile, gameIdentity)
+                ) throw IOException("A conta RomM mudou antes do arquivamento final")
+                if (item.source.exists()) {
+                    if (!item.source.renameTo(item.archive)) {
+                        throw IOException("Não foi possível arquivar o diretório legado sem removê-lo")
+                    }
+                    archived += item
+                }
+            }
+            if (gameIdentity.startsWith("romm-") &&
+                !gameIdentity.startsWith("romm-legacy-") &&
+                !isCurrentAccountGameIdentity(context, romFile, gameIdentity)
+            ) throw IOException("A conta RomM mudou antes da conclusão")
+            prepared.forEach { it.rollback.deleteRecursively() }
+            GameLog.log(
+                "saves",
+                "conflito resolvido por escolha explícita: jogo=$gameIdentity, preferência=${if (preferSource) "legado" else "atual"}; originais preservados em .conflict-backups",
+            )
+            true
+        } catch (error: Exception) {
+            archived.asReversed().forEach { item ->
+                runCatching {
+                    if (item.archive.exists() && !item.source.exists()) item.archive.renameTo(item.source)
+                }
+            }
+            promoted.asReversed().forEach { item ->
+                runCatching {
+                    if (item.target.exists()) item.target.deleteRecursively()
+                    if (item.rollback.exists()) item.rollback.renameTo(item.target)
+                }
+            }
+            prepared.forEach { item -> runCatching { item.temp.deleteRecursively() } }
+            GameLog.error("saves", "falha ao resolver conflito; conjuntos originais preservados", error)
+            false
+        }
     }
 
     private fun hasConflictingFiles(source: File, target: File): Boolean {
