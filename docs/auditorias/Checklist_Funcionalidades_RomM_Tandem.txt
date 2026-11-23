@@ -423,3 +423,13 @@ CI BASELINE PR #44 — RUN #713 (2026-11-23)
 CORREÇÃO DE DOWNLOAD INDIVIDUAL — ROMM 5.4.1 (2026-11-23)
 - [x] Corrigido o identificador da rota /api/roms/{file_id}/files/content/{file_name}: agora usa RemoteGame.fileId (RomFile.id), não RemoteGame.id (Rom.id).
 - [ ] CI do head atual e teste no telefone pendentes.
+
+
+IMPLEMENTAÇÃO INICIAL C1–C4 — 2026-11-23
+- [x] C1 — Screenshots listados e visualizados dentro do Tandem, sob demanda.
+- [x] C2 — Manuais PDF/MD/TXT abertos em visualizador integrado (PDF: primeira página nesta etapa).
+- [x] C3 — Walkthroughs PDF/MD/TXT/HTML/HTM em visualizador integrado; HTML permanece texto inerte.
+- [x] C4 — Metadados de trilhas consultados no RomM e áudio reproduzido dentro do Tandem com MediaPlayer.
+- [x] Downloads de mídia usam cache temporário; RomM continua como fonte de verdade.
+- [ ] Melhorias de UX: miniaturas de screenshots, paginação PDF e controles de seek/posição do áudio.
+- [ ] CI, testes de regressão e validação no telefone pendentes.
