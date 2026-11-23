@@ -518,6 +518,8 @@ dependencies {
     debugImplementation libs.leakcanary.androidstudio
 
     testImplementation libs.junit
+    // Use a real JSON implementation in local JVM tests instead of Android's mocked stubs.
+    testImplementation "org.json:json:20240303"
 }
 
 ksp {
