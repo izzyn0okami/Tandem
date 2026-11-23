@@ -3858,3 +3858,12 @@ CI APROVADA — FILTROS PESSOAIS/METADADOS ROMM (2026-11-22)
 - A4: implementação e CI aprovadas; validação funcional no telefone pendente.
 - A1, A2, A3 e A7–A10: implementações e CIs anteriores aprovadas; validação funcional no telefone continua pendente.
 - PR #42 permanece aberta, draft e sem merge. PR #41 permanece aberta, draft e intocada por decisão do usuário.
+
+
+AUDITORIA — ORDENAÇÃO E PAGINAÇÃO DA BIBLIOTECA (2026-11-22)
+- A6: RomMClient.listGames já consulta GET /api/roms em páginas de 100 itens, avançando por offset até alcançar o total informado ou receber uma página vazia. A implementação está presente no código da PR #42; não deve ser duplicada.
+- Limite atual: o cliente acumula todas as páginas antes de entregar a lista à interface; ainda não há carregamento incremental/por demanda na UI. A6 permanece parcialmente pendente por eficiência em bibliotecas muito grandes.
+- A5: o cliente atual usa name asc sem pesquisa e order_by vazio durante pesquisa para preservar a relevância do RomM. Ainda não há seletor de ordenação.
+- A ordenação arbitrária por colunas pessoais (ex.: last_played, rating, status) exige cautela: há relato documentado no projeto RomM de que ordenar por colunas da tabela por usuário pode excluir da resposta jogos sem registro pessoal, fazendo a biblioteca parecer incompleta. Não expor esses campos sem confirmar comportamento na versão 5.4.1 e sem teste de regressão.
+- Próxima investigação: confirmar no backend RomM 5.4.1 os campos de ordenação seguros e os nomes exatos para tamanho, primeira data de lançamento e criação; só então implementar as opções sem alterar a relevância de pesquisa.
+- Referências consultadas: https://github.com/rommapp/romm/issues/4100 ; https://github.com/rommapp/romm/releases (notas de API sobre ordenação por relevância).
