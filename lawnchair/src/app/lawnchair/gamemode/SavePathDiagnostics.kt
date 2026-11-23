@@ -38,7 +38,13 @@ internal object SavePathDiagnostics {
                 appendLine("Pasta personalizada configurada: ${customPath ?: "não"}")
                 appendLine("Pasta padrão interna: ${defaultPath.absolutePath}")
                 appendLine("Pasta efetivamente usada: ${effectiveDirectory.absolutePath}")
-                appendLine("Origem efetiva: ${when { customPath == null -> "padrão interno"; isFallback -> "fallback para padrão interno"; else -> "personalizada" }}")
+                appendLine(
+                    "Origem efetiva: ${when {
+                        customPath == null -> "padrão interno"
+                        isFallback -> "fallback para padrão interno"
+                        else -> "personalizada"
+                    }}",
+                )
                 appendLine("Diretório existe: ${effectiveDirectory.isDirectory}; gravável segundo File.canWrite(): ${effectiveDirectory.canWrite()}")
                 appendLine("Permissão MANAGE_EXTERNAL_STORAGE: ${StorageAccess.isGranted()}")
                 appendLine("Caminho entregue ao LibretroDroid (savesDirectory): ${effectiveDirectory.absolutePath}")
@@ -56,8 +62,7 @@ internal object SavePathDiagnostics {
         )
     }
 
-    private fun describe(file: File): String =
-        "caminho=${file.absolutePath}; existe=${file.isFile}; bytes=${file.takeIf { it.isFile }?.length() ?: 0L}; gravável=${file.canWrite()}"
+    private fun describe(file: File): String = "caminho=${file.absolutePath}; existe=${file.isFile}; bytes=${file.takeIf { it.isFile }?.length() ?: 0L}; gravável=${file.canWrite()}"
 
     private fun StringBuilder.appendFileList(directory: File) {
         if (!directory.isDirectory) {
