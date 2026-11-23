@@ -380,3 +380,18 @@ B1–B6 — DADOS PESSOAIS, ATIVIDADE E NOTAS ROMM
 - [ ] Executar CI da PR e corrigir eventuais falhas.
 - [ ] Testar no telefone com conta RomM real, inclusive escopo roms.user.write e sessões ativas.
 - [ ] Confirmar comportamento visual com controle/TV e campos numéricos.
+
+
+ATUALIZAÇÃO — PR #43 / B1–B6 ROMM MESCLADA (2026-11-23)
+- [x] B1–B6 implementados e integrados à branch game-mode-m2-dev.
+- PR: https://github.com/izzyn0okami/Tandem/pull/43
+- Merge squash confirmado: bce62a60d1bce0fdbc3b3320e2db3c59535e0099.
+- Head validado: 0b5dea2001766e15aa095fa89fac0cdb70e471d2.
+- CI #708 / run 45107781370: SUCCESS — https://github.com/izzyn0okami/Tandem/actions/runs/45107781370.
+- check-style / spotlessCheck: sucesso.
+- build-debug-apk: testes unitários, Build APK e Upload artifact: sucesso.
+- final-status: sucesso.
+- Jobs de release foram ignorados; nenhuma nova release foi publicada nesta etapa.
+- [ ] Teste funcional no telefone com conta RomM real: edição de propriedades, escopo roms.user.write, sessões ativas e apresentação visual.
+- [ ] Confirmar comportamento com controle/TV e campos numéricos.
+- PR #41 permanece aberta e pausada, sem alterações; saves continuam fora do escopo.
