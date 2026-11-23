@@ -16,15 +16,15 @@ A. BIBLIOTECA, PESQUISA E ORGANIZAÇÃO (PRIORIDADE ALTA)
 [EM ANDAMENTO] A2. Filtros por plataforma e múltiplas plataformas (platform_ids); implementação e CIs #659/#660 aprovadas; validação funcional no telefone pendente.
 [EM ANDAMENTO] A3. Filtros por coleção comum, inteligente e virtual; implementação e CIs #663/#665/#667 aprovadas; validação funcional no telefone pendente.
 [EM ANDAMENTO] A4. Filtros oficiais favorite, duplicate, last_played, has_ra, has_saves, has_states, verified e has_soundtrack; implementação e CI #669 aprovadas; validação funcional no telefone pendente. playable não foi exposto por representar execução no navegador RomM; missing/physical não se aplicam à biblioteca local.
-[PENDENTE] A5. Ordenação por nome, tamanho, lançamento, criação e avaliação; preservar relevância de busca. Antes de implementar, confirmar campos seguros na API 5.4.1: ordenação por colunas pessoais pode ocultar jogos sem registro do usuário.
-[EM ANDAMENTO] A6. Paginação API já implementada em páginas de 100 itens com offset até total/página vazia; falta carregamento incremental na interface para bibliotecas grandes.
+[EM ANDAMENTO] A5. Ordenação por nome (name), tamanho (fs_size_bytes), lançamento (first_release_date), criação (created_at) e avaliação pública agregada (average_rating); campos confirmados no contrato RomM 5.4.1, sem usar colunas pessoais. Relevância de busca permanece como padrão; implementação e CI pendentes de validação final.
+[EM ANDAMENTO] A6. Paginação de 100 IDs por limit/offset e total do RomM, sem baixar arquivos associados durante a busca; interface carrega páginas adicionais sob demanda e preserva a ordem do servidor. CI e teste funcional pendentes.
 [EM ANDAMENTO] A7. Catálogo de coleções comuns (somente leitura); implementação e CIs #663/#665/#667 aprovadas; validação funcional no telefone pendente.
 [EM ANDAMENTO] A8. Catálogo de coleções inteligentes (somente leitura); implementação e CIs #663/#665/#667 aprovadas; validação funcional no telefone pendente.
 [EM ANDAMENTO] A9. Catálogo de coleções virtuais (somente leitura); implementação e CIs #663/#665/#667 aprovadas; validação funcional no telefone pendente.
 [EM ANDAMENTO] A10. Aplicação de uma coleção como filtro usando os parâmetros oficiais do RomM; implementação e CIs #663/#665/#667 aprovadas; validação funcional no telefone pendente.
 [CONCLUÍDO] A11. Cache local seguro: a pesquisa mantém resultados temporários separados e não sobrescreve a lista completa armazenada.
-[PENDENTE] A12. Metadados de jogos: dados de provedores, metadados manuais, títulos alternativos e agrupamento de versões.
-[PENDENTE] A13. Arquivos associados a ROMs, conjuntos multidisco e recursos EasyRPG; manter o agrupamento definido pelo RomM.
+[EM ANDAMENTO] A12. Leitura e exibição de metadados agregados (metadatum), dados manuais, IDs de provedores, títulos alternativos e agrupamento oficial por sibling_roms, com agrupamento por título como fallback. Implementação na PR #42; CI e validação funcional pendentes.
+[EM ANDAMENTO] A13. Arquivos associados por categoria, tamanhos e identificadores; preservação de conjuntos multidisco e integração de jogos is_easyrpg_game com pasta RPG Maker 2000/2003 e núcleo EasyRPG. A validação funcional de execução, saves .lsd e RTP ainda é necessária.
 
 B. DADOS PESSOAIS POR JOGO E ATIVIDADE (PRIORIDADE ALTA)
 [PENDENTE] B1. Consultar propriedades do usuário por ROM (favorito, avaliação, dificuldade, concluído, backlog, agora jogando, oculto e última partida).
@@ -292,3 +292,50 @@ ATUALIZAÇÃO — CI #682 DOS REGISTROS DOCUMENTAIS (2026-11-22)
 - [x] Jobs de release/notificações ignorados; nenhuma release publicada.
 - Os commits documentais da auditoria e checklist estão validados pela CI.
 - PR #42 continua aberta/draft, sem merge; PR #41 continua aberta/draft e intocada.
+
+
+HISTÓRICO DE IMPLEMENTAÇÃO — A5 A A13 (2026-11-23)
+PR: #42 — feat/romm-library-search
+Base: game-mode-m2-dev
+Estado: implementação na mesma PR; sem merge ou release até a CI final.
+
+A5 — ORDENAÇÃO
+- [x] Adicionados os campos públicos e estáveis name, fs_size_bytes, first_release_date, created_at e average_rating.
+- [x] Confirmado no RomM 5.4.1 que order_by aceita colunas mapeadas de Rom e os campos de metadados agregados; order_dir aceita asc/desc.
+- [x] Busca continua usando relevância do RomM quando nenhuma ordenação explícita é escolhida.
+- [ ] CI final e validação funcional no telefone.
+
+A6 — PAGINAÇÃO INCREMENTAL
+- [x] Criado método de consulta paginada de IDs (limit=100, offset, with_total=true, with_files=false).
+- [x] Interface carrega páginas adicionais sob demanda, preservando a ordem retornada pelo servidor.
+- [x] Resultados de busca não substituem o cache completo da biblioteca.
+- [ ] CI final e validação funcional com biblioteca grande.
+
+A12 — METADADOS E VERSÕES
+- [x] Leitura de metadatum e manual_metadata do RomM 5.4.1.
+- [x] Leitura de IDs IGDB, SteamGridDB, MobyGames, ScreenScraper, RetroAchievements, LaunchBox, Hasheous, TheGamesDB, Flashpoint, HowLongToBeat, Demozoo, Pouet, CSDb, Steam, Gamelist e Libretro.
+- [x] Leitura de alternative_names.
+- [x] Agrupamento de versões por sibling_roms e is_main_sibling; agrupamento por título permanece como fallback.
+- [x] Cache local estendido para conservar metadados, títulos alternativos, provedores e relações de versão.
+- [ ] CI final e validação funcional.
+
+A13 — ARQUIVOS, MULTIDISCO E EASYRPG
+- [x] Leitura de arquivos associados do RomM: id, file_name, file_size_bytes, category, is_top_level e hashes.
+- [x] Interface mostra arquivos associados por categoria sem misturá-los à lista de ROMs executáveis.
+- [x] Preservado o tratamento de conjuntos multidisco pela relação de arquivos da mesma ROM no RomM.
+- [x] Reconhecimento de is_easyrpg_game; pasta é baixada com todos os arquivos de jogo, usando RPG_RT.ldb como arquivo de entrada.
+- [x] Adicionada plataforma EasyRPG e seleção do núcleo Libretro easyrpg.
+- [ ] Testar no telefone a instalação/execução de um jogo EasyRPG.
+- [ ] Confirmar o local e a persistência dos saves .lsd; o SaveStore atual gerencia SRAM/state genéricos e não foi alterado nesta PR.
+- [ ] Confirmar RTP 2000/2003 quando exigido pelo jogo; nenhuma distribuição automática de RTP foi adicionada.
+- [ ] CI final.
+
+NOTA DE NOMENCLATURA
+Os registros históricos chamados A11/A12 para dados pessoais e notas correspondem aos itens B1/B5 do checklist atual. A11 atual é cache da pesquisa; A12 atual é metadados de jogos. Os registros antigos foram mantidos para preservar o histórico.
+
+COMMITS DA IMPLEMENTAÇÃO
+- a2fac1410cce62455bbe6d01800b87c64322f5f9 — modelos, parse de metadados/arquivos e paginação de IDs.
+- 015df23825ed5c0a4cbb3a79c67217df263a69cf — interface de paginação, ordenação, metadados e agrupamento por versões.
+- 6eaa384dfd53283a1b42090b14974a301661b9ac — correções intermediárias de plataforma e metadados.
+- 4be895bb36c89ea7eea650851002307ff0d5a1b9 — catálogo de núcleo EasyRPG.
+- 7d46b8201af3875a6917c0e934f6d02c16efcd51 — correções de formatação.

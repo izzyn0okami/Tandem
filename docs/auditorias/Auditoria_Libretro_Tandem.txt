@@ -3966,3 +3966,44 @@ CI APROVADA — REGISTROS DOCUMENTAIS DA AUDITORIA ROMM (2026-11-22)
 - Jobs de release e notificações ignorados; nenhuma release publicada.
 - Confirmação de que os registros da auditoria e checklist foram aceitos pela CI.
 - PR #42 permanece aberta, draft e sem merge. PR #41 permanece aberta, draft e intocada.
+
+
+AUDITORIA ROMM 5.4.1 — A5 A A13 (2026-11-23)
+Branch: feat/romm-library-search; PR #42.
+Base oficial consultada: tag rommapp/romm 5.4.1.
+
+A5 — CAMPOS DE ORDENAÇÃO
+- Confirmado em backend/handler/database/roms_handler.py que o RomM resolve order_by por colunas mapeadas de Rom e por ROM_METADATA_ORDER_COLUMNS.
+- Campos implementados: name (Rom), fs_size_bytes (Rom), created_at (Rom), first_release_date e average_rating (metadados agregados/indexados).
+- order_dir aceita asc/desc.
+- average_rating é avaliação pública agregada do catálogo, não rating pessoal de RomUser.
+- O parâmetro order_by permanece vazio por padrão para preservar relevância de pesquisa do RomM; sort explícito substitui a ordem principal e mantém relevância como desempate no servidor.
+- Não foram oferecidos campos pessoais de RomUser, evitando ordenação que omita jogos sem registro pessoal.
+
+A6 — PAGINAÇÃO
+- Endpoint oficial GET /api/roms aceita limit/offset e with_total; with_files=false evita carregar todos os metadados de arquivos em cada página.
+- O cliente consulta IDs em lotes de 100 e mantém o cache integral separado.
+- A interface oferece carregamento incremental sob demanda e mantém a ordem de IDs do servidor.
+
+A12 — METADADOS
+- RomSchema 5.4.1 contém metadatum, manual_metadata, alternative_names e IDs de provedores no próprio registro.
+- RomMetadataSchema contém genres, franchises, collections, companies, publishers, developers, game_modes, age_ratings, player_count, first_release_date e average_rating.
+- RomSchema inclui IDs IGDB, SteamGridDB, MobyGames, ScreenScraper, RetroAchievements, LaunchBox, Hasheous, TheGamesDB, Flashpoint, HowLongToBeat, Demozoo, Pouet, CSDb, Steam, Gamelist e Libretro.
+- sibling_roms contém id e is_main_sibling; usado como relação oficial para agrupar versões, com fallback por título quando o servidor não fornece relação.
+- Cache local conserva esses campos para uso offline.
+
+A13 — ARQUIVOS ASSOCIADOS / MULTIDISCO / EASYRPG
+- RomFileSchema 5.4.1 expõe id, file_name, file_path, file_size_bytes, is_top_level, crc_hash, md5_hash, sha1_hash, category, track_meta e doc_meta.
+- A interface exibe uma amostra de arquivos associados por categoria; arquivos auxiliares não são tratados como ROMs executáveis.
+- Para ROMs multidisco, o cliente continua usando a relação de arquivos da mesma ROM e gera/usa M3U conforme a implementação existente.
+- RomSchema.is_easyrpg_game identifica pacotes RPG Maker 2000/2003. O cliente seleciona RPG_RT.ldb, baixa os arquivos da categoria de jogo como pasta e usa o núcleo Libretro easyrpg.
+- O core é obtido pelo instalador de núcleos Libretro existente; não foi criado um sistema de execução paralelo.
+- PENDÊNCIAS IMPORTANTES: teste no aparelho; confirmar suporte/persistência de saves .lsd no fluxo atual (SaveStore/Synchronizer não alterados); RTP 2000/2003 pode ser exigido por alguns jogos e não é distribuído automaticamente.
+
+CI / HISTÓRICO INTERMEDIÁRIO
+- CI #684 (run 45099240834) falhou durante uma versão intermediária: argumento EasyRPG inserido dentro do construtor Neo Geo; corrigido depois.
+- CI #685 (run 45099384903) detectou formatação em GamePlatforms.kt, RomMCache.kt e RomMClient.kt; corrigido depois.
+- CI #686 (run 45099474432) detectou apenas formatação em RomMCache.kt e RomMClient.kt; correção registrada no commit 7d46b8201af3875a6917c0e934f6d02c16efcd51.
+- CI do head final da implementação ainda precisa ser confirmada.
+- PR #41 permanece aberta/draft e intocada. Nenhuma alteração em SaveStore.kt ou GameModeActivity.kt.
+- Nenhum merge ou release efetuado.
