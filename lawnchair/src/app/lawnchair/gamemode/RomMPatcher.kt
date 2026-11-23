@@ -223,7 +223,19 @@ internal fun RomMPatcherPanel(games: List<RemoteGame>) {
                                             val input = context.contentResolver.openInputStream(patchUri)
                                                 ?: throw IOException("Não foi possível ler o patch selecionado.")
                                             input.use { source ->
-                                                uploadFile!!.outputStream().use { destination -> source.copyTo(destination) }
+                                                uploadFile!!.outputStream().use { destination ->
+                                                    val buffer = ByteArray(64 * 1024)
+                                                    var copiedBytes = 0L
+                                                    while (true) {
+                                                        val count = source.read(buffer)
+                                                        if (count < 0) break
+                                                        if (copiedBytes > MAX_ROMM_PATCH_UPLOAD_BYTES - count) {
+                                                            throw IOException("O patch local excede o limite de 1 GiB.")
+                                                        }
+                                                        destination.write(buffer, 0, count)
+                                                        copiedBytes += count
+                                                    }
+                                                }
                                             }
                                         }
                                         RomMClient(RomMSettings.url(context).orEmpty(), RomMSettings.token(context))
