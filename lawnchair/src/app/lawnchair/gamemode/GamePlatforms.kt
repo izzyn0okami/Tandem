@@ -208,6 +208,11 @@ object GamePlatforms {
                 BiosFile("bios7.bin", "DS ARM7 (opcional)", "df692a80a5b1bc90728bc3dfc76cd948"),
                 BiosFile("bios9.bin", "DS ARM9 (opcional)", "a392174eb3e572fed6447e956bde4b25"),
                 BiosFile("firmware.bin", "DS firmware (opcional)"),
+                BiosFile("dsi_bios7.bin", "DSi ARM7 (opcional)"),
+                BiosFile("dsi_bios9.bin", "DSi ARM9 (opcional)"),
+                BiosFile("dsi_firmware.bin", "DSi firmware (opcional)"),
+                BiosFile("dsi_nand.bin", "DSi NAND (opcional)"),
+                BiosFile("dsi_sd_card.bin", "DSi cartão SD (opcional)"),
             ),
         ),
         GamePlatform(
