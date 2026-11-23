@@ -3815,3 +3815,10 @@ Branch: feat/romm-library-search; PR #42.
 - Nenhuma operação de criação, edição, compartilhamento ou exclusão de coleções foi implementada. O fluxo de saves e a PR #41 não foram alterados.
 - Commits: RomMClient 3d935e815c446dec144b16c300b5ee25c8ceda12; interface b8ee74b1b951c75ba4ae62b4a22f9a946220e098.
 - CI e validação funcional ainda pendentes.
+
+
+AJUSTE DE PERMISSÃO — COLEÇÕES ROMM (2026-11-23)
+- A leitura de coleções exige o escopo OAuth collections.read no RomM 5.4.1.
+- Incluído collections.read na lista de escopos solicitados no pareamento de dispositivo; commit a8d22b2258be26924c835df0929b35bb92262632.
+- Tokens já emitidos não recebem escopos retroativamente. Caso um token existente não tenha collections.read, será necessário autorizar novamente o dispositivo/gerar token com esse escopo; o tratamento de erro de permissão será avaliado na etapa de autenticação.
+- CI após a alteração e validação funcional permanecem pendentes.
