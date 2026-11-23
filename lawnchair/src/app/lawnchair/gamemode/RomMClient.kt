@@ -722,7 +722,7 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
         val temp = File(target.parentFile, "${target.name}.part")
         temp.delete()
         try {
-            http.newCall(request(url).post(multipart).build()).execute().use { response ->
+            longHttp.newCall(request(url).post(multipart).build()).execute().use { response ->
                 if (!response.isSuccessful) {
                     val details = runCatching { response.peekBody(2048).string() }
                         .getOrDefault("")
