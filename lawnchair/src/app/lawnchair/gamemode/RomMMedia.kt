@@ -306,7 +306,6 @@ private fun renderFirstPdfPage(file: File): android.graphics.Bitmap? {
     }
 }
 
-
 private const val MAX_ROMM_TEXT_PREVIEW_CHARS = 500_000
 private const val MAX_ROMM_IMAGE_PREVIEW_DIMENSION = 2048
 
