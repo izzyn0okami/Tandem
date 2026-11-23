@@ -4109,3 +4109,11 @@ IMPLEMENTAÇÃO C6 — COMMIT 4CCCE4C (2026-11-23)
 - [x] Categoria patch e categorias auxiliares não são aceitas como ROM executável.
 - [ ] CI e testes automatizados pendentes.
 - [ ] Validação funcional no telefone pendente.
+
+
+CI BASELINE DA PR #44 — RUN #713 (2026-11-23)
+- [x] CI #713 / run 45110270424: SUCCESS — https://github.com/izzyn0okami/Tandem/actions/runs/45110270424.
+- [x] check-style / spotlessCheck, testes unitários, Build APK, Upload artifact e final-status aprovados.
+- Importante: a execução validou o head inicial 99b312693861f2c34cddeb20e7507eed2d01291c, antes da implementação C6 e das correções de contrato registradas depois.
+- [ ] CI do head atual da PR #44 (2bcdbdd61bfda4a85735dd93efdd87d33fa45c50) ainda não foi disparada/confirmada; a execução #713 não valida o código posterior.
+- Nenhuma release publicada e nenhum merge realizado.
