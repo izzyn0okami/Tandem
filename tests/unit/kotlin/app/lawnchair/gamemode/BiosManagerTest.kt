@@ -120,6 +120,21 @@ class BiosManagerTest {
     }
 
     @Test
+    fun melonDsDsiFirmwareIsCatalogedAsOptional() {
+        val nds = GamePlatforms.all.single { it.slug == "nds" }
+        val dsiFiles = setOf(
+            "dsi_bios7.bin",
+            "dsi_bios9.bin",
+            "dsi_firmware.bin",
+            "dsi_nand.bin",
+            "dsi_sd_card.bin",
+        )
+
+        assertTrue(dsiFiles.all { name -> nds.bios.any { it.name == name } })
+        assertTrue(BiosManager.isReady(nds, hasBios = { false }, isKitReady = { false }))
+    }
+
+    @Test
     fun officialMd5VerifierAcceptsMatchingBytesAndRejectsCorruption() {
         val file = File(root, "bios.bin").apply { writeText("abc") }
         val known = BiosFile("bios.bin", "Known BIOS", "900150983cd24fb0d6963f7d28e17f72")
