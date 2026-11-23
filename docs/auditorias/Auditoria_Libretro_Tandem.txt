@@ -3880,3 +3880,38 @@ AUDITORIA — DADOS PESSOAIS POR JOGO E NOTAS (2026-11-23)
 - Recomendação: primeira integração de baixo risco é somente leitura, parseando rom_user e has_notes do retorno GET /api/roms, sem pedir roms.user.write e sem gravar no RomM. Depois, oferecer notas em tela de detalhes sob demanda via GET /api/roms/{id}/notes. Escrita de notas/status fica fora desta etapa.
 - Atenção à versão: o código consultado foi obtido do repositório oficial rommapp/romm no commit 1ab3a3625af1c75d17bdd75c6e88224226d9236c; a tentativa de resolver uma tag literal 5.4.1 não encontrou referência pública correspondente. Assim, os campos e rotas estão confirmados no código consultado, mas a correspondência exata com o build 5.4.1 instalado deve ser confirmada antes de qualquer implementação que dependa de detalhes de schema.
 - Referências: https://github.com/rommapp/romm/blob/1ab3a3625af1c75d17bdd75c6e88224226d9236c/backend/endpoints/roms/__init__.py ; https://github.com/rommapp/romm/blob/1ab3a3625af1c75d17bdd75c6e88224226d9236c/backend/endpoints/responses/rom.py ; https://github.com/rommapp/romm/blob/1ab3a3625af1c75d17bdd75c6e88224226d9236c/backend/endpoints/roms/notes.py ; https://github.com/rommapp/romm/blob/1ab3a3625af1c75d17bdd75c6e88224226d9236c/backend/handler/auth/constants.py
+
+
+AUDITORIA A11 — DADOS PESSOAIS POR JOGO: COMPATIBILIDADE 5.4.1 E PARSE SOMENTE LEITURA
+Data: 2026-11-22
+
+COMPATIBILIDADE CONFIRMADA NA TAG OFICIAL 5.4.1
+- GET /api/roms está protegido por Scope.ROMS_READ.
+- A resposta usa SimpleRomSchema, derivado de RomSchema.
+- RomSchema inclui rom_user: RomUserSchema e has_notes: bool.
+- RomUserSchema inclui created_at, updated_at, last_played, is_main_sibling, backlogged, now_playing, hidden, rating, difficulty, completion, status e pinned_media.
+- O endpoint de lista preenche rom_user para o usuário autenticado via RomUserSchema.for_user(...), e calcula has_notes considerando notas públicas ou próprias.
+- A rota GET /api/roms/{id}/notes também exige apenas Scope.ROMS_READ.
+- A escrita de propriedades pessoais usa PUT /api/roms/{id}/props e exige Scope.ROMS_USER_WRITE; não será usada nesta etapa.
+- Valores de status definidos em RomUserStatus: incomplete, finished, completed_100, retired e never_playing.
+- Fontes oficiais fixadas na tag 5.4.1:
+  https://github.com/rommapp/romm/blob/5.4.1/backend/endpoints/roms/__init__.py
+  https://github.com/rommapp/romm/blob/5.4.1/backend/endpoints/responses/rom.py
+  https://github.com/rommapp/romm/blob/5.4.1/backend/endpoints/roms/notes.py
+  https://github.com/rommapp/romm/blob/5.4.1/backend/models/rom.py
+  https://github.com/rommapp/romm/blob/5.4.1/backend/handler/auth/constants.py
+
+IMPLEMENTAÇÃO A11 PREPARADA NA PR #42
+- RemoteGame agora possui userData e hasNotes.
+- RemoteGameUserData interpreta os campos pessoais retornados em rom_user, incluindo status, avaliação, dificuldade, conclusão, datas, flags e mídias fixadas.
+- O parse é tolerante a campos ausentes/nulos para compatibilidade com respostas parciais.
+- A implementação é somente leitura: não envia PUT, não altera propriedades no servidor e não adiciona escopos de escrita.
+- Arquivo: lawnchair/src/app/lawnchair/gamemode/RomMClient.kt.
+- Commit: 1c2ae0fd40c27933952055c3e109e9351657e5a6.
+
+LIMITES E PRÓXIMAS ETAPAS
+- Parse dos dados A11 implementado; CI e testes automatizados do novo commit pendentes.
+- Exibição dos dados na interface não foi feita; aguarda decisão de apresentação após validação técnica.
+- Notas A12: indicador has_notes está disponível na lista; conteúdo das notas ainda deve ser consultado sob demanda na tela de detalhes usando GET /api/roms/{id}/notes.
+- Não foi implementada escrita de dados pessoais nem criação/edição/exclusão de notas.
+- Validação funcional no telefone pendente.
