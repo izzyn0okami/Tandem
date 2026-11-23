@@ -59,6 +59,7 @@ import java.io.File
 import java.text.DateFormat
 import java.util.Date
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -78,19 +79,37 @@ internal fun LibraryScreen(
     onPlay: (LocalGame) -> Unit,
     onOpen: (LibraryEntry) -> Unit,
     onLaunchAndroid: (AndroidGame) -> Unit,
-    remoteSearchQuery: String,
-    remoteSearching: Boolean,
-    remoteSearchError: String,
-    onRemoteSearch: (String) -> Unit,
     onRefresh: () -> Unit,
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val listState = rememberLazyListState()
     val chipFocus = remember { FocusRequester() }
-    var searchText by remember { mutableStateOf(remoteSearchQuery) }
-    LaunchedEffect(remoteSearchQuery) { searchText = remoteSearchQuery }
+    var searchText by remember { mutableStateOf("") }
     val normalizedSearch = searchText.trim()
+    var remoteSearchIds by remember { mutableStateOf<Set<Long>?>(null) }
+    var remoteSearching by remember { mutableStateOf(false) }
+    var remoteSearchError by remember { mutableStateOf("") }
+    LaunchedEffect(normalizedSearch, RomMSettings.url(context)) {
+        remoteSearchIds = null
+        remoteSearchError = ""
+        if (normalizedSearch.length >= 2 && RomMSettings.isConnected(context)) {
+            remoteSearching = true
+            delay(500)
+            runCatching {
+                withContext(Dispatchers.IO) {
+                    RomMClient(
+                        RomMSettings.url(context).orEmpty(),
+                        RomMSettings.token(context),
+                    ).listGames(searchTerm = normalizedSearch).map { it.id }.toSet()
+                }
+            }.onSuccess { remoteSearchIds = it }
+                .onFailure { remoteSearchError = it.message ?: it.toString() }
+            remoteSearching = false
+        } else {
+            remoteSearching = false
+        }
+    }
     val recent = remember(version, games, normalizedSearch) {
         if (normalizedSearch.isEmpty()) PlayHistory.recent(context, games).take(10)
         else PlayHistory.recent(context, games).filter { it.title.contains(normalizedSearch, ignoreCase = true) }.take(10)
@@ -98,11 +117,12 @@ internal fun LibraryScreen(
     val entryByPath = remember(entries) { entries.flatMap { entry -> entry.locals.map { it.path to entry } }.toMap() }
     var platformFilter by remember { mutableStateOf<String?>(null) }
     val platforms = remember(entries) { entries.map { it.platform }.distinctBy { it.slug } }
-    val searchedEntries = remember(entries, normalizedSearch) {
+    val searchedEntries = remember(entries, normalizedSearch, remoteSearchIds) {
         if (normalizedSearch.isEmpty()) entries
-        else entries.filter {
-            it.title.contains(normalizedSearch, ignoreCase = true) ||
-                it.platform.name.contains(normalizedSearch, ignoreCase = true)
+        else entries.filter { entry ->
+            entry.title.contains(normalizedSearch, ignoreCase = true) ||
+                entry.platform.name.contains(normalizedSearch, ignoreCase = true) ||
+                entry.group?.versions?.any { it.id in remoteSearchIds.orEmpty() } == true
         }
     }
     val visible = remember(searchedEntries, platformFilter) {
@@ -188,10 +208,7 @@ internal fun LibraryScreen(
                 Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     OutlinedTextField(
                         value = searchText,
-                        onValueChange = {
-                            searchText = it
-                            onRemoteSearch(it)
-                        },
+                        onValueChange = { searchText = it },
                         label = { Text("Pesquisar jogos no RomM e no aparelho") },
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth(),
