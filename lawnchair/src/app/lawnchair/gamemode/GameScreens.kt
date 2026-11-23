@@ -98,7 +98,7 @@ internal fun LibraryScreen(
     var remoteSearchIds by remember { mutableStateOf<List<Long>?>(null) }
     var remoteSearching by remember { mutableStateOf(false) }
     var remoteSearchError by remember { mutableStateOf("") }
-    var remoteSearchOffset by remember { mutableStateOf(0) }
+    var remoteSearchOffset by remember { mutableIntStateOf(0) }
     var remoteSearchHasMore by remember { mutableStateOf(false) }
     var remoteSearchLoadingMore by remember { mutableStateOf(false) }
     var activeRemoteSearchKey by remember { mutableStateOf("") }
