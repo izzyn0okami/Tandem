@@ -12,7 +12,7 @@ LEGENDA
 [FORA DO ESCOPO INICIAL] Não implementar nesta primeira sequência; pode ser reconsiderado.
 
 A. BIBLIOTECA, PESQUISA E ORGANIZAÇÃO (PRIORIDADE ALTA)
-[EM ANDAMENTO] A1. Pesquisa de ROMs pelo endpoint oficial GET /api/roms (search_term).
+[EM ANDAMENTO] A1. Pesquisa de ROMs pelo endpoint oficial GET /api/roms (search_term); API e interface implementadas na branch feat/romm-library-search, aguardando CI e validação funcional.
 [PENDENTE] A2. Filtros por plataforma e múltiplas plataformas (platform_ids).
 [PENDENTE] A3. Filtros por coleção comum, inteligente e virtual.
 [PENDENTE] A4. Filtros de favoritos, correspondência de metadados, duplicados, jogabilidade, saves, states e outros critérios suportados pelo RomM.
@@ -119,3 +119,29 @@ REGRAS DE EXECUÇÃO
 7. Registrar testes no aparelho somente após confirmação do usuário.
 8. A PR #41 afeta GameModeActivity.kt e SaveStore.kt; coordenar mudanças nesses arquivos enquanto estiver aberta.
 9. O primeiro ciclo de implementação prioriza pesquisa/filtros da biblioteca e coleções em modo somente leitura.
+
+
+HISTÓRICO DE IMPLEMENTAÇÃO — 2026-11-23
+CICLO 1 — PESQUISA NA BIBLIOTECA
+Estado: EM ANDAMENTO (código implementado; CI e validação funcional pendentes).
+Branch: feat/romm-library-search
+Base: game-mode-m2-dev, commit 83be29d2647431060ffa1852fcc3aca0df7fcb19
+Arquivos alterados:
+- lawnchair/src/app/lawnchair/gamemode/RomMClient.kt
+  - listGames() aceita termo opcional.
+  - Envia search_term ao GET /api/roms, respeitando a busca por relevância do RomM com order_by vazio.
+  - Mantém paginação e os filtros de compatibilidade já existentes.
+- lawnchair/src/app/lawnchair/gamemode/GameScreens.kt
+  - Campo de pesquisa na biblioteca.
+  - Debounce de 500 ms.
+  - Pesquisa remota no RomM e correspondência local para jogos instalados.
+  - Resultados temporários não alteram o cache completo.
+  - Cancelamento de consultas antigas e mensagem de erro.
+- Não foram alterados GameModeActivity.kt nem RemoteLibrary.kt nesta versão final, para evitar sobreposição desnecessária com a PR #41 e preservar o cache.
+Validação:
+- Comparação da branch com a base: 2 arquivos funcionais alterados + checklist.
+- CI: pendente da abertura/execução da PR.
+- Teste no telefone: pendente.
+- Não houve merge nem publicação de release.
+Próxima ação: validar CI, corrigir eventuais falhas e solicitar teste funcional na release antes de marcar A1 como concluída.
+
