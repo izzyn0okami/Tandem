@@ -27,6 +27,8 @@ import org.json.JSONObject
 
 class RomMHttpException(val statusCode: Int, message: String) : IOException(message)
 
+internal const val MAX_ROMM_PATCH_UPLOAD_BYTES = 1024L * 1024L * 1024L
+
 /** ROM disponível no servidor RomM. */
 data class RemoteGame(
     val id: Long,
@@ -1851,7 +1853,6 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
         const val MINIMUM_FREE_SPACE_BYTES = 32L * 1024L * 1024L
         const val MAX_COVER_FAILURE_LOGS = 8
         const val MAX_ROMM_MEDIA_DOWNLOAD_BYTES = 1024L * 1024L * 1024L
-        const val MAX_ROMM_PATCH_UPLOAD_BYTES = 1024L * 1024L * 1024L
         const val MAX_ROMM_PATCH_RESULT_BYTES = 4L * 1024L * 1024L * 1024L
         val coverFailuresLogged = AtomicInteger()
         val DEVICE_SCOPES = listOf(
