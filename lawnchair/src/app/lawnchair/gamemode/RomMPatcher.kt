@@ -195,11 +195,12 @@ internal fun RomMPatcherPanel(games: List<RemoteGame>) {
                 color = GameColors.textDim,
                 fontSize = 11.sp,
             )
-            PlatformChip(
-                if (isApplying) "Aplicando patch…" else "Aplicar patch",
-                false,
-            ) {
-                if (hasPatchSelection && !isApplying) {
+            if (hasPatchSelection) {
+                PlatformChip(
+                    if (isApplying) "Aplicando patch…" else "Aplicar patch",
+                    false,
+                ) {
+                    if (!isApplying) {
                     isApplying = true
                     status = "Enviando solicitação ao RomM…"
                     error = null
@@ -245,7 +246,10 @@ internal fun RomMPatcherPanel(games: List<RemoteGame>) {
                             isApplying = false
                         }
                     }
+                    }
                 }
+            } else {
+                Text("Selecione um patch compatível para continuar.", color = GameColors.textDim, fontSize = 12.sp)
             }
             if (readyFile != null) {
                 PlatformChip("Salvar ROM modificada", true) {
