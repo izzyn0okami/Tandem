@@ -4306,3 +4306,21 @@ ATUALIZAÇÃO FINAL — ESTÁGIO C / PR #44 MESCLADA (2026-11-23)
 - [ ] Testes funcionais no telefone com servidor/conta RomM real serão realizados na versão Latest; não foram executados nesta auditoria e não são alegados como concluídos.
 - PR #41 permanece aberta/draft e pausada; não foi alterada.
 - Nenhuma release foi publicada manualmente nesta operação.
+
+
+INÍCIO DA AUDITORIA — ESTÁGIO D: PLATAFORMAS, FIRMWARE E DISPOSITIVOS (2026-11-23)
+Branch: feat/romm-platforms-firmware-devices
+Base: game-mode-m2-dev @ 6adc110e0f2effb6d4be2a9a2abc6a8360cf8824
+Escopo: D3–D8. D1 (consulta de plataformas/metadados) e D2 (consulta/download de firmware) já constam como concluídos no checklist e não serão repetidos. D9 permanece aguardando decisão do usuário.
+
+Regras de segurança e compatibilidade:
+- Validar BIOS por hash/tamanho somente quando existir referência oficial ou de fonte primária identificável; não inferir integridade pelo nome.
+- Preservar semântica OR (alternativas) e AND (arquivos simultâneos) dos requisitos por núcleo.
+- Auditar requisitos por núcleo, não assumir que plataforma define todos os requisitos.
+- Importação/substituição deve usar staging temporário, validar antes de promover e preservar/restaurar a cópia anterior em caso de falha.
+- Dispositivos RomM devem ser consultados separadamente do fluxo OAuth de pareamento já existente; scopes ausentes devem gerar estado explícito, sem falha silenciosa.
+- Feature detection somente a partir de capacidades retornadas explicitamente pelo servidor; não presumir suporte.
+- PR #41 permanece intocada; evitar GameModeActivity.kt, SaveStore.kt e SaveStoreTest.kt.
+- CI verde não substitui teste funcional no telefone. Nenhum teste em aparelho será declarado sem confirmação do usuário.
+
+Estado inicial: implementação D3–D8 ainda não iniciada; auditoria estática e implementação serão registradas nesta PR por commits/CI. Nenhuma release ou merge autorizado.
