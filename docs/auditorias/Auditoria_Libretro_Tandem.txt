@@ -3733,3 +3733,11 @@ Arquivos inspecionados:
 - Não iniciar alterações concorrentes em SaveSync.kt, SaveStore.kt ou GameModeActivity.kt enquanto a PR #41 estiver em aberto sem primeiro coordenar seu conteúdo.
 - Nenhuma ação foi tomada na PR #41 e não houve merge.
 
+
+
+CHECKLIST CENTRAL DA AUDITORIA E IMPLEMENTAÇÃO ROMM × TANDEM
+- Checklist completo de funcionalidades analisadas, prioridades, estado e regras de manutenção: docs/auditorias/Checklist_Funcionalidades_RomM_Tandem.txt
+- Primeira implementação iniciada na branch feat/romm-library-search: pesquisa server-side da biblioteca com GET /api/roms?search_term=, respeitando a ordenação por relevância do RomM.
+- A pesquisa foi conectada ao campo da biblioteca; resultados temporários não substituem nem sobrescrevem o cache completo.
+- Estado em 2026-11-23: código em andamento; CI e teste no telefone pendentes.
+- PR #41 permanece aberta e draft; não houve alteração nos arquivos de sessão/saves nesta implementação.
