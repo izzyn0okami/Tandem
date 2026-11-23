@@ -3822,3 +3822,10 @@ AJUSTE DE PERMISSÃO — COLEÇÕES ROMM (2026-11-23)
 - Incluído collections.read na lista de escopos solicitados no pareamento de dispositivo; commit a8d22b2258be26924c835df0929b35bb92262632.
 - Tokens já emitidos não recebem escopos retroativamente. Caso um token existente não tenha collections.read, será necessário autorizar novamente o dispositivo/gerar token com esse escopo; o tratamento de erro de permissão será avaliado na etapa de autenticação.
 - CI após a alteração e validação funcional permanecem pendentes.
+
+
+ROBUSTEZ DA CONSULTA DE COLEÇÕES — 2026-11-23
+- A tela agora recarrega plataformas e coleções quando servidor, token/conta ou estado de conexão mudam, evitando manter catálogo da conta anterior.
+- Falhas de leitura das coleções ficam visíveis na interface; útil para identificar token sem collections.read e orientar reautorização.
+- Commit: 0e927443881826a650dd03829542d6d070dee627.
+- CI após este ajuste pendente.
