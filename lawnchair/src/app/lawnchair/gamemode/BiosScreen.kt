@@ -12,6 +12,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -86,7 +87,10 @@ internal fun BiosScreen(rootPath: String) {
         }
     }
 
-    val integrityByBios = remember(tick) { BiosManager.validateLocalFirmware(context) }
+    var integrityByBios by remember { mutableStateOf<Map<String, BiosManager.FirmwareIntegrity>>(emptyMap()) }
+    LaunchedEffect(tick) {
+        integrityByBios = withContext(Dispatchers.IO) { BiosManager.validateLocalFirmware(context) }
+    }
 
     Column(
         modifier = Modifier.fillMaxSize().padding(horizontal = 24.dp, vertical = 4.dp),
