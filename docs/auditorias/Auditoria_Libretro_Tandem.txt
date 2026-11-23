@@ -4150,3 +4150,17 @@ ATUALIZAÇÃO — CI #726 / PR #44 (2026-11-23)
 - PR #44 continua aberta e em draft; sem merge.
 - Teste funcional no telefone e testes específicos de mídia continuam pendentes.
 - C5 (aplicação de patches via endpoint oficial RomM) permanece pendente.
+
+
+ATUALIZAÇÃO — CI #733 / PR #44 (2026-11-23)
+- [x] CI #733 / run 45178331443: SUCCESS no head atual eda9693e8d58392635f847a6288c6982574d2cad.
+- [x] check-style: Spotless Apply e spotlessCheck aprovados; nenhuma alteração de formatação adicional foi necessária.
+- [x] build-debug-apk: testes unitários, compilação do APK e upload do artifact aprovados.
+- [x] final-status aprovado.
+- Jobs de notificação, Crowdin e publicação de release ignorados; nenhuma release foi publicada.
+- A execução foi iniciada manualmente após aprovação do usuário e validou o commit de formatação automática.
+- Correção de uso de memória em RomMMedia.kt permanece validada pela CI no head atual: imagens decodificadas com limite de dimensão e leitura progressiva de documentos até 500 mil caracteres.
+- [ ] Testes específicos de mídia e validação funcional no telefone continuam pendentes.
+- [ ] Melhorias pendentes: miniaturas de screenshots, navegação entre páginas PDF e seek/progresso do áudio; revisar lifecycle/formats do player e agregação de arquivos entre versões.
+- [ ] C5 — integração do patcher oficial RomM permanece pendente.
+- PR #44 permanece aberta e em draft, sem merge; PR #41 continua aberta e pausada.
