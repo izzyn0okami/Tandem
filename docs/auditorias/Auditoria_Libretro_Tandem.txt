@@ -4267,3 +4267,15 @@ ATUALIZAÇÃO — PR #44 / CI #774 APROVADA E LIMITE DE DOWNLOAD (2026-11-23)
 - [ ] Miniaturas de screenshots continuam pendentes; avaliar suporte oficial do RomM antes de adicionar mecanismo próprio.
 - [ ] Testes específicos de mídia e validação funcional C1–C7 no telefone com servidor/conta RomM real permanecem pendentes.
 - PR #44 permanece aberta e em draft, sem merge ou release; PR #41 permanece aberta, em draft, pausada e intocada.
+
+
+ATUALIZAÇÃO — PR #44 / CI #777 E #778 APROVADAS (2026-11-23)
+- [x] CI #777 / run 45199755812: SUCCESS integral no commit 49deac22a4c370e2ca564e438a5157884f756579 — https://github.com/izzyn0okami/Tandem/actions/runs/45199755812.
+- [x] CI #778 / run 45199827044: SUCCESS integral no commit e94ae1a2358b3704e30ef81070d381effa35a59b — https://github.com/izzyn0okami/Tandem/actions/runs/45199827044.
+- [x] Ambas as execuções aprovaram Spotless (incluindo aplicação automática/commit de formatação/verificação), testes unitários, build APK, upload do artefato e final-status.
+- [x] Artefato CI #777: ID 14831867323; 46.262.156 bytes; SHA-256 b8540bab96b5c8e875757b407acb94c0e68e726eccb076bee7c9482e0b792b0c; expira em 2027-02-21.
+- [x] Artefato CI #778: ID 14830483778; 46.261.017 bytes; SHA-256 28e1ba86668a92993a615974a8569ae61fbaea7ac2c2b9a477dba3e6a286fcbd; expira em 2027-02-21.
+- [x] Correção de limpeza de arquivos .part/.range após bloqueio antecipado de mídia acima de 1 GiB aprovada pela CI #777.
+- [x] Auditoria de thumbnails na tag oficial RomM 5.4.1: screenshot.py só expõe upload e exclusão de screenshots; files.py expõe conteúdo original por RomFile.id. Não foi identificado endpoint de miniatura para arquivos associados. Não implementar geração local que force download de imagem original como preview; manter miniaturas como melhoria futura, sujeita a endpoint/contrato oficial.
+- [ ] Testes funcionais C1–C7 no telefone com servidor/conta RomM real continuam pendentes.
+- PR #44 segue aberta, draft e mergeable; sem merge/release. PR #41 segue aberta, draft e pausada, intocada.
