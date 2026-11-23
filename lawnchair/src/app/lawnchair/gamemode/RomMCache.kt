@@ -114,9 +114,9 @@ object RomMCache {
                         .put("server", it.serverName)
                         .put("folder", it.folder)
                         .put("fileIds", JSONArray().apply { it.fileIds.forEach { id -> put(id) } })
-                        .put("alternativeNames", JSONArray().apply { it.alternativeNames.forEach(::put) })
+                        .put("alternativeNames", JSONArray().apply { it.alternativeNames.forEach { name -> put(name) } })
                         .put("providerIds", JSONObject(it.providerIds))
-                        .put("siblingIds", JSONArray().apply { it.siblingIds.forEach(::put) })
+                        .put("siblingIds", JSONArray().apply { it.siblingIds.forEach { siblingId -> put(siblingId) } })
                         .put("isEasyRpgGame", it.isEasyRpgGame)
                         .apply { it.mainSiblingId?.let { id -> put("mainSiblingId", id) } }
                         .apply {
