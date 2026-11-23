@@ -84,6 +84,46 @@ data class DeviceSyncNegotiation(
 )
 
 object DeviceSyncProtocolJson {
+    /**
+     * Constrói a entrada de negociação exclusivamente a partir de uma SRAM local.
+     * O nome .srm é obrigatório para impedir que estados rápidos ou outros arquivos
+     * sejam classificados acidentalmente como save de bateria.
+     */
+    fun localSramSave(
+        romId: Long,
+        fileName: String,
+        emulator: String,
+        file: File,
+        updatedAt: String,
+    ): DeviceSyncSave? {
+        require(romId > 0L)
+        require(fileName.endsWith(".srm", ignoreCase = true)) {
+            "O Device Sync desta etapa aceita somente arquivos SRAM .srm."
+        }
+        require(emulator.isNotBlank())
+        require(updatedAt.isNotBlank())
+        if (!file.isFile || file.length() <= 0L) return null
+        val digest = MessageDigest.getInstance("MD5")
+        file.inputStream().buffered().use { input ->
+            val buffer = ByteArray(64 * 1024)
+            while (true) {
+                val read = input.read(buffer)
+                if (read < 0) break
+                digest.update(buffer, 0, read)
+            }
+        }
+        val md5 = digest.digest().joinToString("") { "%02x".format(it) }
+        return DeviceSyncSave(
+            romId = romId,
+            fileName = fileName,
+            slot = "autosave",
+            emulator = emulator,
+            contentHashMd5 = md5,
+            updatedAt = updatedAt,
+            fileSizeBytes = file.length(),
+        )
+    }
+
     private fun nullable(value: String?): Any = value ?: JSONObject.NULL
 
     fun registration(registration: DeviceSyncRegistration): JSONObject = JSONObject()

@@ -52,6 +52,62 @@ class DeviceSyncProtocolTest {
     }
 
     @Test
+    fun localSramManifestUsesMd5AndNeverAcceptsSaveStateFiles() {
+        val file = java.io.File.createTempFile("local-sram-", ".srm")
+        try {
+            val payload = "battery-save-data"
+            file.writeText(payload)
+            val save = DeviceSyncProtocolJson.localSramSave(
+                romId = 42L,
+                fileName = "game.srm",
+                emulator = "tandem_mgba",
+                file = file,
+                updatedAt = "2026-11-23T12:00:00Z",
+            )
+
+            val expectedMd5 = java.security.MessageDigest.getInstance("MD5")
+                .digest(payload.toByteArray())
+                .joinToString("") { "%02x".format(it) }
+            assertEquals(expectedMd5, save!!.contentHashMd5)
+            assertEquals(42L, save.romId)
+            assertEquals("autosave", save.slot)
+            assertEquals("game.srm", save.fileName)
+            assertEquals(payload.length.toLong(), save.fileSizeBytes)
+            assertTrue(
+                runCatching {
+                    DeviceSyncProtocolJson.localSramSave(
+                        42L,
+                        "game.state",
+                        "tandem_mgba",
+                        file,
+                        "2026-11-23T12:00:00Z",
+                    )
+                }.isFailure,
+            )
+        } finally {
+            file.delete()
+        }
+    }
+
+    @Test
+    fun localSramManifestSkipsMissingOrEmptyFiles() {
+        val file = java.io.File.createTempFile("empty-sram-", ".srm")
+        try {
+            assertNull(
+                DeviceSyncProtocolJson.localSramSave(
+                    42L,
+                    "game.srm",
+                    "tandem_mgba",
+                    file,
+                    "2026-11-23T12:00:00Z",
+                ),
+            )
+        } finally {
+            file.delete()
+        }
+    }
+
+    @Test
     fun negotiationRejectsSavesOutsideExplicitRomScope() {
         val save = DeviceSyncSave(
             romId = 99,
