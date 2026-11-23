@@ -4419,3 +4419,10 @@ COMPLEMENTO D7/D8 — CONTRATO REAL DO ROMM (2026-11-23)
 - Modelo RemoteDevice atualizado para campos documentados name/platform/client/client_version/sync_mode/sync_enabled/last_seen/capabilities. O estado de sincronização é mostrado na tela. Campo device_type não faz parte do esquema documentado e deixou de ser usado.
 - D8 continua limitado a flags booleanas explicitamente presentes em capabilities; ausência da chave retorna null.
 Fonte técnica: https://github.com/rommapp/romm/blob/master/docs/BACKEND_ARCHITECTURE.md (seções 5, 6.11 e Devices namespace).
+
+
+REGISTRO DE CI — ESTÁGIO D (2026-11-23)
+- CI #804: sucesso (check-style, build-debug-apk e final-status), commit testado 3dab2566c5d26ee84a0e800850cee81c527e7da6. Este commit é intermediário e antecede parte das últimas alterações de catálogo, paginação de dispositivos e testes; não é a validação final da PR.
+- CI #825 e #826: os jobs de formatação falharam no push automático de Spotless por rejeição non-fast-forward, pois as execuções concorrentes tentaram publicar commits de formatação no mesmo branch. O commit automático de formatação foi posteriormente publicado como 4449d8d213b124a5dbf4ff3f9230a31254665b51.
+- CI #837: permanece na fila para validar a PR; o build dos jobs anteriores ainda não havia terminado na última consulta.
+- O estágio D permanece em draft e sem merge até que uma CI no head formatado atual conclua com sucesso. Testes funcionais no telefone continuam pendentes.
