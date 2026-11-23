@@ -1,0 +1,350 @@
+CHECKLIST GERAL — FUNCIONALIDADES DA AUDITORIA ROMM × TANDEM
+Projeto: izzyn0okami/Tandem
+Branch de implementação: feat/romm-library-search
+Base: game-mode-m2-dev
+Documento de acompanhamento vivo. Atualizar após cada funcionalidade concluída, CI, PR ou validação do usuário.
+
+LEGENDA
+[CONCLUÍDO] Implementado e validado conforme a evidência indicada.
+[EM ANDAMENTO] Implementação iniciada, ainda não concluída.
+[PENDENTE] Analisado, ainda não implementado.
+[AGUARDANDO DECISÃO] Exige escolha explícita do usuário.
+[FORA DO ESCOPO INICIAL] Não implementar nesta primeira sequência; pode ser reconsiderado.
+
+A. BIBLIOTECA, PESQUISA E ORGANIZAÇÃO (PRIORIDADE ALTA)
+[EM ANDAMENTO] A1. Pesquisa de ROMs pelo endpoint oficial GET /api/roms (search_term); API e interface implementadas e CI #45089462426 aprovada (build, testes unitários e Spotless); aguarda validação funcional no telefone.
+[EM ANDAMENTO] A2. Filtros por plataforma e múltiplas plataformas (platform_ids); implementação e CIs #659/#660 aprovadas; validação funcional no telefone pendente.
+[EM ANDAMENTO] A3. Filtros por coleção comum, inteligente e virtual; implementação e CIs #663/#665/#667 aprovadas; validação funcional no telefone pendente.
+[EM ANDAMENTO] A4. Filtros oficiais favorite, duplicate, last_played, has_ra, has_saves, has_states, verified e has_soundtrack; implementação e CI #669 aprovadas; validação funcional no telefone pendente. playable não foi exposto por representar execução no navegador RomM; missing/physical não se aplicam à biblioteca local.
+[EM ANDAMENTO] A5. Ordenação por nome (name), tamanho (fs_size_bytes), lançamento (first_release_date), criação (created_at) e avaliação pública agregada (average_rating); campos confirmados no contrato RomM 5.4.1, sem usar colunas pessoais. Relevância de busca permanece como padrão; implementação e CI pendentes de validação final.
+[EM ANDAMENTO] A6. A API mantém paginação por lotes de 100; a interface exibe inicialmente 100 jogos e revela mais 100 por ação, além de carregar páginas adicionais de IDs em pesquisas/filtros. Preserva a ordem do servidor e o cache completo. CI e teste funcional pendentes.
+[EM ANDAMENTO] A7. Catálogo de coleções comuns (somente leitura); implementação e CIs #663/#665/#667 aprovadas; validação funcional no telefone pendente.
+[EM ANDAMENTO] A8. Catálogo de coleções inteligentes (somente leitura); implementação e CIs #663/#665/#667 aprovadas; validação funcional no telefone pendente.
+[EM ANDAMENTO] A9. Catálogo de coleções virtuais (somente leitura); implementação e CIs #663/#665/#667 aprovadas; validação funcional no telefone pendente.
+[EM ANDAMENTO] A10. Aplicação de uma coleção como filtro usando os parâmetros oficiais do RomM; implementação e CIs #663/#665/#667 aprovadas; validação funcional no telefone pendente.
+[CONCLUÍDO] A11. Cache local seguro: a pesquisa mantém resultados temporários separados e não sobrescreve a lista completa armazenada.
+[EM ANDAMENTO] A12. Leitura e exibição de metadados agregados (metadatum), dados manuais, IDs de provedores, títulos alternativos e agrupamento oficial por sibling_roms, com agrupamento por título como fallback. Implementação na PR #42; CI e validação funcional pendentes.
+[EM ANDAMENTO] A13. Arquivos associados por categoria, tamanhos e identificadores; preservação de conjuntos multidisco e integração de jogos is_easyrpg_game com pasta RPG Maker 2000/2003 e núcleo EasyRPG. A validação funcional de execução, saves .lsd e RTP ainda é necessária.
+
+B. DADOS PESSOAIS POR JOGO E ATIVIDADE (PRIORIDADE ALTA)
+[PENDENTE] B1. Consultar propriedades do usuário por ROM (favorito, avaliação, dificuldade, concluído, backlog, agora jogando, oculto e última partida).
+[PENDENTE] B2. Atualizar propriedades do usuário pela API RomM, somente após definir a experiência de interface.
+[PENDENTE] B3. Consultar histórico/atividade do RomM.
+[PENDENTE] B4. Integrar sessões e duração de jogo, preservando medição local precisa quando necessário.
+[PENDENTE] B5. Notas e etiquetas por jogo (começar com leitura).
+[AGUARDANDO DECISÃO] B6. Definir quais estados pessoais serão editáveis no Tandem e quais serão apenas informativos.
+
+C. MÍDIAS E CONTEÚDO ASSOCIADO (PRIORIDADE MÉDIA)
+[PENDENTE] C1. Exibir screenshots do RomM.
+[PENDENTE] C2. Consultar manuais e instruções.
+[PENDENTE] C3. Consultar walkthroughs.
+[PENDENTE] C4. Consultar trilhas sonoras.
+[PENDENTE] C5. Investigar patches e formatos de aplicação.
+[PENDENTE] C6. Manter mídias auxiliares fora da lista de ROMs executáveis.
+[AGUARDANDO DECISÃO] C7. Definir se o Tandem terá visualizador de imagens/documentos e player de áudio próprio.
+
+D. PLATAFORMAS, FIRMWARE E DISPOSITIVOS
+[CONCLUÍDO] D1. Consulta de plataformas e metadados básicos.
+[CONCLUÍDO] D2. Consulta e download de firmware disponibilizado pelo RomM, com validação já existente a revisar por núcleo.
+[PENDENTE] D3. Validar BIOS existentes por hashes/tamanhos oficiais quando disponíveis.
+[PENDENTE] D4. Distinguir BIOS alternativas (OR) de conjuntos simultâneos (AND).
+[PENDENTE] D5. Revisar requisitos de BIOS por núcleo, não apenas por plataforma.
+[PENDENTE] D6. Revisar importação, substituição segura e recuperação de BIOS.
+[PENDENTE] D7. Registro/consulta de dispositivos RomM, separado do pareamento OAuth já existente.
+[PENDENTE] D8. Feature detection de capacidades do dispositivo.
+[AGUARDANDO DECISÃO] D9. Instalação remota de ROMs em dispositivos; depende de agente e cenário de uso concretos.
+
+E. SAVES, STATES E SINCRONIZAÇÃO
+[CONCLUÍDO] E1. Listagem/download/upload de saves e states pelos endpoints RomM atuais.
+[CONCLUÍDO] E2. Identidade estável por conta/jogo e isolamento por conta.
+[CONCLUÍDO] E3. Snapshots imutáveis e proteção contra sobrescrita silenciosa.
+[EM ANDAMENTO] E4. Resolução explícita de conflitos de saves — PR #41 aberta, draft, sem merge.
+[PENDENTE] E5. Device Sync Protocol oficial (negotiate/complete), após estabilização e validação do fluxo atual.
+[PENDENTE] E6. Prova de conceito RetroArch Cloud Sync/WebDAV em modo somente leitura.
+[PENDENTE] E7. Testes controlados de upload/download WebDAV sem DELETE automático.
+[PENDENTE] E8. Comparar Device Sync e WebDAV para decidir arquitetura por tipo de asset.
+[PENDENTE] E9. Manter save states separados de SRAM e memory cards.
+[AGUARDANDO DECISÃO] E10. Definir se e quando substituir partes do sincronizador atual pelo protocolo oficial.
+
+F. ESTATÍSTICAS, RECOMENDAÇÕES E NOTIFICAÇÕES
+[PENDENTE] F1. Consultar estatísticas do RomM sem duplicar os cálculos do servidor.
+[PENDENTE] F2. Consultar recomendações personalizadas do RomM.
+[PENDENTE] F3. Consultar notificações do RomM.
+[PENDENTE] F4. Avaliar atualização/dispensa de notificações.
+[PENDENTE] F5. Avaliar canais de notificação e Apprise; sem editor administrativo inicialmente.
+[FORA DO ESCOPO INICIAL] F6. Replicar painel administrativo, logs e auditoria do RomM.
+
+G. RECURSOS ESPECIALIZADOS
+[FORA DO ESCOPO INICIAL] G1. Feeds externos (WebRCade, PKGi, Tinfoil etc.); manter API nativa do RomM como fonte.
+[FORA DO ESCOPO INICIAL] G2. Tarefas administrativas de scan, limpeza e manutenção.
+[FORA DO ESCOPO INICIAL] G3. Streaming remoto do RomM; não substitui LibretroDroid local.
+[FORA DO ESCOPO INICIAL] G4. Netplay; compatibilidade LibretroDroid ainda não comprovada.
+[PENDENTE] G5. Memory cards: estudar formatos, versões e limitações antes de qualquer integração.
+[FORA DO ESCOPO INICIAL] G6. Música, artistas, álbuns e playlists; exigiria player independente.
+[PENDENTE] G7. Sockets/eventos em tempo real; adotar apenas quando REST não atender a uma necessidade concreta.
+[FORA DO ESCOPO INICIAL] G8. Administração de usuários, permissões, grupos, canais e tarefas do servidor.
+
+H. AUTENTICAÇÃO, PERMISSÕES E COMPATIBILIDADE DA API
+[CONCLUÍDO] H1. Inventário dos endpoints RomM usados atualmente.
+[CONCLUÍDO] H2. Identificação dos scopes necessários para os fluxos atuais.
+[CONCLUÍDO] H3. Identificação de scopes solicitados sem uso atual (roms.user.read/write e devices.read/write).
+[PENDENTE] H4. Implementar detecção clara de permissões ausentes e instruções de reconexão.
+[PENDENTE] H5. Revisar expiração, revogação e renovação de tokens; não há renovação automática identificada.
+[PENDENTE] H6. Revisar diferenças entre token manual e token do fluxo de dispositivo.
+[PENDENTE] H7. Manter compatibilidade com RomM 5.4.1 e tratar respostas 401/403/404 sem duplicar registros.
+
+I. LIBRETRO E EXECUÇÃO LOCAL
+[CONCLUÍDO] I1. Integração LibretroDroid no mesmo processo do launcher.
+[CONCLUÍDO] I2. Arquitetura ARM64 intencional para o aparelho-alvo.
+[CONCLUÍDO] I3. RetroAchievements: autenticação, identificação, sessão, Hardcore/Softcore, desbloqueios, Rich Presence, leaderboards e persistência.
+[CONCLUÍDO] I4. Overlays/notificações RetroAchievements validados no telefone.
+[CONCLUÍDO] I5. Correção de overflow em achievements.cpp.
+[CONCLUÍDO] I6. Seleção ambígua de ROM em ZIP corrigida na PR #6 mesclada; testes funcionais específicos no aparelho devem permanecer rastreados separadamente.
+[PENDENTE] I7. Validar ZIP com uma ROM, múltiplas ROMs, nenhuma ROM compatível e arquivo corrompido.
+[PENDENTE] I8. Validar ZIPs de sistemas discBased e formatos ZIP nativos.
+[PENDENTE] I9. Revisar plataforma nula ou sem extensões.
+[PENDENTE] I10. Revisar cobertura e formatos multidisco.
+[PENDENTE] I11. Atualização, versionamento, hash e integridade dos núcleos.
+[PENDENTE] I12. Apresentação e seleção de núcleos alternativos.
+[PENDENTE] I13. Compatibilidade real dos núcleos no aparelho; disponibilidade de build não é prova de funcionamento.
+[PENDENTE] I14. Robustez de áudio, vídeo, controles, ciclo de vida e falhas nativas.
+[PENDENTE] I15. Diagnóstico, recuperação e isolamento de falhas.
+[PENDENTE] I16. Ampliar testes automatizados para catálogo, ROM, BIOS, instalação de núcleos e sessão.
+
+REGRAS DE EXECUÇÃO
+1. Implementar por etapas pequenas e independentes, aproveitando a API RomM.
+2. Não remover recursos existentes sem auditoria comparativa e decisão do usuário.
+3. Verificar PRs abertas antes de criar nova PR e evitar alterações concorrentes.
+4. Não mesclar PR sem autorização explícita.
+5. Atualizar este checklist imediatamente após cada funcionalidade concluída; registrar commit, arquivos, CI, testes e pendências.
+6. CI bem-sucedida não equivale a teste funcional no telefone.
+7. Registrar testes no aparelho somente após confirmação do usuário.
+8. A PR #41 afeta GameModeActivity.kt e SaveStore.kt; coordenar mudanças nesses arquivos enquanto estiver aberta.
+9. O primeiro ciclo de implementação prioriza pesquisa/filtros da biblioteca e coleções em modo somente leitura.
+
+
+HISTÓRICO DE IMPLEMENTAÇÃO — 2026-11-23
+CICLO 1 — PESQUISA NA BIBLIOTECA
+Estado: EM ANDAMENTO (código implementado; CI e validação funcional pendentes).
+Branch: feat/romm-library-search
+Base: game-mode-m2-dev, commit 83be29d2647431060ffa1852fcc3aca0df7fcb19
+Arquivos alterados:
+- lawnchair/src/app/lawnchair/gamemode/RomMClient.kt
+  - listGames() aceita termo opcional.
+  - Envia search_term ao GET /api/roms, respeitando a busca por relevância do RomM com order_by vazio.
+  - Mantém paginação e os filtros de compatibilidade já existentes.
+- lawnchair/src/app/lawnchair/gamemode/GameScreens.kt
+  - Campo de pesquisa na biblioteca.
+  - Debounce de 500 ms.
+  - Pesquisa remota no RomM e correspondência local para jogos instalados.
+  - Resultados temporários não alteram o cache completo.
+  - Cancelamento de consultas antigas e mensagem de erro.
+- Não foram alterados GameModeActivity.kt nem RemoteLibrary.kt nesta versão final, para evitar sobreposição desnecessária com a PR #41 e preservar o cache.
+Validação:
+- Comparação da branch com a base: 2 arquivos funcionais alterados + checklist.
+- CI: pendente da abertura/execução da PR.
+- Teste no telefone: pendente.
+- Não houve merge nem publicação de release.
+Próxima ação: validar CI, corrigir eventuais falhas e solicitar teste funcional na release antes de marcar A1 como concluída.
+
+
+ATUALIZAÇÃO — PR #42 ABERTA
+Data: 2026-11-23
+- PR #42: https://github.com/izzyn0okami/Tandem/pull/42
+- Estado: aberta, draft, sem merge.
+- Branch: feat/romm-library-search.
+- Head: 18735be5e2cca68e68cf7c25ce05b147dc5178b5.
+- Arquivos: GameScreens.kt, RomMClient.kt, checklist e log da auditoria.
+- A1: API e interface implementadas; CI e teste funcional na release pendentes.
+- A11: concluído no escopo da pesquisa: resultados temporários não substituem o cache completo.
+- Nenhuma funcionalidade existente removida.
+- Nenhuma alteração concorrente em GameModeActivity.kt, RemoteLibrary.kt ou SaveStore.kt.
+- PR #41 permanece aberta, draft e separada.
+
+
+HISTÓRICO DE VALIDAÇÃO — 2026-11-23
+CICLO 1 / PR #42 — CI APROVADA
+- Commit validado: 588886a527ceedadf0d39ad5b7df8a39a38f52ea.
+- CI #45089462426: SUCCESS — https://github.com/izzyn0okami/Tandem/actions/runs/45089462426
+- build-debug-apk: testes unitários, Build APK e Upload artifact aprovados.
+- check-style: spotlessCheck aprovado.
+- final-status: sucesso.
+- Nenhuma release foi publicada; tandem-release e nightly-release foram ignorados.
+- A1 permanece EM ANDAMENTO até o usuário confirmar teste funcional no telefone.
+- PR #42 continua aberta e draft; sem merge.
+CICLO E4 / PR #41 — CI COM FALHA
+- Commit: fe01500afb2ce11b8e19bd8981e167ca6ea4b59f.
+- CI #45085444492: FAILURE — https://github.com/izzyn0okami/Tandem/actions/runs/45085444492
+- Falharam Run unit tests e spotlessCheck; final-status também falhou.
+- PR #41 continua aberta e draft. Investigar logs e corrigir antes de avançar.
+- Nenhum merge ou release.
+
+
+ATUALIZAÇÃO — FILTRO DE PLATAFORMA ROMM (2026-11-23)
+- [EM ANDAMENTO] A2. Filtro de plataforma integrado à API oficial: implementados GET /api/platforms para obter IDs internos e platform_ids repetido em GET /api/roms; LibraryScreen envia a plataforma selecionada ao RomM. Aguarda CI e validação funcional.
+- A1. Pesquisa remota: CI anterior #45089462426 aprovada; validação funcional no telefone ainda pendente.
+- PR #42 continua aberta e draft; sem merge.
+- PR #41 deve permanecer aberta e draft até retomarmos explicitamente o trabalho em saves. Nenhuma alteração nessa PR nesta etapa.
+- CI da nova implementação: #45090587588, inicialmente queued.
+
+
+ATUALIZAÇÃO — CI DO FILTRO DE PLATAFORMA (2026-11-23)
+- [EM ANDAMENTO] A2. Filtro de plataforma via API oficial RomM: código implementado e CIs #659 e #660 aprovadas (testes unitários, Build APK, Upload artifact, Spotless e final-status). Falta validação funcional no telefone.
+- A1. Pesquisa remota: CI #45089462426 aprovada; validação funcional no telefone ainda pendente.
+- PR #42 continua aberta/draft, sem merge.
+- PR #41 continua aberta/draft e intocada por decisão do usuário.
+- Nenhuma release publicada.
+
+
+ATUALIZAÇÃO — COLEÇÕES ROMM (2026-11-23)
+- [EM ANDAMENTO] A3. Filtros por coleção manual, inteligente e virtual: consulta dos três recursos oficiais e envio do filtro correspondente em GET /api/roms implementados; aguarda CI e teste funcional.
+- [EM ANDAMENTO] A7. Catálogo de coleções manuais (somente leitura): consulta e apresentação em chips implementadas; aguarda CI/teste.
+- [EM ANDAMENTO] A8. Catálogo de coleções inteligentes (somente leitura): consulta e apresentação em chips implementadas; aguarda CI/teste.
+- [EM ANDAMENTO] A9. Catálogo de coleções virtuais (somente leitura): consulta dos cinco tipos documentados e apresentação em chips implementadas; aguarda CI/teste.
+- [EM ANDAMENTO] A10. Aplicar coleção como filtro: usa collection_id, smart_collection_id ou virtual_collection_id no endpoint oficial GET /api/roms; aguarda CI/teste.
+- A2. Filtro de plataforma: código e CIs #659/#660 aprovados; validação funcional no telefone pendente.
+- PR #42 aberta/draft, sem merge. PR #41 aberta/draft e intocada.
+
+
+AJUSTE DE PERMISSÃO — COLEÇÕES ROMM (2026-11-23)
+- Incluído o escopo OAuth collections.read na solicitação de permissões do pareamento de dispositivo, necessário para GET /api/collections, /smart e /virtual.
+- Tokens já emitidos não recebem novas permissões automaticamente; reautorização poderá ser necessária. CI e teste funcional pendentes.
+
+
+ROBUSTEZ DE COLEÇÕES — 2026-11-23
+- A consulta de coleções é renovada quando servidor/token/conta mudam; os dados da conta anterior são limpos antes da nova consulta.
+- Falha de permissão ou rede passa a ser exibida na tela, em vez de apenas desaparecer a lista de coleções.
+- Commit: 0e927443881826a650dd03829542d6d070dee627; CI pendente.
+
+
+ATUALIZAÇÃO — CI DAS COLEÇÕES E FILTROS ROMM (2026-11-23)
+- Coleções manuais/inteligentes/virtuais, escopo collections.read e atualização ao trocar conta: CIs #663, #665 e #667 aprovadas (check-style, build-debug-apk e final-status). Nenhuma release publicada. Teste funcional pendente.
+- [EM ANDAMENTO] A4. Filtros pessoais/metadados oficiais RomM: implementados chips para favorite, duplicate, last_played, has_ra, has_saves, has_states, verified e has_soundtrack. Aguarda CI e validação funcional.
+- Não implementar playable como capacidade local: o RomM define o campo como jogável no navegador. Não aplicar missing/physical ao catálogo de jogos executáveis locais.
+- A1/A2/A3 e A7–A10 seguem aguardando validação funcional no telefone, apesar das CIs aprovadas.
+- PR #42 permanece aberta/draft, sem merge; PR #41 permanece aberta/draft e intocada.
+
+
+ATUALIZAÇÃO — CI #669 DOS FILTROS PESSOAIS ROMM (2026-11-22)
+- PR #42 / branch feat/romm-library-search; head: f175d8e18a14697523d97b60122f7f8499b87782.
+- [EM ANDAMENTO] A4. Filtros favorite, duplicate, last_played, has_ra, has_saves, has_states, verified e has_soundtrack implementados e aprovados pela CI #669; validação funcional no telefone pendente.
+- CI #45092605779: SUCCESS — https://github.com/izzyn0okami/Tandem/actions/runs/45092605779.
+- build-debug-apk: testes unitários, Build APK e Upload artifact aprovados; check-style/spotlessCheck aprovado; final-status aprovado.
+- Jobs de release ignorados; nenhuma release publicada.
+- A1, A2, A3 e A7–A10 seguem com implementação e CIs aprovadas, mas aguardam validação funcional no telefone.
+- PR #42 aberta/draft, sem merge; PR #41 aberta/draft e intocada.
+
+
+AUDITORIA — ORDENAÇÃO E PAGINAÇÃO (2026-11-22)
+- A6. Confirmado no RomMClient: paginação por limit=100 e offset, com leitura sequencial até total ou página vazia. A lista ainda é acumulada integralmente antes de aparecer; carregamento incremental na UI continua pendente.
+- A5. Continua pendente: confirmar os campos de ordenação seguros no backend RomM 5.4.1. Evitar ordenação por propriedades pessoais sem prova de que não exclui jogos sem registro de usuário.
+- A pesquisa continua preservando relevância do RomM (order_by vazio quando search_term é enviado).
+
+
+AUDITORIA — DADOS PESSOAIS POR JOGO E NOTAS (2026-11-23)
+- [AUDITADO / IMPLEMENTAÇÃO PENDENTE] A11. Ler dados pessoais por jogo via rom_user no GET /api/roms: status, último acesso, avaliação, dificuldade, conclusão, backlog, em andamento, oculto, versão principal e mídias fixadas. Recomendação: somente leitura inicialmente; não solicitar roms.user.write.
+- [AUDITADO / IMPLEMENTAÇÃO PENDENTE] A12. Indicador e leitura de notas pessoais: has_notes na lista; GET /api/roms/{id}/notes sob demanda na tela de detalhes. O servidor decide propriedade/visibilidade. Escrita e exclusão de notas não fazem parte da primeira etapa.
+- Importante: favorite é filtro separado, não campo de RomUserData. Valores 0 de rating/difficulty/completion significam não definido.
+- Confirmação exata de compatibilidade com RomM 5.4.1 pendente: o código-fonte consultado foi commit público 1ab3a3625af1c75d17bdd75c6e88224226d9236c, mas a tag literal 5.4.1 não foi resolvida. Não implementar dependência de schema até confirmar a versão instalada.
+- PR #42 segue aberta/draft, sem merge. PR #41 permanece intocada.
+
+
+A11 — Dados pessoais por jogo
+- [x] Confirmar contrato exato na tag RomM 5.4.1: GET /api/roms exige roms.read e retorna rom_user + has_notes.
+- [x] Confirmar campos, enum de status e escopos das rotas de leitura/escrita.
+- [x] Implementar parse somente leitura de rom_user e has_notes em RemoteGame.
+- [x] CI e testes automatizados do commit 1c2ae0f (CI #674 aprovada).
+- [ ] Decidir apresentação visual dos dados pessoais após validação técnica.
+- [ ] Testar com conta RomM real no telefone.
+
+A12 — Notas por jogo
+- [x] Confirmar GET /api/roms/{id}/notes (roms.read) e estrutura de resposta na tag 5.4.1.
+- [x] Identificar has_notes na resposta de listagem como indicador leve.
+- [x] Consultar conteúdo sob demanda na tela de detalhes (implementação inicial na PR #42; CI pendente).
+- [x] Apresentação inicial das notas e tags na tela de detalhes implementada; refinamento depende de teste funcional.
+- [ ] Testar no telefone.
+
+- [x] CI dos commits A12 e correção de formatação: CI #681 (run 45096446767) SUCCESS no head fa8f720896a76e03d4b04ac3df17231fd681ee9b; Spotless, testes unitários, Build APK, Upload artifact e final-status aprovados.
+- [ ] Validar carregamento de notas no telefone.
+
+
+ATUALIZAÇÃO A12 — CI #676 E CORREÇÃO (2026-11-23)
+- [x] Diagnosticar CI #676: falha exclusivamente de formatação Spotless em GameScreens.kt, no bloco when das notas RomM.
+- [x] Corrigir formatação na mesma PR #42, commit e72ff86f91a62e9e39cec59be1892ec4b83dcce0.
+- [ ] CI #678 (run #45095702464) do commit corretivo: queued na última consulta; confirmar conclusão e jobs.
+- [ ] Validar notas RomM no telefone; confirmar carregamento por versão e diferenciar lista vazia de falha de consulta.
+- A12 não deve ser marcada como concluída até CI verde e teste funcional.
+
+
+ATUALIZAÇÃO A12 — CI #681 APROVADA (2026-11-22)
+- [x] CI #681 / run 45096446767: SUCCESS — https://github.com/izzyn0okami/Tandem/actions/runs/45096446767.
+- [x] spotlessCheck aprovado.
+- [x] Testes unitários, Build APK e Upload artifact aprovados.
+- [x] final-status aprovado; jobs de release/notificação ignorados, nenhuma release publicada.
+- [ ] Testar no telefone a leitura de notas RomM, inclusive carregamento por versão e distinção entre ausência de notas e erro de consulta.
+- PR #42 continua aberta/draft, sem merge. PR #41 continua aberta/draft e intocada.
+
+
+ATUALIZAÇÃO — CI #682 DOS REGISTROS DOCUMENTAIS (2026-11-22)
+- [x] CI #682 / run 45097240159: SUCCESS — https://github.com/izzyn0okami/Tandem/actions/runs/45097240159.
+- [x] spotlessCheck aprovado.
+- [x] Testes unitários, Build APK, Upload artifact e final-status aprovados.
+- [x] Jobs de release/notificações ignorados; nenhuma release publicada.
+- Os commits documentais da auditoria e checklist estão validados pela CI.
+- PR #42 continua aberta/draft, sem merge; PR #41 continua aberta/draft e intocada.
+
+
+HISTÓRICO DE IMPLEMENTAÇÃO — A5 A A13 (2026-11-23)
+PR: #42 — feat/romm-library-search
+Base: game-mode-m2-dev
+Estado: implementação na mesma PR; sem merge ou release até a CI final.
+
+A5 — ORDENAÇÃO
+- [x] Adicionados os campos públicos e estáveis name, fs_size_bytes, first_release_date, created_at e average_rating.
+- [x] Confirmado no RomM 5.4.1 que order_by aceita colunas mapeadas de Rom e os campos de metadados agregados; order_dir aceita asc/desc.
+- [x] Busca continua usando relevância do RomM quando nenhuma ordenação explícita é escolhida.
+- [ ] CI final e validação funcional no telefone.
+
+A6 — PAGINAÇÃO INCREMENTAL
+- [x] Criado método de consulta paginada de IDs (limit=100, offset, with_total=true, with_files=false).
+- [x] Interface carrega páginas adicionais sob demanda, preservando a ordem retornada pelo servidor.
+- [x] Resultados de busca não substituem o cache completo da biblioteca.
+- [ ] CI final e validação funcional com biblioteca grande.
+
+A12 — METADADOS E VERSÕES
+- [x] Leitura de metadatum e manual_metadata do RomM 5.4.1.
+- [x] Leitura de IDs IGDB, SteamGridDB, MobyGames, ScreenScraper, RetroAchievements, LaunchBox, Hasheous, TheGamesDB, Flashpoint, HowLongToBeat, Demozoo, Pouet, CSDb, Steam, Gamelist e Libretro.
+- [x] Leitura de alternative_names.
+- [x] Agrupamento de versões por sibling_roms e is_main_sibling; agrupamento por título permanece como fallback.
+- [x] Cache local estendido para conservar metadados, títulos alternativos, provedores e relações de versão.
+- [ ] CI final e validação funcional.
+
+A13 — ARQUIVOS, MULTIDISCO E EASYRPG
+- [x] Leitura de arquivos associados do RomM: id, file_name, file_size_bytes, category, is_top_level e hashes.
+- [x] Interface mostra arquivos associados por categoria sem misturá-los à lista de ROMs executáveis.
+- [x] Preservado o tratamento de conjuntos multidisco pela relação de arquivos da mesma ROM no RomM.
+- [x] Reconhecimento de is_easyrpg_game; pasta é baixada com todos os arquivos de jogo, usando RPG_RT.ldb como arquivo de entrada.
+- [x] Adicionada plataforma EasyRPG e seleção do núcleo Libretro easyrpg.
+- [ ] Testar no telefone a instalação/execução de um jogo EasyRPG.
+- [ ] Confirmar o local e a persistência dos saves .lsd; o SaveStore atual gerencia SRAM/state genéricos e não foi alterado nesta PR.
+- [ ] Confirmar RTP 2000/2003 quando exigido pelo jogo; nenhuma distribuição automática de RTP foi adicionada.
+- [ ] CI final.
+
+NOTA DE NOMENCLATURA
+Os registros históricos chamados A11/A12 para dados pessoais e notas correspondem aos itens B1/B5 do checklist atual. A11 atual é cache da pesquisa; A12 atual é metadados de jogos. Os registros antigos foram mantidos para preservar o histórico.
+
+COMMITS DA IMPLEMENTAÇÃO
+- a2fac1410cce62455bbe6d01800b87c64322f5f9 — modelos, parse de metadados/arquivos e paginação de IDs.
+- 015df23825ed5c0a4cbb3a79c67217df263a69cf — interface de paginação, ordenação, metadados e agrupamento por versões.
+- 6eaa384dfd53283a1b42090b14974a301661b9ac — correções intermediárias de plataforma e metadados.
+- 4be895bb36c89ea7eea650851002307ff0d5a1b9 — catálogo de núcleo EasyRPG.
+- 7d46b8201af3875a6917c0e934f6d02c16efcd51 — correções de formatação.
+
+
+ATUALIZAÇÃO A6 — PAGINAÇÃO VISUAL DA BIBLIOTECA (2026-11-23)
+- [x] A lista principal agora apresenta até 100 jogos por vez.
+- [x] A ação "Mostrar mais jogos" revela o próximo lote de 100 sem alterar o cache completo.
+- [x] Pesquisa/filtros remotos continuam paginando IDs de 100 em 100 e preservando a ordem retornada pelo RomM.
+- [x] Alterações de pesquisa/filtro/ordenação reiniciam o limite visual e impedem que uma resposta de paginação antiga seja anexada à consulta nova.
+- [ ] CI final e validação funcional com biblioteca grande.
+- Commit: 4c07319595e6f4cac67c009bda23dc55093355b5; proteção de estado e correção ktlint: 23073cac01d62e619a8e1e0b235a1d2c38065ebe.

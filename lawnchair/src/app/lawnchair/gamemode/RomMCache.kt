@@ -17,6 +17,14 @@ object RomMCache {
     @Volatile
     var lastRefreshMs: Long = 0L
 
+    private fun readStrings(array: JSONArray?): List<String> = (0 until (array?.length() ?: 0)).mapNotNull { index ->
+        array?.optString(index)?.takeIf { it.isNotBlank() && it != "null" }
+    }
+
+    private fun readLongs(array: JSONArray?): List<Long> = (0 until (array?.length() ?: 0)).mapNotNull { index ->
+        array?.optLong(index, -1L)?.takeIf { it > 0L }
+    }
+
     private fun file(context: Context) = File(context.filesDir, FILE)
 
     /** Muda sempre que a lista guardada muda. */
@@ -46,6 +54,43 @@ object RomMCache {
                             (0 until ids.length()).map { index -> ids.getLong(index) }
                         }.orEmpty(),
                         folder = o.optBoolean("folder", false),
+                        alternativeNames = readStrings(o.optJSONArray("alternativeNames")),
+                        metadata = o.optJSONObject("metadata")?.let { m ->
+                            RemoteGameMetadata(
+                                genres = readStrings(m.optJSONArray("genres")),
+                                franchises = readStrings(m.optJSONArray("franchises")),
+                                collections = readStrings(m.optJSONArray("collections")),
+                                companies = readStrings(m.optJSONArray("companies")),
+                                publishers = readStrings(m.optJSONArray("publishers")),
+                                developers = readStrings(m.optJSONArray("developers")),
+                                gameModes = readStrings(m.optJSONArray("gameModes")),
+                                ageRatings = readStrings(m.optJSONArray("ageRatings")),
+                                playerCount = m.optString("playerCount").takeUnless { it.isBlank() || it == "null" },
+                                firstReleaseDate = if (m.has("firstReleaseDate") && !m.isNull("firstReleaseDate")) m.optLong("firstReleaseDate") else null,
+                                averageRating = if (m.has("averageRating") && !m.isNull("averageRating")) m.optDouble("averageRating").takeIf { it.isFinite() } else null,
+                                hasManualMetadata = m.optBoolean("hasManualMetadata", false),
+                            )
+                        },
+                        providerIds = o.optJSONObject("providerIds")?.let { ids ->
+                            ids.keys().asSequence().associateWith { ids.optString(it) }
+                        }.orEmpty(),
+                        siblingIds = readLongs(o.optJSONArray("siblingIds")).toSet(),
+                        mainSiblingId = if (o.has("mainSiblingId")) o.optLong("mainSiblingId") else null,
+                        associatedFiles = (0 until (o.optJSONArray("associatedFiles")?.length() ?: 0)).mapNotNull { index ->
+                            o.optJSONArray("associatedFiles")?.optJSONObject(index)?.let { file ->
+                                RemoteAssociatedFile(
+                                    id = file.optLong("id"),
+                                    fileName = file.optString("fileName"),
+                                    sizeBytes = file.optLong("sizeBytes"),
+                                    category = file.optString("category").takeUnless { it.isBlank() || it == "null" },
+                                    isTopLevel = file.optBoolean("isTopLevel"),
+                                    crcHash = file.optString("crcHash").takeUnless { it.isBlank() || it == "null" },
+                                    md5Hash = file.optString("md5Hash").takeUnless { it.isBlank() || it == "null" },
+                                    sha1Hash = file.optString("sha1Hash").takeUnless { it.isBlank() || it == "null" },
+                                )
+                            }
+                        },
+                        isEasyRpgGame = o.optBoolean("isEasyRpgGame", false),
                     ),
                 )
             }
@@ -69,6 +114,49 @@ object RomMCache {
                         .put("server", it.serverName)
                         .put("folder", it.folder)
                         .put("fileIds", JSONArray().apply { it.fileIds.forEach { id -> put(id) } })
+                        .put("alternativeNames", JSONArray().apply { it.alternativeNames.forEach { name -> put(name) } })
+                        .put("providerIds", JSONObject(it.providerIds))
+                        .put("siblingIds", JSONArray().apply { it.siblingIds.forEach { siblingId -> put(siblingId) } })
+                        .put("isEasyRpgGame", it.isEasyRpgGame)
+                        .apply { it.mainSiblingId?.let { id -> put("mainSiblingId", id) } }
+                        .apply {
+                            it.metadata?.let { metadata ->
+                                put(
+                                    "metadata",
+                                    JSONObject()
+                                        .put("genres", JSONArray(metadata.genres))
+                                        .put("franchises", JSONArray(metadata.franchises))
+                                        .put("collections", JSONArray(metadata.collections))
+                                        .put("companies", JSONArray(metadata.companies))
+                                        .put("publishers", JSONArray(metadata.publishers))
+                                        .put("developers", JSONArray(metadata.developers))
+                                        .put("gameModes", JSONArray(metadata.gameModes))
+                                        .put("ageRatings", JSONArray(metadata.ageRatings))
+                                        .put("playerCount", metadata.playerCount ?: JSONObject.NULL)
+                                        .put("firstReleaseDate", metadata.firstReleaseDate ?: JSONObject.NULL)
+                                        .put("averageRating", metadata.averageRating ?: JSONObject.NULL)
+                                        .put("hasManualMetadata", metadata.hasManualMetadata),
+                                )
+                            }
+                        }
+                        .put(
+                            "associatedFiles",
+                            JSONArray().apply {
+                                it.associatedFiles.forEach { file ->
+                                    put(
+                                        JSONObject()
+                                            .put("id", file.id)
+                                            .put("fileName", file.fileName)
+                                            .put("sizeBytes", file.sizeBytes)
+                                            .put("category", file.category ?: JSONObject.NULL)
+                                            .put("isTopLevel", file.isTopLevel)
+                                            .put("crcHash", file.crcHash ?: JSONObject.NULL)
+                                            .put("md5Hash", file.md5Hash ?: JSONObject.NULL)
+                                            .put("sha1Hash", file.sha1Hash ?: JSONObject.NULL),
+                                    )
+                                }
+                            },
+                        )
                         .apply { it.fileId?.let { id -> put("fileId", id) } },
                 )
             }
