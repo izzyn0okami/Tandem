@@ -776,3 +776,10 @@ ATUALIZAÇÃO — CI #888 (2026-11-23)
 - Nenhuma release foi publicada; o APK Debug ficou disponível como artefato da CI.
 - E4 continua aguardando teste funcional no telefone (conflito, backups e rollback). E5 continua sem integração ao SaveSync e sem validação contra servidor RomM real. E6–E9 permanecem pendentes; nenhum DELETE automático.
 - PR #41 permanece aberta, Draft, mergeable, sem conflitos e sem merge. CI verde não substitui validação funcional no aparelho/servidor.
+
+
+ATUALIZAÇÃO — CI #890 (2026-11-23)
+- CI #890 / run 45257102036: SUCCESS integral no commit 78f8809a779dde6eb4b9c762efa34ffae7999f8c. Spotless, testes unitários, Build APK Debug, Upload artifact e final-status aprovados.
+- Nenhuma release foi publicada; o artefato é APK Debug.
+- E4 continua aguardando teste funcional no telefone. E5 segue em integração: transporte isolado de SRAM existe, mas ainda não há integração funcional ao SaveSync nem teste com servidor RomM real. E6–E9 continuam pendentes; nenhum DELETE automático.
+- PR #41 permanece aberta, Draft, sem merge. CI verde não substitui testes no aparelho e no servidor.
