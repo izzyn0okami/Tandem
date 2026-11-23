@@ -44,6 +44,14 @@ internal fun RomMMediaPanel(games: List<RemoteGame>) {
     val gameIds = remember(games) { games.map { it.id }.distinct() }
     val associatedFiles = remember(games) { games.flatMap { it.associatedFiles }.distinctBy { it.id } }
     val game = games.firstOrNull() ?: return
+    val hasPatchBase = !game.folder && !game.isEasyRpgGame && (
+        game.fileId != null ||
+            associatedFiles.any {
+                (it.fileName.equals(game.fileName, ignoreCase = true) ||
+                    it.fileName.equals(game.serverName, ignoreCase = true)) &&
+                    isRomMPlayableFileCategory(it.category)
+            }
+        )
     val screenshots = remember(associatedFiles) {
         associatedFiles.filter {
             it.category == "screenshot" && File(it.fileName).extension.lowercase() in ROMM_IMAGE_EXTENSIONS
@@ -208,7 +216,8 @@ internal fun RomMMediaPanel(games: List<RemoteGame>) {
         walkthroughs.isEmpty() &&
         tracks.isEmpty() &&
         !tracksLoading &&
-        tracksError == null
+        tracksError == null &&
+        !hasPatchBase
     ) {
         return
     }
@@ -218,6 +227,7 @@ internal fun RomMMediaPanel(games: List<RemoteGame>) {
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         Text("Mídias e documentos do RomM", color = GameColors.text, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+        if (hasPatchBase) RomMPatcherPanel(games)
 
         if (screenshots.isNotEmpty()) {
             Text("Screenshots", color = GameColors.textDim, fontSize = 13.sp)
