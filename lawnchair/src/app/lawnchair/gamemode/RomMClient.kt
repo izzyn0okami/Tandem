@@ -73,6 +73,22 @@ data class RemoteCollection(
     val romIds: Set<Long> = emptySet(),
 )
 
+/** Filtros pessoais e de metadados expostos pelo endpoint oficial GET /api/roms. */
+data class RemoteGameFilters(
+    val favorites: Boolean = false,
+    val duplicates: Boolean = false,
+    val played: Boolean = false,
+    val retroAchievements: Boolean = false,
+    val saves: Boolean = false,
+    val states: Boolean = false,
+    val verified: Boolean = false,
+    val soundtracks: Boolean = false,
+) {
+    val isActive: Boolean
+        get() = favorites || duplicates || played || retroAchievements ||
+            saves || states || verified || soundtracks
+}
+
 /** Arquivo de firmware (BIOS) guardado no servidor. */
 data class RemoteFirmware(
     val id: Long,
@@ -363,6 +379,7 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
         searchTerm: String? = null,
         platformIds: List<Long> = emptyList(),
         collection: RemoteCollection? = null,
+        filters: RemoteGameFilters = RemoteGameFilters(),
     ): List<RemoteGame> {
         serverTotal = 0
         skippedPlatforms.clear()
@@ -388,6 +405,14 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
                 "smart" -> urlBuilder.addQueryParameter("smart_collection_id", collection.id)
                 "virtual" -> urlBuilder.addQueryParameter("virtual_collection_id", collection.id)
             }
+            if (filters.favorites) urlBuilder.addQueryParameter("favorite", "true")
+            if (filters.duplicates) urlBuilder.addQueryParameter("duplicate", "true")
+            if (filters.played) urlBuilder.addQueryParameter("last_played", "true")
+            if (filters.retroAchievements) urlBuilder.addQueryParameter("has_ra", "true")
+            if (filters.saves) urlBuilder.addQueryParameter("has_saves", "true")
+            if (filters.states) urlBuilder.addQueryParameter("has_states", "true")
+            if (filters.verified) urlBuilder.addQueryParameter("verified", "true")
+            if (filters.soundtracks) urlBuilder.addQueryParameter("has_soundtrack", "true")
             val url = urlBuilder.build()
             val json = longHttp.newCall(request(url).build()).execute().use { response ->
                 GameLog.log("romm", "GET api/roms offset=$offset -> ${response.code}")
