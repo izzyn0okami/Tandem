@@ -253,13 +253,16 @@ A11 — Dados pessoais por jogo
 - [x] Confirmar contrato exato na tag RomM 5.4.1: GET /api/roms exige roms.read e retorna rom_user + has_notes.
 - [x] Confirmar campos, enum de status e escopos das rotas de leitura/escrita.
 - [x] Implementar parse somente leitura de rom_user e has_notes em RemoteGame.
-- [ ] CI e testes automatizados do commit 1c2ae0f.
+- [x] CI e testes automatizados do commit 1c2ae0f (CI #674 aprovada).
 - [ ] Decidir apresentação visual dos dados pessoais após validação técnica.
 - [ ] Testar com conta RomM real no telefone.
 
 A12 — Notas por jogo
 - [x] Confirmar GET /api/roms/{id}/notes (roms.read) e estrutura de resposta na tag 5.4.1.
 - [x] Identificar has_notes na resposta de listagem como indicador leve.
-- [ ] Consultar conteúdo sob demanda na tela de detalhes.
-- [ ] Definir apresentação das notas e tags.
+- [x] Consultar conteúdo sob demanda na tela de detalhes (implementação inicial na PR #42; CI pendente).
+- [x] Apresentação inicial das notas e tags na tela de detalhes implementada; refinamento depende de teste funcional.
 - [ ] Testar no telefone.
+
+- [ ] CI dos commits A12 (53d5e0b e a5f902f).
+- [ ] Validar carregamento de notas no telefone.
