@@ -626,7 +626,6 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
         return RemoteGameIdPage(ids, total, nextOffset, nextOffset < total)
     }
 
-    /** Consulta notas visíveis da ROM no RomM; somente GET, sem escopo de escrita. */
     /**
      * Metadados das faixas associados à ROM. O conteúdo de cada faixa continua sendo servido
      * pelo endpoint genérico de arquivo associado do RomM.
