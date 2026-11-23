@@ -209,3 +209,9 @@ ATUALIZAÇÃO — COLEÇÕES ROMM (2026-11-23)
 AJUSTE DE PERMISSÃO — COLEÇÕES ROMM (2026-11-23)
 - Incluído o escopo OAuth collections.read na solicitação de permissões do pareamento de dispositivo, necessário para GET /api/collections, /smart e /virtual.
 - Tokens já emitidos não recebem novas permissões automaticamente; reautorização poderá ser necessária. CI e teste funcional pendentes.
+
+
+ROBUSTEZ DE COLEÇÕES — 2026-11-23
+- A consulta de coleções é renovada quando servidor/token/conta mudam; os dados da conta anterior são limpos antes da nova consulta.
+- Falha de permissão ou rede passa a ser exibida na tela, em vez de apenas desaparecer a lista de coleções.
+- Commit: 0e927443881826a650dd03829542d6d070dee627; CI pendente.
