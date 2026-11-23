@@ -1280,7 +1280,7 @@ internal fun SettingsScreen(
                             )
                             Text(
                                 if (device.online) "Online" else "Offline ou sem conexão recente",
-                                color = if (device.online) GameColors.success else GameColors.textDim,
+                                color = if (device.online) GameColors.accent else GameColors.textDim,
                                 fontSize = 12.sp,
                             )
                             if (device.capabilities.isEmpty()) {
