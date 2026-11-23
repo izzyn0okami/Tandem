@@ -3955,3 +3955,14 @@ CI APROVADA — PR #42 / NOTAS ROMM A12 (2026-11-22)
 - A12: implementação inicial de leitura de notas e apresentação em detalhes aprovada pela CI. Ainda requer validação funcional no telefone, incluindo carregamento por versão e tratamento claro de lista vazia versus falha de consulta.
 - PR #42 permanece aberta, draft e sem merge.
 - PR #41 permanece aberta, draft e intocada; a etapa de saves continua pausada por decisão do usuário.
+
+
+CI APROVADA — REGISTROS DOCUMENTAIS DA AUDITORIA ROMM (2026-11-22)
+- Commit validado: 13cb6496cdbb4fe10c3002611d66ad5b8902a8d5.
+- CI #682: SUCCESS — https://github.com/izzyn0okami/Tandem/actions/runs/45097240159.
+- check-style / spotlessCheck: sucesso.
+- build-debug-apk: testes unitários, Build APK e Upload artifact aprovados.
+- final-status: sucesso.
+- Jobs de release e notificações ignorados; nenhuma release publicada.
+- Confirmação de que os registros da auditoria e checklist foram aceitos pela CI.
+- PR #42 permanece aberta, draft e sem merge. PR #41 permanece aberta, draft e intocada.
