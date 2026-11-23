@@ -116,7 +116,7 @@ internal fun RomMPatcherPanel(games: List<RemoteGame>) {
     val selectedExtension = localPatchName?.let { File(it).extension.lowercase() }
         ?: selectedServerPatch?.let { File(it.fileName).extension.lowercase() }
     val selectedPatchId = selectedServerPatch?.id
-    val hasPatchSelection = selectedExtension in supportedExtensions &&
+    val hasPatchSelection = selectedExtension != null && selectedExtension in supportedExtensions &&
         (selectedPatchId != null || localPatchUri != null)
     val suggestedName = remember(game.title, baseExtension) {
         val safeTitle = game.title.replace(Regex("[^A-Za-z0-9._ -]"), "_")
