@@ -4205,3 +4205,18 @@ REVISÃO ESTÁTICA C1–C4 — ATUALIZAÇÃO APÓS CI #745 (2026-11-23)
 - [ ] C1–C7: teste funcional no telefone continua pendente; sucesso de CI não comprova reprodução/decodificação em aparelho real.
 - [ ] C5: integração de aplicação de patches continua pendente; a resposta do endpoint é stream e não pode sobrescrever a ROM original.
 - Esta atualização corrige o status de pendências antigas: paginação PDF e seek/progresso de áudio não são mais pendências de implementação, mas continuam sem validação funcional no telefone.
+
+
+ATUALIZAÇÃO — CI #762 / PR #44 / C1–C7 (2026-11-23)
+- [x] CI #762 / run 45190038253: SUCCESS integral no head 1252450c3d5c2e3366ca4a29eb681f0c51318d9d — https://github.com/izzyn0okami/Tandem/actions/runs/45190038253.
+- [x] check-style: Spotless Apply e Verify formatting aprovados.
+- [x] build-debug-apk: testes unitários, Build APK e Upload artifact aprovados.
+- [x] final-status aprovado.
+- [x] Artefato assembleLawnWithQuickstepGithubDebug gerado (ID 14826605979; 46.258.337 bytes; SHA-256 f54a746f8b835717b4d747a9fd15e15572c097ae2a9615b1e8277dc4b759f945; expira em 2027-02-21).
+- Jobs de notificação, Crowdin e publicação de releases foram ignorados; nenhuma release publicada.
+- [x] C5 — integração com o endpoint oficial POST /api/roms/{base_file_id}/patch implementada: patch da biblioteca via patch_file_id ou upload local via patch_file; resultado recebido em stream e salvo em arquivo temporário separado; seletor Android permite escolher o destino; ROM original não é sobrescrita.
+- [x] C5 — extensões consultadas no heartbeat ROM_PATCHER.SUPPORTED_EXTENSIONS, com fallback para RomM 5.4.1; seleção de patch validada pela extensão.
+- [ ] Revisão estática final de C1–C5: conferir associação de patches à versão-base, limpeza de temporários em falhas/cancelamentos, lifecycle do MediaPlayer e limites de cache/download.
+- [ ] C1: miniaturas de screenshots ainda não implementadas; lista atual seleciona por nome.
+- [ ] Testes funcionais C1–C7 no telefone com servidor/conta RomM real permanecem pendentes; CI verde não substitui teste no aparelho.
+- PR #44 continua aberta, em draft e sem merge. PR #41 continua aberta, em draft, pausada e intocada.
