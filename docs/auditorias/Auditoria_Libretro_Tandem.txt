@@ -3147,3 +3147,36 @@ PENDÊNCIAS
 
 RESULTADO
 Auditoria concluída sem alteração funcional. A integração WebDAV do RomM é reutilizável por implementação própria, mas não pode ser ligada automaticamente ao LibretroDroid. Não abrir PR concorrente enquanto a PR #41 permanecer aberta; coordenar futuras mudanças em SaveSync.kt/RomMClient.kt após resolução dessa PR.
+
+
+DIRETRIZ ARQUITETURAL — ROMM COMO PLATAFORMA CENTRAL
+Data: 2026-11-22
+Decisão do usuário:
+"O Tandem é principalmente um cliente para RomM, não devemos criar do zero funcionalidades que o que a API já dispõe."
+
+PRINCÍPIO
+- Tratar o RomM como fonte central de dados, regras e serviços sempre que houver API ou integração oficial adequada.
+- O Tandem deve priorizar consumir e adaptar os recursos existentes do RomM, evitando reimplementar no cliente mecanismos de servidor como histórico, negociação de versões, identificação, armazenamento e gestão de conflitos quando o RomM já oferece contrato oficial para isso.
+- Não criar protocolo paralelo, banco de sincronização concorrente ou lógica duplicada sem demonstrar uma limitação concreta da API oficial.
+- Antes de implementar uma funcionalidade, pesquisar primeiro endpoints, escopos, formatos, semântica e limites da versão RomM suportada.
+
+RESPONSABILIDADES QUE PERMANECEM NO TANDEM
+- Adaptar os arquivos e diretórios locais do LibretroDroid aos contratos do RomM.
+- Mapear corretamente jogo, núcleo, SRAM e slots de save state.
+- Garantir operações locais seguras: staging, validação de integridade, escrita atômica, tratamento de interrupções e proteção contra corrupção.
+- Apresentar ao usuário as decisões que o servidor não pode tomar em seu nome.
+- Não contornar nem contradizer as regras e semânticas de sincronização do RomM.
+
+ORIENTAÇÃO PARA A SINCRONIZAÇÃO
+1. Priorizar a integração oficial RetroArch Cloud Sync/WebDAV do RomM quando ela cobrir o caso de uso, inclusive states, após confirmar o contrato exato da versão suportada.
+2. Utilizar Device Sync Protocol para os casos cobertos por sua negociação oficial, sem recriar localmente a comparação/baseline que o servidor já mantém.
+3. Não manter dois mecanismos concorrentes para o mesmo tipo de dado sem necessidade de compatibilidade demonstrada.
+4. Se a API não cobrir um requisito, documentar precisamente a lacuna antes de propor lógica própria.
+5. Preservar dados locais e executar validações de integridade; essas proteções são responsabilidade do cliente e não equivalem a duplicar a lógica de negócio do servidor.
+6. Não implementar exclusões remotas automáticas nem resolver conflitos escolhendo um lado sem confirmação quando o contrato do RomM não fornecer uma resolução segura.
+
+PRÓXIMA ETAPA
+- Fazer uma matriz de capacidades da versão RomM efetivamente suportada, comparando API de saves, Device Sync Protocol e RetroArch Cloud Sync/WebDAV.
+- Identificar um mecanismo oficial preferencial para cada tipo de dado (SRAM e save states), evitando duplicidade.
+- Confirmar a versão e os recursos habilitados na instância real do usuário antes de fechar o desenho.
+- A PR #41 continua aberta e deve ser coordenada antes de mudanças sobrepostas no fluxo de saves.
