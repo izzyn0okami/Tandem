@@ -92,6 +92,7 @@ internal fun LibraryScreen(
     var remotePlatforms by remember { mutableStateOf<List<RemotePlatform>>(emptyList()) }
     var remoteCollections by remember { mutableStateOf<List<RemoteCollection>>(emptyList()) }
     var collectionFilter by remember { mutableStateOf<RemoteCollection?>(null) }
+    var remoteFilters by remember { mutableStateOf(RemoteGameFilters()) }
     var remoteCollectionError by remember { mutableStateOf("") }
     var remoteSearchIds by remember { mutableStateOf<Set<Long>?>(null) }
     var remoteSearching by remember { mutableStateOf(false) }
@@ -129,10 +130,10 @@ internal fun LibraryScreen(
             collectionFilter = null
         }
     }
-    LaunchedEffect(normalizedSearch, platformFilter, collectionFilter, remotePlatforms, RomMSettings.url(context), RomMSettings.token(context)) {
+    LaunchedEffect(normalizedSearch, platformFilter, collectionFilter, remoteFilters, remotePlatforms, RomMSettings.url(context), RomMSettings.token(context)) {
         remoteSearchIds = null
         remoteSearchError = ""
-        if (RomMSettings.isConnected(context) && (normalizedSearch.length >= 2 || platformFilter != null || collectionFilter != null)) {
+        if (RomMSettings.isConnected(context) && (normalizedSearch.length >= 2 || platformFilter != null || collectionFilter != null || remoteFilters.isActive)) {
             remoteSearching = true
             delay(350)
             try {
@@ -147,6 +148,7 @@ internal fun LibraryScreen(
                         searchTerm = normalizedSearch.takeIf { it.length >= 2 },
                         platformIds = selectedPlatformIds,
                         collection = collectionFilter,
+                        filters = remoteFilters,
                     ).map { it.id }.toSet()
                 }
                 remoteSearchIds = ids
@@ -170,16 +172,17 @@ internal fun LibraryScreen(
     }
     val entryByPath = remember(entries) { entries.flatMap { entry -> entry.locals.map { it.path to entry } }.toMap() }
     val platforms = remember(entries) { entries.map { it.platform }.distinctBy { it.slug } }
-    val searchedEntries = remember(entries, normalizedSearch, remoteSearchIds, collectionFilter) {
-        val collectionEntries = if (collectionFilter == null) {
+    val hasRemoteFilters = collectionFilter != null || remoteFilters.isActive
+    val searchedEntries = remember(entries, normalizedSearch, remoteSearchIds, hasRemoteFilters) {
+        val remoteEntries = if (!hasRemoteFilters) {
             entries
         } else {
             entries.filter { entry -> entry.group?.versions?.any { it.id in remoteSearchIds.orEmpty() } == true }
         }
         if (normalizedSearch.isEmpty()) {
-            collectionEntries
+            remoteEntries
         } else {
-            collectionEntries.filter { entry ->
+            remoteEntries.filter { entry ->
                 entry.title.contains(normalizedSearch, ignoreCase = true) ||
                     entry.platform.name.contains(normalizedSearch, ignoreCase = true) ||
                     entry.group?.versions?.any { it.id in remoteSearchIds.orEmpty() } == true
@@ -194,7 +197,7 @@ internal fun LibraryScreen(
             normalizedSearch.isEmpty() || it.title.contains(normalizedSearch, ignoreCase = true)
         }
     }
-    val showAndroid = collectionFilter == null && (platformFilter == null || platformFilter == ANDROID_FILTER)
+    val showAndroid = !hasRemoteFilters && (platformFilter == null || platformFilter == ANDROID_FILTER)
     val hero = if (normalizedSearch.isEmpty()) recent.firstOrNull() ?: games.firstOrNull() else null
     val heroFocus = remember { FocusRequester() }
     LaunchedEffect(hero?.path) {
@@ -332,6 +335,55 @@ internal fun LibraryScreen(
                     }
                 }
             }
+            if (RomMSettings.isConnected(context)) {
+                item(key = "romm-filters") {
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        SectionTitle("Filtros do RomM")
+                        LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                            item(key = "filter-favorites") {
+                                PlatformChip("Favoritos", remoteFilters.favorites, chipModifier(remoteFilters.favorites, chipFocus)) {
+                                    remoteFilters = remoteFilters.copy(favorites = !remoteFilters.favorites)
+                                }
+                            }
+                            item(key = "filter-duplicates") {
+                                PlatformChip("Duplicados", remoteFilters.duplicates, chipModifier(remoteFilters.duplicates, chipFocus)) {
+                                    remoteFilters = remoteFilters.copy(duplicates = !remoteFilters.duplicates)
+                                }
+                            }
+                            item(key = "filter-played") {
+                                PlatformChip("Já jogados", remoteFilters.played, chipModifier(remoteFilters.played, chipFocus)) {
+                                    remoteFilters = remoteFilters.copy(played = !remoteFilters.played)
+                                }
+                            }
+                            item(key = "filter-ra") {
+                                PlatformChip("Com RetroAchievements", remoteFilters.retroAchievements, chipModifier(remoteFilters.retroAchievements, chipFocus)) {
+                                    remoteFilters = remoteFilters.copy(retroAchievements = !remoteFilters.retroAchievements)
+                                }
+                            }
+                            item(key = "filter-saves") {
+                                PlatformChip("Com saves", remoteFilters.saves, chipModifier(remoteFilters.saves, chipFocus)) {
+                                    remoteFilters = remoteFilters.copy(saves = !remoteFilters.saves)
+                                }
+                            }
+                            item(key = "filter-states") {
+                                PlatformChip("Com save states", remoteFilters.states, chipModifier(remoteFilters.states, chipFocus)) {
+                                    remoteFilters = remoteFilters.copy(states = !remoteFilters.states)
+                                }
+                            }
+                            item(key = "filter-verified") {
+                                PlatformChip("Verificados", remoteFilters.verified, chipModifier(remoteFilters.verified, chipFocus)) {
+                                    remoteFilters = remoteFilters.copy(verified = !remoteFilters.verified)
+                                }
+                            }
+                            item(key = "filter-soundtracks") {
+                                PlatformChip("Com trilha sonora", remoteFilters.soundtracks, chipModifier(remoteFilters.soundtracks, chipFocus)) {
+                                    remoteFilters = remoteFilters.copy(soundtracks = !remoteFilters.soundtracks)
+                                }
+                            }
+                        }
+                    }
+                }
+            }
             item(key = "platforms") {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     SectionTitle(stringResource(R.string.game_by_platform))
@@ -371,7 +423,7 @@ internal fun LibraryScreen(
                         row.forEach { entry -> EntryCard(entry, progress, syncVersion, onClick = { onOpen(entry) }) }
                     }
                 }
-            } else if ((normalizedSearch.isNotEmpty() || collectionFilter != null) && !remoteSearching && visible.isEmpty() && androidSorted.isEmpty()) {
+            } else if ((normalizedSearch.isNotEmpty() || hasRemoteFilters) && !remoteSearching && visible.isEmpty() && androidSorted.isEmpty()) {
                 item(key = "search-empty") {
                     Text("Nenhum jogo encontrado para esta pesquisa.", color = GameColors.textDim, fontSize = 14.sp)
                 }
