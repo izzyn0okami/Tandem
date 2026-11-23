@@ -215,17 +215,17 @@ internal fun RomMPatcherPanel(games: List<RemoteGame>) {
                                     val directory = File(context.cacheDir, "romm-patched").apply { mkdirs() }
                                     val extension = baseExtension.ifBlank { "rom" }
                                     val target = File.createTempFile("patched-", ".$extension", directory)
-                                    if (patchUri != null) {
-                                        val name = patchName ?: "patch"
-                                        val patchExtension = File(name).extension.lowercase()
-                                        uploadFile = File.createTempFile("patch-upload-", ".$patchExtension", directory)
-                                        val input = context.contentResolver.openInputStream(patchUri)
-                                            ?: throw IOException("Não foi possível ler o patch selecionado.")
-                                        input.use { source ->
-                                            uploadFile!!.outputStream().use { destination -> source.copyTo(destination) }
-                                        }
-                                    }
                                     try {
+                                        if (patchUri != null) {
+                                            val name = patchName ?: "patch"
+                                            val patchExtension = File(name).extension.lowercase()
+                                            uploadFile = File.createTempFile("patch-upload-", ".$patchExtension", directory)
+                                            val input = context.contentResolver.openInputStream(patchUri)
+                                                ?: throw IOException("Não foi possível ler o patch selecionado.")
+                                            input.use { source ->
+                                                uploadFile!!.outputStream().use { destination -> source.copyTo(destination) }
+                                            }
+                                        }
                                         RomMClient(RomMSettings.url(context).orEmpty(), RomMSettings.token(context))
                                             .applyPatch(
                                                 baseFileId = checkNotNull(baseFileId),
