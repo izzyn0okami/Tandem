@@ -3829,3 +3829,19 @@ ROBUSTEZ DA CONSULTA DE COLEÇÕES — 2026-11-23
 - Falhas de leitura das coleções ficam visíveis na interface; útil para identificar token sem collections.read e orientar reautorização.
 - Commit: 0e927443881826a650dd03829542d6d070dee627.
 - CI após este ajuste pendente.
+
+
+CI APROVADA — COLEÇÕES ROMM E PERMISSÕES (2026-11-23)
+- Execuções #663, #665 e #667: SUCCESS.
+- URLs: https://github.com/izzyn0okami/Tandem/actions/runs/45091601496 ; https://github.com/izzyn0okami/Tandem/actions/runs/45091646724 ; https://github.com/izzyn0okami/Tandem/actions/runs/45091686938
+- Em todas: check-style, build-debug-apk e final-status aprovados; jobs de release ignorados, nenhuma release publicada.
+- Aprovam commits da implementação de coleções, escopo collections.read e robustez de troca de conta; validação funcional no telefone continua pendente.
+
+IMPLEMENTAÇÃO — FILTROS PESSOAIS/METADADOS ROMM (2026-11-23)
+- Conferido no código oficial RomM 5.4.1: RomFilterParams oferece favorite, duplicate, last_played, has_ra, has_saves, has_states, verified e has_soundtrack.
+- Tandem envia os parâmetros oficiais apenas quando o usuário ativa os chips correspondentes; múltiplos filtros são combinados na mesma consulta server-side.
+- Interface apresenta Favoritos, Duplicados, Já jogados, Com RetroAchievements, Com saves, Com save states, Verificados e Com trilha sonora.
+- Resultados são associados aos jogos locais pelos IDs RomM; a lista Android local não é indevidamente tratada como parte dos filtros do servidor.
+- Não foram expostos playable, missing ou physical: playable no RomM significa jogável no navegador, não compatibilidade com LibretroDroid; missing/physical não correspondem à biblioteca local que o Tandem executa.
+- Commits: RomMClient 45ade77430b426dde1216314acbb027f565aa854; GameScreens 5fbaa74f6caf6e7269b84a8ba4a769694cd9c1c8.
+- CI e validação funcional dos filtros ainda pendentes.
