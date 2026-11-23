@@ -962,7 +962,7 @@ internal fun GameDetailScreen(
                     )
                 }
                 detailGames.firstOrNull()?.let { remoteGame ->
-                    RomMMediaPanel(game = remoteGame)
+                    RomMMediaPanel(games = detailGames)
                 }
                 if (!summary.isNullOrBlank()) {
                     Text(
