@@ -577,3 +577,20 @@ ATUALIZAÇÃO — C1 / GALERIA DE MINIATURAS E CI #788 (2026-11-23)
 - [ ] CI #790 / run 45203546753 do head formatado está em action_required, sem jobs; aguarda aprovação no GitHub Actions para validar o head atual.
 - [ ] Teste funcional no telefone com RomM real para C1–C7 permanece pendente.
 - PR #44 aberta/draft, sem merge. PR #41 aberta/draft e pausada, fora do escopo.
+
+
+FECHAMENTO DO ESTÁGIO C — PR #44 (2026-11-23)
+- [x] C1 — Screenshots: galeria com miniaturas temporárias geradas no cliente, visualização integrada.
+- [x] C2 — Manuais: listagem e visualizador integrado.
+- [x] C3 — Walkthroughs: listagem e visualizador integrado.
+- [x] C4 — Soundtracks: metadados e reprodução integrada com controles de áudio.
+- [x] C5 — Patches: aplicação no servidor RomM; patch da biblioteca ou upload local; resultado salvo separadamente; ROM original preservada.
+- [x] C6 — Arquivos auxiliares filtrados para não serem tratados como jogos executáveis.
+- [x] C7 — Experiência interna aprovada pelo usuário.
+- [x] CI #791 / run 45206755310: SUCCESS integral; Spotless, testes unitários, Build APK, Upload artifact e final-status aprovados.
+- [x] PR #44: https://github.com/izzyn0okami/Tandem/pull/44 — squash merge em 2026-11-23.
+- [x] Merge commit: 6adc110e0f2effb6d4be2a9a2abc6a8360cf8824.
+- [ ] Validação funcional no telefone com RomM real: pendente para a versão Latest, conforme decisão do usuário. Não considerar validado até confirmação dos testes.
+- Artefato CI #791: ID 14834393287; SHA-256 bd094f2c0fc98dac8fd3b6f8442270e82440d117cf6d2b6896d9cd63ef8b5c53; 46.268.150 bytes; expira em 2027-02-21.
+- PR #41 (saves/conflicts) permanece aberta, em draft e pausada, sem alterações.
+- Nenhuma release publicada nesta operação.
