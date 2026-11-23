@@ -13,15 +13,15 @@ LEGENDA
 
 A. BIBLIOTECA, PESQUISA E ORGANIZAÇÃO (PRIORIDADE ALTA)
 [EM ANDAMENTO] A1. Pesquisa de ROMs pelo endpoint oficial GET /api/roms (search_term); API e interface implementadas e CI #45089462426 aprovada (build, testes unitários e Spotless); aguarda validação funcional no telefone.
-[PENDENTE] A2. Filtros por plataforma e múltiplas plataformas (platform_ids).
-[PENDENTE] A3. Filtros por coleção comum, inteligente e virtual.
-[PENDENTE] A4. Filtros de favoritos, correspondência de metadados, duplicados, jogabilidade, saves, states e outros critérios suportados pelo RomM.
+[EM ANDAMENTO] A2. Filtros por plataforma e múltiplas plataformas (platform_ids); implementação e CIs #659/#660 aprovadas; validação funcional no telefone pendente.
+[EM ANDAMENTO] A3. Filtros por coleção comum, inteligente e virtual; implementação e CIs #663/#665/#667 aprovadas; validação funcional no telefone pendente.
+[EM ANDAMENTO] A4. Filtros oficiais favorite, duplicate, last_played, has_ra, has_saves, has_states, verified e has_soundtrack; implementação e CI #669 aprovadas; validação funcional no telefone pendente. playable não foi exposto por representar execução no navegador RomM; missing/physical não se aplicam à biblioteca local.
 [PENDENTE] A5. Ordenação por nome, tamanho, lançamento, criação e avaliação; preservar relevância de busca quando não houver ordenação escolhida.
 [PENDENTE] A6. Paginação e carregamento eficiente para bibliotecas grandes.
-[PENDENTE] A7. Catálogo de coleções comuns (somente leitura).
-[PENDENTE] A8. Catálogo de coleções inteligentes (somente leitura).
-[PENDENTE] A9. Catálogo de coleções virtuais (somente leitura).
-[PENDENTE] A10. Aplicação de uma coleção como filtro da biblioteca sem copiar sua lógica para o cliente.
+[EM ANDAMENTO] A7. Catálogo de coleções comuns (somente leitura); implementação e CIs #663/#665/#667 aprovadas; validação funcional no telefone pendente.
+[EM ANDAMENTO] A8. Catálogo de coleções inteligentes (somente leitura); implementação e CIs #663/#665/#667 aprovadas; validação funcional no telefone pendente.
+[EM ANDAMENTO] A9. Catálogo de coleções virtuais (somente leitura); implementação e CIs #663/#665/#667 aprovadas; validação funcional no telefone pendente.
+[EM ANDAMENTO] A10. Aplicação de uma coleção como filtro usando os parâmetros oficiais do RomM; implementação e CIs #663/#665/#667 aprovadas; validação funcional no telefone pendente.
 [CONCLUÍDO] A11. Cache local seguro: a pesquisa mantém resultados temporários separados e não sobrescreve a lista completa armazenada.
 [PENDENTE] A12. Metadados de jogos: dados de provedores, metadados manuais, títulos alternativos e agrupamento de versões.
 [PENDENTE] A13. Arquivos associados a ROMs, conjuntos multidisco e recursos EasyRPG; manter o agrupamento definido pelo RomM.
@@ -223,3 +223,13 @@ ATUALIZAÇÃO — CI DAS COLEÇÕES E FILTROS ROMM (2026-11-23)
 - Não implementar playable como capacidade local: o RomM define o campo como jogável no navegador. Não aplicar missing/physical ao catálogo de jogos executáveis locais.
 - A1/A2/A3 e A7–A10 seguem aguardando validação funcional no telefone, apesar das CIs aprovadas.
 - PR #42 permanece aberta/draft, sem merge; PR #41 permanece aberta/draft e intocada.
+
+
+ATUALIZAÇÃO — CI #669 DOS FILTROS PESSOAIS ROMM (2026-11-22)
+- PR #42 / branch feat/romm-library-search; head: f175d8e18a14697523d97b60122f7f8499b87782.
+- [EM ANDAMENTO] A4. Filtros favorite, duplicate, last_played, has_ra, has_saves, has_states, verified e has_soundtrack implementados e aprovados pela CI #669; validação funcional no telefone pendente.
+- CI #45092605779: SUCCESS — https://github.com/izzyn0okami/Tandem/actions/runs/45092605779.
+- build-debug-apk: testes unitários, Build APK e Upload artifact aprovados; check-style/spotlessCheck aprovado; final-status aprovado.
+- Jobs de release ignorados; nenhuma release publicada.
+- A1, A2, A3 e A7–A10 seguem com implementação e CIs aprovadas, mas aguardam validação funcional no telefone.
+- PR #42 aberta/draft, sem merge; PR #41 aberta/draft e intocada.
