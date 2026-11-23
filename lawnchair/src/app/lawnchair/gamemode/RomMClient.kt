@@ -61,6 +61,9 @@ data class RemoteGame(
     }
 }
 
+/** Plataforma cadastrada no RomM, usada para filtros oficiais da API. */
+data class RemotePlatform(val id: Long, val slug: String, val name: String)
+
 /** Arquivo de firmware (BIOS) guardado no servidor. */
 data class RemoteFirmware(
     val id: Long,
@@ -347,7 +350,7 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
     private var skippedExtension = 0
 
     /** Lista ROMs compatíveis, respeitando o agrupamento e os arquivos associados pelo RomM. */
-    fun listGames(searchTerm: String? = null): List<RemoteGame> {
+    fun listGames(searchTerm: String? = null, platformIds: List<Long> = emptyList()): List<RemoteGame> {
         serverTotal = 0
         skippedPlatforms.clear()
         skippedMulti = 0
@@ -366,6 +369,7 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
                 .addQueryParameter("with_filter_values", "false")
                 .addQueryParameter("with_files", "true")
             if (query.length >= 2) urlBuilder.addQueryParameter("search_term", query)
+            platformIds.distinct().forEach { id -> urlBuilder.addQueryParameter("platform_ids", id.toString()) }
             val url = urlBuilder.build()
             val json = longHttp.newCall(request(url).build()).execute().use { response ->
                 GameLog.log("romm", "GET api/roms offset=$offset -> ${response.code}")
@@ -930,6 +934,22 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
 
     private fun naturalSortKey(value: String): String = Regex("(\\d+)").replace(value.lowercase()) { match ->
         match.value.toLongOrNull()?.toString()?.padStart(12, '0') ?: match.value
+    }
+
+    /** Lista plataformas e IDs internos para filtros compatíveis com a API RomM. */
+    fun listPlatforms(): List<RemotePlatform> {
+        val text = http.newCall(request(base.resolve("api/platforms")!!).build()).execute().use { response ->
+            if (!response.isSuccessful) throw IOException("Servidor respondeu " + response.code)
+            response.body.string()
+        }
+        val platforms = org.json.JSONArray(text)
+        return (0 until platforms.length()).mapNotNull { index ->
+            val item = platforms.getJSONObject(index)
+            val id = item.optLong("id", -1L)
+            val slug = item.optString("slug").takeUnless { it.isBlank() || it == "null" }
+            val name = item.optString("name").takeUnless { it.isBlank() || it == "null" }
+            if (id <= 0L || slug == null || name == null) null else RemotePlatform(id, slug, name)
+        }
     }
 
     /** Arquivos de firmware (BIOS) que o servidor guarda, de todas as plataformas. */
