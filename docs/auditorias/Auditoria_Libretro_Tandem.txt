@@ -4513,3 +4513,12 @@ ATUALIZAÇÃO DE AUDITORIA — ESTÁGIO E / PR #41 / CIs #872–#879 (2026-11-23
 - E8 pendente: comparação arquitetural formal entre Device Sync e WebDAV.
 - E9 pendente: mapear memory cards por core e testes negativos para impedir que sejam sincronizados como SRAM/save states.
 - PR #41 permanece aberta, Draft e sem merge; nenhum teste em aparelho/servidor real foi presumido.
+
+
+ATUALIZAÇÃO — ESTÁGIO E / PR #41 / CIs #884–#885 (2026-11-23)
+- CI #884 / run 45252054409: SUCCESS integral; check-style/Spotless, testes unitários, Build APK Debug, Upload artifact e final-status aprovados. A formatação automática publicou o commit formatado.
+- CI #885 / run 45252114132: SUCCESS integral no head formatado 9125b8af08e999a1f439fa29ace66f41d153651f; testes unitários, build, artefato e Spotless aprovados. Nenhuma release publicada.
+- E5: adaptador RomM Device Sync ganhou primitives isoladas para upload de SRAM (MD5, slot explícito, overwrite=false, autocleanup=false), download para staging com optimistic=false e validação MD5, e confirmação de download em chamada separada. HTTP 409 é tratado como conflito, sem retry destrutivo.
+- Testes MockWebServer cobrem upload multipart/query, conflito 409, download com hash correto/incorreto e confirmação separada. Não há integração no SaveSync nem validação contra RomM real; E5 segue EM ANDAMENTO.
+- Save states continuam fora do novo transporte e permanecem no fluxo legado; memory cards continuam fora de ambos os fluxos até mapeamento por core. Nenhum DELETE é executado.
+- PR #41 permanece aberta, Draft, sem conflitos e sem merge. Teste funcional no telefone e servidor RomM real continua pendente.

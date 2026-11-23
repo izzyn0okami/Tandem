@@ -758,3 +758,14 @@ ATUALIZAÇÃO — ESTÁGIO E / PR #41 / CI #872, #873, #874, #875 E #879 (2026-1
 - E8: comparação formal Device Sync × WebDAV pendente.
 - E9: mapear caminhos de memory cards por core e adicionar testes negativos; memory cards não devem ser enviados como SRAM nem save states.
 - PR #41 permanece aberta, Draft, mergeable e sem merge. Testes funcionais no telefone e validação com servidor real continuam pendentes.
+
+
+ATUALIZAÇÃO — PR #41 / DEVICE SYNC SRAM / CIs #884–#885 (2026-11-23)
+- PR #41 continua sendo o local único de trabalho do estágio E; branch feat/save-conflict-resolution, Draft, aberta, mergeable e sem merge.
+- CI #884 / run 45252054409: SUCCESS integral. Spotless (incluindo commit automático de formatação), testes unitários, Build APK Debug, Upload artifact e final-status aprovados. Nenhuma release publicada.
+- CI #885 / run 45252114132: SUCCESS integral no head formatado 9125b8af08e999a1f439fa29ace66f41d153651f. Spotless, testes unitários, Build APK Debug, Upload artifact e final-status aprovados. Nenhuma release publicada.
+- E5 — além de registro/negotiate/complete, persistência isolada de device_id e testes HTTP já registrados: implementados métodos isolados de upload de SRAM via POST /api/saves (slot explícito, MD5, overwrite=false e autocleanup=false), download para staging com optimistic=false e verificação MD5, e confirmação separada via POST /api/saves/{id}/downloaded. HTTP 409 é propagado como conflito; não há retry com sobrescrita.
+- Testes MockWebServer cobrem query params e multipart do upload, HTTP 409 sem retry, download/staging/hash correto, rejeição de hash incorreto e remoção do staging inválido, além da confirmação separada. CI #885 aprovou os testes e o build.
+- Limites: métodos ainda não integrados ao SaveSync; nenhuma transferência real com RomM foi validada; E5 permanece EM ANDAMENTO. O adaptador não executa DELETE e não substitui o fluxo legado. Save states permanecem no fluxo atual separado; esta transferência é somente para SRAM.
+- E4 continua aguardando teste funcional no telefone (conflito, backups e rollback). E6/E7/E8/E9 continuam pendentes conforme roteiro. Testes reais no aparelho/servidor não presumidos.
+- Artefato APK Debug foi gerado e publicado como artefato da CI; não foi publicada release.
