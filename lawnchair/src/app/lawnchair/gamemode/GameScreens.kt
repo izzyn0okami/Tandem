@@ -100,6 +100,7 @@ internal fun LibraryScreen(
     var remoteSearchOffset by remember { mutableStateOf(0) }
     var remoteSearchHasMore by remember { mutableStateOf(false) }
     var remoteSearchLoadingMore by remember { mutableStateOf(false) }
+    var activeRemoteSearchKey by remember { mutableStateOf("") }
     var sortBy by remember { mutableStateOf("") }
     var sortDescending by remember { mutableStateOf(false) }
     val sortOptions = remember {
@@ -112,6 +113,18 @@ internal fun LibraryScreen(
             "average_rating" to "Avaliação",
         )
     }
+    val currentRemoteSearchKey = listOf(
+        normalizedSearch,
+        platformFilter.orEmpty(),
+        collectionFilter?.kind.orEmpty(),
+        collectionFilter?.id.orEmpty(),
+        remoteFilters.hashCode(),
+        remotePlatforms.hashCode(),
+        sortBy,
+        sortDescending,
+        RomMSettings.url(context).orEmpty(),
+        RomMSettings.token(context)?.hashCode() ?: 0,
+    ).joinToString("|")
     LaunchedEffect(RomMSettings.url(context), RomMSettings.token(context), RomMSettings.isConnected(context)) {
         remotePlatforms = emptyList()
         remoteCollections = emptyList()
@@ -156,6 +169,8 @@ internal fun LibraryScreen(
         RomMSettings.url(context),
         RomMSettings.token(context),
     ) {
+        activeRemoteSearchKey = currentRemoteSearchKey
+        remoteSearchLoadingMore = false
         remoteSearchIds = null
         remoteSearchOffset = 0
         remoteSearchHasMore = false
@@ -201,6 +216,7 @@ internal fun LibraryScreen(
     }
     val loadMoreRemote: () -> Unit = {
         if (remoteSearchHasMore && !remoteSearchLoadingMore && RomMSettings.isConnected(context)) {
+            val requestKey = activeRemoteSearchKey
             remoteSearchLoadingMore = true
             scope.launch {
                 try {
@@ -221,15 +237,19 @@ internal fun LibraryScreen(
                             offset = remoteSearchOffset,
                         )
                     }
-                    remoteSearchIds = (remoteSearchIds.orEmpty() + page.ids).distinct()
-                    remoteSearchOffset = page.nextOffset
-                    remoteSearchHasMore = page.hasMore
+                    if (activeRemoteSearchKey == requestKey) {
+                        remoteSearchIds = (remoteSearchIds.orEmpty() + page.ids).distinct()
+                        remoteSearchOffset = page.nextOffset
+                        remoteSearchHasMore = page.hasMore
+                    }
                 } catch (cancelled: CancellationException) {
                     throw cancelled
                 } catch (error: Exception) {
-                    remoteSearchError = error.message ?: error.toString()
+                    if (activeRemoteSearchKey == requestKey) {
+                        remoteSearchError = error.message ?: error.toString()
+                    }
                 } finally {
-                    remoteSearchLoadingMore = false
+                    if (activeRemoteSearchKey == requestKey) remoteSearchLoadingMore = false
                 }
             }
         }
@@ -929,12 +949,18 @@ internal fun GameDetailScreen(
                     )
                 }
                 if (isEasyRpgGame) {
-                    Text(
-                        "EasyRPG · jogo de RPG Maker 2000/2003",
-                        color = GameColors.accent,
-                        fontSize = 13.sp,
-                        modifier = Modifier.padding(top = 8.dp),
-                    )
+                    Column(verticalArrangement = Arrangement.spacedBy(3.dp), modifier = Modifier.padding(top = 8.dp)) {
+                        Text(
+                            "EasyRPG · jogo de RPG Maker 2000/2003",
+                            color = GameColors.accent,
+                            fontSize = 13.sp,
+                        )
+                        Text(
+                            "A sincronização dos saves nativos .lsd ainda não foi validada no Tandem.",
+                            color = GameColors.textDim,
+                            fontSize = 11.sp,
+                        )
+                    }
                 }
                 if (metadataText.isNotBlank()) {
                     Column(verticalArrangement = Arrangement.spacedBy(3.dp), modifier = Modifier.padding(top = 8.dp).width(520.dp)) {

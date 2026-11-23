@@ -778,27 +778,26 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
 
     private fun parseAssociatedFiles(array: org.json.JSONArray?): List<RemoteAssociatedFile> = (0 until (array?.length() ?: 0)).mapNotNull { index ->
         val item = array?.optJSONObject(index) ?: return@mapNotNull null
-            val id = item.optLong("id", -1L)
-            val name = item.optString("file_name").takeIf { it.isNotBlank() && it != "null" }
-            if (id <= 0L || name == null) return@mapNotNull null
-            RemoteAssociatedFile(
-                id = id,
-                fileName = name,
-                sizeBytes = item.optLong("file_size_bytes", 0L),
-                category = item.optString("category").takeUnless { it.isBlank() || it == "null" }?.lowercase(),
-                isTopLevel = item.optBoolean("is_top_level", false),
-                crcHash = item.optString("crc_hash").takeUnless { it.isBlank() || it == "null" },
-                md5Hash = item.optString("md5_hash").takeUnless { it.isBlank() || it == "null" },
-                sha1Hash = item.optString("sha1_hash").takeUnless { it.isBlank() || it == "null" },
-            )
-        }
+        val id = item.optLong("id", -1L)
+        val name = item.optString("file_name").takeIf { it.isNotBlank() && it != "null" }
+        if (id <= 0L || name == null) return@mapNotNull null
+        RemoteAssociatedFile(
+            id = id,
+            fileName = name,
+            sizeBytes = item.optLong("file_size_bytes", 0L),
+            category = item.optString("category").takeUnless { it.isBlank() || it == "null" }?.lowercase(),
+            isTopLevel = item.optBoolean("is_top_level", false),
+            crcHash = item.optString("crc_hash").takeUnless { it.isBlank() || it == "null" },
+            md5Hash = item.optString("md5_hash").takeUnless { it.isBlank() || it == "null" },
+            sha1Hash = item.optString("sha1_hash").takeUnless { it.isBlank() || it == "null" },
+        )
+    }
 
     private fun parseMetadata(item: JSONObject): RemoteGameMetadata? {
         val provider = item.optJSONObject("metadatum")
         val manual = item.optJSONObject("manual_metadata")
         if (provider == null && manual == null) return null
-        fun values(key: String): List<String> =
-            (readStringArray(provider?.optJSONArray(key)) + readStringArray(manual?.optJSONArray(key))).distinct()
+        fun values(key: String): List<String> = (readStringArray(provider?.optJSONArray(key)) + readStringArray(manual?.optJSONArray(key))).distinct()
         fun stringValue(key: String): String? {
             val manualValue = manual?.optString(key)
             val providerValue = provider?.optString(key)
