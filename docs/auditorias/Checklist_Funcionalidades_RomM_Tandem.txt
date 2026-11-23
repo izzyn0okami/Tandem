@@ -642,3 +642,10 @@ REGISTRO DE CI — 2026-11-23
 - CI #804 passou integralmente no commit intermediário 3dab2566c5d26ee84a0e800850cee81c527e7da6; não valida as alterações posteriores.
 - CI #825/#826 tiveram falha somente no push de formatação automático (non-fast-forward por concorrência). O commit Spotless foi publicado em 4449d8d213b124a5dbf4ff3f9230a31254665b51.
 - CI #837 aguarda execução para validar o estado formatado; manter PR draft até sucesso.
+
+D5 — COMPLEMENTO DSi / REGIÃO / NEO GEO (2026-11-23)
+- [IMPLEMENTADO] melonDS: adicionados os cinco arquivos DSi documentados como opcionais pelo core melonds; teste garante que ausência não bloqueia execução.
+- [IMPLEMENTADO] UI informa a necessidade de BIOS regional correspondente em Sega CD e Saturn, sem afirmar detecção automática de região por jogo.
+- [IMPLEMENTADO] UI informa cartuchos específicos necessários para alguns jogos Saturn; não os classifica incorretamente como BIOS.
+- [REVISÃO DOCUMENTAL CONCLUÍDA] Neo Geo continua no FBNeo com neogeo.zip; aes.zip pertence ao core Geolith e não deve ser exigido pelo core atual.
+- [PENDENTE / FORA DO MODELO ATUAL] Detecção automática de região por jogo e requisitos por título (incluindo cartuchos Saturn) exigem metadados confiáveis por jogo; não inferir de nomes de arquivos/pastas.
