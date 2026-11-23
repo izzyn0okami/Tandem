@@ -58,6 +58,7 @@ import com.android.launcher3.R
 import java.io.File
 import java.text.DateFormat
 import java.util.Date
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -96,16 +97,21 @@ internal fun LibraryScreen(
         if (normalizedSearch.length >= 2 && RomMSettings.isConnected(context)) {
             remoteSearching = true
             delay(500)
-            runCatching {
-                withContext(Dispatchers.IO) {
+            try {
+                val ids = withContext(Dispatchers.IO) {
                     RomMClient(
                         RomMSettings.url(context).orEmpty(),
                         RomMSettings.token(context),
                     ).listGames(searchTerm = normalizedSearch).map { it.id }.toSet()
                 }
-            }.onSuccess { remoteSearchIds = it }
-                .onFailure { remoteSearchError = it.message ?: it.toString() }
-            remoteSearching = false
+                remoteSearchIds = ids
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (error: Exception) {
+                remoteSearchError = error.message ?: error.toString()
+            } finally {
+                remoteSearching = false
+            }
         } else {
             remoteSearching = false
         }
@@ -133,7 +139,7 @@ internal fun LibraryScreen(
             normalizedSearch.isEmpty() || it.title.contains(normalizedSearch, ignoreCase = true)
         }
     }
-    val showAndroid = (platformFilter == null || platformFilter == ANDROID_FILTER) && normalizedSearch.isEmpty()
+    val showAndroid = platformFilter == null || platformFilter == ANDROID_FILTER
     val hero = if (normalizedSearch.isEmpty()) recent.firstOrNull() ?: games.firstOrNull() else null
     val heroFocus = remember { FocusRequester() }
     LaunchedEffect(hero?.path) {
