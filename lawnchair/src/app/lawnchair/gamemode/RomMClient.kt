@@ -27,6 +27,8 @@ import org.json.JSONObject
 
 class RomMHttpException(val statusCode: Int, message: String) : IOException(message)
 
+internal const val MAX_ROMM_PATCH_UPLOAD_BYTES = 1024L * 1024L * 1024L
+
 /** ROM disponível no servidor RomM. */
 data class RemoteGame(
     val id: Long,
@@ -144,6 +146,38 @@ data class RemoteAssociatedFile(
     val md5Hash: String? = null,
     val sha1Hash: String? = null,
 )
+
+/** Faixa de trilha sonora conforme GET /api/roms/{id}/soundtracks/metadata. */
+data class RemoteSoundtrackTrack(
+    val fileId: Long,
+    val fileName: String,
+    val sizeBytes: Long,
+    val title: String?,
+    val artist: String?,
+    val album: String?,
+    val trackNumber: Int?,
+    val discNumber: Int?,
+    val durationSeconds: Double?,
+)
+
+/**
+ * Categorias que representam conteúdo de jogo executável/instalável.
+ * Categorias auxiliares e categorias futuras desconhecidas ficam fora da ROM.
+ */
+internal fun isRomMPlayableFileCategory(category: String?): Boolean {
+    if (category.isNullOrBlank()) return true
+    return category.lowercase() in setOf(
+        "game",
+        "dlc",
+        "hack",
+        "update",
+        "mod",
+        "demo",
+        "translation",
+        "prototype",
+        "cheat",
+    )
+}
 
 /** Página de IDs da biblioteca; permite carregar resultados progressivamente. */
 data class RemoteGameIdPage(
@@ -594,7 +628,174 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
         return RemoteGameIdPage(ids, total, nextOffset, nextOffset < total)
     }
 
-    /** Consulta notas visíveis da ROM no RomM; somente GET, sem escopo de escrita. */
+    /**
+     * Metadados das faixas associados à ROM. O conteúdo de cada faixa continua sendo servido
+     * pelo endpoint genérico de arquivo associado do RomM.
+     */
+    fun listSoundtracks(romId: Long): List<RemoteSoundtrackTrack> {
+        require(romId > 0L) { "ID de jogo RomM inválido" }
+        val url = base.resolve("api/roms/$romId/soundtracks/metadata")!!
+        return http.newCall(request(url).get().build()).execute().use { response ->
+            if (!response.isSuccessful) {
+                throw RomMHttpException(response.code, "Não foi possível carregar as trilhas do RomM (HTTP ${response.code})")
+            }
+            val array = org.json.JSONArray(response.body.string())
+            (0 until array.length()).mapNotNull { index ->
+                val item = array.optJSONObject(index) ?: return@mapNotNull null
+                val fileId = item.optLong("file_id", -1L)
+                val fileName = item.optString("file_name").takeIf { it.isNotBlank() && it != "null" }
+                if (fileId <= 0L || fileName == null) return@mapNotNull null
+                val meta = item.optJSONObject("track_meta")
+                RemoteSoundtrackTrack(
+                    fileId = fileId,
+                    fileName = fileName,
+                    sizeBytes = item.optLong("file_size_bytes", 0L),
+                    title = meta?.optString("title")?.takeUnless { it.isNullOrBlank() || it == "null" },
+                    artist = meta?.optString("artist")?.takeUnless { it.isNullOrBlank() || it == "null" },
+                    album = meta?.optString("album")?.takeUnless { it.isNullOrBlank() || it == "null" },
+                    trackNumber = meta?.optInt("track")?.takeIf { it > 0 },
+                    discNumber = meta?.optInt("disc")?.takeIf { it > 0 },
+                    durationSeconds = meta?.optDouble("duration_seconds")?.takeIf { it > 0.0 },
+                )
+            }
+        }
+    }
+
+    /** Extensões anunciadas pelo heartbeat; RomM 5.4.x usa a lista compatível abaixo. */
+    fun listSupportedPatchExtensions(): Set<String> {
+        val fallback = setOf("ips", "ups", "bps", "ppf", "rup", "aps", "bdf", "pmsr", "vcdiff", "xdelta")
+        val url = base.resolve("api/heartbeat")!!
+        return http.newCall(request(url).get().build()).execute().use { response ->
+            if (!response.isSuccessful) return@use fallback
+            val heartbeat = runCatching { JSONObject(response.body.string()) }.getOrNull()
+                ?: return@use fallback
+            val advertised = heartbeat.optJSONObject("ROM_PATCHER")
+                ?.optJSONArray("SUPPORTED_EXTENSIONS")
+                ?: return@use fallback
+            (0 until advertised.length()).mapNotNull { index ->
+                advertised.optString(index)
+                    .trim()
+                    .removePrefix(".")
+                    .lowercase()
+                    .takeIf { it.matches(Regex("[a-z0-9]+")) }
+            }.toSet().ifEmpty { fallback }
+        }
+    }
+
+    /**
+     * Aplica um patch no servidor e grava o stream retornado em um arquivo temporário.
+     * Exatamente uma origem deve ser informada: patch já armazenado no RomM ou arquivo local.
+     */
+    fun applyPatch(
+        baseFileId: Long,
+        patchFileId: Long?,
+        patchUpload: File?,
+        outputFileName: String,
+        target: File,
+    ) {
+        require(baseFileId > 0L) { "ID do arquivo base inválido" }
+        require((patchFileId != null) xor (patchUpload != null)) {
+            "Selecione um patch existente ou um arquivo local"
+        }
+        require(patchFileId == null || patchFileId > 0L) { "ID do patch inválido" }
+        require(patchUpload == null || patchUpload.isFile) { "Arquivo de patch não encontrado" }
+        require(patchUpload == null || patchUpload.length() <= MAX_ROMM_PATCH_UPLOAD_BYTES) {
+            "O patch local excede o limite de 1 GiB."
+        }
+        require(outputFileName.isNotBlank() && File(outputFileName).name == outputFileName) {
+            "Nome de saída inválido"
+        }
+
+        val multipart = MultipartBody.Builder()
+            .setType(MultipartBody.FORM)
+            .addFormDataPart("output_file_name", outputFileName)
+            .apply {
+                if (patchFileId != null) {
+                    addFormDataPart("patch_file_id", patchFileId.toString())
+                } else {
+                    val upload = checkNotNull(patchUpload)
+                    addFormDataPart(
+                        "patch_file",
+                        upload.name,
+                        upload.asRequestBody("application/octet-stream".toMediaType()),
+                    )
+                }
+            }
+            .build()
+        val url = base.resolve("api/roms/$baseFileId/patch")!!
+        target.parentFile?.mkdirs()
+        val temp = File(target.parentFile, "${target.name}.part")
+        temp.delete()
+        try {
+            longHttp.newCall(request(url).post(multipart).build()).execute().use { response ->
+                if (!response.isSuccessful) {
+                    val details = runCatching { response.peekBody(2048).string() }
+                        .getOrDefault("")
+                        .replace(Regex("""(?i)(token|authorization|password)(\s*[:=]\s*)[^",\s}]+"""), "\$1\$2[redacted]")
+                        .take(240)
+                    val message = when (response.code) {
+                        400 -> "O RomM rejeitou o patch. Verifique o formato, o tamanho e se ele corresponde à versão da ROM."
+                        403 -> "O token RomM não tem permissão para ler a ROM ou aplicar o patch."
+                        404 -> "A ROM base ou o patch não foi encontrado no RomM."
+                        else -> "Não foi possível aplicar o patch no RomM (HTTP ${response.code})."
+                    }
+                    throw RomMHttpException(response.code, if (details.isBlank()) message else "$message $details")
+                }
+                val body = response.body ?: throw IOException("O RomM retornou um arquivo vazio.")
+                val expectedBytes = body.contentLength()
+                if (expectedBytes > MAX_ROMM_PATCH_RESULT_BYTES) {
+                    throw IOException("A ROM modificada excede o limite de 4 GiB.")
+                }
+                if (expectedBytes > 0L) {
+                    val availableBytes = StatFs(checkNotNull(temp.parentFile).absolutePath).availableBytes
+                    if (availableBytes < expectedBytes + MINIMUM_FREE_SPACE_BYTES) {
+                        throw IOException("Espaço insuficiente para salvar a ROM modificada.")
+                    }
+                }
+                var receivedBytes = 0L
+                body.byteStream().use { input ->
+                    FileOutputStream(temp).use { output ->
+                        val buffer = ByteArray(64 * 1024)
+                        while (true) {
+                            val count = input.read(buffer)
+                            if (count < 0) break
+                            if (receivedBytes > MAX_ROMM_PATCH_RESULT_BYTES - count) {
+                                throw IOException("A ROM modificada excede o limite de 4 GiB.")
+                            }
+                            output.write(buffer, 0, count)
+                            receivedBytes += count
+                        }
+                    }
+                }
+            }
+            check(temp.isFile && temp.length() > 0L) { "O RomM não retornou uma ROM modificada válida." }
+            RomMFileReplacement.replaceFile(temp, target)
+        } catch (error: Exception) {
+            temp.delete()
+            throw error
+        }
+    }
+
+    /** Baixa um arquivo associado usando o RomFile.id exigido pelo endpoint oficial. */
+    fun downloadAssociatedFile(
+        file: RemoteAssociatedFile,
+        target: File,
+        maxBytes: Long = MAX_ROMM_MEDIA_DOWNLOAD_BYTES,
+    ) {
+        require(file.id > 0L) { "ID de arquivo RomM inválido" }
+        require(maxBytes > 0L) { "Limite de download inválido" }
+        val url = base.resolve("api/roms/${file.id}/files/content/")!!.newBuilder()
+            .addPathSegment(file.fileName)
+            .build()
+        if (file.sizeBytes > maxBytes) {
+            val partial = File(target.parentFile, "${target.name}.part")
+            partial.delete()
+            File(partial.parentFile, "${partial.name}.range").delete()
+            throw IOException("O arquivo ${file.fileName} excede o limite de download de ${maxBytes / (1024L * 1024L)} MiB.")
+        }
+        downloadToFile(url, target, file.fileName, maxBytes)
+    }
+
     fun listNotes(romId: Long): List<RemoteGameNote> {
         require(romId > 0L) { "ID de jogo RomM inválido" }
         val url = base.resolve("api/roms/$romId/notes")!!
@@ -691,7 +892,11 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
         // as cadastrou assim; não inferimos relação com outros registros pelo nome.
         val discFiles = allowed + platform.discCompanionExtensions + if (isEasyRpgGame) setOf("ldb") else emptySet()
         val serverExtension = File(serverName).extension.lowercase()
+        val serverCategory = associatedFiles.firstOrNull {
+            it.fileName.equals(serverName, ignoreCase = true)
+        }?.category
         val flat = serverExtension in discFiles &&
+            isRomMPlayableFileCategory(serverCategory) &&
             !item.optBoolean("has_multiple_files", false) &&
             !item.optBoolean("has_nested_single_file", false) &&
             !isEasyRpgGame
@@ -717,7 +922,7 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
             // EasyRPG é uma pasta RPG Maker 2000/2003. Preservamos os arquivos de jogo
             // associados, mas excluímos mídias auxiliares que não pertencem ao pacote executável.
             val gameFiles = associatedFiles.filter { file ->
-                file.category == null || file.category !in setOf("manual", "walkthrough", "soundtrack", "screenshot")
+                isRomMPlayableFileCategory(file.category)
             }
             val main = gameFiles.firstOrNull { it.fileName.equals("RPG_RT.ldb", ignoreCase = true) }
                 ?: gameFiles.firstOrNull { File(it.fileName).extension.equals("ldb", ignoreCase = true) }
@@ -733,10 +938,10 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
             val files = item.optJSONArray("files")
             val playable = (0 until (files?.length() ?: 0)).map { files!!.getJSONObject(it) }.filter {
                 val name = it.optString("file_name")
-                val category = it.optString("category").lowercase()
-                val isGameFile = category.isBlank() || category == "null" ||
-                    category !in setOf("manual", "walkthrough", "soundtrack", "screenshot")
-                isGameFile && !name.startsWith(".") && File(name).extension.lowercase() in discFiles
+                val category = it.optString("category")
+                    .takeUnless { value -> value.isBlank() || value.equals("null", ignoreCase = true) }
+                isRomMPlayableFileCategory(category) &&
+                    !name.startsWith(".") && File(name).extension.lowercase() in discFiles
             }
             if (playable.isEmpty()) {
                 skippedExtension++
@@ -791,7 +996,7 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
             fileId = fileId,
             fileIds = fileIds,
             folder = folder,
-            summary = item.optString("summary").ifEmpty { null },
+            summary = item.optString("summary").trim().takeUnless { it.isBlank() || it.equals("null", ignoreCase = true) },
             userData = parseUserData(item.optJSONObject("rom_user")),
             hasNotes = item.optBoolean("has_notes", false),
             alternativeNames = readStringArray(item.optJSONArray("alternative_names")),
@@ -1016,9 +1221,15 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
         description: String,
         estimateRequiredSpace: (Long) -> Long,
         onProgress: (Long) -> Unit,
+        maxBytes: Long? = null,
     ): Long {
         val validatorFile = File(temp.parentFile, "${temp.name}.range")
         var offset = temp.length().takeIf { temp.isFile } ?: 0L
+        if (maxBytes != null && offset > maxBytes) {
+            temp.delete()
+            validatorFile.delete()
+            offset = 0L
+        }
         if (offset > 0L && !validatorFile.isFile) {
             GameLog.log("romm", "sem validador HTTP salvo; descartando parcial para evitar juntar versões diferentes: $description")
             temp.delete()
@@ -1072,6 +1283,11 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
                     val rangeTotal = rangeMatch?.groupValues?.get(3)?.takeUnless { it == "*" }?.toLongOrNull()
                     val responseLength = response.body.contentLength()
                     val expectedTotal = rangeTotal ?: responseLength.takeIf { it >= 0L }?.let { it + writeOffset } ?: -1L
+                    if (maxBytes != null && expectedTotal > maxBytes) {
+                        temp.delete()
+                        validatorFile.delete()
+                        throw IOException("O arquivo " + description + " excede o limite de download de 1 GiB.")
+                    }
                     val requiredSpace = estimateRequiredSpace(expectedTotal.takeIf { it > 0L } ?: 0L)
                     requireAvailableSpace(
                         checkNotNull(temp.parentFile),
@@ -1086,6 +1302,11 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
                             while (true) {
                                 val read = input.read(buffer)
                                 if (read < 0) break
+                                if (maxBytes != null && downloaded > maxBytes - read) {
+                                    temp.delete()
+                                    validatorFile.delete()
+                                    throw IOException("O arquivo " + description + " excede o limite de download de 1 GiB.")
+                                }
                                 output.write(buffer, 0, read)
                                 downloaded += read
                                 onProgress(downloaded)
@@ -1127,10 +1348,10 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
             downloadFolder(game, target, onProgress)
             return
         }
-        // A rota /files/content também recebe o ID da ROM (Rom.id), não o ID do arquivo.
-        // fileId apenas indica que selecionamos um arquivo específico dentro da ROM.
+        // A rota /files/content usa o ID interno do RomFile, não Rom.id.
+        // ROMs com um único arquivo usam fileId; conjuntos usam /content com file_ids.
         val url = if (game.fileId != null) {
-            base.resolve("api/roms/${game.id}/files/content/")!!.newBuilder()
+            base.resolve("api/roms/${game.fileId}/files/content/")!!.newBuilder()
                 .addPathSegment(game.fileName)
                 .build()
         } else {
@@ -1495,7 +1716,7 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
         GameLog.log("romm", "integridade do firmware confirmada: ${firmware.fileName}; verificações=${expectedHashes.map { it.first }}")
     }
 
-    private fun downloadToFile(url: HttpUrl, target: File, description: String) {
+    private fun downloadToFile(url: HttpUrl, target: File, description: String, maxBytes: Long? = null) {
         target.parentFile?.mkdirs()
         val temp = File(target.parentFile, "${target.name}.part")
         try {
@@ -1505,6 +1726,7 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
                 description,
                 estimateRequiredSpace = { it },
                 onProgress = {},
+                maxBytes = maxBytes,
             )
             RomMFileReplacement.replaceFile(temp, target)
             File(temp.parentFile, "${temp.name}.range").delete()
@@ -1635,6 +1857,8 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
         const val PAGE_SIZE = 100
         const val MINIMUM_FREE_SPACE_BYTES = 32L * 1024L * 1024L
         const val MAX_COVER_FAILURE_LOGS = 8
+        const val MAX_ROMM_MEDIA_DOWNLOAD_BYTES = 1024L * 1024L * 1024L
+        const val MAX_ROMM_PATCH_RESULT_BYTES = 4L * 1024L * 1024L * 1024L
         val coverFailuresLogged = AtomicInteger()
         val DEVICE_SCOPES = listOf(
             "me.read",

@@ -35,13 +35,13 @@ B. DADOS PESSOAIS POR JOGO E ATIVIDADE (PRIORIDADE ALTA)
 [AGUARDANDO DECISÃO] B6. Definir quais estados pessoais serão editáveis no Tandem e quais serão apenas informativos.
 
 C. MÍDIAS E CONTEÚDO ASSOCIADO (PRIORIDADE MÉDIA)
-[PENDENTE] C1. Exibir screenshots do RomM.
-[PENDENTE] C2. Consultar manuais e instruções.
-[PENDENTE] C3. Consultar walkthroughs.
-[PENDENTE] C4. Consultar trilhas sonoras.
-[PENDENTE] C5. Investigar patches e formatos de aplicação.
-[PENDENTE] C6. Manter mídias auxiliares fora da lista de ROMs executáveis.
-[AGUARDANDO DECISÃO] C7. Definir se o Tandem terá visualizador de imagens/documentos e player de áudio próprio.
+[IMPLEMENTADO — CI APROVADA; TESTE REAL PENDENTE] C1. Screenshots do RomM listados e exibidos no visualizador integrado; miniaturas ainda pendentes.
+[IMPLEMENTADO — CI APROVADA; TESTE REAL PENDENTE] C2. Manuais via categoria manual, visualizador integrado e navegação multipágina PDF.
+[IMPLEMENTADO — CI APROVADA; TESTE REAL PENDENTE] C3. Walkthroughs via categoria walkthrough e visualizador integrado; HTML/HTM exibido como texto inerte.
+[IMPLEMENTADO — CI APROVADA; TESTE REAL PENDENTE] C4. Metadados de soundtrack e reprodução no player integrado com play/pause, progresso e seek.
+[IMPLEMENTADO — CI APROVADA; TESTE REAL PENDENTE] C5. Aplicação pelo endpoint oficial do RomM, patch da biblioteca ou upload local e salvamento em destino escolhido, sem sobrescrever a ROM original.
+[IMPLEMENTADO — CI APROVADA; TESTE REAL PENDENTE] C6. Categorias auxiliares excluídas da seleção de ROMs, inclusive multidisco/multiarquivo e EasyRPG.
+[CONCLUÍDO — DECISÃO] C7. O usuário escolheu visualizadores de imagens/documentos e player de áudio integrados ao Tandem; implementação incluída nesta PR.
 
 D. PLATAFORMAS, FIRMWARE E DISPOSITIVOS
 [CONCLUÍDO] D1. Consulta de plataformas e metadados básicos.
@@ -395,3 +395,185 @@ ATUALIZAÇÃO — PR #43 / B1–B6 ROMM MESCLADA (2026-11-23)
 - [ ] Teste funcional no telefone com conta RomM real: edição de propriedades, escopo roms.user.write, sessões ativas e apresentação visual.
 - [ ] Confirmar comportamento com controle/TV e campos numéricos.
 - PR #41 permanece aberta e pausada, sem alterações; saves continuam fora do escopo.
+
+
+IMPLEMENTAÇÃO C1–C7 — PR EM PREPARAÇÃO (2026-11-23)
+- Branch: feat/romm-media-content → game-mode-m2-dev.
+- Decisão confirmada: experiência integrada ao Tandem para imagens, documentos e áudio.
+- C1–C6: auditoria de API concluída; implementação ainda em andamento.
+- C5 deve chamar o patcher oficial do RomM; não criar mecanismo local paralelo.
+- C6: categorias manual, walkthrough, soundtrack e screenshot não podem ser selecionadas como ROM executável; patch também permanece auxiliar.
+- Não alterar SaveStore.kt ou GameModeActivity.kt; PR #41 permanece aberta, draft e pausada.
+- CI, testes automatizados e teste no telefone: pendentes.
+
+
+ATUALIZAÇÃO C6 — FILTRO DE CATEGORIAS (2026-11-23)
+- [x] Implementado filtro positivo de categorias executáveis: game, dlc, hack, update, mod, demo, translation, prototype e cheat; arquivos sem categoria continuam aceitos.
+- [x] Categorias auxiliares (manual, walkthrough, soundtrack, screenshot, patch) e categorias desconhecidas ficam fora da seleção/download de ROM.
+- [x] Filtro aplicado ao arquivo plano principal, aos conjuntos multidisco/multiarquivo e ao EasyRPG.
+- [ ] CI, testes automatizados e validação no telefone pendentes.
+
+
+CI BASELINE PR #44 — RUN #713 (2026-11-23)
+- [x] CI #713 / run 45110270424 aprovou Spotless, testes unitários, build APK, upload do artefato e final-status.
+- A execução foi no head inicial 99b312693861f2c34cddeb20e7507eed2d01291c, antes do código C6; não valida o head atual.
+- [ ] CI do head atual e testes automatizados específicos de C6 pendentes.
+
+
+CORREÇÃO DE DOWNLOAD INDIVIDUAL — ROMM 5.4.1 (2026-11-23)
+- [x] Corrigido o identificador da rota /api/roms/{file_id}/files/content/{file_name}: agora usa RemoteGame.fileId (RomFile.id), não RemoteGame.id (Rom.id).
+- [ ] CI do head atual e teste no telefone pendentes.
+
+
+IMPLEMENTAÇÃO INICIAL C1–C4 — 2026-11-23
+- [x] C1 — Screenshots listados e visualizados dentro do Tandem, sob demanda.
+- [x] C2 — Manuais PDF/MD/TXT abertos em visualizador integrado (PDF: primeira página nesta etapa).
+- [x] C3 — Walkthroughs PDF/MD/TXT/HTML/HTM em visualizador integrado; HTML permanece texto inerte.
+- [x] C4 — Metadados de trilhas consultados no RomM e áudio reproduzido dentro do Tandem com MediaPlayer.
+- [x] Downloads de mídia usam cache temporário; RomM continua como fonte de verdade.
+- [ ] Melhorias de UX: miniaturas de screenshots, paginação PDF e controles de seek/posição do áudio.
+- [ ] CI, testes de regressão e validação no telefone pendentes.
+
+
+ATUALIZAÇÃO — CI #726 / PR #44 (2026-11-23)
+- [x] CI #726 / run 45173169486: SUCCESS — https://github.com/izzyn0okami/Tandem/actions/runs/45173169486.
+- [x] Spotless Apply executado automaticamente; nenhuma alteração de formatação foi necessária; spotlessCheck aprovado.
+- [x] Testes unitários, Build APK, Upload artifact e final-status aprovados.
+- [x] A rotina de automação solicitou nova CI após a etapa de Spotless; nenhum commit automático foi criado porque não havia diferenças.
+- [ ] C1–C4: revisão técnica aprofundada, testes específicos de mídia e validação no telefone ainda pendentes.
+- [ ] C5: integração do patcher oficial RomM permanece pendente.
+- [ ] C6: CI aprovada; manter validação funcional pendente.
+- [ ] C7: visualizadores e player integrados implementados na versão inicial; validar experiência no telefone.
+- PR #44 permanece aberta/draft, sem merge ou release.
+
+
+ATUALIZAÇÃO — CI #733 / HEAD ATUAL DA PR #44 (2026-11-23)
+- [x] CI #733 / run 45178331443: SUCCESS no commit eda9693e8d58392635f847a6288c6982574d2cad.
+- [x] Spotless Apply e spotlessCheck aprovados.
+- [x] Testes unitários aprovados.
+- [x] Build APK e Upload artifact aprovados.
+- [x] final-status aprovado.
+- [x] Correção de memória da visualização de mídias validada pela CI no head atual.
+- [ ] C1–C4: revisão técnica aprofundada, testes específicos e validação no telefone pendentes; ainda faltam miniaturas, paginação PDF e controles de seek/progresso de áudio.
+- [ ] C5: integração do patcher oficial RomM pendente.
+- [x] C6: filtro de categorias auxiliares validado pela CI; teste funcional permanece pendente.
+- [ ] C7: visualizadores/player integrados implementados na versão inicial; validação no telefone pendente.
+- PR #44 permanece aberta/draft, sem merge ou release. PR #41 permanece pausada e intocada.
+
+
+ATUALIZAÇÃO — CI #739 / PR #44 (2026-11-23)
+- [x] CI #739 / run 45180850010: SUCCESS no head ac425eca971e94a2774430655d8b23f50be2eb4f.
+- [x] check-style: Spotless Apply e spotlessCheck aprovados.
+- [x] build-debug-apk: testes unitários, compilação do APK e upload do artefato aprovados.
+- [x] final-status aprovado.
+- Jobs send-notifications, crowdin-auto-merge, tandem-release e nightly-release ignorados; nenhuma release publicada.
+- [x] Correção de descrição: selecionar o primeiro summary não vazio entre todas as versões do jogo; seção própria “Descrição” posicionada após as informações básicas.
+- [x] Parser normaliza summaries, descartando valores vazios e o texto literal “null”.
+- [x] Correções de agregação de mídias entre versões e limite de dimensões da prévia PDF estão incluídas no histórico de commits coberto por esta CI.
+- [ ] A descrição depende de metadados preenchidos no RomM; não há geração automática de texto ausente.
+- [ ] C1–C4: miniaturas de screenshots, navegação multipágina PDF, seek/progresso de áudio, revisão do lifecycle/formatos e testes específicos continuam pendentes.
+- [ ] C5: aplicação de patches pelo endpoint oficial RomM continua pendente.
+- [ ] C1–C7: validação funcional no telefone permanece pendente; CI não substitui teste real.
+- PR #44 permanece aberta e em draft, sem merge. PR #41 permanece aberta, em draft e pausada.
+
+
+ATUALIZAÇÃO — CI #745 / PR #44 (2026-11-23)
+- [x] CI #745 / run 45184325837: SUCCESS — https://github.com/izzyn0okami/Tandem/actions/runs/45184325837.
+- [x] check-style: Spotless Apply e spotlessCheck aprovados; a automação executou a formatação e confirmou o resultado.
+- [x] build-debug-apk: testes unitários, compilação do APK e upload do artefato aprovados.
+- [x] final-status aprovado.
+- Jobs de notificação, Crowdin e publicação de releases ignorados; nenhuma release publicada.
+- O log do job de estilo identificou o commit verificado no runner como b8a594ea514ff44cadb5342986c68b1eac6e22ed; a automação não encontrou alterações adicionais para commitar após Spotless Apply.
+- PR #44 permanece aberta, em draft e sem merge; PR #41 permanece aberta, em draft e pausada.
+- [ ] C1–C4: testes específicos de mídia e validação funcional no telefone continuam pendentes; permanecem pendentes as melhorias de miniaturas, paginação PDF e seek/progresso do áudio.
+- [ ] C5: aplicação de patches via endpoint oficial RomM continua pendente.
+- [ ] C1–C7: validação funcional no telefone permanece pendente; CI aprovada não substitui teste real.
+
+
+REVISÃO ESTÁTICA C1–C4 — ATUALIZAÇÃO APÓS CI #745 (2026-11-23)
+- [x] Confirmado no código atual de RomMMedia.kt: navegação multipágina de PDF (contagem e controles anterior/próxima).
+- [x] Confirmado no código atual: barra de progresso/posição e seek para áudio.
+- [x] Confirmado no código atual: decodificação reduzida de imagens, limite de dimensão para prévia PDF e leitura progressiva de texto limitada a 500.000 caracteres.
+- [x] Confirmado no código atual: arquivos associados agregados entre as versões de detailGames e trilhas consultadas por cada Rom.id; downloads de arquivos usam RomFile.id.
+- [ ] C1: miniaturas/galeria visual de screenshots ainda não implementadas; seleção atual é por nome em chips.
+- [ ] C1–C4: revisão final do lifecycle do MediaPlayer, limites reais de tamanho de download/cache e testes específicos de mídia ainda pendentes.
+- [ ] C1–C7: teste funcional no telefone continua pendente; sucesso de CI não comprova reprodução/decodificação em aparelho real.
+- [ ] C5: integração de aplicação de patches continua pendente; a resposta do endpoint é stream e não pode sobrescrever a ROM original.
+- Esta atualização corrige o status de pendências antigas: paginação PDF e seek/progresso de áudio não são mais pendências de implementação, mas continuam sem validação funcional no telefone.
+
+
+ATUALIZAÇÃO — CI #762 / PR #44 / C1–C7 (2026-11-23)
+- [x] CI #762 / run 45190038253: SUCCESS integral no head 1252450c3d5c2e3366ca4a29eb681f0c51318d9d — https://github.com/izzyn0okami/Tandem/actions/runs/45190038253.
+- [x] check-style: Spotless Apply e Verify formatting aprovados.
+- [x] build-debug-apk: testes unitários, Build APK e Upload artifact aprovados.
+- [x] final-status aprovado.
+- [x] Artefato assembleLawnWithQuickstepGithubDebug gerado (ID 14826605979; 46.258.337 bytes; SHA-256 f54a746f8b835717b4d747a9fd15e15572c097ae2a9615b1e8277dc4b759f945; expira em 2027-02-21).
+- Jobs de notificação, Crowdin e publicação de releases foram ignorados; nenhuma release publicada.
+- [x] C5 — integração com o endpoint oficial POST /api/roms/{base_file_id}/patch implementada: patch da biblioteca via patch_file_id ou upload local via patch_file; resultado recebido em stream e salvo em arquivo temporário separado; seletor Android permite escolher o destino; ROM original não é sobrescrita.
+- [x] C5 — extensões consultadas no heartbeat ROM_PATCHER.SUPPORTED_EXTENSIONS, com fallback para RomM 5.4.1; seleção de patch validada pela extensão.
+- [ ] Revisão estática final de C1–C5: conferir associação de patches à versão-base, limpeza de temporários em falhas/cancelamentos, lifecycle do MediaPlayer e limites de cache/download.
+- [ ] C1: miniaturas de screenshots ainda não implementadas; lista atual seleciona por nome.
+- [ ] Testes funcionais C1–C7 no telefone com servidor/conta RomM real permanecem pendentes; CI verde não substitui teste no aparelho.
+- PR #44 continua aberta, em draft e sem merge. PR #41 continua aberta, em draft, pausada e intocada.
+
+
+
+ATUALIZAÇÃO — CI #765 E REVISÃO ESTÁTICA (2026-11-23)
+- [x] CI #765 / run 45192312336: SUCCESS integral no head 2c332343434c6bbb1d2b345186a98ecc5a6234d6; Spotless, testes unitários, Build APK, Upload artifact e final-status aprovados.
+- [x] Artefato assembleLawnWithQuickstepGithubDebug: ID 14826477982; 46.258.784 bytes; SHA-256 43d18ec952144f1d82547e711a7b43774c625e42e316cc88539cea3287d9e181; expira em 2027-02-21.
+- [x] CI #766 e #767 também concluídas com sucesso no mesmo head.
+- [x] C1–C6: implementação integrada presente na PR #44; C7: decisão de experiência integrada concluída.
+- [x] Revisão estática: associação dos patches à versão da ROM selecionada e limpeza dos temporários em falhas verificadas.
+- [x] Revisão estática: lifecycle do MediaPlayer possui descarte/liberação; PDF fecha recursos; prévias de imagem/PDF e leitura de texto possuem limites de memória.
+- [ ] C1: miniaturas de screenshots continuam pendentes.
+- [ ] Implementar limite rígido de tamanho para downloads de mídia e patch, inclusive quando Content-Length não é informado; o cache atual de 256 MiB é uma política de limpeza posterior, não um limite por arquivo.
+- [ ] Validação funcional C1–C7 no telefone com servidor/conta RomM real e testes específicos de mídia pendentes.
+- PR #44 permanece aberta e em draft, sem merge ou release. PR #41 permanece aberta, em draft e pausada, sem alterações.
+
+
+ATUALIZAÇÃO — ESTÁGIO C / PR #44 — CI #770 APROVADA (2026-11-23)
+- Head validado: 34070c5f0aa19e2a779f5535da08c731172b6345.
+- CI #770 / run 45194686059: SUCCESS integral — https://github.com/izzyn0okami/Tandem/actions/runs/45194686059
+- check-style, testes unitários, Build APK, Upload artifact e final-status aprovados.
+- Artefato assembleLawnWithQuickstepGithubDebug: ID 14829325118; 46.258.647 bytes; SHA-256 88d6e19b54f9be3bbd29897a781d3d8358ccdd1686628354c5d9a5215cbc9d62; expira em 2027-02-21.
+- Timeout de até 15 minutos no cliente de transferências longas usado para aplicação de patches validado pela CI.
+- C1–C7 implementados; validação funcional no telefone com RomM real ainda pendente.
+- Pendências técnicas restantes: limites rígidos de tamanho para downloads de mídia e saída de patch, inclusive sem Content-Length; miniaturas de screenshots.
+- PR #44 continua aberta/draft; sem merge ou release. PR #41 continua aberta/draft e pausada.
+
+
+ATUALIZAÇÃO — C1–C7 / CI #774 E LIMITES DE TRANSFERÊNCIA (2026-11-23)
+- [x] CI #774 / run 45196635709: SUCCESS integral no commit 69587eecb61b1bc1c7101203443d5a634180db51.
+- [x] Spotless, testes unitários, Build APK, Upload artifact e final-status aprovados.
+- [x] Artefato assembleLawnWithQuickstepGithubDebug: ID 14830145630; 46.260.917 bytes; SHA-256 4ca5860f9fa9890bfa1856721a6cde4355d1e987ece09b1a58a41c693b5ec164; expira em 2027-02-21.
+- [x] Limite de 1 GiB para cada download de mídia, 1 GiB para upload local de patch e 4 GiB para resultado de patch; as verificações também interrompem streams sem Content-Length.
+- [x] Correção adicional: preflight de mídia acima de 1 GiB agora remove resíduos .part e .range antes de retornar erro; commit 49deac22a4c370e2ca564e438a5157884f756579.
+- [ ] CI da correção adicional ainda pendente.
+- [ ] C1 — miniaturas de screenshots: pendente; verificar primeiro se o RomM oferece endpoint oficial adequado.
+- [ ] C1–C7 — testes funcionais no telefone com servidor/conta RomM real permanecem pendentes.
+- PR #44 permanece aberta/draft e não deve ser mesclada sem autorização explícita. PR #41 permanece aberta/draft e pausada; saves fora do escopo.
+
+
+ATUALIZAÇÃO — C1–C7 / CI #777 E #778 / MINIATURAS (2026-11-23)
+- [x] CI #777 / run 45199755812: SUCCESS integral no commit 49deac22a4c370e2ca564e438a5157884f756579.
+- [x] CI #778 / run 45199827044: SUCCESS integral no commit e94ae1a2358b3704e30ef81070d381effa35a59b.
+- [x] Ambas: Spotless, testes unitários, Build APK, Upload artifact e final-status aprovados.
+- [x] Artefato #777: ID 14831867323; 46.262.156 bytes; SHA-256 b8540bab96b5c8e875757b407acb94c0e68e726eccb076bee7c9482e0b792b0c.
+- [x] Artefato #778: ID 14830483778; 46.261.017 bytes; SHA-256 28e1ba86668a92993a615974a8569ae61fbaea7ac2c2b9a477dba3e6a286fcbd.
+- [x] Limpeza de resíduos .part/.range ao recusar antecipadamente mídia acima de 1 GiB validada pela CI #777.
+- [x] Revisão do RomM 5.4.1: endpoint de screenshot cobre upload/exclusão; conteúdo original é servido pelo endpoint de RomFile. Nenhuma API de miniatura dedicada foi identificada para screenshots associados. Não baixar a imagem original apenas para montar thumbnail; item fica como melhoria futura dependente de contrato oficial.
+- [ ] Testes funcionais no telefone com servidor/conta RomM real para C1–C7 permanecem pendentes.
+- PR #44 aberta/draft, sem merge. PR #41 aberta/draft e pausada, fora do escopo.
+
+
+ATUALIZAÇÃO — C1 / GALERIA DE MINIATURAS E CI #788 (2026-11-23)
+- [x] Substituída a pendência de thumbnails por galeria de miniaturas temporárias geradas no cliente a partir dos arquivos screenshot do RomM.
+- [x] Até 12 screenshots por jogo; carregamento sob demanda; miniaturas JPEG até 360 px; cache temporário limitado a 64 MiB; reaproveitamento offline enquanto o cache existir.
+- [x] Cada imagem de origem tem limite de 64 MiB; o original temporário e resíduos .part/.range são removidos após a geração/erro.
+- [x] Commits: 101ee9d3fb85b5e2d1bcb52b9c8e330ee3eee3d9, 486fb956f7c99494faee4cfca48e4d1871e5ca48, c78d16fb4c38e5132cac78ecf27bb1edfc99a6bd.
+- [x] CI #788 / run 45203232345: SUCCESS integral no commit c78d16fb4c38e5132cac78ecf27bb1edfc99a6bd; Spotless, unit tests, Build APK e final-status aprovados.
+- [x] Artefato #788: ID 14831843851; 46.268.205 bytes; SHA-256 ef127dc1a0a00bad7bf012c0a2a46564ccaf9ebdeb14073dc60d43647856cd0f.
+- [x] Commit automático de formatação: d0d55b87b84b507c69552f2a9a337c3b738bb0b0.
+- [ ] CI #790 / run 45203546753 do head formatado está em action_required, sem jobs; aguarda aprovação no GitHub Actions para validar o head atual.
+- [ ] Teste funcional no telefone com RomM real para C1–C7 permanece pendente.
+- PR #44 aberta/draft, sem merge. PR #41 aberta/draft e pausada, fora do escopo.
