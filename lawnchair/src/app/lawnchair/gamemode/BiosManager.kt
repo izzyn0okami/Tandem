@@ -63,18 +63,112 @@ object BiosManager {
      */
     fun importKit(context: Context, platform: GamePlatform, source: File): Int {
         val kit = platform.biosKit ?: return 0
+        if (kit.isEmpty()) return 0
+        val root = systemDir(context).apply { mkdirs() }
+        val suffix = "${platform.slug}-${System.nanoTime()}"
+        val stagingRoot = File(root, ".bios-kit-stage-$suffix")
+        val backupRoot = File(root, ".bios-kit-backup-$suffix")
+        val sources = kit.associateWith { folder ->
+            source.walkTopDown().maxDepth(2).firstOrNull {
+                it.isDirectory && it.name.equals(folder, ignoreCase = true)
+            } ?: throw IllegalArgumentException("A pasta obrigatória '$folder' não foi encontrada no kit")
+        }
+
         var copied = 0
-        for (folder in kit) {
-            val found = source.walkTopDown().maxDepth(2).firstOrNull { it.isDirectory && it.name.equals(folder, ignoreCase = true) } ?: continue
-            val target = File(systemDir(context), folder)
-            found.walkTopDown().filter { it.isFile }.forEach { file ->
-                val dest = File(target, file.relativeTo(found).path)
-                dest.parentFile?.mkdirs()
-                runCatching { file.copyTo(dest, overwrite = true) }.onSuccess { copied++ }
+        val backedUp = mutableSetOf<String>()
+        val promoted = mutableSetOf<String>()
+        try {
+            // Prepara e valida todas as pastas antes de tocar na instalação existente.
+            for (folder in kit) {
+                val sourceFolder = sources.getValue(folder)
+                val stagedFolder = File(stagingRoot, folder)
+                val files = sourceFolder.walkTopDown().filter { it.isFile }.toList()
+                check(files.isNotEmpty()) { "A pasta '$folder' está vazia" }
+                files.forEach { file ->
+                    val destination = File(stagedFolder, file.relativeTo(sourceFolder).path)
+                    check(destination.canonicalFile.toPath().startsWith(stagedFolder.canonicalFile.toPath())) {
+                        "Caminho inválido dentro do kit '$folder'"
+                    }
+                    destination.parentFile?.mkdirs()
+                    file.copyTo(destination, overwrite = false)
+                    copied++
+                }
+                check(stagedFolder.walkTopDown().any(File::isFile)) { "A pasta '$folder' não foi preparada corretamente" }
+            }
+
+            // Preserva as pastas antigas antes de promover qualquer pasta nova.
+            for (folder in kit) {
+                val target = File(root, folder)
+                if (target.exists()) {
+                    val backup = File(backupRoot, folder)
+                    backup.parentFile?.mkdirs()
+                    check(target.renameTo(backup)) { "Não foi possível preservar a pasta existente '$folder'" }
+                    backedUp += folder
+                }
+            }
+
+            for (folder in kit) {
+                val staged = File(stagingRoot, folder)
+                val target = File(root, folder)
+                check(staged.renameTo(target)) { "Não foi possível instalar a pasta '$folder'" }
+                promoted += folder
+            }
+        } catch (failure: Exception) {
+            // Reverte em ordem inversa; se a restauração falhar, mantém o backup para recuperação manual.
+            for (folder in kit.asReversed()) {
+                val target = File(root, folder)
+                if (folder in promoted && target.exists()) {
+                    check(target.deleteRecursively()) { "Falha ao remover a pasta incompleta '$folder' durante a reversão" }
+                }
+                if (folder in backedUp) {
+                    val backup = File(backupRoot, folder)
+                    check(backup.renameTo(target)) { "Falha ao restaurar '$folder'; backup preservado em ${backup.absolutePath}" }
+                }
+            }
+            throw IllegalStateException("Não foi possível importar o kit de BIOS; instalação anterior preservada", failure)
+        } finally {
+            stagingRoot.deleteRecursively()
+        }
+
+        if (backupRoot.exists() && !backupRoot.deleteRecursively()) {
+            GameLog.error(
+                "bios",
+                "${platform.slug}: kit instalado, mas os backups antigos não puderam ser removidos (${backupRoot.name})",
+                IllegalStateException("Falha ao limpar backups do kit"),
+            )
+        }
+        GameLog.log("bios", "${platform.slug}: kit de sistema importado com segurança ($copied arquivos)")
+        return copied
+    }
+
+    /** Integridade dos arquivos locais comparada apenas a metadados publicados pelo RomM. */
+    enum class FirmwareIntegrity {
+        VERIFIED,
+        MISMATCH,
+        UNKNOWN,
+    }
+
+    fun validateLocalFirmware(context: Context, client: RomMClient): Map<String, FirmwareIntegrity> {
+        val results = linkedMapOf<String, FirmwareIntegrity>()
+        for (firmware in client.listFirmware()) {
+            val bios = canonical(File(firmware.fileName).name) ?: continue
+            val file = File(systemDir(context), bios.name)
+            if (!file.isFile) continue
+            val hasReference = firmware.sizeBytes != null ||
+                firmware.crcHash != null ||
+                firmware.md5Hash != null ||
+                firmware.sha1Hash != null
+            if (!hasReference) {
+                results[bios.name] = FirmwareIntegrity.UNKNOWN
+                continue
+            }
+            results[bios.name] = if (runCatching { client.verifyFirmwareFile(file, firmware) }.isSuccess) {
+                FirmwareIntegrity.VERIFIED
+            } else {
+                FirmwareIntegrity.MISMATCH
             }
         }
-        GameLog.log("bios", "${platform.slug}: pasta de sistema importada ($copied arquivos)")
-        return copied
+        return results
     }
 
     private fun canonical(name: String): BiosFile? {
@@ -166,9 +260,16 @@ object BiosManager {
     fun downloadFromServer(context: Context, client: RomMClient): Int {
         var count = 0
         for (firmware in client.listFirmware()) {
-            val bios = canonical(firmware.fileName) ?: continue
-            if (has(context, bios)) continue
+            val bios = canonical(File(firmware.fileName).name) ?: continue
             val target = File(systemDir(context), bios.name)
+            if (target.isFile) {
+                val hasReference = firmware.sizeBytes != null ||
+                    firmware.crcHash != null ||
+                    firmware.md5Hash != null ||
+                    firmware.sha1Hash != null
+                // Sem referência de integridade, não substitui uma BIOS local potencialmente válida.
+                if (!hasReference || runCatching { client.verifyFirmwareFile(target, firmware) }.isSuccess) continue
+            }
             target.parentFile?.mkdirs()
             client.downloadFirmware(firmware, target)
             count++
