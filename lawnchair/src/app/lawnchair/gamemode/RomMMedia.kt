@@ -105,12 +105,14 @@ internal fun RomMMediaPanel(game: RemoteGame) {
                         previewError = "O Android não conseguiu decodificar esta imagem."
                     }
                 }
+
                 "pdf" -> {
                     previewBitmap = withContext(Dispatchers.IO) { renderFirstPdfPage(target) }
                     if (previewBitmap == null) {
                         previewError = "Não foi possível abrir a primeira página deste PDF."
                     }
                 }
+
                 "md", "txt", "html", "htm" -> {
                     previewText = withContext(Dispatchers.IO) {
                         target.inputStream().bufferedReader().use { it.readText().take(500_000) }
@@ -242,6 +244,7 @@ internal fun RomMMediaPanel(game: RemoteGame) {
                         if (!audioReady) Text("Preparando áudio…", color = GameColors.textDim, fontSize = 12.sp)
                     }
                 }
+
                 previewBitmap != null -> {
                     Image(
                         bitmap = previewBitmap!!.asImageBitmap(),
@@ -257,6 +260,7 @@ internal fun RomMMediaPanel(game: RemoteGame) {
                         )
                     }
                 }
+
                 previewText != null -> {
                     Text(
                         text = previewText!!,
