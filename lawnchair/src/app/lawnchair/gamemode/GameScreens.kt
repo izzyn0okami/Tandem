@@ -110,7 +110,7 @@ internal fun LibraryScreen(
             } catch (error: Exception) {
                 remoteSearchError = error.message ?: error.toString()
             } finally {
-                remoteSearching = false
+                if (searchText.trim() == normalizedSearch) remoteSearching = false
             }
         } else {
             remoteSearching = false
