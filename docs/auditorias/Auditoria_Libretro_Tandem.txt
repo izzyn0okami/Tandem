@@ -3293,3 +3293,98 @@ PRÓXIMAS ETAPAS DA AUDITORIA
 5. Só depois apresentar ao usuário a matriz de decisão manter/adaptar/substituir/remover/não implementar.
 6. Não remover funcionalidades nem iniciar implementação estrutural durante a fase de inventário.
 7. Coordenar mudanças em SaveSync.kt, RomMClient.kt e GameModeActivity.kt com a PR #41, que permanece aberta.
+
+AUDITORIA AMPLA — ROMM × TANDEM (ETAPA 2: BIBLIOTECA, COLEÇÕES, DADOS DO USUÁRIO, ATIVIDADE E MÍDIAS)
+Data: 2026-11-22
+Branch: game-mode-m2-dev
+Base documental: etapa 1 do inventário; código RomM tag 5.4.1 e código Tandem nesta branch.
+PRs abertas verificadas antes da etapa: somente PR #41, feat: add explicit save conflict resolution; aberta, draft, não mesclada. GitHub informou mergeable=true nesta consulta. Não houve alteração funcional nem merge.
+
+1. BIBLIOTECA, PESQUISA E FILTROS
+RomM 5.4.1:
+- GET /api/roms oferece listagem paginada, ordenação, busca e filtros; o endpoint também oferece GET /api/roms/filters e GET /api/roms/random.
+- O contrato da listagem suporta parâmetros para índice alfabético, valores de filtro, inclusão de arquivos, ordenação e paginação; o filtro pode incluir plataforma, coleções e outros critérios definidos por RomFilterParams.
+- A API suporta listagem direcionada por coleção comum, coleção virtual e coleção inteligente, além de exportação/download de ROMs por esses agrupamentos.
+- Os schemas de ROM expõem metadados, arquivos associados, irmãos/variantes e dados do usuário quando solicitados/retornados pelo contrato.
+Tandem:
+- RomMClient.listGames() chama GET /api/roms com order_by=name, order_dir=asc, limit/offset, with_char_index=false, with_filter_values=false e with_files=true.
+- Faz paginação completa e depois filtra localmente por plataforma conhecida, presença de arquivo e extensões aceitas pelo catálogo local.
+- Não consome filtros do servidor, pesquisa, coleções, seleção aleatória ou ordenação personalizada na interface remota.
+- O catálogo local de plataformas/núcleos/extensões continua necessário: a API informa a plataforma RomM, mas não substitui a compatibilidade LibretroDroid nem a decisão de qual núcleo executar.
+Avaliação preliminar: ADAPTAR. A fonte da biblioteca e dos metadados deve continuar sendo RomM; o Tandem deve aproveitar filtros/pesquisa/coleções do servidor e aplicar apenas filtros locais indispensáveis à compatibilidade de execução. Não reconstruir mecanismo de busca/coleções no cliente. A filtragem local de núcleos e extensões é responsabilidade legítima do launcher.
+
+2. COLEÇÕES COMUNS, INTELIGENTES E VIRTUAIS
+RomM 5.4.1:
+- GET /api/collections e /identifiers: coleções comuns.
+- GET /api/collections/smart e /smart/identifiers: coleções inteligentes baseadas em critérios salvos.
+- GET /api/collections/virtual e /virtual/identifiers: agrupamentos virtuais fornecidos pelo servidor.
+- GET individual disponível para cada tipo; endpoints de escrita permitem criar/editar coleções comuns e inteligentes, adicionar/remover ROMs e administrar visibilidade.
+- Escopos de leitura: collections.read; escrita: collections.write.
+- O servidor filtra ROMs ocultas conforme a visibilidade do usuário.
+Tandem:
+- Não foi identificada chamada a /api/collections nem representação de coleção na biblioteca remota.
+- A tela remota lista todos os jogos compatíveis e faz agrupamento local de versões por heurística.
+Avaliação preliminar: ADAPTAR / ALTA UTILIDADE. Consumir as coleções do RomM como agrupamentos e filtros da biblioteca. Não implementar editor completo de coleções no Tandem inicialmente; leitura é suficiente para integração inicial. Manter o agrupamento local de variantes apenas como apresentação auxiliar e sem contradizer os registros do servidor. Verificar distinção entre coleção virtual, inteligente e comum na UI.
+
+3. DADOS DO USUÁRIO POR ROM
+RomM 5.4.1:
+- O endpoint principal GET /api/roms fornece campos de usuário; PUT /api/roms/{id}/user atualiza dados privados do usuário para aquela ROM.
+- O modelo RomUserData inclui status/backlogged/now_playing/hidden e rating, difficulty e completion; o schema de resposta também expõe last_played e rating.
+- A atualização de last_played pode ser solicitada por parâmetro update_last_played; existe operação inversa para limpar o timestamp.
+- Escopos: roms.user.read e roms.user.write.
+Tandem:
+- Não foi identificada leitura nem escrita desses campos de usuário; a listagem atual interpreta metadados básicos, plataforma, arquivos e capa/sinopse.
+- Não há integração de favoritos, backlog, em andamento, avaliação, dificuldade ou conclusão com o RomM.
+Avaliação preliminar: ADAPTAR / ALTA UTILIDADE. São dados pessoais e pertencem ao RomM; o Tandem deve exibir e, quando o usuário decidir, atualizar os campos no servidor, sem criar cópias locais concorrentes. Não inferir que o campo de favorito equivale necessariamente a coleção de favoritos; validar semântica e UX antes de implementação.
+
+4. SESSÕES, ÚLTIMA PARTIDA E ATIVIDADE
+RomM 5.4.1:
+- GET /api/activity e GET /api/activity/rom/{rom_id} fornecem atividade visível ao usuário.
+- POST /api/activity/heartbeat registra heartbeat do dispositivo; DELETE /api/activity/{device_id} permite limpar a atividade daquele dispositivo.
+- Escopos: roms.user.read e roms.user.write.
+- O dado de última partida também pode ser atualizado diretamente pelo endpoint de dados do usuário da ROM.
+Tandem:
+- PlayHistory mantém lastPlayed e playtime em SharedPreferences locais, indexados pelo caminho da ROM.
+- Para jogos Android, registra somente que foi aberto; para sessões Libretro, soma tempo decorrido.
+- Não foi identificada integração com /api/activity nem sincronização do histórico local para last_played do RomM.
+Avaliação preliminar: ADAPTAR, com cuidado. O histórico global/atividade deve vir do RomM quando disponível; o Tandem ainda precisa medir duração local da sessão Libretro e relacionar o arquivo executado ao ID estável da ROM. Investigar se o heartbeat do RomM representa presença/dispositivo e se é útil ao Tandem; não substituir o cronômetro local até confirmar semântica e comportamento do servidor. Não enviar DELETE de atividade automaticamente.
+
+5. NOTAS E DOCUMENTAÇÃO POR JOGO
+RomM 5.4.1:
+- GET /api/roms/{id}/notes lista notas do jogo, com filtros public_only, search e tags.
+- POST/PUT/DELETE no mesmo recurso permitem criar, editar e excluir notas próprias; leitura usa roms.read e escrita usa roms.user.write.
+- Notas possuem título, conteúdo, tags, visibilidade e autoria.
+Tandem:
+- Não foi identificada integração com notas por ROM.
+Avaliação preliminar: OPCIONAL, mas útil. Consumir notas existentes do RomM pode evitar criar anotações duplicadas no launcher. Interface de edição só deve ser considerada depois da leitura e confirmação de interesse.
+
+6. MÍDIAS ASSOCIADAS À ROM
+RomM 5.4.1:
+- Endpoints dedicados incluem screenshots, manuais, walkthroughs e trilhas sonoras; também há arquivos/patches e metadados de mídia associados à ROM.
+- Notas usam API separada; os arquivos associados aparecem na estrutura de ROM/arquivos e podem ser categorizados pelo servidor.
+- Os endpoints de administração de mídias usam em geral roms.write; a listagem de metadados de trilha sonora usa roms.read.
+Tandem:
+- A listagem remota recebe arquivos associados com with_files=true e exclui categorias manual, walkthrough, soundtrack e screenshot do conjunto baixado como ROM executável.
+- Não foi identificada interface para consultar, visualizar ou baixar essas mídias como recursos separados.
+- O descarte dessas categorias da seleção de ROM executável é correto; não deve ser confundido com decisão de ignorar as mídias na experiência do usuário.
+Avaliação preliminar:
+- Screenshots/capas: ADAPTAR, com utilidade alta para navegação e detalhes do jogo.
+- Manuais e walkthroughs: OPCIONAL, útil em tela de detalhes; abrir formatos compatíveis ou encaminhar ao visualizador apropriado.
+- Trilha sonora: OPCIONAL; requer player e gestão de áudio separados do motor de emulação.
+- Patches: INVESTIGAR separadamente. Aplicar patch exige pipeline local específico e validação de formato; o RomM hospeda/organiza, mas não substitui a operação de patch no arquivo local.
+- Não incluir mídia auxiliar no fluxo de extração/execução da ROM.
+
+7. ESCOPO E AUTORIZAÇÃO
+- Os escopos collections.read, collections.write e eventuais novos escopos de integração não devem ser presumidos já presentes no token atual. A menor permissão necessária deverá ser solicitada somente quando a funcionalidade correspondente for aprovada.
+- Não há alteração funcional nesta etapa; não foram criados endpoints ou telas no Tandem.
+- Nenhuma funcionalidade existente foi removida ou alterada.
+- Não houve execução de CI nem alteração de APK.
+- PR #41 permanece aberta; esta etapa não altera seus arquivos de conflito de saves.
+
+PENDÊNCIAS PARA PRÓXIMA ETAPA
+1. Auditar firmware/plataformas comparando catálogo de BIOS por núcleo do Tandem com metadados e endpoints do RomM; separar inventário remoto de requisito real de execução.
+2. Auditar instalação remota por dispositivo e registro de dispositivos, avaliando se RomM consegue oferecer instalação/download dirigido sem duplicar lógica.
+3. Auditar estatísticas, recomendações, notificações, feeds, tarefas, permissões e configuração.
+4. Auditar memory cards, netplay, streaming, música/playlists e suporte real do LibretroDroid.
+5. Rever escopos OAuth solicitados pelo Tandem e elaborar matriz de menor privilégio.
+6. Depois completar a matriz, apresentar ao usuário decisões de manter/adaptar/substituir/remover/não implementar. Não remover nada antes dessa decisão.
