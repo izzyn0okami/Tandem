@@ -264,7 +264,7 @@ A12 — Notas por jogo
 - [x] Apresentação inicial das notas e tags na tela de detalhes implementada; refinamento depende de teste funcional.
 - [ ] Testar no telefone.
 
-- [ ] CI dos commits A12 (53d5e0b e a5f902f).
+- [x] CI dos commits A12 e correção de formatação: CI #681 (run 45096446767) SUCCESS no head fa8f720896a76e03d4b04ac3df17231fd681ee9b; Spotless, testes unitários, Build APK, Upload artifact e final-status aprovados.
 - [ ] Validar carregamento de notas no telefone.
 
 
@@ -272,5 +272,14 @@ ATUALIZAÇÃO A12 — CI #676 E CORREÇÃO (2026-11-23)
 - [x] Diagnosticar CI #676: falha exclusivamente de formatação Spotless em GameScreens.kt, no bloco when das notas RomM.
 - [x] Corrigir formatação na mesma PR #42, commit e72ff86f91a62e9e39cec59be1892ec4b83dcce0.
 - [ ] CI #678 (run #45095702464) do commit corretivo: queued na última consulta; confirmar conclusão e jobs.
-- [ ] Validar notas RomM no telefone.
+- [ ] Validar notas RomM no telefone; confirmar carregamento por versão e diferenciar lista vazia de falha de consulta.
 - A12 não deve ser marcada como concluída até CI verde e teste funcional.
+
+
+ATUALIZAÇÃO A12 — CI #681 APROVADA (2026-11-22)
+- [x] CI #681 / run 45096446767: SUCCESS — https://github.com/izzyn0okami/Tandem/actions/runs/45096446767.
+- [x] spotlessCheck aprovado.
+- [x] Testes unitários, Build APK e Upload artifact aprovados.
+- [x] final-status aprovado; jobs de release/notificação ignorados, nenhuma release publicada.
+- [ ] Testar no telefone a leitura de notas RomM, inclusive carregamento por versão e distinção entre ausência de notas e erro de consulta.
+- PR #42 continua aberta/draft, sem merge. PR #41 continua aberta/draft e intocada.
