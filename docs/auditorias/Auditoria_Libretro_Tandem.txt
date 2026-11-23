@@ -3790,3 +3790,17 @@ O filtro visual local permanece para a biblioteca instalada; o filtro remoto res
 CI da nova implementação: execução #45090587588, inicialmente queued; aguarda conclusão.
 PR #42 permanece aberta e draft, sem merge.
 PR #41 permanece aberta e draft por decisão do usuário; não trabalhar em saves/conflitos até o usuário retomar explicitamente esse tema.
+
+
+ATUALIZAÇÃO DE CI — FILTRO DE PLATAFORMA ROMM (2026-11-23)
+PR: #42 — https://github.com/izzyn0okami/Tandem/pull/42
+Commits de código validados:
+- 4b2af0ef57e515a896584b75d863f9295ee8bb76 — consulta de plataformas e envio de platform_ids.
+- d8a4e2fbc250174e1b2febd46906a671fc73ee1e — integração do filtro na biblioteca.
+Execuções:
+- CI #659: https://github.com/izzyn0okami/Tandem/actions/runs/45090573186 — SUCCESS.
+- CI #660: https://github.com/izzyn0okami/Tandem/actions/runs/45090587588 — SUCCESS.
+- Em ambas: testes unitários, Build APK, Upload artifact, spotlessCheck e final-status aprovados.
+- Jobs de release foram ignorados; nenhuma release foi publicada.
+- Resultado: implementação do filtro por plataforma aprovada pela CI. Validação funcional no telefone ainda pendente.
+- PR #42 permanece aberta/draft, sem merge. PR #41 permanece aberta/draft e intocada.
