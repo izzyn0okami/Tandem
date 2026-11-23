@@ -769,3 +769,10 @@ ATUALIZAÇÃO — PR #41 / DEVICE SYNC SRAM / CIs #884–#885 (2026-11-23)
 - Limites: métodos ainda não integrados ao SaveSync; nenhuma transferência real com RomM foi validada; E5 permanece EM ANDAMENTO. O adaptador não executa DELETE e não substitui o fluxo legado. Save states permanecem no fluxo atual separado; esta transferência é somente para SRAM.
 - E4 continua aguardando teste funcional no telefone (conflito, backups e rollback). E6/E7/E8/E9 continuam pendentes conforme roteiro. Testes reais no aparelho/servidor não presumidos.
 - Artefato APK Debug foi gerado e publicado como artefato da CI; não foi publicada release.
+
+
+ATUALIZAÇÃO — CI #888 (2026-11-23)
+- CI #888 / run 45254259983: SUCCESS integral no commit 7c0bdd84f4249cf55e2f9067d6ba1d039b3b8b1a. Spotless, testes unitários, Build APK Debug, Upload artifact e final-status aprovados.
+- Nenhuma release foi publicada; o APK Debug ficou disponível como artefato da CI.
+- E4 continua aguardando teste funcional no telefone (conflito, backups e rollback). E5 continua sem integração ao SaveSync e sem validação contra servidor RomM real. E6–E9 permanecem pendentes; nenhum DELETE automático.
+- PR #41 permanece aberta, Draft, mergeable, sem conflitos e sem merge. CI verde não substitui validação funcional no aparelho/servidor.
