@@ -118,19 +118,19 @@ class DeviceSyncProtocolTest {
         val server = MockWebServer()
         server.start()
         try {
-            server.enqueue(MockResponse().setBody("""{"session_id":8,"operations":[]}"""))
+            server.enqueue(MockResponse(body = """{"session_id":8,"operations":[]}"""))
             val client = RomMDeviceSyncClient(server.url("/").toString(), "test-token")
             val result = client.negotiate("device-123", emptyList(), setOf(42L))
             val request = server.takeRequest()
-            val payload = JSONObject(request.body.readUtf8())
+            val payload = JSONObject(request.body!!.utf8())
 
             assertEquals(8L, result.sessionId)
-            assertEquals("/api/sync/negotiate", request.path)
+            assertEquals("/api/sync/negotiate", request.url.encodedPath)
             assertEquals("POST", request.method)
             assertEquals(42L, payload.getJSONArray("rom_ids").getLong(0))
             assertFalse(payload.getBoolean("restore_unlisted"))
         } finally {
-            server.shutdown()
+            server.close()
         }
     }
 
@@ -139,12 +139,12 @@ class DeviceSyncProtocolTest {
         val server = MockWebServer()
         server.start()
         try {
-            server.enqueue(MockResponse().setBody("{}"))
+            server.enqueue(MockResponse(body = "{}"))
             val client = RomMDeviceSyncClient(server.url("/").toString(), "test-token")
             client.complete(8L, operationsCompleted = 2, operationsFailed = 1)
             val request = server.takeRequest()
-            val payload = JSONObject(request.body.readUtf8())
-            assertEquals("/api/sync/sessions/8/complete", request.path)
+            val payload = JSONObject(request.body!!.utf8())
+            assertEquals("/api/sync/sessions/8/complete", request.url.encodedPath)
             assertEquals(2, payload.getInt("operations_completed"))
             assertEquals(1, payload.getInt("operations_failed"))
 
@@ -153,7 +153,7 @@ class DeviceSyncProtocolTest {
             assertTrue(error is RomMHttpException)
             assertEquals(403, (error as RomMHttpException).statusCode)
         } finally {
-            server.shutdown()
+            server.close()
         }
     }
 
