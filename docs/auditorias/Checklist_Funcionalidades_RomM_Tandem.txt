@@ -12,7 +12,7 @@ LEGENDA
 [FORA DO ESCOPO INICIAL] Não implementar nesta primeira sequência; pode ser reconsiderado.
 
 A. BIBLIOTECA, PESQUISA E ORGANIZAÇÃO (PRIORIDADE ALTA)
-[EM ANDAMENTO] A1. Pesquisa de ROMs pelo endpoint oficial GET /api/roms (search_term); API e interface implementadas na branch feat/romm-library-search, aguardando CI e validação funcional.
+[EM ANDAMENTO] A1. Pesquisa de ROMs pelo endpoint oficial GET /api/roms (search_term); API e interface implementadas e CI #45089462426 aprovada (build, testes unitários e Spotless); aguarda validação funcional no telefone.
 [PENDENTE] A2. Filtros por plataforma e múltiplas plataformas (platform_ids).
 [PENDENTE] A3. Filtros por coleção comum, inteligente e virtual.
 [PENDENTE] A4. Filtros de favoritos, correspondência de metadados, duplicados, jogabilidade, saves, states e outros critérios suportados pelo RomM.
@@ -160,3 +160,21 @@ Data: 2026-11-23
 - Nenhuma funcionalidade existente removida.
 - Nenhuma alteração concorrente em GameModeActivity.kt, RemoteLibrary.kt ou SaveStore.kt.
 - PR #41 permanece aberta, draft e separada.
+
+
+HISTÓRICO DE VALIDAÇÃO — 2026-11-23
+CICLO 1 / PR #42 — CI APROVADA
+- Commit validado: 588886a527ceedadf0d39ad5b7df8a39a38f52ea.
+- CI #45089462426: SUCCESS — https://github.com/izzyn0okami/Tandem/actions/runs/45089462426
+- build-debug-apk: testes unitários, Build APK e Upload artifact aprovados.
+- check-style: spotlessCheck aprovado.
+- final-status: sucesso.
+- Nenhuma release foi publicada; tandem-release e nightly-release foram ignorados.
+- A1 permanece EM ANDAMENTO até o usuário confirmar teste funcional no telefone.
+- PR #42 continua aberta e draft; sem merge.
+CICLO E4 / PR #41 — CI COM FALHA
+- Commit: fe01500afb2ce11b8e19bd8981e167ca6ea4b59f.
+- CI #45085444492: FAILURE — https://github.com/izzyn0okami/Tandem/actions/runs/45085444492
+- Falharam Run unit tests e spotlessCheck; final-status também falhou.
+- PR #41 continua aberta e draft. Investigar logs e corrigir antes de avançar.
+- Nenhum merge ou release.
