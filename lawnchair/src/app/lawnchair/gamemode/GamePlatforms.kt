@@ -39,7 +39,7 @@ data class GamePlatform(
 )
 
 /** Um arquivo de BIOS esperado na pasta de sistema do núcleo. */
-data class BiosFile(val name: String, val label: String)
+data class BiosFile(val name: String, val label: String, val md5Hash: String? = null)
 
 /**
  * Plataformas que o motor atual (M3) sabe jogar. A decisão segue a lógica do Argosy: o nome da
@@ -76,9 +76,9 @@ object GamePlatforms {
             discBased = true,
             discCompanionExtensions = setOf("bin", "wav"),
             bios = listOf(
-                BiosFile("bios_CD_U.bin", "Sega CD (EUA)"),
-                BiosFile("bios_CD_E.bin", "Mega CD (Europa)"),
-                BiosFile("bios_CD_J.bin", "Mega CD (Japão)"),
+                BiosFile("bios_CD_U.bin", "Sega CD (EUA)", "854b9150240a198070150e4566ae1290"),
+                BiosFile("bios_CD_E.bin", "Mega CD (Europa)", "e66fa1dc5820d254611fdcdba0662372"),
+                BiosFile("bios_CD_J.bin", "Mega CD (Japão)", "278a9397d192149e84e820ac621a8edd"),
             ),
             biosRequired = true,
         ),
@@ -93,10 +93,10 @@ object GamePlatforms {
             discBased = true,
             discCompanionExtensions = setOf("bin", "img", "sub", "sbi", "ccd", "wav"),
             bios = listOf(
-                BiosFile("scph5501.bin", "PlayStation (EUA) v3.0"),
-                BiosFile("scph5500.bin", "PlayStation (Japão)"),
-                BiosFile("scph5502.bin", "PlayStation (Europa)"),
-                BiosFile("scph1001.bin", "PlayStation (EUA) v2.0"),
+                BiosFile("scph5501.bin", "PlayStation (EUA) v3.0", "490f666e1afb15b7362b406ed1cea246"),
+                BiosFile("scph5500.bin", "PlayStation (Japão)", "8dd7d5296a650fac7319bce665a6a53c"),
+                BiosFile("scph5502.bin", "PlayStation (Europa)", "32736f17079d0b2b7024407c39bd3050"),
+                BiosFile("scph1001.bin", "PlayStation (EUA) v2.0", "924e392ed05558ffdb115408c263dccf"),
             ),
         ),
         GamePlatform("pce", "PC Engine / TurboGrafx-16", "mednafen_pce_fast", setOf("pce"), setOf("pce", "tg16", "pcengine", "turbografx16", "turbografx"), 70, 8),
@@ -114,8 +114,8 @@ object GamePlatforms {
             discBased = true,
             discCompanionExtensions = setOf("bin", "img", "sub", "wav"),
             bios = listOf(
-                BiosFile("sega_101.bin", "Saturn (Japão)"),
-                BiosFile("mpr-17933.bin", "Saturn (EUA/Europa)"),
+                BiosFile("sega_101.bin", "Saturn (Japão)", "85ec9ca47d8f6807718151cbcca8b964"),
+                BiosFile("mpr-17933.bin", "Saturn (EUA/Europa)", "3240872c70984b6cbfda1586cab68dbe"),
             ),
             biosRequired = true,
         ),
@@ -129,7 +129,7 @@ object GamePlatforms {
             discBased = true,
             discCompanionExtensions = setOf("bin", "raw", "wav"),
             bios = listOf(
-                BiosFile("dc/dc_boot.bin", "Dreamcast (boot ROM)"),
+                BiosFile("dc/dc_boot.bin", "Dreamcast (boot ROM)", "e10c53c2f8b90bab96ead2d368858623"),
                 BiosFile("dc/dc_flash.bin", "Dreamcast (flash)"),
             ),
         ),
@@ -164,7 +164,7 @@ object GamePlatforms {
             sortOrder = 62,
             discBased = true,
             discCompanionExtensions = setOf("bin"),
-            bios = listOf(BiosFile("panafz10.bin", "3DO FZ-10")),
+            bios = listOf(BiosFile("panafz10.bin", "3DO FZ-10", "51f2f43ae2f3508a14d9f56597e2d3ce")),
             biosRequired = true,
         ),
         GamePlatform("vb", "Virtual Boy", "mednafen_vb", setOf("vb", "vboy"), setOf("vb", "virtualboy", "vboy"), 92, 28),
@@ -271,7 +271,7 @@ object GamePlatforms {
             folderAliases = setOf("coleco", "colecovision", "col"),
             sortOrder = 85,
             raConsoleId = 44,
-            bios = listOf(BiosFile("colecovision.rom", "ColecoVision")),
+            bios = listOf(BiosFile("colecovision.rom", "ColecoVision", "2c66f5911e5b42b8ebe113403548eee7")),
             biosRequired = true,
         ),
         GamePlatform(
@@ -294,8 +294,8 @@ object GamePlatforms {
             sortOrder = 86,
             raConsoleId = 45,
             bios = listOf(
-                BiosFile("exec.bin", "Intellivision (Executive)"),
-                BiosFile("grom.bin", "Intellivision (GROM)"),
+                BiosFile("exec.bin", "Intellivision (Executive)", "62e761035cb657903761800f4437b8af"),
+                BiosFile("grom.bin", "Intellivision (GROM)", "0cd5946c6473e42e8e4c2137785e427f"),
             ),
             biosGroups = listOf(
                 listOf(BiosFile("exec.bin", "Intellivision (Executive)")),
