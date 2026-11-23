@@ -189,8 +189,11 @@ internal fun RomMGameDataPanel(
         Text("Atividade atual no RomM", color = GameColors.text, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
         when {
             activity == null -> Text("Consultando sessões ativas…", color = GameColors.textDim, fontSize = 11.sp)
+
             activityError.isNotBlank() -> Text("Atividade indisponível: $activityError", color = GameColors.danger, fontSize = 11.sp)
+
             activity!!.isEmpty() -> Text("Nenhuma sessão ativa informada pelo RomM.", color = GameColors.textDim, fontSize = 11.sp)
+
             else -> activity!!.forEach { session ->
                 Text(
                     "${session.username} · ${session.deviceType} · desde ${formatRomMDate(session.startedAtMs)}",
