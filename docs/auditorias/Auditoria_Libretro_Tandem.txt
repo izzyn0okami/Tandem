@@ -4398,3 +4398,16 @@ CI/VALIDAÇÃO
 - Testes funcionais no telefone e validação contra servidor RomM real continuam pendentes.
 - D3/D4/D6/D7/D8 implementados nesta branch, aguardando CI final e revisão. D5 parcialmente concluído, com revisão regional pendente.
 - PR #41 permanece aberta/draft e intocada. Nenhum merge ou release autorizado.
+
+
+COMPLEMENTO DA AUDITORIA D5 — CATÁLOGO DE NÚCLEOS (2026-11-23)
+- mGBA: Game Boy, Game Boy Color e Game Boy Advance têm BIOS opcionais; adicionados gb_bios.bin, gbc_bios.bin e gba_bios.bin com MD5 oficiais.
+- Genesis Plus GX: adicionados bios_MD.bin, bios_E.sms, bios_U.sms, bios_J.sms e bios.gg como opcionais; os três BIOS de Sega CD continuam regionais e obrigatórios para jogos da região correspondente.
+- melonDS: bios7.bin, bios9.bin e firmware.bin são opcionais no modo DS; adicionados MD5 conhecidos para bios7 e bios9. DSi possui requisitos diferentes, mas o catálogo atual não representa um modo DSi separado; não presumir que os arquivos DS bastem para DSi.
+- Handy: lynxboot.img é obrigatório; corrigido o status anterior de opcional para obrigatório.
+- ProSystem: 7800 BIOS (U).rom é opcional; hash oficial já registrado.
+- FCEUmm: disksys.rom é obrigatório somente para jogos FDS; adicionado como item condicional sem bloquear a plataforma NES inteira. gamegenie.nes é opcional para o acessório Game Genie.
+- Atari 5200 (a5200): 5200.rom opcional, corrigido anteriormente.
+- Testes de catálogo ampliados para Lynx obrigatório, mGBA opcional e FDS condicional.
+Fontes adicionais: https://docs.libretro.com/library/mgba/ ; https://docs.libretro.com/library/melonds/ ; https://docs.libretro.com/library/handy/ ; https://docs.libretro.com/library/prosystem/ ; https://docs.libretro.com/library/fceumm/ ; https://docs.libretro.com/library/genesis_plus_gx/ .
+D5 permanece parcialmente pendente para auditoria de BIOS regionais por jogo (Sega CD/Saturn) e para avaliar se o app deve separar modos DSi e Neo Geo AES/MVS em vez de um único estado por plataforma.
