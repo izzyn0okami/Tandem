@@ -4450,3 +4450,13 @@ CI #850 E SPOTLESS — 2026-11-23
 - Job check-style: Spotless aplicou formatação e gerou commit automático e2f5fbc46c967df320f6bb609ca1e2d6f23d2cc8. A etapa Commit formatting and rerun CI falhou no push por atualização concorrente/non-fast-forward; o commit de formatação, porém, apareceu depois no branch.
 - A execução subsequente CI #854, no commit e2f5fbc46c967df320f6bb609ca1e2d6f23d2cc8, terminou com conclusion action_required e nenhum job. É necessário autorizar a execução no GitHub Actions (se o GitHub mostrar a ação de aprovação) ou gerar nova execução por commit não-bot. Não considerar a CI completa até check-style e build/teste executarem no head atual.
 - PR #45 permanece Draft e mergeable, sem merge. PR #41 permanece aberta/draft e intocada. Teste funcional em aparelho com RomM real ainda pendente.
+
+
+ATUALIZAÇÃO — PR #45 / CI #856 (2026-11-23)
+- [x] CI #856 / run 45222135704: SUCCESS integral no commit 019f4d4b08c44fa4c6a8e88a29263ada120ca748 — https://github.com/izzyn0okami/Tandem/actions/runs/45222135704.
+- [x] check-style: Spotless Apply, commit/reexecução e verificação final de formatação aprovados.
+- [x] build-debug-apk: testes unitários, Build APK e Upload artifact aprovados.
+- [x] final-status aprovado; jobs opcionais de notificações/Crowdin/release ignorados; nenhuma release publicada.
+- [x] Artefato assembleLawnWithQuickstepGithubDebug: ID 14841653637; 46.290.536 bytes; SHA-256 d8e8d136445f882b7d6f6d62841694599b29471380f88a5b1a73640d859fc705; expira em 2027-02-21.
+- [ ] Testes funcionais no telefone com servidor RomM 5.4.x real continuam pendentes; CI verde não substitui validação no aparelho.
+- PR #45 permanece aberta, Draft e sem merge; PR #41 permanece aberta, Draft, pausada e intocada; D9 segue fora do escopo.
