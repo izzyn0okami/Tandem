@@ -32,6 +32,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
@@ -101,7 +102,7 @@ internal fun LibraryScreen(
     var remoteSearchHasMore by remember { mutableStateOf(false) }
     var remoteSearchLoadingMore by remember { mutableStateOf(false) }
     var activeRemoteSearchKey by remember { mutableStateOf("") }
-    var displayLimit by remember { mutableStateOf(100) }
+    var displayLimit by remember { mutableIntStateOf(100) }
     var sortBy by remember { mutableStateOf("") }
     var sortDescending by remember { mutableStateOf(false) }
     val sortOptions = remember {
