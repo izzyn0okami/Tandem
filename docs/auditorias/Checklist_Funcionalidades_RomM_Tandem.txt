@@ -266,3 +266,11 @@ A12 — Notas por jogo
 
 - [ ] CI dos commits A12 (53d5e0b e a5f902f).
 - [ ] Validar carregamento de notas no telefone.
+
+
+ATUALIZAÇÃO A12 — CI #676 E CORREÇÃO (2026-11-23)
+- [x] Diagnosticar CI #676: falha exclusivamente de formatação Spotless em GameScreens.kt, no bloco when das notas RomM.
+- [x] Corrigir formatação na mesma PR #42, commit e72ff86f91a62e9e39cec59be1892ec4b83dcce0.
+- [ ] CI #678 (run #45095702464) do commit corretivo: queued na última consulta; confirmar conclusão e jobs.
+- [ ] Validar notas RomM no telefone.
+- A12 não deve ser marcada como concluída até CI verde e teste funcional.
