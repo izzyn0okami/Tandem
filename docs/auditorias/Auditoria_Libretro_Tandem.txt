@@ -4622,3 +4622,5 @@ IMPLEMENTAÇÃO — DIAGNÓSTICO READ-ONLY DE CAMINHOS DE SAVES (2026-11-23)
 - Alteração ainda não validada por CI nem no telefone. A compilação e testes automatizados precisam passar; depois, validar PSX e SNES e exportar game_log.txt para análise.
 - Limitação: a listagem é limitada a 40 entradas por pasta e não faz varredura recursiva; não pretende identificar automaticamente qualquer convenção de nome específica de cada core.
 - Nenhuma PR foi criada ainda; nenhuma alteração funcional em sincronização RomM; estágio E permanece EM ANDAMENTO.
+
+- PR #46 aberta como Draft: https://github.com/izzyn0okami/Tandem/pull/46. Base game-mode-m2-dev; head feat/save-path-diagnostics. A PR está em revisão/validação, sem merge.
