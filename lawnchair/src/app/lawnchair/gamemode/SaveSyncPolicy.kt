@@ -7,6 +7,12 @@ internal object SaveSyncPolicy {
     /** A identidade da conta depende do usuário RomM, nunca do token que pode ser rotacionado. */
     fun accountFingerprint(server: String, userId: Long): String = sha256("$server|user:$userId")
 
+    /** Stable key for a Device Sync ID, isolated by normalized server and RomM user. */
+    fun deviceSyncStoreKey(server: String, userId: Long): String {
+        require(server.isNotBlank() && userId > 0L)
+        return "device:${accountFingerprint(server, userId)}"
+    }
+
     /** Migra vínculos antigos somente quando a mesma conta é comprovada. */
     fun canMigrateAccountLinks(
         sameServer: Boolean,
