@@ -564,3 +564,16 @@ ATUALIZAÇÃO — C1–C7 / CI #777 E #778 / MINIATURAS (2026-11-23)
 - [x] Revisão do RomM 5.4.1: endpoint de screenshot cobre upload/exclusão; conteúdo original é servido pelo endpoint de RomFile. Nenhuma API de miniatura dedicada foi identificada para screenshots associados. Não baixar a imagem original apenas para montar thumbnail; item fica como melhoria futura dependente de contrato oficial.
 - [ ] Testes funcionais no telefone com servidor/conta RomM real para C1–C7 permanecem pendentes.
 - PR #44 aberta/draft, sem merge. PR #41 aberta/draft e pausada, fora do escopo.
+
+
+ATUALIZAÇÃO — C1 / GALERIA DE MINIATURAS E CI #788 (2026-11-23)
+- [x] Substituída a pendência de thumbnails por galeria de miniaturas temporárias geradas no cliente a partir dos arquivos screenshot do RomM.
+- [x] Até 12 screenshots por jogo; carregamento sob demanda; miniaturas JPEG até 360 px; cache temporário limitado a 64 MiB; reaproveitamento offline enquanto o cache existir.
+- [x] Cada imagem de origem tem limite de 64 MiB; o original temporário e resíduos .part/.range são removidos após a geração/erro.
+- [x] Commits: 101ee9d3fb85b5e2d1bcb52b9c8e330ee3eee3d9, 486fb956f7c99494faee4cfca48e4d1871e5ca48, c78d16fb4c38e5132cac78ecf27bb1edfc99a6bd.
+- [x] CI #788 / run 45203232345: SUCCESS integral no commit c78d16fb4c38e5132cac78ecf27bb1edfc99a6bd; Spotless, unit tests, Build APK e final-status aprovados.
+- [x] Artefato #788: ID 14831843851; 46.268.205 bytes; SHA-256 ef127dc1a0a00bad7bf012c0a2a46564ccaf9ebdeb14073dc60d43647856cd0f.
+- [x] Commit automático de formatação: d0d55b87b84b507c69552f2a9a337c3b738bb0b0.
+- [ ] CI #790 / run 45203546753 do head formatado está em action_required, sem jobs; aguarda aprovação no GitHub Actions para validar o head atual.
+- [ ] Teste funcional no telefone com RomM real para C1–C7 permanece pendente.
+- PR #44 aberta/draft, sem merge. PR #41 aberta/draft e pausada, fora do escopo.
