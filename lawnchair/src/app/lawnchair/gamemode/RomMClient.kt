@@ -913,15 +913,19 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
         }
     }
 
-    internal fun parseDeviceCapabilities(json: JSONObject?): Map<String, Boolean> = buildMap {
-        if (json == null) return@buildMap
+    private fun parseDeviceCapabilities(json: JSONObject?): Map<String, Boolean> {
+        if (json == null) return emptyMap()
+        val values = mutableMapOf<String, Any?>()
         val keys = json.keys()
         while (keys.hasNext()) {
             val key = keys.next()
-            val value = json.opt(key)
-            if (value is Boolean) put(key, value)
+            values[key] = json.opt(key)
         }
+        return parseDeclaredCapabilities(values)
     }
+
+    internal fun parseDeclaredCapabilities(values: Map<String, Any?>): Map<String, Boolean> =
+        values.mapNotNull { (key, value) -> (value as? Boolean)?.let { key to it } }.toMap()
 
     /** Sessões atualmente ativas no RomM. A API não fornece aqui um histórico encerrado. */
     fun listActivity(): List<RemoteActivity> {
