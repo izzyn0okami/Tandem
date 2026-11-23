@@ -145,6 +145,25 @@ data class RemoteAssociatedFile(
     val sha1Hash: String? = null,
 )
 
+/**
+ * Categorias que representam conteúdo de jogo executável/instalável.
+ * Categorias auxiliares e categorias futuras desconhecidas ficam fora da ROM.
+ */
+internal fun isRomMPlayableFileCategory(category: String?): Boolean {
+    if (category.isNullOrBlank()) return true
+    return category.lowercase() in setOf(
+        "game",
+        "dlc",
+        "hack",
+        "update",
+        "mod",
+        "demo",
+        "translation",
+        "prototype",
+        "cheat",
+    )
+}
+
 /** Página de IDs da biblioteca; permite carregar resultados progressivamente. */
 data class RemoteGameIdPage(
     val ids: List<Long>,
@@ -691,7 +710,11 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
         // as cadastrou assim; não inferimos relação com outros registros pelo nome.
         val discFiles = allowed + platform.discCompanionExtensions + if (isEasyRpgGame) setOf("ldb") else emptySet()
         val serverExtension = File(serverName).extension.lowercase()
+        val serverCategory = associatedFiles.firstOrNull {
+            it.fileName.equals(serverName, ignoreCase = true)
+        }?.category
         val flat = serverExtension in discFiles &&
+            isRomMPlayableFileCategory(serverCategory) &&
             !item.optBoolean("has_multiple_files", false) &&
             !item.optBoolean("has_nested_single_file", false) &&
             !isEasyRpgGame
@@ -717,7 +740,7 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
             // EasyRPG é uma pasta RPG Maker 2000/2003. Preservamos os arquivos de jogo
             // associados, mas excluímos mídias auxiliares que não pertencem ao pacote executável.
             val gameFiles = associatedFiles.filter { file ->
-                file.category == null || file.category !in setOf("manual", "walkthrough", "soundtrack", "screenshot")
+                isRomMPlayableFileCategory(file.category)
             }
             val main = gameFiles.firstOrNull { it.fileName.equals("RPG_RT.ldb", ignoreCase = true) }
                 ?: gameFiles.firstOrNull { File(it.fileName).extension.equals("ldb", ignoreCase = true) }
@@ -733,10 +756,10 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
             val files = item.optJSONArray("files")
             val playable = (0 until (files?.length() ?: 0)).map { files!!.getJSONObject(it) }.filter {
                 val name = it.optString("file_name")
-                val category = it.optString("category").lowercase()
-                val isGameFile = category.isBlank() || category == "null" ||
-                    category !in setOf("manual", "walkthrough", "soundtrack", "screenshot")
-                isGameFile && !name.startsWith(".") && File(name).extension.lowercase() in discFiles
+                val category = it.optString("category")
+                    .takeUnless { value -> value.isBlank() || value.equals("null", ignoreCase = true) }
+                isRomMPlayableFileCategory(category) &&
+                    !name.startsWith(".") && File(name).extension.lowercase() in discFiles
             }
             if (playable.isEmpty()) {
                 skippedExtension++
