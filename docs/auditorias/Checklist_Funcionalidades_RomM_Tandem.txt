@@ -637,3 +637,8 @@ D7/D8 — AJUSTE AO CONTRATO OFICIAL (2026-11-23)
 - GET /api/devices é paginado; o cliente percorre items/total/limit/offset.
 - 404 em /api/devices/online indica presença indisponível (por exemplo, DEVICE_INSTALL_ENABLED desativado); não marcar o aparelho como offline. 403 continua sendo erro de escopo.
 - Inventário usa campos DeviceSchema documentados: platform, client, client_version, sync_mode, sync_enabled, last_seen e capabilities.
+
+REGISTRO DE CI — 2026-11-23
+- CI #804 passou integralmente no commit intermediário 3dab2566c5d26ee84a0e800850cee81c527e7da6; não valida as alterações posteriores.
+- CI #825/#826 tiveram falha somente no push de formatação automático (non-fast-forward por concorrência). O commit Spotless foi publicado em 4449d8d213b124a5dbf4ff3f9230a31254665b51.
+- CI #837 aguarda execução para validar o estado formatado; manter PR draft até sucesso.
