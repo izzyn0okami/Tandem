@@ -583,7 +583,7 @@ internal object GameIdentityResolver {
             }.getOrDefault(false)
         }
 
-        try {
+        return try {
             for ((coreId, source) in sources) {
                 val target = File(File(savesRoot, coreId), gameIdentity)
                 val sourceCanonical = source.canonicalFile
