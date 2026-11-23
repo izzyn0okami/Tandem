@@ -4558,3 +4558,12 @@ ATUALIZAÇÃO DE AUDITORIA — REGISTRO EXPLÍCITO DEVICE SYNC / CIs #898, #899 
 - Próximo passo: apresentar ação de inspeção somente leitura nos detalhes do jogo, com pré-condições claras (vínculo RomM válido, conta conectada correspondente, dispositivo registrado e jogo fechado) e exibir resumo da negociação sem executar operações.
 - E5 continua EM ANDAMENTO: integração de transferência ao SaveSync, interoperabilidade real e testes no aparelho permanecem pendentes. Save states e memory cards não entram no novo transporte. DELETE automático proibido.
 - E4 aguarda validação funcional no telefone; E6/E7/E8/E9 seguem pendentes. PR #41 continua aberta, Draft, sem merge. Nenhum teste físico/servidor real foi presumido.
+
+## Atualização — interface de inspeção Device Sync e CI (2026-11-23)
+- CI #904 / run 45273721097: SUCCESS integral no commit d435f2df41257598b977a5e460ce9ca837c3943b.
+- GameScreens.kt agora apresenta “Inspecionar SRAM no RomM” somente para jogos locais Libretro com núcleo escolhido, conta conectada, dispositivo registrado e vínculo RomM verificado.
+- O resultado mostra SRAM local incluída ou não e as contagens das ações NoOp, Upload, Download, Conflict, Delete e Unknown. A mensagem deixa explícito que nenhuma operação foi aplicada; erros são exibidos e registrados em GameLog.
+- A operação usa RomMDeviceSyncDiagnostics.inspectLocalSram em IO. Nenhum upload/download/delete, resolução de conflito ou alteração de save é feito pela UI. O serviço bloqueia jogo ativo.
+- Commit 01b7a466cd214ae12e5804bbaf04cf7f013d468e; CI #905 / run 45275918318: SUCCESS integral, incluindo Spotless/check-style, testes unitários, Build APK Debug, Upload artifact e final-status.
+- Validação no telefone e contra servidor RomM real permanece pendente. Não presumir que o fluxo foi testado fora da CI.
+- PR #41 permanece Draft e sem merge. Próximo passo é validar registro e inspeção com servidor RomM real/aparelho; transferências continuam desligadas e isoladas. E5 segue em andamento; E4 e E6–E9 seguem pendentes.
