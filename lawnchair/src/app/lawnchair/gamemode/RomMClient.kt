@@ -64,6 +64,15 @@ data class RemoteGame(
 /** Plataforma cadastrada no RomM, usada para filtros oficiais da API. */
 data class RemotePlatform(val id: Long, val slug: String, val name: String)
 
+/** Coleção RomM; IDs virtuais são strings, os demais são IDs numéricos. */
+data class RemoteCollection(
+    val id: String,
+    val name: String,
+    /** manual, smart ou virtual */
+    val kind: String,
+    val romIds: Set<Long> = emptySet(),
+)
+
 /** Arquivo de firmware (BIOS) guardado no servidor. */
 data class RemoteFirmware(
     val id: Long,
@@ -350,7 +359,11 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
     private var skippedExtension = 0
 
     /** Lista ROMs compatíveis, respeitando o agrupamento e os arquivos associados pelo RomM. */
-    fun listGames(searchTerm: String? = null, platformIds: List<Long> = emptyList()): List<RemoteGame> {
+    fun listGames(
+        searchTerm: String? = null,
+        platformIds: List<Long> = emptyList(),
+        collection: RemoteCollection? = null,
+    ): List<RemoteGame> {
         serverTotal = 0
         skippedPlatforms.clear()
         skippedMulti = 0
@@ -370,6 +383,11 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
                 .addQueryParameter("with_files", "true")
             if (query.length >= 2) urlBuilder.addQueryParameter("search_term", query)
             platformIds.distinct().forEach { id -> urlBuilder.addQueryParameter("platform_ids", id.toString()) }
+            when (collection?.kind) {
+                "manual" -> urlBuilder.addQueryParameter("collection_id", collection.id)
+                "smart" -> urlBuilder.addQueryParameter("smart_collection_id", collection.id)
+                "virtual" -> urlBuilder.addQueryParameter("virtual_collection_id", collection.id)
+            }
             val url = urlBuilder.build()
             val json = longHttp.newCall(request(url).build()).execute().use { response ->
                 GameLog.log("romm", "GET api/roms offset=$offset -> ${response.code}")
@@ -949,6 +967,41 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
             val slug = item.optString("slug").takeUnless { it.isBlank() || it == "null" }
             val name = item.optString("name").takeUnless { it.isBlank() || it == "null" }
             if (id <= 0L || slug == null || name == null) null else RemotePlatform(id, slug, name)
+        }
+    }
+
+    /** Coleções do RomM em modo somente leitura: manuais, inteligentes e virtuais. */
+    fun listCollections(): List<RemoteCollection> {
+        val result = mutableListOf<RemoteCollection>()
+        result += readCollections("api/collections", "manual")
+        result += readCollections("api/collections/smart", "smart")
+        // A API 5.4.1 exige o tipo em cada consulta de coleções virtuais.
+        listOf("collection", "franchise", "genre", "company", "mode").forEach { type ->
+            result += readCollections("api/collections/virtual?type=$type", "virtual")
+        }
+        return result.distinctBy { "${it.kind}:${it.id}" }.sortedBy { it.name.lowercase() }
+    }
+
+    private fun readCollections(path: String, kind: String): List<RemoteCollection> {
+        val url = base.resolve(path) ?: throw IOException("Caminho de coleção RomM inválido")
+        val text = http.newCall(request(url).build()).execute().use { response ->
+            if (!response.isSuccessful) throw IOException("Servidor respondeu ${response.code} ao consultar coleções")
+            response.body.string()
+        }
+        val items = org.json.JSONArray(text)
+        return (0 until items.length()).mapNotNull { index ->
+            val item = items.optJSONObject(index) ?: return@mapNotNull null
+            val id = when (kind) {
+                "virtual" -> item.optString("id").takeUnless { it.isBlank() || it == "null" }
+                else -> item.optLong("id", -1L).takeIf { it > 0L }?.toString()
+            } ?: return@mapNotNull null
+            val name = item.optString("name").takeUnless { it.isBlank() || it == "null" }
+                ?: return@mapNotNull null
+            val roms = item.optJSONArray("rom_ids")
+            val romIds = (0 until (roms?.length() ?: 0)).mapNotNull { i ->
+                roms?.optLong(i)?.takeIf { it > 0L }
+            }.toSet()
+            RemoteCollection(id, name, kind, romIds)
         }
     }
 
