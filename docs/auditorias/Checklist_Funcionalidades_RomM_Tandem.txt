@@ -860,3 +860,5 @@ ATUALIZAÇÃO — DIAGNÓSTICO DE CAMINHOS DE SAVES (2026-11-23)
 - Somente leitura: não abre conteúdo, não grava arquivo de teste, não move, copia, renomeia, sobrescreve ou exclui saves.
 - CI, revisão de código e teste real em PSX/SNES ainda pendentes. O diagnóstico deve ser validado no aparelho e o log exportado antes de qualquer correção de sincronização.
 - E4/E5 continuam em andamento; não há autorização para ativar transferência Device Sync nem apagar/substituir arquivos. Nenhuma PR criada até este registro.
+
+- PR #46 aberta como Draft: https://github.com/izzyn0okami/Tandem/pull/46. Base game-mode-m2-dev; head feat/save-path-diagnostics. Aguardando CI e revisão; sem merge.
