@@ -743,3 +743,18 @@ ATUALIZAÇÃO — ESTÁGIO E / PR #41 / CI #870 (2026-11-23)
 - E9: SRAM e save states separados; mapear memory cards por core e criar testes negativos antes de qualquer sincronização.
 - E10: qualquer substituição do sincronizador atual depende de decisão explícita do usuário.
 - Testes no telefone e servidor RomM real continuam pendentes; não presumir validação funcional.
+
+ATUALIZAÇÃO — ESTÁGIO E / PR #41 / CI #872, #873, #874, #875 E #879 (2026-11-23)
+- CI #872 / run 45243316335: SUCCESS integral; validou a atualização anterior dos registros de auditoria e metadados da PR.
+- CI #873 / run 45243570167: SUCCESS no commit 5b9c33bcb59f6b75d607d9174f483b049bf8b940.
+- CI #874 / run 45246819052: SUCCESS integral no commit intermediário d1dc76a9d245ee655ec88fd154f2d5375f220cd5.
+- CI #875 / run 45246832063: falhou nos testes unitários após incompatibilidade de chamadas com a API do MockWebServer 5.5.1; Spotless havia passado. A falha foi corrigida na mesma PR, sem abrir PR concorrente.
+- CI #879 / run 45248205495: SUCCESS integral no head f67dbd43d388ac3f59851e532fc72aa8fd81e052. Spotless (incluindo commit/reexecução e verificação), testes unitários, Build APK, Upload artifact e final-status aprovados. Jobs opcionais de release/notificação ignorados; nenhuma release publicada. https://github.com/izzyn0okami/Tandem/actions/runs/45248205495
+- E5: persistência do device_id implementada em SharedPreferences separado, com chave isolada por servidor/usuário; limpar a conexão não apaga a identidade registrada. Teste da chave por conta/servidor adicionado.
+- E5: testes HTTP com MockWebServer adicionados para registro autenticado, negotiate com ROM IDs explícitos e restore_unlisted=false, complete e tratamento de HTTP 403. Dependência mockwebserver3 5.5.1 adicionada apenas aos testes.
+- E5 continua EM ANDAMENTO: adaptador ainda não integrado ao fluxo SaveSync; falta montar os saves locais, transferir bytes de upload/download, validar hashes no fluxo real e testar permissões/contrato contra servidor RomM real. Não substituir o sincronizador atual.
+- E4 continua EM ANDAMENTO até teste funcional no telefone cobrindo conflito, escolha, backups e rollback.
+- E6/E7: PoC WebDAV ainda pendente; iniciar somente leitura e depois testar escrita apenas em servidor mock/controlado com dados descartáveis. DELETE automático proibido.
+- E8: comparação formal Device Sync × WebDAV pendente.
+- E9: mapear caminhos de memory cards por core e adicionar testes negativos; memory cards não devem ser enviados como SRAM nem save states.
+- PR #41 permanece aberta, Draft, mergeable e sem merge. Testes funcionais no telefone e validação com servidor real continuam pendentes.
