@@ -4117,3 +4117,11 @@ CI BASELINE DA PR #44 — RUN #713 (2026-11-23)
 - Importante: a execução validou o head inicial 99b312693861f2c34cddeb20e7507eed2d01291c, antes da implementação C6 e das correções de contrato registradas depois.
 - [ ] CI do head atual da PR #44 (2bcdbdd61bfda4a85735dd93efdd87d33fa45c50) ainda não foi disparada/confirmada; a execução #713 não valida o código posterior.
 - Nenhuma release publicada e nenhum merge realizado.
+
+
+CORREÇÃO ADICIONAL — ID DE ARQUIVO NO DOWNLOAD INDIVIDUAL (2026-11-23)
+- A revisão do endpoint RomM 5.4.1 confirmou que GET /api/roms/{file_id}/files/content/{file_name} recebe RomFile.id.
+- Foi encontrado um erro preexistente no Tandem: o download individual montava a rota com RemoteGame.id (Rom.id), embora RemoteGame.fileId já contivesse o ID do RomFile.
+- Corrigido na PR #44: a rota individual agora usa game.fileId. Downloads de conjuntos continuam usando /api/roms/{rom_id}/content com file_ids.
+- Commit: b05e9115da2baa57c6a1c976b02c547f0250a405.
+- [ ] CI do head atualizado e teste real de download individual pendentes.
