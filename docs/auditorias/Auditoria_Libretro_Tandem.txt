@@ -3915,3 +3915,21 @@ LIMITES E PRÓXIMAS ETAPAS
 - Notas A12: indicador has_notes está disponível na lista; conteúdo das notas ainda deve ser consultado sob demanda na tela de detalhes usando GET /api/roms/{id}/notes.
 - Não foi implementada escrita de dados pessoais nem criação/edição/exclusão de notas.
 - Validação funcional no telefone pendente.
+
+
+ATUALIZAÇÃO DE STATUS — A11 E A12 (2026-11-23)
+
+A11 — CI CONCLUÍDA
+- CI #674 (commit 1c2ae0f) passou integralmente: verificação de estilo, testes unitários, compilação APK e artefato.
+- CI #675 (commit 1728c53, documentação/checklist) passou integralmente.
+- Portanto, parse somente leitura de rom_user e has_notes está aprovado pela CI. Teste funcional no telefone ainda pendente.
+
+A12 — NOTAS DO ROMM: IMPLEMENTAÇÃO INICIAL
+- RomM 5.4.1: GET /api/roms/{id}/notes exige Scope.ROMS_READ, verifica a visibilidade da ROM e retorna UserNoteSchema.
+- UserNoteSchema contém id, title, content, is_public, tags, created_at, updated_at, user_id, username e identidade visual do autor.
+- O Tandem agora oferece RomMClient.listNotes(romId), usando apenas GET e sem solicitar escopos de escrita.
+- GameDetailScreen consulta notas somente para as versões que indicam has_notes=true, sob demanda ao abrir detalhes; apresenta título, conteúdo, tags, autor e versão correspondente.
+- Erros são registrados no log do app e não alteram nem ocultam os dados do RomM.
+- Commits: cliente 53d5e0b8ad20193ce2a3bf51f612ebdf9b8aba89; interface a5f902f91328caec2d4f7614637696e6ad48b917.
+- CI dos commits A12 pendente; validação funcional no telefone pendente.
+- Escrita/edição/exclusão de notas continua fora do escopo.
