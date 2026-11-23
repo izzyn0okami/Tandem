@@ -155,10 +155,8 @@ class BiosManagerTest {
     @Test
     fun deviceCapabilityParserKeepsOnlyExplicitBooleanValues() {
         val client = RomMClient("http://127.0.0.1:8080", null)
-        val parsed = client.parseDeviceCapabilities(
-            org.json.JSONObject(
-                """{"remote_install":true,"save_sync":false,"label":"unknown"}""",
-            ),
+        val parsed = client.parseDeclaredCapabilities(
+            mapOf("remote_install" to true, "save_sync" to false, "label" to "unknown"),
         )
 
         assertEquals(mapOf("remote_install" to true, "save_sync" to false), parsed)
