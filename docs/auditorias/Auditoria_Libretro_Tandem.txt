@@ -4547,3 +4547,14 @@ ATUALIZAÇÃO DE AUDITORIA — DEVICE SYNC SRAM / INSPEÇÃO SOMENTE LEITURA / C
 - Próximo passo: implementar registro do dispositivo por ação explícita na interface RomM. O diagnóstico atual depende de device_id previamente registrado; não deve haver registro silencioso. Persistir UUID somente após resposta válida.
 - E5 segue EM ANDAMENTO: integração ao SaveSync, transferência real e validação de interoperabilidade com servidor RomM ainda pendentes. Não ativar operações de sincronização nem substituir fluxo legado. Save states e memory cards permanecem fora do novo transporte.
 - E4 aguarda teste funcional no telefone; E6/E7/E8/E9 continuam pendentes. PR #41 permanece aberta, Draft e sem merge. Nenhum teste em aparelho/servidor real foi presumido.
+
+
+ATUALIZAÇÃO DE AUDITORIA — REGISTRO EXPLÍCITO DEVICE SYNC / CIs #898, #899 E #902 (2026-11-23)
+- CI #898 / run 45270416999: SUCCESS integral no commit e12ff87f8fb8e16e1fb7a5716cb6d2523bcccb6d; testes, formatação, Build APK Debug e final-status aprovados.
+- RomMScreen.kt agora oferece ação manual para registrar o dispositivo no Device Sync. A operação só ocorre após toque explícito do usuário; registra nome/modelo Android, plataforma e identificador estável do host. Persistência do device_id ocorre somente após resposta válida do RomM. Estados de carregamento, sucesso e erros são apresentados; HTTP 403 aponta a permissão devices.write.
+- CI #899 / run 45270513601: SUCCESS integral no commit bf27340fd31b1d5d0e756387e32f94bef18c7ae8; Spotless, testes unitários, Build APK Debug e final-status aprovados.
+- Commit automático Spotless 59794b07a757c6d1b7d8d02fd95c8e9236ba4e77 alterou somente a formatação de RomMScreen.kt. CI #902 / run 45270771615: SUCCESS integral no head formatado; check-style, testes unitários, Build APK Debug e final-status aprovados.
+- O registro explícito ainda não foi exercitado com servidor RomM real. A inspeção diagnóstica continua somente leitura e limitada a SRAM, e ainda não foi conectada à interface.
+- Próximo passo: apresentar ação de inspeção somente leitura nos detalhes do jogo, com pré-condições claras (vínculo RomM válido, conta conectada correspondente, dispositivo registrado e jogo fechado) e exibir resumo da negociação sem executar operações.
+- E5 continua EM ANDAMENTO: integração de transferência ao SaveSync, interoperabilidade real e testes no aparelho permanecem pendentes. Save states e memory cards não entram no novo transporte. DELETE automático proibido.
+- E4 aguarda validação funcional no telefone; E6/E7/E8/E9 seguem pendentes. PR #41 continua aberta, Draft, sem merge. Nenhum teste físico/servidor real foi presumido.
