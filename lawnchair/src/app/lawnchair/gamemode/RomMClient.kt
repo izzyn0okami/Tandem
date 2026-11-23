@@ -325,9 +325,42 @@ object RomMSettings {
         }
     }
 
+    /**
+     * Device Sync IDs persist across disconnect/reconnect, but are namespaced by the normalized
+     * RomM server and authenticated user. Disconnecting must not register a duplicate device.
+     */
+    fun deviceSyncDeviceId(context: Context): String? {
+        val preferences = prefs(context)
+        val server = GameIdentityResolver.normalizedServer(preferences.getString("url", null)) ?: return null
+        if (preferences.getString("account_server", null) != server) return null
+        val userId = preferences.getLong("user_id", -1L)
+        if (userId <= 0L) return null
+        val key = SaveSyncPolicy.deviceSyncStoreKey(server, userId)
+        return context.getSharedPreferences(DEVICE_SYNC_FILE, Context.MODE_PRIVATE)
+            .getString(key, null)
+            ?.takeIf { it.isNotBlank() }
+    }
+
+    fun saveDeviceSyncDeviceId(context: Context, deviceId: String) {
+        require(deviceId.isNotBlank()) { "O RomM retornou um identificador de dispositivo vazio." }
+        val preferences = prefs(context)
+        val server = GameIdentityResolver.normalizedServer(preferences.getString("url", null))
+            ?: throw IOException("Conecte uma conta RomM antes de registrar o dispositivo.")
+        if (preferences.getString("account_server", null) != server) {
+            throw IOException("A conexão RomM atual não corresponde ao servidor autenticado.")
+        }
+        val userId = preferences.getLong("user_id", -1L)
+        if (userId <= 0L) throw IOException("A conta RomM atual não possui identidade confirmada.")
+        val key = SaveSyncPolicy.deviceSyncStoreKey(server, userId)
+        context.getSharedPreferences(DEVICE_SYNC_FILE, Context.MODE_PRIVATE)
+            .edit { putString(key, deviceId) }
+    }
+
+    private const val DEVICE_SYNC_FILE = "romm_device_sync_devices"
+
     fun clear(context: Context) {
-        // Pending uploads retain their originating server/account fingerprint in WorkManager.
-        // Keep them queued while disconnected; the worker retries and refuses different credentials.
+        // Device IDs are kept in a separate account-scoped store, so reconnecting does not
+        // create duplicate RomM devices. Pending uploads retain their originating account.
         prefs(context).edit { clear() }
         RomMCache.clear(context)
     }
