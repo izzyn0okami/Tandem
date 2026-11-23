@@ -19,6 +19,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -68,10 +69,10 @@ internal fun RomMMediaPanel(games: List<RemoteGame>) {
     var previewBitmap by remember(gameIds) { mutableStateOf<android.graphics.Bitmap?>(null) }
     var audioReady by remember(gameIds) { mutableStateOf(false) }
     var audioPlaying by remember(gameIds) { mutableStateOf(false) }
-    var audioDurationMs by remember(gameIds) { mutableStateOf(0) }
-    var audioPositionMs by remember(gameIds) { mutableStateOf(0) }
-    var pdfPageCount by remember(gameIds) { mutableStateOf(0) }
-    var pdfPageIndex by remember(gameIds) { mutableStateOf(0) }
+    var audioDurationMs by remember(gameIds) { mutableIntStateOf(0) }
+    var audioPositionMs by remember(gameIds) { mutableIntStateOf(0) }
+    var pdfPageCount by remember(gameIds) { mutableIntStateOf(0) }
+    var pdfPageIndex by remember(gameIds) { mutableIntStateOf(0) }
     var audioPlayer by remember(gameIds) { mutableStateOf<MediaPlayer?>(null) }
 
     LaunchedEffect(gameIds, RomMSettings.url(context), RomMSettings.token(context)) {
@@ -352,7 +353,7 @@ internal fun RomMMediaPanel(games: List<RemoteGame>) {
 
 private fun getPdfPageCount(file: File): Int {
     val descriptor = ParcelFileDescriptor.open(file, ParcelFileDescriptor.MODE_READ_ONLY)
-    descriptor.use { parcel -> PdfRenderer(parcel).use { it.pageCount } }
+    return descriptor.use { parcel -> PdfRenderer(parcel).use { it.pageCount } }
 }
 
 private fun renderPdfPage(file: File, pageIndex: Int): android.graphics.Bitmap? {
