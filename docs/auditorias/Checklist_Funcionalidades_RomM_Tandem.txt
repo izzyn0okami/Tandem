@@ -842,3 +842,11 @@ ATUALIZAÇÃO — TESTE NO TELEFONE / ESTÁGIO E (2026-11-23)
 - Auditoria identificou lacuna estrutural: upload legado não envia slot; RomM trata upload sem slot como arquivo manual/arquival (slot null), não como autosave. RemoteFile também ignora slot. A correção deve seguir o Device Sync Protocol para SRAM, com slot explícito e proteção de conflito; states permanecem separados e específicos do núcleo.
 - Release tandem-latest: build 911 publicado e testado. CIs #910/#911/#912: SUCCESS.
 - Próximo: corrigir integração/slot e tornar explícita a ausência de vínculo RomM em jogos locais. Não excluir nem sobrescrever saves para novos testes. Não marcar E4/E5 concluídos.
+
+
+AUDITORIA — COMPATIBILIDADE DA PASTA DE SAVES (2026-11-23)
+- [AUDITADO, SEM ALTERAÇÃO FUNCIONAL] O diretório selecionado em Pastas é entregue ao LibretroDroid como RETRO_ENVIRONMENT_GET_SAVE_DIRECTORY e também é usado pelo SaveStore como raiz de armazenamento do Tandem.
+- SaveStore grava SRAM serializada em <raiz>/<núcleo>/<identidade>/sram.srm e estados rápidos em state1.state. SaveSync usa esses arquivos específicos; não varre diretórios alternativos nem importa automaticamente arquivos de save próprios dos cores.
+- GameFolders.change copia recursivamente o conteúdo antigo para o novo destino sem sobrescrever, mas não mantém sincronização contínua entre ambos. O caminho personalizado não precisa estar na raiz do aplicativo; precisa ser acessível e gravável pelo app.
+- Não há evidência estática suficiente para atribuir os problemas PSX/SNES à pasta personalizada. O caso SNES já é explicado pela falta de vínculo RomM confirmado; o PSX continua com pendência de slot/autosave. Divergência entre arquivo próprio do core e arquivo serializado pelo Tandem permanece hipótese a verificar no aparelho.
+- Próximo passo: diagnóstico read-only do caminho efetivo e dos arquivos presentes por núcleo, seguido de teste PSX/SNES no aparelho. Não migrar, apagar ou substituir saves automaticamente. Estágio E permanece EM ANDAMENTO.
