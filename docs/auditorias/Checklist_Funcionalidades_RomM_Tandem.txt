@@ -35,13 +35,13 @@ B. DADOS PESSOAIS POR JOGO E ATIVIDADE (PRIORIDADE ALTA)
 [AGUARDANDO DECISÃO] B6. Definir quais estados pessoais serão editáveis no Tandem e quais serão apenas informativos.
 
 C. MÍDIAS E CONTEÚDO ASSOCIADO (PRIORIDADE MÉDIA)
-[PENDENTE] C1. Exibir screenshots do RomM.
-[PENDENTE] C2. Consultar manuais e instruções.
-[PENDENTE] C3. Consultar walkthroughs.
-[PENDENTE] C4. Consultar trilhas sonoras.
-[PENDENTE] C5. Investigar patches e formatos de aplicação.
-[PENDENTE] C6. Manter mídias auxiliares fora da lista de ROMs executáveis.
-[AGUARDANDO DECISÃO] C7. Definir se o Tandem terá visualizador de imagens/documentos e player de áudio próprio.
+[EM ANDAMENTO] C1. Exibir screenshots do RomM usando arquivos associados e conteúdo servido pelo endpoint oficial; visualizador integrado pendente.
+[EM ANDAMENTO] C2. Consultar manuais via categoria manual e abrir no visualizador integrado; formatos suportados e progresso de leitura a validar.
+[EM ANDAMENTO] C3. Consultar walkthroughs via categoria walkthrough e abrir no visualizador integrado.
+[EM ANDAMENTO] C4. Consultar metadados pelo endpoint oficial de soundtrack e reproduzir faixas no player integrado.
+[EM ANDAMENTO] C5. Integrar a aplicação de patches pelo POST /api/roms/{id}/patch; confirmar formatos aceitos e UX para patch da biblioteca ou upload temporário.
+[EM ANDAMENTO] C6. Preservar categorias auxiliares fora da seleção de ROMs e revisar filtros de multidisco/EasyRPG.
+[CONCLUÍDO — DECISÃO] C7. O usuário escolheu visualizadores de imagens/documentos e player de áudio integrados ao Tandem; implementação incluída nesta PR.
 
 D. PLATAFORMAS, FIRMWARE E DISPOSITIVOS
 [CONCLUÍDO] D1. Consulta de plataformas e metadados básicos.
@@ -395,3 +395,13 @@ ATUALIZAÇÃO — PR #43 / B1–B6 ROMM MESCLADA (2026-11-23)
 - [ ] Teste funcional no telefone com conta RomM real: edição de propriedades, escopo roms.user.write, sessões ativas e apresentação visual.
 - [ ] Confirmar comportamento com controle/TV e campos numéricos.
 - PR #41 permanece aberta e pausada, sem alterações; saves continuam fora do escopo.
+
+
+IMPLEMENTAÇÃO C1–C7 — PR EM PREPARAÇÃO (2026-11-23)
+- Branch: feat/romm-media-content → game-mode-m2-dev.
+- Decisão confirmada: experiência integrada ao Tandem para imagens, documentos e áudio.
+- C1–C6: auditoria de API concluída; implementação ainda em andamento.
+- C5 deve chamar o patcher oficial do RomM; não criar mecanismo local paralelo.
+- C6: categorias manual, walkthrough, soundtrack e screenshot não podem ser selecionadas como ROM executável; patch também permanece auxiliar.
+- Não alterar SaveStore.kt ou GameModeActivity.kt; PR #41 permanece aberta, draft e pausada.
+- CI, testes automatizados e teste no telefone: pendentes.
