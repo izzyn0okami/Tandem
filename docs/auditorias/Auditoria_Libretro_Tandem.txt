@@ -4240,3 +4240,16 @@ ATUALIZAÇÃO — CI #765 E REVISÃO ESTÁTICA C1–C7 (2026-11-23)
 - [ ] C1: miniaturas/galeria visual de screenshots ainda não implementadas; seleção permanece por nome.
 - [ ] Testes específicos de mídia e validação funcional C1–C7 no telefone com servidor/conta RomM real permanecem pendentes.
 - PR #44 permanece aberta, em draft e sem merge; PR #41 permanece aberta, em draft, pausada e intocada.
+
+
+ATUALIZAÇÃO — PR #44 / C5 — CI #770 APROVADA (2026-11-23)
+- Commit validado: 34070c5f0aa19e2a779f5535da08c731172b6345.
+- Execução: https://github.com/izzyn0okami/Tandem/actions/runs/45194686059
+- check-style: SUCCESS; Apply Spotless, commit de formatação e Verify formatting concluídos.
+- build-debug-apk: SUCCESS; Run unit tests, Build APK e Upload artifact concluídos.
+- final-status: SUCCESS. Notificações, Crowdin e releases foram ignorados; nenhuma release publicada.
+- Artefato: assembleLawnWithQuickstepGithubDebug; ID 14829325118; 46.258.647 bytes; SHA-256 88d6e19b54f9be3bbd29897a781d3d8358ccdd1686628354c5d9a5215cbc9d62; expira em 2027-02-21.
+- Ajuste validado: aplicação de patches usa o cliente HTTP de transferências longas, com timeout de até 15 minutos.
+- C1–C7 continuam implementados; testes funcionais com servidor/conta RomM real no telefone permanecem pendentes.
+- Pendências técnicas: limite rígido de tamanho para downloads de mídia e resultado de patch; miniaturas de screenshots.
+- PR #44 permanece aberta, draft e sem merge; PR #41 permanece aberta, draft e pausada.
