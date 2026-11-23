@@ -781,6 +781,9 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
             .addPathSegment(file.fileName)
             .build()
         if (file.sizeBytes > MAX_ROMM_MEDIA_DOWNLOAD_BYTES) {
+            val partial = File(target.parentFile, "${target.name}.part")
+            partial.delete()
+            File(partial.parentFile, "${partial.name}.range").delete()
             throw IOException("O arquivo " + file.fileName + " excede o limite de download de 1 GiB.")
         }
         downloadToFile(url, target, file.fileName, MAX_ROMM_MEDIA_DOWNLOAD_BYTES)
