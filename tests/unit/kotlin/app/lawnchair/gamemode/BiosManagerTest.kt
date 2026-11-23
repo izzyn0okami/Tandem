@@ -98,6 +98,7 @@ class BiosManagerTest {
         val gba = GamePlatforms.all.single { it.slug == "gba" }
         val gameBoy = GamePlatforms.all.single { it.slug == "gb" }
         val masterSystem = GamePlatforms.all.single { it.slug == "sms" }
+        val nes = GamePlatforms.all.single { it.slug == "nes" }
 
         assertFalse(atari5200.biosRequired)
         assertEquals("281f20ea4320404ec820fb7ec0693b38", atari5200.bios.single().md5Hash)
@@ -112,6 +113,8 @@ class BiosManagerTest {
         assertEquals("a860e8c0b6d573d191e4ec7db1b1e4f6", gba.bios.single().md5Hash)
         assertEquals("32fbbd84168d3482956eb3c5051637f5", gameBoy.bios.single().md5Hash)
         assertEquals(3, masterSystem.bios.size)
+        assertEquals("ca30b50f880eb660a320674ed365ef7a", nes.bios.first().md5Hash)
+        assertFalse(nes.biosRequired)
     }
 
     @Test
