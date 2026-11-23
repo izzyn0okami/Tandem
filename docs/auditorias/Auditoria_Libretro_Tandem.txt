@@ -3933,3 +3933,13 @@ A12 — NOTAS DO ROMM: IMPLEMENTAÇÃO INICIAL
 - Commits: cliente 53d5e0b8ad20193ce2a3bf51f612ebdf9b8aba89; interface a5f902f91328caec2d4f7614637696e6ad48b917.
 - CI dos commits A12 pendente; validação funcional no telefone pendente.
 - Escrita/edição/exclusão de notas continua fora do escopo.
+
+
+ATUALIZAÇÃO — A12 / CI #676 E CORREÇÃO DE FORMATAÇÃO (2026-11-23)
+- CI #676 / run #45094828746: falhou somente em check-style, na tarefa :spotlessKotlinCheck.
+- Arquivo apontado pelo Spotless: lawnchair/src/app/lawnchair/gamemode/GameScreens.kt, no bloco when de apresentação das notas RomM. A compilação APK, testes unitários e upload do artefato passaram; final-status falhou como consequência da checagem de estilo.
+- Correção aplicada na mesma branch/PR #42, sem alterar a lógica: inseridas as linhas em branco exigidas pelo formatador entre os ramos do when.
+- Commit corretivo: e72ff86f91a62e9e39cec59be1892ec4b83dcce0.
+- Nova CI #678 / run #45095702464: disparada para o commit corretivo; estado queued na última consulta. Aguardar resultado antes de marcar A12 como aprovada.
+- PR #42 continua aberta/draft, sem merge. PR #41 continua aberta/draft e intocada, conforme decisão do usuário.
+- A12 ainda aguarda CI verde e validação funcional no telefone; nenhum teste funcional foi presumido.
