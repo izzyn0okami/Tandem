@@ -868,7 +868,7 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
             fileId = fileId,
             fileIds = fileIds,
             folder = folder,
-            summary = item.optString("summary").ifEmpty { null },
+            summary = item.optString("summary").trim().takeUnless { it.isBlank() || it.equals("null", ignoreCase = true) },
             userData = parseUserData(item.optJSONObject("rom_user")),
             hasNotes = item.optBoolean("has_notes", false),
             alternativeNames = readStringArray(item.optJSONArray("alternative_names")),
