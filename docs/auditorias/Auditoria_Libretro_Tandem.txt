@@ -4125,3 +4125,15 @@ CORREÇÃO ADICIONAL — ID DE ARQUIVO NO DOWNLOAD INDIVIDUAL (2026-11-23)
 - Corrigido na PR #44: a rota individual agora usa game.fileId. Downloads de conjuntos continuam usando /api/roms/{rom_id}/content com file_ids.
 - Commit: b05e9115da2baa57c6a1c976b02c547f0250a405.
 - [ ] CI do head atualizado e teste real de download individual pendentes.
+
+
+IMPLEMENTAÇÃO INICIAL DE MÍDIAS — C1–C4 (2026-11-23)
+- [x] C1 — Galeria/visualização integrada de screenshots: arquivos da categoria screenshot são listados na tela de detalhes e carregados sob demanda pelo endpoint oficial de conteúdo. A imagem selecionada é exibida dentro do Tandem.
+- [x] C2 — Manuais: arquivos PDF, MD e TXT são listados e abertos no próprio Tandem. PDF renderiza a primeira página; MD/TXT aparecem em leitor de texto.
+- [x] C3 — Walkthroughs: mesmo visualizador integrado de documentos; HTML/HTM é apresentado como texto simples, sem executar scripts nem conteúdo ativo.
+- [x] C4 — Soundtracks: metadados oficiais de faixas são consultados por /api/roms/{rom_id}/soundtracks/metadata; reprodução local integrada usa MediaPlayer após baixar a faixa sob demanda pelo endpoint de arquivo associado.
+- Arquivos são mantidos apenas em cache temporário do app; não há catálogo ou armazenamento paralelo permanente.
+- Implementação nos commits 45831e0190c0fbb63f9907355214e8a7256fa134, 525416206b981e2f335c4a34ea5488ba5f1bf449, 995cd4903afce84fde74b977c534c78adaf504c9 e 8b7557779f7cc4a79c99edab6ff4608320e10b2b.
+- Limitações da primeira versão: PDF mostra somente a primeira página; imagens e documentos são selecionados por lista de nomes (sem miniaturas); áudio possui play/pause básico, sem barra de progresso/seek ainda.
+- [ ] CI para commits de mídia em andamento.
+- [ ] Testes de regressão e validação no telefone pendentes.
