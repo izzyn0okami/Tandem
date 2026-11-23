@@ -433,3 +433,15 @@ IMPLEMENTAÇÃO INICIAL C1–C4 — 2026-11-23
 - [x] Downloads de mídia usam cache temporário; RomM continua como fonte de verdade.
 - [ ] Melhorias de UX: miniaturas de screenshots, paginação PDF e controles de seek/posição do áudio.
 - [ ] CI, testes de regressão e validação no telefone pendentes.
+
+
+ATUALIZAÇÃO — CI #726 / PR #44 (2026-11-23)
+- [x] CI #726 / run 45173169486: SUCCESS — https://github.com/izzyn0okami/Tandem/actions/runs/45173169486.
+- [x] Spotless Apply executado automaticamente; nenhuma alteração de formatação foi necessária; spotlessCheck aprovado.
+- [x] Testes unitários, Build APK, Upload artifact e final-status aprovados.
+- [x] A rotina de automação solicitou nova CI após a etapa de Spotless; nenhum commit automático foi criado porque não havia diferenças.
+- [ ] C1–C4: revisão técnica aprofundada, testes específicos de mídia e validação no telefone ainda pendentes.
+- [ ] C5: integração do patcher oficial RomM permanece pendente.
+- [ ] C6: CI aprovada; manter validação funcional pendente.
+- [ ] C7: visualizadores e player integrados implementados na versão inicial; validar experiência no telefone.
+- PR #44 permanece aberta/draft, sem merge ou release.
