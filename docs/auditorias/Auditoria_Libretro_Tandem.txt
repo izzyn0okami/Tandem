@@ -3610,3 +3610,75 @@ PRÓXIMAS ETAPAS / FECHAMENTO DA AUDITORIA
 2. Fazer revisão final da matriz RomM × Tandem, com classificação por domínio, dependências e riscos de duplicação.
 3. Fazer inventário final de scopes OAuth e justificar cada um com endpoints efetivamente utilizados e funcionalidades aprovadas.
 4. Apresentar ao usuário as decisões pendentes, sem iniciar remoção, substituição ou implementação estrutural até sua aprovação.
+
+AUDITORIA AMPLA — ROMM × TANDEM (ETAPA 6: SOCKETS E MATRIZ DE ESCOPO OAUTH)
+Data: 2026-11-22
+Branch: game-mode-m2-dev
+Arquivos revisados: RomMClient.kt, endpoints RomM 5.4.1 e constantes oficiais Scope da tag 5.4.1.
+PR #41: permanece aberta, draft, não mesclada e mergeable=false na consulta anterior.
+
+1. INVENTÁRIO REAL DE CHAMADAS ROMM NO TANDEM
+RomMClient.kt contém chamadas para:
+- GET /api/users/me — consulta identidade/conta.
+- GET /api/heartbeat — diagnóstico/conectividade.
+- POST /api/client-tokens/exchange — troca de código/token de cliente.
+- POST /api/auth/device/init e POST /api/auth/device/token — pareamento OAuth de dispositivo.
+- GET /api/roms — biblioteca remota paginada.
+- GET /api/roms/{rom_id}/content/{file_name}, /api/roms/{rom_id}/files/content/{file_name} — downloads de ROM e arquivos associados.
+- GET /api/platforms — plataformas e firmware.
+- GET /api/firmware/{id}/content/{file_name} — download de firmware.
+- Operações em /api/saves e /api/states — listagem, conteúdo, criação e atualização de assets.
+- Não aparecem chamadas diretas a /api/collections, /api/permissions/me, /api/activity, /api/play-sessions, /api/devices, /api/sync/negotiate, /api/sync/retroarch, /api/streaming, /api/netplay, /api/memory-cards, /api/music, /api/notifications ou /api/tasks.
+
+2. MATRIZ DE SCOPES SOLICITADOS ATUALMENTE
+O Tandem solicita: me.read, platforms.read, roms.read, roms.user.read, roms.user.write, assets.read, assets.write, firmware.read, devices.read, devices.write.
+
+- me.read: necessário para GET /api/users/me; manter.
+- platforms.read: necessário para GET /api/platforms; manter.
+- roms.read: necessário para biblioteca e downloads de ROM; manter.
+- assets.read: necessário para listar/baixar saves e states; manter.
+- assets.write: necessário para enviar/criar/atualizar saves e states; manter.
+- firmware.read: necessário para baixar firmware; manter.
+- roms.user.read: não há chamada correspondente identificada no RomMClient.kt atual; revisar/remover apenas após confirmação de que nenhuma outra parte do app usa esse token/escopo.
+- roms.user.write: não há chamada correspondente identificada no RomMClient.kt atual; revisar/remover apenas após confirmação de que nenhuma outra parte do app usa esse token/escopo.
+- devices.read: não foi identificada chamada a /api/devices; revisar necessidade.
+- devices.write: não foi identificada chamada a POST/PUT/DELETE /api/devices; revisar necessidade.
+- collections.read: ainda não solicitado; necessário apenas se o usuário aprovar integração de leitura de coleções.
+- collections.write: não necessário para integração inicial de leitura; não solicitar.
+- playlists.read/write: não necessários sem player de música/playlists aprovado.
+- tasks.run, logs.read, users.read/write: não necessários ao launcher normal; não solicitar.
+
+3. OBSERVAÇÃO SOBRE OAUTH E COMPATIBILIDADE
+- O pedido de escopos é feito durante o fluxo de pareamento; tokens já emitidos podem manter permissões anteriores até novo pareamento/renovação, conforme o comportamento do servidor.
+- Não reduzir escopos automaticamente nesta auditoria: primeiro é necessário verificar se outros arquivos/fluxos compartilham o token e como o RomM trata atualização/revogação.
+- roms.user.read/write aparecem no pedido atual provavelmente por uma integração planejada/legada, mas não foram encontradas chamadas correspondentes na implementação analisada.
+- devices.read/write podem ter sido solicitados em antecipação ao Device Sync; o Tandem ainda não registra um device_id por POST /api/devices e não negocia sincronização.
+- A PR #41 é uma alteração de resolução local de conflitos; não representa integração de Device Sync nem justifica por si só os scopes devices.
+- Se a integração de coleções for aprovada, iniciar com collections.read somente; não solicitar collections.write sem editor de coleções explicitamente aprovado.
+
+4. SOCKETS E SERVIÇOS EM TEMPO REAL
+RomM 5.4.1 usa sockets para eventos de notificações, mudanças de permissões, estado de streaming e salas netplay. Os endpoints REST consultados são apenas parte dos respectivos contratos; algumas experiências dependem de conexão persistente e serviço de backend.
+Tandem:
+- O código RomMClient.kt inspecionado não implementa cliente de sockets RomM.
+- RetroAchievements tem seu próprio mecanismo de sessão/overlay, independente dos sockets RomM.
+Avaliação preliminar:
+- Não integrar sockets apenas para replicar o comportamento do frontend web.
+- Para notificações, uma consulta REST sob demanda pode ser suficiente inicialmente.
+- Netplay e streaming exigiriam protocolos completos e compatibilidade do cliente; não se resumem a abrir um socket.
+- Mudanças de permissões podem ser tratadas consultando novamente o servidor nas operações relevantes e respeitando 403/404; não é necessário replicar administração de permissões.
+
+5. ESTADO DA MATRIZ — RESULTADO PRELIMINAR
+- Consumir do RomM: catálogo, metadados, arquivos, firmware, saves/states; futuramente coleções e dados do usuário se aprovados.
+- Manter no Tandem: execução LibretroDroid, seleção/compatibilidade de núcleo, requisitos locais de BIOS, leitura/escrita local segura, snapshots, staging e proteção de conflitos, overlays RetroAchievements.
+- Não duplicar sem necessidade: pesquisa/coleções, avaliações/backlog, recomendações, inventário/estatísticas do servidor.
+- Fora do escopo inicial: administração do RomM, tarefas, logs de backend, feeds de outros frontends, music player, netplay e streaming RomM.
+- Recursos acoplados a streaming remoto (memory cards e parte do fluxo de sessão) não devem ser tratados como substitutos automáticos de saves locais.
+
+6. PENDÊNCIAS PARA CONCLUSÃO
+- Verificar o uso do token RomM fora de RomMClient.kt, incluindo chamadas auxiliares e workers.
+- Confirmar a semântica de expiração/renovação e atualização dos scopes no fluxo de pareamento.
+- Comparar os endpoints de saves/states e confirmar se algum fluxo auxiliar usa roms.user.* ou devices.*.
+- Apresentar a matriz final ao usuário e obter decisão sobre quais capacidades deseja integrar.
+- Nenhum scope foi removido/adicionado; nenhuma chamada funcional foi alterada.
+- Não houve CI, build ou teste funcional nesta etapa.
+- Nenhuma funcionalidade foi removida.
