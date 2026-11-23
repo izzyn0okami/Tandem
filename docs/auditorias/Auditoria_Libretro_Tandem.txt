@@ -3804,3 +3804,14 @@ Execuções:
 - Jobs de release foram ignorados; nenhuma release foi publicada.
 - Resultado: implementação do filtro por plataforma aprovada pela CI. Validação funcional no telefone ainda pendente.
 - PR #42 permanece aberta/draft, sem merge. PR #41 permanece aberta/draft e intocada.
+
+
+IMPLEMENTAÇÃO — COLEÇÕES ROMM (A3, A7–A10) — 2026-11-23
+Branch: feat/romm-library-search; PR #42.
+- RomMClient: adicionada consulta somente leitura de coleções manuais (GET /api/collections), inteligentes (GET /api/collections/smart) e virtuais (GET /api/collections/virtual?type=...), consultando os cinco tipos documentados pela API 5.4.1: collection, franchise, genre, company e mode.
+- O modelo mantém IDs virtuais como strings e IDs das coleções manuais/inteligentes como strings numéricas para evitar conversões indevidas; lê também rom_ids.
+- GET /api/roms recebe o filtro oficial adequado: collection_id, smart_collection_id ou virtual_collection_id.
+- Biblioteca: adicionada faixa de chips para selecionar uma coleção RomM e combinar o filtro com pesquisa/plataforma; os aplicativos Android não são apresentados como itens de uma coleção RomM.
+- Nenhuma operação de criação, edição, compartilhamento ou exclusão de coleções foi implementada. O fluxo de saves e a PR #41 não foram alterados.
+- Commits: RomMClient 3d935e815c446dec144b16c300b5ee25c8ceda12; interface b8ee74b1b951c75ba4ae62b4a22f9a946220e098.
+- CI e validação funcional ainda pendentes.
