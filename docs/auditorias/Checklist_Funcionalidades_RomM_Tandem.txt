@@ -17,7 +17,7 @@ A. BIBLIOTECA, PESQUISA E ORGANIZAÇÃO (PRIORIDADE ALTA)
 [EM ANDAMENTO] A3. Filtros por coleção comum, inteligente e virtual; implementação e CIs #663/#665/#667 aprovadas; validação funcional no telefone pendente.
 [EM ANDAMENTO] A4. Filtros oficiais favorite, duplicate, last_played, has_ra, has_saves, has_states, verified e has_soundtrack; implementação e CI #669 aprovadas; validação funcional no telefone pendente. playable não foi exposto por representar execução no navegador RomM; missing/physical não se aplicam à biblioteca local.
 [EM ANDAMENTO] A5. Ordenação por nome (name), tamanho (fs_size_bytes), lançamento (first_release_date), criação (created_at) e avaliação pública agregada (average_rating); campos confirmados no contrato RomM 5.4.1, sem usar colunas pessoais. Relevância de busca permanece como padrão; implementação e CI pendentes de validação final.
-[EM ANDAMENTO] A6. Paginação de 100 IDs por limit/offset e total do RomM, sem baixar arquivos associados durante a busca; interface carrega páginas adicionais sob demanda e preserva a ordem do servidor. CI e teste funcional pendentes.
+[EM ANDAMENTO] A6. A API mantém paginação por lotes de 100; a interface exibe inicialmente 100 jogos e revela mais 100 por ação, além de carregar páginas adicionais de IDs em pesquisas/filtros. Preserva a ordem do servidor e o cache completo. CI e teste funcional pendentes.
 [EM ANDAMENTO] A7. Catálogo de coleções comuns (somente leitura); implementação e CIs #663/#665/#667 aprovadas; validação funcional no telefone pendente.
 [EM ANDAMENTO] A8. Catálogo de coleções inteligentes (somente leitura); implementação e CIs #663/#665/#667 aprovadas; validação funcional no telefone pendente.
 [EM ANDAMENTO] A9. Catálogo de coleções virtuais (somente leitura); implementação e CIs #663/#665/#667 aprovadas; validação funcional no telefone pendente.
@@ -339,3 +339,12 @@ COMMITS DA IMPLEMENTAÇÃO
 - 6eaa384dfd53283a1b42090b14974a301661b9ac — correções intermediárias de plataforma e metadados.
 - 4be895bb36c89ea7eea650851002307ff0d5a1b9 — catálogo de núcleo EasyRPG.
 - 7d46b8201af3875a6917c0e934f6d02c16efcd51 — correções de formatação.
+
+
+ATUALIZAÇÃO A6 — PAGINAÇÃO VISUAL DA BIBLIOTECA (2026-11-23)
+- [x] A lista principal agora apresenta até 100 jogos por vez.
+- [x] A ação "Mostrar mais jogos" revela o próximo lote de 100 sem alterar o cache completo.
+- [x] Pesquisa/filtros remotos continuam paginando IDs de 100 em 100 e preservando a ordem retornada pelo RomM.
+- [x] Alterações de pesquisa/filtro/ordenação reiniciam o limite visual e impedem que uma resposta de paginação antiga seja anexada à consulta nova.
+- [ ] CI final e validação funcional com biblioteca grande.
+- Commit: 4c07319595e6f4cac67c009bda23dc55093355b5; proteção de estado e correção ktlint: 23073cac01d62e619a8e1e0b235a1d2c38065ebe.

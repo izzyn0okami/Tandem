@@ -4007,3 +4007,12 @@ CI / HISTÓRICO INTERMEDIÁRIO
 - CI do head final da implementação ainda precisa ser confirmada.
 - PR #41 permanece aberta/draft e intocada. Nenhuma alteração em SaveStore.kt ou GameModeActivity.kt.
 - Nenhum merge ou release efetuado.
+
+
+CORREÇÃO DE ESCOPO A6 — PAGINAÇÃO VISUAL (2026-11-23)
+- A paginação da API já percorria páginas de 100 itens e acumulava a lista completa no cache; a lacuna era a quantidade apresentada simultaneamente na interface.
+- A biblioteca principal agora renderiza 100 entradas por vez e expõe "Mostrar mais jogos" para revelar mais 100, mantendo o cache integral já carregado.
+- Pesquisa/filtros mantêm a paginação remota por IDs (limit=100/offset) e o botão para carregar a próxima página.
+- A mudança de consulta invalida respostas antigas de load-more para não misturar resultados de pesquisas diferentes.
+- CI #690 (run 45099869403) identificou lint mutable-state-autoboxing em GameScreens.kt; corrigido com mutableIntStateOf no commit 23073cac01d62e619a8e1e0b235a1d2c38065ebe.
+- CI do head atual 23073cac ainda pendente.
