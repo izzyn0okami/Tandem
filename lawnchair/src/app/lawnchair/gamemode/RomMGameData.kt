@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
@@ -19,7 +20,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.platform.LocalContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -116,9 +116,9 @@ internal fun RomMGameDataPanel(
     Column(verticalArrangement = Arrangement.spacedBy(7.dp), modifier = Modifier.width(520.dp)) {
         Text("RomM · dados pessoais", color = GameColors.text, fontSize = 16.sp, fontWeight = FontWeight.Bold)
         if (user == null) {
-            Text("O RomM ainda não retornou dados pessoais para esta conta.", color = GameColors.textDim, fontSize = 12.sp)
-        } else {
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            Text("Ainda não há registro pessoal para este jogo. Salvar criará as propriedades da sua conta no RomM.", color = GameColors.textDim, fontSize = 12.sp)
+        }
+        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 Column {
                     Text("No backlog", color = GameColors.textDim, fontSize = 12.sp)
                     Switch(checked = backlogged, onCheckedChange = { backlogged = it })
@@ -133,16 +133,19 @@ internal fun RomMGameDataPanel(
                 }
             }
             Text("Status", color = GameColors.textDim, fontSize = 12.sp)
-            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                listOf(
-                    "" to "Não definido",
-                    "incomplete" to "Em andamento",
-                    "finished" to "Finalizado",
-                    "completed_100" to "100%",
-                    "retired" to "Abandonado",
-                    "never_playing" to "Nunca jogar",
-                ).forEach { (value, label) ->
-                    GameButton(label, onClick = { status = value }, enabled = !saving)
+            val statusOptions = listOf(
+                "" to "Não definido",
+                "incomplete" to "Em andamento",
+                "finished" to "Finalizado",
+                "completed_100" to "100%",
+                "retired" to "Abandonado",
+                "never_playing" to "Nunca jogar",
+            )
+            statusOptions.chunked(3).forEach { options ->
+                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    options.forEach { (value, label) ->
+                        GameButton(label, onClick = { status = value }, enabled = !saving)
+                    }
                 }
             }
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -172,8 +175,7 @@ internal fun RomMGameDataPanel(
                 )
             }
             GameButton("Salvar dados pessoais", onClick = ::save, primary = true, enabled = !saving)
-            if (message.isNotBlank()) Text(message, color = if (message.startsWith("Falha") || message.contains("deve estar")) GameColors.danger else GameColors.textDim, fontSize = 11.sp)
-        }
+        if (message.isNotBlank()) Text(message, color = if (message.startsWith("Falha") || message.contains("deve estar") || message.contains("não tem o escopo")) GameColors.danger else GameColors.textDim, fontSize = 11.sp)
 
         Text("Informações somente de leitura", color = GameColors.text, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
         user?.let {
@@ -183,7 +185,7 @@ internal fun RomMGameDataPanel(
             if (it.pinnedMedia.isNotEmpty()) Text("Mídias fixadas: ${it.pinnedMedia.joinToString(" · ")}", color = GameColors.textDim, fontSize = 11.sp)
         }
         Text("Histórico local do Tandem", color = GameColors.text, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
-        Text("Tempo jogado: ${formatPlaytime(localPlaytimeMs)} · Última sessão: ${formatRomMDate(localLastPlayedMs)}", color = GameColors.textDim, fontSize = 11.sp)
+        Text("Tempo jogado: ${formatLocalPlaytime(localPlaytimeMs)} · Última sessão: ${formatRomMDate(localLastPlayedMs)}", color = GameColors.textDim, fontSize = 11.sp)
         Text("Atividade atual no RomM", color = GameColors.text, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
         when {
             activity == null -> Text("Consultando sessões ativas…", color = GameColors.textDim, fontSize = 11.sp)
@@ -198,6 +200,13 @@ internal fun RomMGameDataPanel(
             }
         }
     }
+}
+
+private fun formatLocalPlaytime(ms: Long): String {
+    val totalMinutes = ms.coerceAtLeast(0L) / 60_000L
+    val hours = totalMinutes / 60L
+    val minutes = totalMinutes % 60L
+    return if (hours > 0L) "${hours}h ${minutes}min" else "${minutes}min"
 }
 
 private fun formatRomMDate(timestampMs: Long): String =
