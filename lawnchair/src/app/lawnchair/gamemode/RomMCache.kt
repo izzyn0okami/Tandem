@@ -17,15 +17,13 @@ object RomMCache {
     @Volatile
     var lastRefreshMs: Long = 0L
 
-    private fun readStrings(array: JSONArray?): List<String> =
-        (0 until (array?.length() ?: 0)).mapNotNull { index ->
-            array?.optString(index)?.takeIf { it.isNotBlank() && it != "null" }
-        }
+    private fun readStrings(array: JSONArray?): List<String> = (0 until (array?.length() ?: 0)).mapNotNull { index ->
+        array?.optString(index)?.takeIf { it.isNotBlank() && it != "null" }
+    }
 
-    private fun readLongs(array: JSONArray?): List<Long> =
-        (0 until (array?.length() ?: 0)).mapNotNull { index ->
-            array?.optLong(index, -1L)?.takeIf { it > 0L }
-        }
+    private fun readLongs(array: JSONArray?): List<Long> = (0 until (array?.length() ?: 0)).mapNotNull { index ->
+        array?.optLong(index, -1L)?.takeIf { it > 0L }
+    }
 
     private fun file(context: Context) = File(context.filesDir, FILE)
 

@@ -772,14 +772,12 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
         )
     }
 
-    private fun readStringArray(array: org.json.JSONArray?): List<String> =
-        (0 until (array?.length() ?: 0)).mapNotNull { index ->
-            array?.optString(index)?.takeIf { it.isNotBlank() && !it.equals("null", ignoreCase = true) }
-        }.distinct()
+    private fun readStringArray(array: org.json.JSONArray?): List<String> = (0 until (array?.length() ?: 0)).mapNotNull { index ->
+        array?.optString(index)?.takeIf { it.isNotBlank() && !it.equals("null", ignoreCase = true) }
+    }.distinct()
 
-    private fun parseAssociatedFiles(array: org.json.JSONArray?): List<RemoteAssociatedFile> =
-        (0 until (array?.length() ?: 0)).mapNotNull { index ->
-            val item = array?.optJSONObject(index) ?: return@mapNotNull null
+    private fun parseAssociatedFiles(array: org.json.JSONArray?): List<RemoteAssociatedFile> = (0 until (array?.length() ?: 0)).mapNotNull { index ->
+        val item = array?.optJSONObject(index) ?: return@mapNotNull null
             val id = item.optLong("id", -1L)
             val name = item.optString("file_name").takeIf { it.isNotBlank() && it != "null" }
             if (id <= 0L || name == null) return@mapNotNull null
