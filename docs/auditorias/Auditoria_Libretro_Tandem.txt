@@ -4346,3 +4346,55 @@ Consequência para a implementação:
 - D6 precisa tratar kits e arquivos individuais sem destruir cópias válidas, propagar erros e permitir recuperação.
 - D7/D8 dependem da confirmação do contrato real do RomM 5.4.1 antes de adicionar endpoints/campos.
 Nenhuma funcionalidade D3–D8 foi marcada como concluída nesta auditoria inicial.
+
+
+ATUALIZAÇÃO DE IMPLEMENTAÇÃO — ESTÁGIO D (2026-11-23)
+Branch: feat/romm-platforms-firmware-devices | PR #45 | CI inicial #804 em execução no momento desta atualização.
+
+D3 — VALIDAÇÃO DE FIRMWARE/BIOS
+- Adicionado md5Hash opcional a BiosFile e referências MD5 publicadas pela documentação oficial Libretro para arquivos conhecidos: Sega CD (Genesis Plus GX), PlayStation (PCSX ReARMed), Saturn (Beetle Saturn), Dreamcast boot ROM (Flycast), 3DO (Opera), Intellivision (FreeIntv), ColecoVision (GearColeco), Atari 5200/7800 e Lynx (libretro-core-info/database).
+- A importação manual e a varredura da pasta local rejeitam arquivos cujo MD5 oficial conhecido não corresponde. A varredura continua após um arquivo inválido e registra a falha.
+- Downloads do RomM recebem a referência oficial esperada quando disponível e validam antes de substituir o arquivo anterior. BIOS locais sem hash oficial podem ser validadas por metadados de integridade publicados pelo RomM; sem referência confiável ficam como UNKNOWN, nunca como válidas por nome.
+- Tela de BIOS agora diferencia MD5 confirmado, MD5 divergente e ausência de hash de referência.
+
+D4 — SEMÂNTICA AND/OR
+- A regra existente foi isolada em função pura para testes, mantendo: OR dentro de cada grupo, AND entre grupos; a lista antiga bios sem grupos explícitos continua um grupo OR; kits seguem verificação própria.
+- Testes adicionados para lista antiga OR, grupos AND/OR, requisitos vazios, BIOS opcionais e kits.
+
+D5 — REQUISITOS POR NÚCLEO
+- Auditoria oficial confirma: Sega CD tem BIOS regional obrigatória por jogo/região; PCSX ReARMed aceita fallback HLE e BIOS reais melhoram compatibilidade; Saturn exige BIOS regional por jogo; Flycast BIOS de boot opcional; Opera exige uma BIOS de sistema entre alternativas; FreeIntv exige exec.bin E grom.bin; GearColeco exige colecovision.rom; blueMSX exige Databases E Machines.
+- Corrigido Atari 5200: o núcleo configurado é a5200 e o arquivo oficial a5200_libretro.info marca 5200.rom como opcional. O app não deve bloquear jogos sem esse arquivo.
+- A lista de 3DO e PlayStation foi ampliada com alternativas documentadas e hashes.
+- PENDENTE: revisar se o indicador geral de BIOS por plataforma deve diferenciar disponibilidade regional por jogo (Sega CD/Saturn). A tela lista os arquivos regionais individualmente; a regra geral atual indica presença de pelo menos uma alternativa e não promete compatibilidade de todas as regiões.
+
+D6 — IMPORTAÇÃO SEGURA
+- importKit foi substituído por transação em staging: exige todas as pastas do kit, copia e valida antes de mover a instalação anterior para backup, promove todas as pastas e reverte em caso de falha. Backups são mantidos se uma restauração falhar.
+- Importação individual preserva a versão anterior, valida arquivo e MD5 conhecido antes da promoção. A UI captura erros e não deixa exceções de importação escaparem da rotina de seleção.
+- Testes adicionados para importação completa do kit, ausência de pasta obrigatória sem alteração da instalação, e validação MD5.
+
+D7 — DISPOSITIVOS ROMM
+- Implementados GET /api/devices, GET /api/devices/online e GET /api/devices/{id}; erros HTTP e falta de devices.read são apresentados explicitamente, sem fallback silencioso.
+- A tela de configurações lista nome, cliente/plataforma, versão e estado online.
+
+D8 — CAPACIDADES
+- RemoteDevice preserva somente capacidades booleanas explicitamente declaradas. supports(capability) retorna null quando a chave não veio do servidor; ausência não equivale a suporte.
+- A tela exibe capacidades suportadas/não suportadas e informa quando o servidor não declarou nenhuma. Teste cobre true/false e valores não booleanos ignorados.
+
+FONTES PRIMÁRIAS CONSULTADAS
+- https://docs.libretro.com/library/bios/
+- https://docs.libretro.com/library/genesis_plus_gx/
+- https://docs.libretro.com/library/pcsx_rearmed/
+- https://docs.libretro.com/library/beetle_saturn/
+- https://docs.libretro.com/library/flycast/
+- https://docs.libretro.com/library/opera/
+- https://docs.libretro.com/library/freeintv/
+- https://docs.libretro.com/library/gearcoleco/
+- https://docs.libretro.com/library/bluemsx/
+- https://github.com/libretro/libretro-core-info/blob/master/a5200_libretro.info
+- RomM 5.4.x: https://docs.romm.app/5.4.0/developers/api-authentication/ e documentação de API/Devices.
+
+CI/VALIDAÇÃO
+- Spotless da CI #804 concluiu com sucesso. O job de testes unitários/build ainda estava em execução; o resultado final não foi declarado.
+- Testes funcionais no telefone e validação contra servidor RomM real continuam pendentes.
+- D3/D4/D6/D7/D8 implementados nesta branch, aguardando CI final e revisão. D5 parcialmente concluído, com revisão regional pendente.
+- PR #41 permanece aberta/draft e intocada. Nenhum merge ou release autorizado.
