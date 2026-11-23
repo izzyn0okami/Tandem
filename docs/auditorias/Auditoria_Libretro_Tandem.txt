@@ -3388,3 +3388,69 @@ PENDÊNCIAS PARA PRÓXIMA ETAPA
 4. Auditar memory cards, netplay, streaming, música/playlists e suporte real do LibretroDroid.
 5. Rever escopos OAuth solicitados pelo Tandem e elaborar matriz de menor privilégio.
 6. Depois completar a matriz, apresentar ao usuário decisões de manter/adaptar/substituir/remover/não implementar. Não remover nada antes dessa decisão.
+
+AUDITORIA AMPLA — ROMM × TANDEM (ETAPA 3: PLATAFORMAS, FIRMWARE, DISPOSITIVOS E INSTALAÇÃO REMOTA)
+Data: 2026-11-22
+Branch: game-mode-m2-dev
+Fonte: código RomM tag 5.4.1 e implementação atual do Tandem.
+PR aberta revalidada antes desta etapa: #41, ainda aberta/draft/não mesclada; mergeable=true na última consulta. Nenhuma alteração funcional.
+
+1. PLATAFORMAS E FIRMWARE
+RomM 5.4.1:
+- GET /api/platforms entrega metadados das plataformas e inclui a lista de firmware associada.
+- GET /api/firmware permite listar firmware, filtrar por platform_id e missing; GET /api/firmware/{id} retorna metadados; GET /api/firmware/{id}/content/{file_name} baixa o arquivo.
+- Os metadados de firmware incluem tamanho e hashes disponíveis (CRC32, MD5, SHA-1), além de estado de presença/ausência no filesystem.
+- Escopo de leitura: platforms.read e firmware.read; download pode respeitar a configuração de autenticação do servidor.
+- RomM administra o inventário e a integridade do firmware armazenado, mas não determina sozinho qual combinação de BIOS um núcleo Libretro específico exige.
+Tandem:
+- GET /api/platforms é consumido por listFirmware(), que percorre firmware dentro de cada plataforma.
+- downloadFirmware() grava em temporário, verifica tamanho e hashes fornecidos e só então promove o arquivo.
+- BiosManager relaciona nomes de firmware aos requisitos locais e baixa apenas os arquivos conhecidos que ainda não existem.
+- GamePlatforms mantém requisitos específicos por sistema/núcleo; BiosManager agora representa grupos de BIOS com semântica AND/OR. Isso corrige o modelo simplificado antigo: cada grupo exige ao menos um arquivo, e todos os grupos devem ser satisfeitos.
+- A presença local é atualmente verificada por caminho/arquivo; a validação de hash do download RomM ocorre durante a transferência, mas BIOS importadas manualmente ou já existentes não são revalidadas sistematicamente contra hash oficial.
+Avaliação preliminar: MANTER + ADAPTAR. RomM deve continuar sendo fonte/inventário e provedor de downloads; catálogo de requisitos por núcleo, seleção da BIOS correta e verificação de prontidão permanecem no Tandem porque dependem do motor Libretro e do núcleo escolhido. Melhorar consulta direta a /api/firmware se necessário para estados missing e metadados, sem duplicar inventário. Investigar hash local quando houver hash oficial confiável; não assumir que todos os arquivos têm hash público.
+
+2. REGISTRO E GESTÃO DE DISPOSITIVOS
+RomM 5.4.1:
+- POST /api/devices registra o dispositivo e retorna device_id; registro pode ser idempotente por fingerprint de usuário, endereço MAC, hostname e plataforma.
+- GET /api/devices e GET /api/devices/{device_id} listam dispositivos do usuário.
+- PUT /api/devices/{device_id} atualiza nome, plataforma, cliente, versão, capacidades, modo/configuração de sincronização e estado de sync.
+- DELETE /api/devices/{device_id} remove o dispositivo e encerra tokens/sockets relacionados.
+- O registro aceita capabilities declaradas pelo cliente (ex.: remote_install), mas a existência da capacidade não significa que o cliente a implemente.
+Tandem:
+- O pareamento OAuth de dispositivo é utilizado para obter token e escopos, mas não foi identificada chamada posterior a POST /api/devices para registrar o Tandem no inventário de dispositivos RomM.
+- DEVICE_SCOPES inclui devices.read e devices.write, embora o código inspecionado use o fluxo de pareamento; não foi encontrada utilização geral de listagem/edição de dispositivos nesta auditoria.
+Avaliação preliminar: ADAPTAR se o Tandem for adotar Device Sync ou recursos de instalação direcionada. Registrar um dispositivo com nome/plataforma/versão e capabilities reais pode ser necessário para esses contratos. Não solicitar escopos nem registrar dispositivo sem necessidade funcional aprovada. Não anunciar remote_install enquanto o cliente não suportar o fluxo.
+
+3. INSTALAÇÃO REMOTA DE ROMS
+RomM 5.4.1:
+- O endpoint GET /api/roms/{id}/installs retorna pedidos pendentes/assumidos para a ROM, exigindo devices.read e roms.read.
+- O recurso é condicionado à configuração DEVICE_INSTALL_ENABLED do servidor.
+- A árvore do backend também inclui rotas de instalação por dispositivo sob /api/devices; a operação envolve pedidos/estado e agente/dispositivo que efetivamente recebe o arquivo.
+Tandem:
+- Não foi identificada integração com pedidos de instalação remota, filas de instalação ou status de entrega por dispositivo.
+- O fluxo atual de download da biblioteca remota é iniciado pelo usuário no próprio aparelho e baixa diretamente a ROM escolhida.
+Avaliação preliminar: OPCIONAL / BAIXA PRIORIDADE. O recurso parece voltado a coordenar instalações entre dispositivos/servidor e exige que o cliente implemente o protocolo de agente/transferência e publique capacidade real. Não substituir o download local simples sem uma necessidade concreta. Confirmar detalhes das rotas de install por dispositivo em etapa própria antes de qualquer proposta.
+
+4. ESCOPO OAUTH / MENOR PRIVILÉGIO — OBSERVAÇÃO PARCIAL
+O Tandem solicita atualmente: me.read, platforms.read, roms.read, roms.user.read, roms.user.write, assets.read, assets.write, firmware.read, devices.read e devices.write.
+- me.read, platforms.read, roms.read, firmware.read e assets.* correspondem a recursos usados atualmente.
+- roms.user.read/write já são solicitados, mas a auditoria identificou que o Tandem ainda não consome os dados pessoais por ROM nem integra activity; a necessidade atual de ambos os escopos deve ser revista.
+- devices.read/write são solicitados, mas o registro/listagem de dispositivo RomM não foi identificado; sua necessidade depende da adoção do protocolo oficial de sincronização ou instalação.
+- collections.read/write não são solicitados e só devem ser adicionados quando a integração de coleções for aprovada. A leitura inicial não exige collections.write.
+- Não remover escopos antes de confirmar todos os fluxos, tokens emitidos e compatibilidade da instância real. Uma redução de permissões deve preservar o pareamento e os recursos já usados.
+Avaliação preliminar: REVISAR. Criar matriz endpoint→escopo→chamada do Tandem e pedir somente as permissões estritamente necessárias para os recursos aprovados. Não alterar o pedido de escopos nesta auditoria.
+
+5. LIMITES E PENDÊNCIAS
+- O inventário RomM de firmware não substitui o catálogo de BIOS por núcleo no Tandem.
+- O registro de dispositivo RomM é distinto do pareamento OAuth: o token de pareamento, por si só, não cria o registro de device_id usado pelo Device Sync.
+- A instalação remota depende de recursos habilitados no servidor e de protocolo/capacidade do cliente; não presumir que esteja ativa na instância do usuário.
+- Não foi implementada integração de dispositivos, instalações ou novas chamadas de firmware.
+- Não houve CI, build ou teste funcional nesta etapa.
+- Nenhuma funcionalidade foi removida.
+
+PRÓXIMAS ETAPAS
+1. Auditar os domínios de estatísticas, recomendações, notificações, feeds, tarefas, permissões/configuração e logs.
+2. Auditar memory cards, netplay, streaming, música/playlists e limites de compatibilidade com LibretroDroid.
+3. Completar matriz de escopos e contratos de cada funcionalidade atualmente usada.
+4. Só após concluir a auditoria, apresentar decisões de produto para manter/adaptar/substituir/remover/não implementar.
