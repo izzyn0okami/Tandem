@@ -38,7 +38,7 @@ internal fun normalizeTitle(title: String): String = title.replace(tagPattern, "
 private fun titleKey(game: RemoteGame): String = normalizeTitle(game.title)
 
 /** Chave única do título dentro da plataforma, igual à usada para juntar com os jogos do aparelho. */
-internal val TitleGroup.key: String get() = "${versions.first().platform.slug}|${titleKey(versions.first())}"
+internal val TitleGroup.key: String get() = "${versions.first().platform.slug}|${normalizeTitle(title)}"
 
 /** Texto da versão: as marcas do nome do arquivo, como "(USA) (Rev 1)". */
 internal fun versionLabel(game: RemoteGame): String = tagContent.findAll(game.fileName.substringBeforeLast('.')).joinToString(" ") { it.value }.ifEmpty { game.fileName }
@@ -54,13 +54,45 @@ private fun regionRank(game: RemoteGame): Int {
 }
 
 /** Junta as versões do mesmo jogo (mesmo título sem as marcas de região/revisão) numa só entrada. */
-internal fun groupVersions(games: List<RemoteGame>): List<TitleGroup> = games.groupBy { titleKey(it) }.values
-    .map { versions ->
-        val first = versions.first()
-        TitleGroup(
-            title = first.title.replace(tagPattern, "").trim().ifEmpty { first.title },
-            versions = versions.sortedWith(compareBy({ regionRank(it) }, { versionLabel(it) })),
-        )
+internal fun groupVersions(games: List<RemoteGame>): List<TitleGroup> = games.groupBy { it.platform }.values
+    .flatMap { platformGames ->
+        val parent = platformGames.associate { it.id to it.id }.toMutableMap()
+        fun find(id: Long): Long {
+            var current = id
+            while (parent[current] != current) current = parent[current]!!
+            val root = current
+            current = id
+            while (parent[current] != current) {
+                val next = parent[current]!!
+                parent[current] = root
+                current = next
+            }
+            return root
+        }
+        fun union(first: Long, second: Long) {
+            val a = find(first)
+            val b = find(second)
+            if (a != b) parent[b] = a
+        }
+        val ids = parent.keys
+        platformGames.forEach { game ->
+            game.siblingIds.filter { it in ids }.forEach { siblingId -> union(game.id, siblingId) }
+        }
+        // Mantém o agrupamento por título como fallback, mas respeita primeiro
+        // as relações explícitas de sibling_roms que o RomM fornece.
+        platformGames.groupBy { titleKey(it) }.values.forEach { sameTitle ->
+            sameTitle.drop(1).forEach { union(sameTitle.first().id, it.id) }
+        }
+        platformGames.groupBy { find(it.id) }.values.map { versions ->
+            val mainId = versions.firstNotNullOfOrNull { it.mainSiblingId }
+            val first = versions.firstOrNull { it.id == mainId }
+                ?: versions.firstOrNull { it.userData?.isMainSibling == true }
+                ?: versions.first()
+            TitleGroup(
+                title = first.title.replace(tagPattern, "").trim().ifEmpty { first.title },
+                versions = versions.sortedWith(compareBy({ regionRank(it) }, { versionLabel(it) })),
+            )
+        }
     }
     .sortedBy { it.title.lowercase() }
 

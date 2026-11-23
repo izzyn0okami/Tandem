@@ -94,9 +94,24 @@ internal fun LibraryScreen(
     var collectionFilter by remember { mutableStateOf<RemoteCollection?>(null) }
     var remoteFilters by remember { mutableStateOf(RemoteGameFilters()) }
     var remoteCollectionError by remember { mutableStateOf("") }
-    var remoteSearchIds by remember { mutableStateOf<Set<Long>?>(null) }
+    var remoteSearchIds by remember { mutableStateOf<List<Long>?>(null) }
     var remoteSearching by remember { mutableStateOf(false) }
     var remoteSearchError by remember { mutableStateOf("") }
+    var remoteSearchOffset by remember { mutableStateOf(0) }
+    var remoteSearchHasMore by remember { mutableStateOf(false) }
+    var remoteSearchLoadingMore by remember { mutableStateOf(false) }
+    var sortBy by remember { mutableStateOf("") }
+    var sortDescending by remember { mutableStateOf(false) }
+    val sortOptions = remember {
+        listOf(
+            "" to "Relevância",
+            "name" to "Nome",
+            "fs_size_bytes" to "Tamanho",
+            "first_release_date" to "Lançamento",
+            "created_at" to "Adicionado",
+            "average_rating" to "Avaliação",
+        )
+    }
     LaunchedEffect(RomMSettings.url(context), RomMSettings.token(context), RomMSettings.isConnected(context)) {
         remotePlatforms = emptyList()
         remoteCollections = emptyList()
@@ -130,28 +145,49 @@ internal fun LibraryScreen(
             collectionFilter = null
         }
     }
-    LaunchedEffect(normalizedSearch, platformFilter, collectionFilter, remoteFilters, remotePlatforms, RomMSettings.url(context), RomMSettings.token(context)) {
+    LaunchedEffect(
+        normalizedSearch,
+        platformFilter,
+        collectionFilter,
+        remoteFilters,
+        remotePlatforms,
+        sortBy,
+        sortDescending,
+        RomMSettings.url(context),
+        RomMSettings.token(context),
+    ) {
         remoteSearchIds = null
+        remoteSearchOffset = 0
+        remoteSearchHasMore = false
         remoteSearchError = ""
-        if (RomMSettings.isConnected(context) && (normalizedSearch.length >= 2 || platformFilter != null || collectionFilter != null || remoteFilters.isActive)) {
+        if (
+            RomMSettings.isConnected(context) &&
+            (normalizedSearch.length >= 2 || platformFilter != null || collectionFilter != null ||
+                remoteFilters.isActive || sortBy.isNotEmpty())
+        ) {
             remoteSearching = true
             delay(350)
             try {
                 val selectedPlatformIds = platformFilter?.let { slug ->
                     remotePlatforms.filter { GamePlatforms.fromRomM(it.slug)?.slug == slug }.map { it.id }
                 }.orEmpty()
-                val ids = withContext(Dispatchers.IO) {
+                val page = withContext(Dispatchers.IO) {
                     RomMClient(
                         RomMSettings.url(context).orEmpty(),
                         RomMSettings.token(context),
-                    ).listGames(
+                    ).listGameIdsPage(
                         searchTerm = normalizedSearch.takeIf { it.length >= 2 },
                         platformIds = selectedPlatformIds,
                         collection = collectionFilter,
                         filters = remoteFilters,
-                    ).map { it.id }.toSet()
+                        orderBy = sortBy,
+                        orderDir = if (sortDescending) "desc" else "asc",
+                        offset = 0,
+                    )
                 }
-                remoteSearchIds = ids
+                remoteSearchIds = page.ids
+                remoteSearchOffset = page.nextOffset
+                remoteSearchHasMore = page.hasMore
             } catch (cancelled: CancellationException) {
                 throw cancelled
             } catch (error: Exception) {
@@ -163,6 +199,41 @@ internal fun LibraryScreen(
             remoteSearching = false
         }
     }
+    val loadMoreRemote: () -> Unit = {
+        if (remoteSearchHasMore && !remoteSearchLoadingMore && RomMSettings.isConnected(context)) {
+            remoteSearchLoadingMore = true
+            scope.launch {
+                try {
+                    val selectedPlatformIds = platformFilter?.let { slug ->
+                        remotePlatforms.filter { GamePlatforms.fromRomM(it.slug)?.slug == slug }.map { it.id }
+                    }.orEmpty()
+                    val page = withContext(Dispatchers.IO) {
+                        RomMClient(
+                            RomMSettings.url(context).orEmpty(),
+                            RomMSettings.token(context),
+                        ).listGameIdsPage(
+                            searchTerm = normalizedSearch.takeIf { it.length >= 2 },
+                            platformIds = selectedPlatformIds,
+                            collection = collectionFilter,
+                            filters = remoteFilters,
+                            orderBy = sortBy,
+                            orderDir = if (sortDescending) "desc" else "asc",
+                            offset = remoteSearchOffset,
+                        )
+                    }
+                    remoteSearchIds = (remoteSearchIds.orEmpty() + page.ids).distinct()
+                    remoteSearchOffset = page.nextOffset
+                    remoteSearchHasMore = page.hasMore
+                } catch (cancelled: CancellationException) {
+                    throw cancelled
+                } catch (error: Exception) {
+                    remoteSearchError = error.message ?: error.toString()
+                } finally {
+                    remoteSearchLoadingMore = false
+                }
+            }
+        }
+    }
     val recent = remember(version, games, normalizedSearch) {
         if (normalizedSearch.isEmpty()) {
             PlayHistory.recent(context, games).take(10)
@@ -172,20 +243,30 @@ internal fun LibraryScreen(
     }
     val entryByPath = remember(entries) { entries.flatMap { entry -> entry.locals.map { it.path to entry } }.toMap() }
     val platforms = remember(entries) { entries.map { it.platform }.distinctBy { it.slug } }
-    val hasRemoteFilters = collectionFilter != null || remoteFilters.isActive
+    val hasRemoteFilters = collectionFilter != null || remoteFilters.isActive || sortBy.isNotEmpty()
     val searchedEntries = remember(entries, normalizedSearch, remoteSearchIds, hasRemoteFilters) {
+        val remoteIds = remoteSearchIds.orEmpty()
+        val remoteIdSet = remoteIds.toHashSet()
+        val remoteOrder = remoteIds.withIndex().associate { it.value to it.index }
         val remoteEntries = if (!hasRemoteFilters) {
             entries
         } else {
-            entries.filter { entry -> entry.group?.versions?.any { it.id in remoteSearchIds.orEmpty() } == true }
+            entries.filter { entry -> entry.group?.versions?.any { it.id in remoteIdSet } == true }
         }
-        if (normalizedSearch.isEmpty()) {
+        val filtered = if (normalizedSearch.isEmpty()) {
             remoteEntries
         } else {
             remoteEntries.filter { entry ->
                 entry.title.contains(normalizedSearch, ignoreCase = true) ||
                     entry.platform.name.contains(normalizedSearch, ignoreCase = true) ||
-                    entry.group?.versions?.any { it.id in remoteSearchIds.orEmpty() } == true
+                    entry.group?.versions?.any { it.id in remoteIdSet } == true
+            }
+        }
+        if (remoteOrder.isEmpty()) {
+            filtered
+        } else {
+            filtered.sortedBy { entry ->
+                entry.group?.versions?.mapNotNull { remoteOrder[it.id] }?.minOrNull() ?: Int.MAX_VALUE
             }
         }
     }
@@ -277,6 +358,19 @@ internal fun LibraryScreen(
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth(),
                     )
+                    if (RomMSettings.isConnected(context)) {
+                        LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            items(sortOptions, key = { it.first }) { (key, label) ->
+                                PlatformChip(label, sortBy == key) { sortBy = key }
+                            }
+                            item {
+                                PlatformChip(
+                                    if (sortDescending) "↓ Decrescente" else "↑ Crescente",
+                                    sortDescending,
+                                ) { sortDescending = !sortDescending }
+                            }
+                        }
+                    }
                     if (remoteSearching) Text("Pesquisando no RomM…", color = GameColors.textDim, fontSize = 12.sp)
                     if (remoteSearchError.isNotEmpty()) Text("Pesquisa no RomM indisponível: $remoteSearchError", color = GameColors.danger, fontSize = 12.sp)
                 }
@@ -425,7 +519,15 @@ internal fun LibraryScreen(
                 }
             } else if ((normalizedSearch.isNotEmpty() || hasRemoteFilters) && !remoteSearching && visible.isEmpty() && androidSorted.isEmpty()) {
                 item(key = "search-empty") {
-                    Text("Nenhum jogo encontrado para esta pesquisa.", color = GameColors.textDim, fontSize = 14.sp)
+                    Text("Nenhum jogo encontrado nesta página.", color = GameColors.textDim, fontSize = 14.sp)
+                }
+            }
+            if (remoteSearchHasMore) {
+                item(key = "romm-load-more") {
+                    PlatformChip(
+                        if (remoteSearchLoadingMore) "Carregando mais resultados…" else "Carregar mais resultados do RomM",
+                        selected = false,
+                    ) { loadMoreRemote() }
                 }
             }
         }
@@ -625,6 +727,40 @@ internal fun GameDetailScreen(
     val percent = entry.percent(progress)
     val firstFocus = remember { FocusRequester() }
     val manyVersions = (group?.versions?.size ?: 0) > 1
+    val detailGames = group?.versions.orEmpty()
+    val metadataGame = detailGames.firstOrNull {
+        it.metadata?.hasContent == true || it.alternativeNames.isNotEmpty() || it.providerIds.isNotEmpty()
+    }
+    val associatedFiles = detailGames.flatMap { it.associatedFiles }.distinctBy { it.id }
+    val isEasyRpgGame = detailGames.any { it.isEasyRpgGame }
+    val metadataText = remember(entry.key, metadataGame) {
+        buildString {
+            val metadata = metadataGame?.metadata
+            fun appendValues(label: String, values: List<String>) {
+                if (values.isNotEmpty()) append("$label: ${values.joinToString(" · ")}\\n")
+            }
+            if (metadata != null) {
+                appendValues("Gêneros", metadata.genres)
+                appendValues("Franquias", metadata.franchises)
+                appendValues("Coleções", metadata.collections)
+                appendValues("Empresas", metadata.companies)
+                appendValues("Editoras", metadata.publishers)
+                appendValues("Desenvolvedores", metadata.developers)
+                appendValues("Modos", metadata.gameModes)
+                appendValues("Classificação etária", metadata.ageRatings)
+                metadata.playerCount?.let { append("Jogadores: $it\\n") }
+                metadata.firstReleaseDate?.let {
+                    append("Lançamento: ${DateFormat.getDateInstance(DateFormat.MEDIUM).format(Date(it * 1000L))}\\n")
+                }
+                metadata.averageRating?.let { append("Avaliação RomM: $it\\n") }
+                if (metadata.hasManualMetadata) append("Inclui metadados preenchidos manualmente no RomM.\\n")
+            }
+            metadataGame?.alternativeNames?.take(12)?.let { appendValues("Títulos alternativos", it) }
+            metadataGame?.providerIds?.toSortedMap()?.forEach { (provider, id) ->
+                append("$provider: $id\\n")
+            }
+        }.trim()
+    }
     val summary = remember(entry.key) { group?.versions?.firstOrNull()?.summary }
     val noteGames = remember(entry.key) { group?.versions?.filter { it.hasNotes }.orEmpty() }
     val rommNotes by produceState<List<Pair<String, RemoteGameNote>>?>(null, entry.key, RomMSettings.url(context), RomMSettings.token(context)) {
@@ -789,6 +925,33 @@ internal fun GameDetailScreen(
                         fontSize = 14.sp,
                         modifier = Modifier.padding(top = 6.dp).width(520.dp),
                     )
+                }
+                if (isEasyRpgGame) {
+                    Text(
+                        "EasyRPG · jogo de RPG Maker 2000/2003",
+                        color = GameColors.accent,
+                        fontSize = 13.sp,
+                        modifier = Modifier.padding(top = 8.dp),
+                    )
+                }
+                if (metadataText.isNotBlank()) {
+                    Column(verticalArrangement = Arrangement.spacedBy(3.dp), modifier = Modifier.padding(top = 8.dp).width(520.dp)) {
+                        Text("Metadados do RomM", color = GameColors.text, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                        Text(metadataText, color = GameColors.textDim, fontSize = 12.sp)
+                    }
+                }
+                if (associatedFiles.isNotEmpty()) {
+                    Column(verticalArrangement = Arrangement.spacedBy(3.dp), modifier = Modifier.padding(top = 8.dp).width(520.dp)) {
+                        Text("Arquivos associados do RomM", color = GameColors.text, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                        associatedFiles.take(20).forEach { file ->
+                            val category = file.category?.replaceFirstChar { it.uppercase() } ?: "Jogo"
+                            val size = if (file.sizeBytes > 0L) " · ${file.sizeBytes / 1024} KB" else ""
+                            Text("$category · ${file.fileName}$size", color = GameColors.textDim, fontSize = 11.sp)
+                        }
+                        if (associatedFiles.size > 20) {
+                            Text("E mais ${associatedFiles.size - 20} arquivo(s) associado(s).", color = GameColors.textDim, fontSize = 11.sp)
+                        }
+                    }
                 }
                 if (noteGames.isNotEmpty()) {
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(top = 8.dp).width(520.dp)) {
