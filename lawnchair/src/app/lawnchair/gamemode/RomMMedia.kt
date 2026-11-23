@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -30,6 +31,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import java.io.File
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 
 private val ROMM_IMAGE_EXTENSIONS = setOf("png", "jpg", "jpeg", "webp", "gif", "tif", "tiff", "bmp", "avif")
@@ -66,6 +68,10 @@ internal fun RomMMediaPanel(games: List<RemoteGame>) {
     var previewBitmap by remember(gameIds) { mutableStateOf<android.graphics.Bitmap?>(null) }
     var audioReady by remember(gameIds) { mutableStateOf(false) }
     var audioPlaying by remember(gameIds) { mutableStateOf(false) }
+    var audioDurationMs by remember(gameIds) { mutableStateOf(0) }
+    var audioPositionMs by remember(gameIds) { mutableStateOf(0) }
+    var pdfPageCount by remember(gameIds) { mutableStateOf(0) }
+    var pdfPageIndex by remember(gameIds) { mutableStateOf(0) }
     var audioPlayer by remember(gameIds) { mutableStateOf<MediaPlayer?>(null) }
 
     LaunchedEffect(gameIds, RomMSettings.url(context), RomMSettings.token(context)) {
@@ -92,6 +98,10 @@ internal fun RomMMediaPanel(games: List<RemoteGame>) {
         previewBitmap = null
         audioReady = false
         audioPlaying = false
+        audioDurationMs = 0
+        audioPositionMs = 0
+        pdfPageCount = 0
+        pdfPageIndex = 0
         try {
             val target = withContext(Dispatchers.IO) {
                 val directory = File(context.cacheDir, "romm-media").apply { mkdirs() }
@@ -101,6 +111,7 @@ internal fun RomMMediaPanel(games: List<RemoteGame>) {
                 RomMClient(RomMSettings.url(context).orEmpty(), RomMSettings.token(context))
                     .downloadAssociatedFile(file, target)
             }
+            trimRomMMediaCache(target.parentFile, target)
             loadedFile = target
             when (File(file.fileName).extension.lowercase()) {
                 "png", "jpg", "jpeg", "webp", "gif", "tif", "tiff", "bmp", "avif" -> {
@@ -111,9 +122,10 @@ internal fun RomMMediaPanel(games: List<RemoteGame>) {
                 }
 
                 "pdf" -> {
-                    previewBitmap = withContext(Dispatchers.IO) { renderFirstPdfPage(target) }
+                    pdfPageCount = withContext(Dispatchers.IO) { getPdfPageCount(target) }
+                    previewBitmap = withContext(Dispatchers.IO) { renderPdfPage(target, 0) }
                     if (previewBitmap == null) {
-                        previewError = "Não foi possível abrir a primeira página deste PDF."
+                        previewError = "Não foi possível abrir este PDF."
                     }
                 }
 
@@ -128,21 +140,46 @@ internal fun RomMMediaPanel(games: List<RemoteGame>) {
         }
     }
 
+    LaunchedEffect(loadedFile, selectedFile?.id, pdfPageIndex) {
+        val file = loadedFile ?: return@LaunchedEffect
+        if (
+            (selectedFile?.category == "manual" || selectedFile?.category == "walkthrough") &&
+            File(file.name).extension.equals("pdf", ignoreCase = true) &&
+            pdfPageCount > 0
+        ) {
+            previewBitmap = withContext(Dispatchers.IO) { renderPdfPage(file, pdfPageIndex) }
+        }
+    }
+
+    LaunchedEffect(audioPlayer, audioReady, audioPlaying) {
+        while (audioReady && audioPlaying) {
+            audioPlayer?.let { player -> runCatching { audioPositionMs = player.currentPosition } }
+            delay(500)
+        }
+    }
+
     DisposableEffect(loadedFile, selectedFile?.category) {
         val file = loadedFile
         if (file != null && selectedFile?.category == "soundtrack") {
+            var released = false
             val player = MediaPlayer()
             audioPlayer = player
             player.setOnPreparedListener {
-                audioReady = true
-                it.start()
-                audioPlaying = true
+                if (!released) {
+                    audioDurationMs = it.duration.coerceAtLeast(0)
+                    audioPositionMs = 0
+                    audioReady = true
+                    it.start()
+                    audioPlaying = true
+                }
             }
             player.setOnCompletionListener { audioPlaying = false }
             player.setOnErrorListener { _, what, extra ->
-                previewError = "Falha na reprodução de áudio (código $what/$extra)."
-                audioReady = false
-                audioPlaying = false
+                if (!released) {
+                    previewError = "Falha na reprodução de áudio (código $what/$extra)."
+                    audioReady = false
+                    audioPlaying = false
+                }
                 true
             }
             runCatching {
@@ -152,7 +189,8 @@ internal fun RomMMediaPanel(games: List<RemoteGame>) {
                 previewError = it.message ?: "Não foi possível preparar o áudio."
             }
             onDispose {
-                runCatching { player.stop() }
+                released = true
+                runCatching { if (player.isPlaying) player.stop() }
                 player.release()
                 if (audioPlayer === player) audioPlayer = null
                 audioReady = false
@@ -247,6 +285,21 @@ internal fun RomMMediaPanel(games: List<RemoteGame>) {
                         }
                         if (!audioReady) Text("Preparando áudio…", color = GameColors.textDim, fontSize = 12.sp)
                     }
+                    if (audioReady && audioDurationMs > 0) {
+                        Slider(
+                            value = audioPositionMs.coerceIn(0, audioDurationMs).toFloat(),
+                            onValueChange = { audioPositionMs = it.toInt() },
+                            onValueChangeFinished = {
+                                runCatching { audioPlayer?.seekTo(audioPositionMs) }
+                            },
+                            valueRange = 0f..audioDurationMs.toFloat(),
+                        )
+                        Text(
+                            "${formatMediaTime(audioPositionMs)} / ${formatMediaTime(audioDurationMs)}",
+                            color = GameColors.textDim,
+                            fontSize = 11.sp,
+                        )
+                    }
                 }
 
                 previewBitmap != null -> {
@@ -257,11 +310,19 @@ internal fun RomMMediaPanel(games: List<RemoteGame>) {
                         modifier = Modifier.fillMaxWidth().heightIn(max = 420.dp),
                     )
                     if (File(file.name).extension.lowercase() == "pdf") {
-                        Text(
-                            "Visualização integrada · primeira página do PDF",
-                            color = GameColors.textDim,
-                            fontSize = 11.sp,
-                        )
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            if (pdfPageIndex > 0) {
+                                PlatformChip("‹ Anterior", false) { pdfPageIndex-- }
+                            }
+                            Text(
+                                "Página ${pdfPageIndex + 1} de $pdfPageCount",
+                                color = GameColors.textDim,
+                                fontSize = 11.sp,
+                            )
+                            if (pdfPageIndex + 1 < pdfPageCount) {
+                                PlatformChip("Próxima ›", false) { pdfPageIndex++ }
+                            }
+                        }
                     }
                 }
 
@@ -289,12 +350,17 @@ internal fun RomMMediaPanel(games: List<RemoteGame>) {
     }
 }
 
-private fun renderFirstPdfPage(file: File): android.graphics.Bitmap? {
+private fun getPdfPageCount(file: File): Int {
+    val descriptor = ParcelFileDescriptor.open(file, ParcelFileDescriptor.MODE_READ_ONLY)
+    descriptor.use { parcel -> PdfRenderer(parcel).use { it.pageCount } }
+}
+
+private fun renderPdfPage(file: File, pageIndex: Int): android.graphics.Bitmap? {
     val descriptor = ParcelFileDescriptor.open(file, ParcelFileDescriptor.MODE_READ_ONLY)
     descriptor.use { parcel ->
         PdfRenderer(parcel).use { renderer ->
-            if (renderer.pageCount == 0) return null
-            renderer.openPage(0).use { page ->
+            if (pageIndex !in 0 until renderer.pageCount) return null
+            renderer.openPage(pageIndex).use { page ->
                 val scale = minOf(
                     1800f / page.width,
                     MAX_ROMM_PDF_PREVIEW_DIMENSION.toFloat() / maxOf(page.width, page.height),
@@ -314,7 +380,26 @@ private fun renderFirstPdfPage(file: File): android.graphics.Bitmap? {
     }
 }
 
+private const val MAX_ROMM_MEDIA_CACHE_BYTES = 256L * 1024L * 1024L
 private const val MAX_ROMM_TEXT_PREVIEW_CHARS = 500_000
+
+/** Mantém o cache temporário limitado, preservando o arquivo que a tela acabou de carregar. */
+private fun trimRomMMediaCache(directory: File?, keep: File) {
+    if (directory == null || !directory.isDirectory) return
+    val files = directory.listFiles()?.filter { it.isFile && it != keep } ?: return
+    var totalBytes = files.sumOf { it.length() } + keep.length()
+    if (totalBytes <= MAX_ROMM_MEDIA_CACHE_BYTES) return
+    files.sortedBy { it.lastModified() }.forEach { file ->
+        if (totalBytes <= MAX_ROMM_MEDIA_CACHE_BYTES) return
+        val size = file.length()
+        if (file.delete()) totalBytes -= size
+    }
+}
+
+private fun formatMediaTime(milliseconds: Int): String {
+    val totalSeconds = milliseconds.coerceAtLeast(0) / 1000
+    return "%d:%02d".format(totalSeconds / 60, totalSeconds % 60)
+}
 private const val MAX_ROMM_IMAGE_PREVIEW_DIMENSION = 2048
 private const val MAX_ROMM_PDF_PREVIEW_DIMENSION = 2048
 
