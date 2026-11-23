@@ -92,10 +92,15 @@ internal fun LibraryScreen(
     var remotePlatforms by remember { mutableStateOf<List<RemotePlatform>>(emptyList()) }
     var remoteCollections by remember { mutableStateOf<List<RemoteCollection>>(emptyList()) }
     var collectionFilter by remember { mutableStateOf<RemoteCollection?>(null) }
+    var remoteCollectionError by remember { mutableStateOf("") }
     var remoteSearchIds by remember { mutableStateOf<Set<Long>?>(null) }
     var remoteSearching by remember { mutableStateOf(false) }
     var remoteSearchError by remember { mutableStateOf("") }
-    LaunchedEffect(RomMSettings.url(context), RomMSettings.isConnected(context)) {
+    LaunchedEffect(RomMSettings.url(context), RomMSettings.token(context), RomMSettings.isConnected(context)) {
+        remotePlatforms = emptyList()
+        remoteCollections = emptyList()
+        collectionFilter = null
+        remoteCollectionError = ""
         if (RomMSettings.isConnected(context)) {
             runCatching {
                 withContext(Dispatchers.IO) {
@@ -114,14 +119,17 @@ internal fun LibraryScreen(
                     ).listCollections()
                 }
             }.onSuccess { remoteCollections = it }
-                .onFailure { GameLog.log("romm", "falha ao carregar coleções do RomM: ${it.message}") }
+                .onFailure {
+                    remoteCollectionError = it.message ?: "Não foi possível consultar as coleções."
+                    GameLog.log("romm", "falha ao carregar coleções do RomM: ${it.message}")
+                }
         } else {
             remotePlatforms = emptyList()
             remoteCollections = emptyList()
             collectionFilter = null
         }
     }
-    LaunchedEffect(normalizedSearch, platformFilter, collectionFilter, remotePlatforms, RomMSettings.url(context)) {
+    LaunchedEffect(normalizedSearch, platformFilter, collectionFilter, remotePlatforms, RomMSettings.url(context), RomMSettings.token(context)) {
         remoteSearchIds = null
         remoteSearchError = ""
         if (RomMSettings.isConnected(context) && (normalizedSearch.length >= 2 || platformFilter != null || collectionFilter != null)) {
@@ -301,6 +309,9 @@ internal fun LibraryScreen(
                 item(key = "romm-collections") {
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         SectionTitle("Coleções do RomM")
+                        if (remoteCollectionError.isNotEmpty()) {
+                            Text("Coleções do RomM indisponíveis: $remoteCollectionError", color = GameColors.danger, fontSize = 12.sp)
+                        }
                         LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                             item(key = "romm-collection-all") {
                                 PlatformChip(
