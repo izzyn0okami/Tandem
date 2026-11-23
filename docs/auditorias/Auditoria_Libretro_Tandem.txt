@@ -4436,3 +4436,10 @@ COMPLEMENTO D5 — DSi, REGIÃO E NEO GEO (2026-11-23)
 - Neo Geo: a plataforma permanece com o core fbneo e seu arquivo de BIOS neogeo.zip. A documentação FBNeo trata o neogeo como conjunto de BIOS do sistema arcade e não define um requisito separado de aes.zip. O core Geolith, por outro lado, distingue aes.zip (AES) de neogeo.zip (MVS/UniBIOS). Não alterar o core nem criar falsos requisitos AES sem decisão funcional; essa separação fica fora do escopo da configuração FBNeo atual.
 - Arquivos alterados nesta atualização: GamePlatforms.kt (cinco DSi opcionais), BiosScreen.kt (avisos regionais e cartucho Saturn), BiosManagerTest.kt (teste de DSi opcional).
 Fontes primárias: https://docs.libretro.com/library/melonds/ ; https://docs.libretro.com/library/melonds_ds/ ; https://docs.libretro.com/library/genesis_plus_gx/ ; https://docs.libretro.com/library/beetle_saturn/ ; https://docs.libretro.com/library/fbneo/ ; https://docs.libretro.com/library/geolith/ .
+
+
+REGISTRO DE CORREÇÃO E CI — 2026-11-23 (continuação)
+- CI #845 identificou erro ktlint standard:kdoc em RomMClient.kt: o KDoc original da classe ficou deslocado após inserir o parser de capabilities. A documentação foi reposicionada junto à classe; parser permanece com KDoc próprio.
+- CI #850 foi disparada para o head de código 8e3b2c26a628556e8c9251d750cab521867c7b34, incluindo correção KDoc, os cinco arquivos DSi opcionais, avisos de região/cartuchos Saturn e teste unitário. Na última consulta, os jobs de Spotless e testes unitários/build ainda estavam em execução; nenhum resultado final foi declarado.
+- Após o código, os logs e descrição da PR foram atualizados. O head atual da PR é bcad0fb6d7e646c7f46a43e0d4a13e800a995dc8 (commits posteriores somente de documentação/descrição; CI #850 executa o commit de código correspondente).
+- PR #45 continua draft, sem merge. PR #41 continua intocada. Testes em aparelho continuam pendentes.
