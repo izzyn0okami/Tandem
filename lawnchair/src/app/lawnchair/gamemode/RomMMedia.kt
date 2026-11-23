@@ -5,12 +5,17 @@ import android.graphics.pdf.PdfRenderer
 import android.media.MediaPlayer
 import android.os.ParcelFileDescriptor
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Slider
@@ -69,6 +74,9 @@ internal fun RomMMediaPanel(games: List<RemoteGame>) {
             it.category == "walkthrough" && File(it.fileName).extension.lowercase() in ROMM_DOCUMENT_EXTENSIONS
         }
     }
+    var screenshotThumbnails by remember(gameIds) { mutableStateOf<Map<Long, android.graphics.Bitmap>>(emptyMap()) }
+    var screenshotThumbnailsLoading by remember(gameIds) { mutableStateOf(false) }
+    var screenshotThumbnailsError by remember(gameIds) { mutableStateOf<String?>(null) }
     var tracks by remember(gameIds) { mutableStateOf<List<RemoteSoundtrackTrack>>(emptyList()) }
     var tracksLoading by remember(gameIds) { mutableStateOf(false) }
     var tracksError by remember(gameIds) { mutableStateOf<String?>(null) }
@@ -84,6 +92,82 @@ internal fun RomMMediaPanel(games: List<RemoteGame>) {
     var pdfPageCount by remember(gameIds) { mutableIntStateOf(0) }
     var pdfPageIndex by remember(gameIds) { mutableIntStateOf(0) }
     var audioPlayer by remember(gameIds) { mutableStateOf<MediaPlayer?>(null) }
+
+    LaunchedEffect(screenshots, game.id, RomMSettings.url(context), RomMSettings.token(context)) {
+        screenshotThumbnailsLoading = true
+        screenshotThumbnailsError = null
+        try {
+            val connected = RomMSettings.isConnected(context)
+            val result = withContext(Dispatchers.IO) {
+                val cacheDirectory = File(context.cacheDir, "romm-media-thumbnails").apply { mkdirs() }
+                val sourceDirectory = File(context.cacheDir, "romm-media-thumbnail-source").apply { mkdirs() }
+                val client = if (connected) {
+                    RomMClient(RomMSettings.url(context).orEmpty(), RomMSettings.token(context))
+                } else {
+                    null
+                }
+                val thumbnails = linkedMapOf<Long, android.graphics.Bitmap>()
+                var failedCount = 0
+                screenshots.take(MAX_ROMM_SCREENSHOTS_IN_GALLERY).forEach { screenshot ->
+                    val cacheFile = screenshotThumbnailFile(cacheDirectory, screenshot)
+                    val cached = if (cacheFile.isFile && cacheFile.length() > 0L) {
+                        BitmapFactory.decodeFile(cacheFile.absolutePath)
+                    } else {
+                        null
+                    }
+                    val bitmap = cached ?: if (client != null) {
+                        val sourceFile = File(
+                            sourceDirectory,
+                            "source-${game.id}-${screenshot.id}-${screenshot.sizeBytes}.${File(screenshot.fileName).extension.lowercase()}",
+                        )
+                        try {
+                            client.downloadAssociatedFile(
+                                screenshot,
+                                sourceFile,
+                                MAX_ROMM_SCREENSHOT_SOURCE_BYTES,
+                            )
+                            val decoded = decodeScreenshotThumbnail(sourceFile)
+                            if (decoded != null) {
+                                val temporary = File(cacheFile.parentFile, "${cacheFile.name}.part")
+                                val saved = runCatching {
+                                    temporary.outputStream().use { output ->
+                                        decoded.compress(android.graphics.Bitmap.CompressFormat.JPEG, 82, output)
+                                    }
+                                }.getOrDefault(false)
+                                if (saved && temporary.isFile && temporary.length() > 0L) {
+                                    cacheFile.delete()
+                                    if (!temporary.renameTo(cacheFile)) temporary.delete()
+                                } else {
+                                    temporary.delete()
+                                }
+                            }
+                            decoded
+                        } catch (_: Exception) {
+                            failedCount++
+                            null
+                        } finally {
+                            sourceFile.delete()
+                            File(sourceFile.parentFile, "${sourceFile.name}.part").delete()
+                            File(sourceFile.parentFile, "${sourceFile.name}.range").delete()
+                        }
+                    } else {
+                        null
+                    }
+                    if (bitmap != null) thumbnails[screenshot.id] = bitmap else if (cached == null) failedCount++
+                }
+                trimRomMScreenshotCache(cacheDirectory, screenshots.take(MAX_ROMM_SCREENSHOTS_IN_GALLERY).map { screenshotThumbnailFile(cacheDirectory, it) }.toSet())
+                Pair(thumbnails, failedCount)
+            }
+            screenshotThumbnails = result.first
+            if (result.second > 0 && connected) {
+                screenshotThumbnailsError = "Algumas miniaturas não puderam ser carregadas. Imagens acima de 64 MiB são ignoradas na galeria."
+            } else if (!connected && result.first.isEmpty()) {
+                screenshotThumbnailsError = "Conecte-se ao RomM para carregar as miniaturas ainda não armazenadas em cache."
+            }
+        } finally {
+            screenshotThumbnailsLoading = false
+        }
+    }
 
     LaunchedEffect(gameIds, RomMSettings.url(context), RomMSettings.token(context)) {
         if (!RomMSettings.isConnected(context)) return@LaunchedEffect
@@ -233,12 +317,30 @@ internal fun RomMMediaPanel(games: List<RemoteGame>) {
 
         if (screenshots.isNotEmpty()) {
             Text("Screenshots", color = GameColors.textDim, fontSize = 13.sp)
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                screenshots.take(12).forEach { file ->
-                    PlatformChip(File(file.fileName).name, selectedFile?.id == file.id) {
-                        selectedFile = file
+            LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                items(screenshots.take(MAX_ROMM_SCREENSHOTS_IN_GALLERY), key = { it.id }) { file ->
+                    val thumbnail = screenshotThumbnails[file.id]
+                    if (thumbnail != null) {
+                        Image(
+                            bitmap = thumbnail.asImageBitmap(),
+                            contentDescription = File(file.fileName).name,
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier.width(116.dp).height(76.dp).clickable {
+                                selectedFile = file
+                            },
+                        )
+                    } else {
+                        PlatformChip(File(file.fileName).name, selectedFile?.id == file.id) {
+                            selectedFile = file
+                        }
                     }
                 }
+            }
+            if (screenshotThumbnailsLoading) {
+                Text("Carregando miniaturas…", color = GameColors.textDim, fontSize = 11.sp)
+            }
+            screenshotThumbnailsError?.let {
+                Text(it, color = GameColors.textDim, fontSize = 11.sp)
             }
         }
         if (manuals.isNotEmpty()) {
@@ -394,7 +496,43 @@ private fun renderPdfPage(file: File, pageIndex: Int): android.graphics.Bitmap? 
 }
 
 private const val MAX_ROMM_MEDIA_CACHE_BYTES = 256L * 1024L * 1024L
+private const val MAX_ROMM_SCREENSHOT_SOURCE_BYTES = 64L * 1024L * 1024L
+private const val MAX_ROMM_SCREENSHOT_CACHE_BYTES = 64L * 1024L * 1024L
+private const val MAX_ROMM_SCREENSHOTS_IN_GALLERY = 12
+private const val MAX_ROMM_SCREENSHOT_THUMBNAIL_DIMENSION = 360
 private const val MAX_ROMM_TEXT_PREVIEW_CHARS = 500_000
+
+private fun screenshotThumbnailFile(directory: File, screenshot: RemoteAssociatedFile): File =
+    File(directory, "screenshot-${screenshot.id}-${screenshot.sizeBytes}.jpg")
+
+/** Gera uma miniatura pequena sem manter o arquivo original no cache. */
+private fun decodeScreenshotThumbnail(file: File): android.graphics.Bitmap? {
+    val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+    BitmapFactory.decodeFile(file.absolutePath, bounds)
+    if (bounds.outWidth <= 0 || bounds.outHeight <= 0) return null
+
+    val largestDimension = maxOf(bounds.outWidth, bounds.outHeight)
+    var sampleSize = 1
+    while (largestDimension / sampleSize > MAX_ROMM_SCREENSHOT_THUMBNAIL_DIMENSION) {
+        sampleSize *= 2
+    }
+    return BitmapFactory.decodeFile(
+        file.absolutePath,
+        BitmapFactory.Options().apply { inSampleSize = sampleSize },
+    )
+}
+
+/** Mantém somente as miniaturas recentes, respeitando o limite do cache temporário. */
+private fun trimRomMScreenshotCache(directory: File, keep: Set<File>) {
+    val files = directory.listFiles()?.filter { it.isFile && it.extension == "jpg" } ?: return
+    var totalBytes = files.sumOf { it.length() }
+    if (totalBytes <= MAX_ROMM_SCREENSHOT_CACHE_BYTES) return
+    files.filterNot { it in keep }.sortedBy { it.lastModified() }.forEach { file ->
+        if (totalBytes <= MAX_ROMM_SCREENSHOT_CACHE_BYTES) return
+        val size = file.length()
+        if (file.delete()) totalBytes -= size
+    }
+}
 
 /** Mantém o cache temporário limitado, preservando o arquivo que a tela acabou de carregar. */
 private fun trimRomMMediaCache(directory: File?, keep: File) {
