@@ -101,6 +101,7 @@ internal fun LibraryScreen(
     var remoteSearchHasMore by remember { mutableStateOf(false) }
     var remoteSearchLoadingMore by remember { mutableStateOf(false) }
     var activeRemoteSearchKey by remember { mutableStateOf("") }
+    var displayLimit by remember { mutableStateOf(100) }
     var sortBy by remember { mutableStateOf("") }
     var sortDescending by remember { mutableStateOf(false) }
     val sortOptions = remember {
@@ -170,6 +171,7 @@ internal fun LibraryScreen(
         RomMSettings.token(context),
     ) {
         activeRemoteSearchKey = currentRemoteSearchKey
+        displayLimit = 100
         remoteSearchLoadingMore = false
         remoteSearchIds = null
         remoteSearchOffset = 0
@@ -293,6 +295,7 @@ internal fun LibraryScreen(
     val visible = remember(searchedEntries, platformFilter) {
         if (platformFilter == null) searchedEntries else searchedEntries.filter { it.platform.slug == platformFilter }
     }
+    val displayedEntries = visible.take(displayLimit)
     val androidSorted = remember(androidGames, version, normalizedSearch) {
         AndroidGames.sortedByRecent(context, androidGames).filter {
             normalizedSearch.isEmpty() || it.title.contains(normalizedSearch, ignoreCase = true)
@@ -532,9 +535,9 @@ internal fun LibraryScreen(
                     }
                 }
             }
-            if (platformFilter != ANDROID_FILTER && visible.isNotEmpty()) {
+            if (platformFilter != ANDROID_FILTER && displayedEntries.isNotEmpty()) {
                 item(key = "library-title") { SectionTitle(stringResource(R.string.game_library_section)) }
-                items(visible.chunked(columns), key = { row -> row.first().key }) { row ->
+                items(displayedEntries.chunked(columns), key = { row -> row.first().key }) { row ->
                     Row(horizontalArrangement = Arrangement.spacedBy(CARD_GAP)) {
                         row.forEach { entry -> EntryCard(entry, progress, syncVersion, onClick = { onOpen(entry) }) }
                     }
@@ -542,6 +545,14 @@ internal fun LibraryScreen(
             } else if ((normalizedSearch.isNotEmpty() || hasRemoteFilters) && !remoteSearching && visible.isEmpty() && androidSorted.isEmpty()) {
                 item(key = "search-empty") {
                     Text("Nenhum jogo encontrado nesta página.", color = GameColors.textDim, fontSize = 14.sp)
+                }
+            }
+            if (visible.size > displayedEntries.size) {
+                item(key = "library-load-more") {
+                    PlatformChip(
+                        "Mostrar mais jogos (${visible.size - displayedEntries.size} restantes)",
+                        selected = false,
+                    ) { displayLimit += 100 }
                 }
             }
             if (remoteSearchHasMore) {
