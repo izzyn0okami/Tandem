@@ -1747,7 +1747,7 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
         return result
     }
 
-    fun downloadFirmware(firmware: RemoteFirmware, target: File) {
+    fun downloadFirmware(firmware: RemoteFirmware, target: File, expectedMd5: String? = null) {
         val url = base.resolve("api/firmware/${firmware.id}/content/")!!
             .newBuilder()
             .addPathSegment(firmware.fileName)
@@ -1763,7 +1763,7 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
             onProgress = {},
         )
         try {
-            verifyFirmwareFile(temp, firmware)
+            verifyFirmwareFile(temp, firmware, expectedMd5)
         } catch (error: Exception) {
             temp.delete()
             File(temp.parentFile, "${temp.name}.range").delete()
@@ -1774,7 +1774,7 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
     }
 
     /** Compara o arquivo recebido com tamanho e hashes publicados pelo RomM, quando disponíveis. */
-    internal fun verifyFirmwareFile(file: File, firmware: RemoteFirmware) {
+    internal fun verifyFirmwareFile(file: File, firmware: RemoteFirmware, expectedMd5: String? = null) {
         check(file.isFile && file.length() > 0L) { "Arquivo de firmware ausente ou vazio: ${firmware.fileName}" }
         firmware.sizeBytes?.let { expected ->
             check(file.length() == expected) {
@@ -1785,11 +1785,12 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
             firmware.crcHash?.let { "CRC32" to it },
             firmware.md5Hash?.let { "MD5" to it },
             firmware.sha1Hash?.let { "SHA-1" to it },
+            expectedMd5?.let { "MD5" to it },
         )
         if (expectedHashes.isEmpty()) return
 
         val crc = if (firmware.crcHash != null) CRC32() else null
-        val md5 = if (firmware.md5Hash != null) MessageDigest.getInstance("MD5") else null
+        val md5 = if (firmware.md5Hash != null || expectedMd5 != null) MessageDigest.getInstance("MD5") else null
         val sha1 = if (firmware.sha1Hash != null) MessageDigest.getInstance("SHA-1") else null
         file.inputStream().use { input ->
             val buffer = ByteArray(64 * 1024)
