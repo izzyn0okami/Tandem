@@ -830,6 +830,9 @@ internal fun GameDetailScreen(
     var rommLinked by remember(local?.path) {
         mutableStateOf(local?.let { runCatching { GameIdentityResolver.hasRomMLink(context, File(it.path)) }.getOrDefault(false) } ?: false)
     }
+    var rommLinkAmbiguous by remember(local?.path) {
+        mutableStateOf(local?.let { GameLibraryReconciler.isAmbiguous(context, it.path) } ?: false)
+    }
     var showRomMLinkDialog by remember(entry.key) { mutableStateOf(false) }
     val coreUpdateAvailable by produceState<Boolean?>(null, local?.path, chosenCoreId) {
         value = if (local != null && entry.platform.launch == LaunchMode.LIBRETRO && chosenCoreId.isNotBlank()) {
@@ -867,6 +870,7 @@ internal fun GameDetailScreen(
                 onDismiss = { showRomMLinkDialog = false },
                 onLinked = {
                     rommLinked = true
+                    rommLinkAmbiguous = false
                     showRomMLinkDialog = false
                     GameLog.log("romm", "ROM local associada explicitamente ao registro RomM #${it.id}: ${local.title}")
                 },
@@ -939,12 +943,18 @@ internal fun GameDetailScreen(
                 ) {
                     if (rommLinked) {
                         Text("Vínculo com RomM confirmado para esta conta.", color = GameColors.accent, fontSize = 13.sp)
-                    } else {
+                    } else if (rommLinkAmbiguous) {
                         GameButton(
-                            label = "Associar ROM existente ao RomM",
+                            label = "Resolver vínculo ambíguo",
                             onClick = { showRomMLinkDialog = true },
                             enabled = !busy,
                             modifier = Modifier.width(250.dp),
+                        )
+                    } else {
+                        Text(
+                            "Aguardando correspondência exata no catálogo RomM.",
+                            color = GameColors.textDim,
+                            fontSize = 12.sp,
                         )
                     }
                 }
