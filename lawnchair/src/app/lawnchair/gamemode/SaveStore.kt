@@ -1111,6 +1111,23 @@ class SaveStore internal constructor(
 
     fun writeState(bytes: ByteArray) = write(stateFile, bytes)
 
+    /**
+     * Inventário tipado dos artefatos locais desta identidade/núcleo.
+     * O progresso RA só entra quando a conta da sessão é informada e nunca é classificado como save RomM.
+     */
+    internal fun inventory(raUser: String? = null): List<SaveArtifact> {
+        val files = buildList {
+            add(sramFile)
+            add(stateFile)
+            raUser?.let { add(raProgressFile(it)) }
+        }
+        return SaveArtifactCatalog.inspect(
+            gameIdentity = gameIdentity ?: gameDirName,
+            coreId = coreId,
+            files = files,
+        )
+    }
+
     /** Grava por arquivo temporário e renomeia, para um corte de energia não estragar o save. */
     @Synchronized
     private fun write(target: File, bytes: ByteArray) {
