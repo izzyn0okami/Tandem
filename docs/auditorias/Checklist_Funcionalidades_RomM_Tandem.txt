@@ -1194,3 +1194,9 @@ ATUALIZAÇÃO DO CHECKLIST — NOME ORIGINAL NO UPLOAD DEVICE SYNC (2026-11-24)
 - [TESTE ADICIONADO] Verifica o nome do arquivo multipart enviado.
 - [PENDENTE DE CI] Aguardar CI do head mais recente da PR #49.
 - [PENDENTE DE APARELHO] Validar interoperabilidade com RomM 5.4.x em PSX e SNES. Sem transferência real sem autorização explícita.
+
+
+ATUALIZAÇÃO DO CHECKLIST — DIAGNÓSTICO PASSIVO DO PULL (2026-11-24)
+- [IMPLEMENTADO NA PR #49] Logs de SaveSync agora expõem apenas metadados/prefixos de hash para explicar por que um save remoto foi ou não aplicado; nenhuma lógica de sincronização foi alterada.
+- [PENDENTE] CI e teste no telefone, exportando novo game_log.txt após instalar o APK correspondente. Investigar PSX autosave com base em ID, slot, emulador, hashes e decisão remoteChanged/aplicar.
+- Não executar transferências reais adicionais sem autorização; preservar saves e backups.
