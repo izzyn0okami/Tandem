@@ -391,7 +391,8 @@ object SaveSync {
                     GameLog.log(
                         "saves",
                         "save remoto selecionado: tipo=${kind.path}, id=${remote.id}, núcleo=${remote.emulator}, " +
-                            "updatedAt=${remote.updatedAtMs}, candidatos compatíveis=$compatibleCount",
+                            "slot=${remote.slot ?: "legado-sem-slot"}, updatedAt=${remote.updatedAtMs}, " +
+                            "candidatos compatíveis=$compatibleCount",
                     )
                     pullOne(context, client, store, kind, file, remote, romPath, coreId, gameIdentity)
                 }
