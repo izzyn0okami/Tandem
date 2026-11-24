@@ -936,3 +936,13 @@ STATUS DA AUDITORIA
 - E5: inspeção somente leitura produziu uma operação Upload candidata, mas nenhuma operação foi aplicada. Interoperabilidade e upload real continuam pendentes.
 - Não alterar, mover, apagar ou sobrescrever saves com base neste log.
 - Próxima validação: confirmar a associação do jogo SNES à entrada correta do RomM antes de avaliar o fluxo legado; em paralelo, executar uma operação Device Sync controlada após confirmar o estado do dispositivo, registrando o resultado real da transferência. Manter save states fora do Device Sync.
+
+
+AUDITORIA COMPLEMENTAR — SLOT AUTOSAVE DO ROMM (2026-11-23/24)
+- Inspecionada a implementação no head refs/pull/41/head.
+- Tandem RemoteFile não modela slot; parseRemoteFile ignora slot; listRemoteFiles não filtra por slot; newestRemoteFile seleciona por tipo/núcleo; uploadRemoteFile não envia slot no POST de criação.
+- RomM 5.4.1 confirma que POST /api/saves aceita slot como query param e GET /api/saves permite filtrar por slot. PUT /api/saves/{id} atualiza o registro existente sem trocar o slot.
+- Consequência: o fluxo legado não consegue criar corretamente um save novo no slot autosave nem selecionar o registro remoto por slot; é uma causa concreta e independente da pasta personalizada.
+- Correção pendente: adicionar slot ao modelo/parser, filtrar a consulta remota e enviar o slot no POST de criação; preservar o slot de registros existentes no PUT.
+- Não confundir com Device Sync E5, que tem protocolo separado. Não implementar nem alterar saves sem a autorização de trabalho correspondente.
+- Fonte oficial RomM 5.4.1: https://github.com/rommapp/romm/blob/5.4.1/backend/endpoints/saves.py
