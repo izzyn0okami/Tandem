@@ -250,9 +250,9 @@ enum class RemoteFileKind(val path: String, val part: String) {
 data class RemoteFile(
     val id: Long,
     val emulator: String?,
-    val slot: String? = null,
     val updatedAtMs: Long,
     val contentHash: String? = null,
+    val slot: String? = null,
 )
 
 /** Pedido de aprovação do aparelho: o usuário confirma o código no RomM, pelo navegador. */
