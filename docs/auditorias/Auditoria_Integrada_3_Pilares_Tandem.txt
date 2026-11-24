@@ -220,3 +220,16 @@ ATUALIZAÇÃO — CI #1096 E DESCOBERTAS DO TRANSPORTE DE ESTADOS (2026-11-24)
 - [IMPLEMENTAÇÃO EM CURSO] O plano de sessão unificada mantém Device Sync para SRAM/cartões e o endpoint /api/states para estados rápidos, sob um único coordenador e um único worker persistente. A duplicidade de transporte para o mesmo arquivo SRAM será removida; os dois endpoints permanecem separados porque o contrato do servidor também é separado.
 - [PENDENTE] CI da implementação do coordenador, validação automática de registro do dispositivo, pull pré-jogo e push pós-jogo; teste funcional real PSX/SNES e estados no telefone.
 - [SEGURANÇA] Nenhum save real foi transferido, sobrescrito, movido ou apagado nesta revisão.
+
+
+VALIDAÇÃO DA PRIMEIRA IMPLEMENTAÇÃO DO COORDENADOR — 2026-11-24
+- [CI APROVADA] Run #1095 / 45419136744, head 610577abb6c5eae584c8c4c454c542c83f9f0bbb: sucesso. Run #1097 / 45425654124, head f8c6b17ec099022eb7f1208a12c04bd354c9d9de: sucesso.
+- [CI APROVADA] Run #1098 / 45427687654, commit inicial 57393b1eb27bceec9c32327cbb9c470d15315d31: estilo, testes unitários, build Debug APK e final-status concluídos com sucesso.
+- [CI APROVADA] Run #1099 / 45427990647, head formatado aa29eaf1c63f884bcefe8ed211770d8d747973d4: estilo, testes unitários, build Debug APK, upload do artefato e final-status concluídos com sucesso. Artefato ID 14938712006, 46.412.669 bytes, SHA-256 7fd2b5377cd129750b1da10f923cb19d3d405c7781fcb121edfc12e58a7ca8af; disponível até 2027-02-22. Não houve publicação tandem-latest.
+- [AÇÃO REQUERIDA] Run #1100 no evento pull_request foi marcado action_required, não como falha de código; a execução workflow_dispatch #1099 validou o mesmo head com sucesso.
+- [COORDENADOR] GameSessionCoordinator foi conectado ao pré-jogo em GameModeActivity e ao pós-jogo em GameSessionActivity/WorkManager. Um worker executa Device Sync para SRAM/cartões e transporte /api/states para estados rápidos. O registro de dispositivo é criado automaticamente e associado à conta/servidor RomM.
+- [SEPARAÇÃO DE TRANSPORTE] SaveSync foi restringido a RemoteFileKind.State. SRAM/cartões são selecionados pelo inventário tipado e sincronizados somente pelo Device Sync. O status de sincronização continua considerando a existência de SRAM local.
+- [SNAPSHOTS LEGADOS] Capturas antigas de WorkManager podem conter SRAM e estado rápido. O transporte /api/states agora filtra explicitamente snapshots antigos para impedir que SRAM seja reenviada pelo endpoint tradicional.
+- [CONFLITO HTTP] HTTP 409 é classificado como conflito preservado, não como falha transitória que provoque retry infinito. O worker tenta o transporte de estados mesmo se o transporte Device Sync falhar; somente falhas operacionais pedem nova tentativa automática.
+- [PENDENTE] Validação real no telefone para pré-sync, pós-sync, registro automático, conflito HTTP 409, PSX memory-card-0, SNES autosave e estados rápidos específicos do núcleo. Nenhum teste real de servidor/telefone foi executado por CI.
+- [SEGURANÇA] overwrite=false, operações delete ignoradas e conflitos preservados. Nenhum save, ROM ou dado remoto foi apagado, movido ou sobrescrito nesta etapa.

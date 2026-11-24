@@ -1,5 +1,7 @@
 package app.lawnchair.gamemode
 
+import java.io.File
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -39,6 +41,24 @@ class GameSessionCoordinatorTest {
 
         assertFalse(GameSessionSyncPolicy.blocksSessionStart(result))
         assertFalse(GameSessionSyncPolicy.shouldRetryBackground(result))
+    }
+
+    @Test
+    fun http409IsClassifiedAsConflictInsteadOfRetryableFailure() {
+        assertTrue(GameSessionSyncPolicy.isConflictHttpStatus(409))
+        assertFalse(GameSessionSyncPolicy.isConflictHttpStatus(500))
+    }
+
+    @Test
+    fun oldQueuedSnapshotsCannotSendSramThroughTheStateEndpoint() {
+        val selected = SaveSync.stateTransportFiles(
+            mapOf(
+                RemoteFileKind.Save to File("sram.srm"),
+                RemoteFileKind.State to File("state1.state"),
+            ),
+        )
+
+        assertEquals(setOf(RemoteFileKind.State), selected.keys)
     }
 
     private fun result(

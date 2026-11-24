@@ -7,6 +7,7 @@ import androidx.core.content.edit
 import java.io.File
 import java.io.IOException
 import java.security.MessageDigest
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -114,8 +115,19 @@ internal object GameSessionCoordinator {
         val activeRom = File(activeRomPath)
         if (!GameIdentityResolver.hasRomMLink(app, activeRom)) return true
 
-        ensureDeviceRegistered(app, connection.url, connection.token)
-        val saveResult = RomMDeviceSyncRunner.synchronizeLocalSave(app, activeRomPath, coreId, platformSlug)
+        var saveRetry = false
+        var saveResult: DeviceSyncExecutionResult? = null
+        try {
+            ensureDeviceRegistered(app, connection.url, connection.token)
+            saveResult = RomMDeviceSyncRunner.synchronizeLocalSave(app, activeRomPath, coreId, platformSlug)
+            saveRetry = GameSessionSyncPolicy.shouldRetryBackground(saveResult)
+        } catch (cancelled: CancellationException) {
+            throw cancelled
+        } catch (error: Exception) {
+            saveRetry = true
+            GameLog.error("Device Sync", "falha no transporte de SRAM/cartão; a fila tentará novamente", error)
+        }
+        // O transporte /api/states é independente: uma falha no Device Sync não impede sua tentativa.
         val statesCompleted = SaveSync.pushFromWorker(
             app,
             activeRomPath,
@@ -125,16 +137,13 @@ internal object GameSessionCoordinator {
             expectedAccountFingerprint,
             snapshotJobId,
         )
-        val unresolved = saveResult.failed > 0 ||
-            saveResult.conflictsPreserved > 0 ||
-            saveResult.deletesIgnored > 0 ||
-            saveResult.unknownIgnored > 0
+        val unresolved = saveRetry || saveResult?.let { GameSessionSyncPolicy.blocksSessionStart(it) } == true
         if (unresolved) {
             app.getSharedPreferences("romm_sync", Context.MODE_PRIVATE).edit {
                 putString(statusKey(gameIdentity, expectedAccountFingerprint), "pending")
             }
         }
-        return !GameSessionSyncPolicy.shouldRetryBackground(saveResult) && statesCompleted
+        return !saveRetry && statesCompleted
     }
 
     private suspend fun ensureDeviceRegistered(
@@ -175,6 +184,8 @@ internal object GameSessionSyncPolicy {
         result.conflictsPreserved > 0 ||
         result.deletesIgnored > 0 ||
         result.unknownIgnored > 0
+
+    fun isConflictHttpStatus(statusCode: Int): Boolean = statusCode == 409
 
     /** Conflitos são estacionados para resolução; somente falhas operacionais pedem retry automático. */
     fun shouldRetryBackground(result: DeviceSyncExecutionResult): Boolean = result.failed > 0

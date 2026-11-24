@@ -169,6 +169,10 @@ object SaveSync {
         RemoteFileKind.State to store.stateFile,
     )
 
+    /** Descarta SRAM de snapshots antigos: esse tipo agora pertence exclusivamente ao Device Sync. */
+    internal fun stateTransportFiles(snapshotFiles: Map<RemoteFileKind, File>): Map<RemoteFileKind, File> =
+        snapshotFiles.filterKeys { it == RemoteFileKind.State }
+
     private fun appliedHashKey(
         kind: RemoteFileKind,
         gameIdentity: String,
@@ -713,9 +717,11 @@ object SaveSync {
                         gameIdentity,
                         migrationPlan.sources,
                     )
-                    SaveSnapshotStore(File(app.filesDir, "romm-save-queue")).capture(
-                        snapshotJobId,
-                        files(store).associate { (kind, file) -> kind to file },
+                    stateTransportFiles(
+                        SaveSnapshotStore(File(app.filesDir, "romm-save-queue")).capture(
+                            snapshotJobId,
+                            files(store).associate { (kind, file) -> kind to file },
+                        ),
                     )
                 }
                 withContext(Dispatchers.IO) {

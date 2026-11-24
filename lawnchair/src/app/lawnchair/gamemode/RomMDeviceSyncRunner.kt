@@ -228,6 +228,19 @@ object RomMDeviceSyncRunner {
                         }
                     } catch (cancelled: CancellationException) {
                         throw cancelled
+                    } catch (error: RomMHttpException) {
+                        if (GameSessionSyncPolicy.isConflictHttpStatus(error.statusCode)) {
+                            conflicts++
+                            val detail = error.detail?.let { ": $it" }.orEmpty()
+                            GameLog.log("Device Sync", "HTTP 409 tratado como conflito; dados preservados$detail")
+                        } else {
+                            failed++
+                            GameLog.error(
+                                "Device Sync",
+                                "operação ${operation.action} falhou (HTTP ${error.statusCode}) para ROM #$romId",
+                                error,
+                            )
+                        }
                     } catch (error: Exception) {
                         failed++
                         GameLog.error("Device Sync", "operação ${operation.action} falhou para ROM #$romId", error)

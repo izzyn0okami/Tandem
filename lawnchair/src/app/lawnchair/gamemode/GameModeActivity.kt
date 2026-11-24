@@ -319,7 +319,7 @@ private fun GameModeRoot(refreshKey: Int, onExit: () -> Unit) {
             } catch (error: Exception) {
                 if (error is kotlinx.coroutines.CancellationException) throw error
                 GameLog.error("saves", "falha ao sincronizar antes de abrir ${File(romPath).name}", error)
-                SaveSync.markSyncPending(context, romPath, coreId, platform?.slug, gameIdentity)
+                GameSessionCoordinator.markPending(context, romPath, coreId, platform?.slug, gameIdentity)
                 pendingSaveSync = PendingSaveSync(
                     coreId = coreId,
                     romPath = romPath,
