@@ -4880,3 +4880,12 @@ COMPLEMENTO — ROMM WEB PLAYER E ARQUIVO PSX .SRM (2026-11-23)
 - [LIMITE DA PRESUNÇÃO] Isso não significa que o arquivo PSX .srm seja SRAM de bateria, nem prova que toda implementação de PSX ou todo núcleo gere layout idêntico. A presunção é restrita ao formato observado no servidor e no núcleo cliente compatível; não se estende a .mcd/.mcr nem a cartões de outros núcleos.
 - [PENDENTE — CAUSA DO DOWNLOAD] A extensão .srm, por si só, não explica falha de download: o RomM 5.4.1 aceita saves genéricos e o player web usa autosave por padrão. Investigar o resultado da negociação no caso PSX, em especial correspondência (rom_id, slot), presença do save remoto no slot autosave, comparação timestamp/hash e caminho efetivo do arquivo local. O Device Sync pareia por (rom_id, slot); a lista de emuladores não filtra quando enviada como null.
 - Nenhum arquivo real foi transferido ou alterado nesta investigação.
+
+ATUALIZAÇÃO — DIAGNÓSTICO E NOMENCLATURA DE SAVE NA PR #49 (2026-11-23)
+- [IMPLEMENTADO NA BRANCH] Interface e abstração Device Sync passaram a usar nomenclatura neutra de "save", em vez de chamar todo arquivo .srm de SRAM. Isso evita classificar incorretamente o cartão de memória PSX como SRAM de bateria.
+- [IMPLEMENTADO NA BRANCH] A inspeção somente leitura agora apresenta os metadados locais e remotos relevantes: ROM ID, arquivo, slot, save ID, emulador, timestamps, tamanho e prefixo do MD5. O diagnóstico não baixa, envia, aplica nem exclui saves.
+- [TESTE ADICIONADO] Caso PSX .srm usa o endpoint comum /api/saves, slot autosave, overwrite=false e verifica que os bytes do arquivo enviados e recuperados são idênticos. O teste usa MockWebServer e dados sintéticos; não acessa saves reais.
+- [CI PENDENTE] CI #978 / run 45319749113 foi consultada no head anterior 9a287e9c23513d557befe5ad24c0bb23ae8de3de: check-style passou e build-debug-apk ainda estava em execução. Após os novos commits, CI #984 / run 45320373747 foi iniciada para o head 3b242d3b17d76a2c274f09d409c034d66ab85c9f; estava em fila na última consulta. Nenhuma CI completa foi declarada aprovada.
+- [PENDENTE] A causa concreta do pull PSX ainda depende do diagnóstico no aparelho. A inspeção deve revelar se o servidor retorna download, no_op, conflict ou nenhuma operação, e se (rom_id, autosave), timestamps e MD5 correspondem ao arquivo esperado.
+- [SEGURANÇA] Nenhuma transferência real, alteração de save, merge ou publicação tandem-latest foi realizada.
+
