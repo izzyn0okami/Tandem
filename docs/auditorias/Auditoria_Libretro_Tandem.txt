@@ -4871,3 +4871,12 @@ STATUS
 - Compatibilidade direta do endpoint MemoryCard RomM com .srm de PCSX-ReARMed: NÃO COMPROVADA; a API dedicada exige ZIP e o fluxo de streaming inspecionado cobre PCSX2/Dolphin.
 - O transporte atual da PR #49 classifica store.sramFile como SRAM e usa /api/saves; para PSX isso é uma classificação semântica incorreta, ainda que o endpoint aceite o arquivo como blob genérico.
 - Nenhuma alteração de código, transferência, merge ou publicação foi feita por esta auditoria.
+
+
+COMPLEMENTO — ROMM WEB PLAYER E ARQUIVO PSX .SRM (2026-11-23)
+
+- [CONFIRMADO — ROMM 5.4.1] O player web EmulatorJS usa o fluxo genérico de saves (/api/saves). saveSave usa autosave como slot padrão quando não há outro slot selecionado. O endpoint recebe saveFile como bytes genéricos e armazena nome, extensão, ROM, emulador e slot; não exige que o arquivo seja SRAM de bateria.
+- [DECISÃO TÉCNICA] Para o PSX, podemos presumir compatibilidade do CONTEÚDO do arquivo .srm entre os núcleos envolvidos quando ambos geram o mesmo formato de cartão PCSX-ReARMed/PSX. O Tandem pode transportar esses bytes pelo recurso Save comum do RomM, no slot estável autosave, sem usar a API MemoryCard dedicada.
+- [LIMITE DA PRESUNÇÃO] Isso não significa que o arquivo PSX .srm seja SRAM de bateria, nem prova que toda implementação de PSX ou todo núcleo gere layout idêntico. A presunção é restrita ao formato observado no servidor e no núcleo cliente compatível; não se estende a .mcd/.mcr nem a cartões de outros núcleos.
+- [PENDENTE — CAUSA DO DOWNLOAD] A extensão .srm, por si só, não explica falha de download: o RomM 5.4.1 aceita saves genéricos e o player web usa autosave por padrão. Investigar o resultado da negociação no caso PSX, em especial correspondência (rom_id, slot), presença do save remoto no slot autosave, comparação timestamp/hash e caminho efetivo do arquivo local. O Device Sync pareia por (rom_id, slot); a lista de emuladores não filtra quando enviada como null.
+- Nenhum arquivo real foi transferido ou alterado nesta investigação.
