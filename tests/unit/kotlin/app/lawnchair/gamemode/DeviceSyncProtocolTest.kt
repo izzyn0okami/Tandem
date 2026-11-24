@@ -300,7 +300,15 @@ class DeviceSyncProtocolTest {
         try {
             server.enqueue(MockResponse(body = """{"id":91}"""))
             val client = RomMDeviceSyncClient(server.url("/").toString(), "test-token")
-            client.uploadSave(42L, "device-123", 8L, "autosave", "tandem_mgba", "game.srm", file
+            client.uploadSave(
+                42L,
+                "device-123",
+                8L,
+                "autosave",
+                "tandem_mgba",
+                "game.srm",
+                file,
+            )
             val request = server.takeRequest()
 
             assertEquals("POST", request.method)
@@ -428,7 +436,15 @@ class DeviceSyncProtocolTest {
         try {
             server.enqueue(MockResponse(body = """{"id":314}"""))
             val client = RomMDeviceSyncClient(server.url("/").toString(), "test-token")
-            client.uploadSave(42L, "device-123", 8L, "autosave", "tandem_pcsx_rearmed", file.name, file
+            client.uploadSave(
+                42L,
+                "device-123",
+                8L,
+                "autosave",
+                "tandem_pcsx_rearmed",
+                file.name,
+                file,
+            )
             val upload = server.takeRequest()
             val uploadBody = upload.body!!.utf8()
 
