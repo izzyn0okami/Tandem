@@ -355,3 +355,11 @@ REVISÃO ADICIONAL — CONJUNTO EXATO DE ARQUIVOS CUE — 2026-11-24
 - [COMMITS] Reconciliador: 02339bb203dbbe75c1676e561969c44310c1d199. Teste: 2084283023994d66c97a53c32ebd7aa2c69e39c6.
 - [VALIDAÇÃO PENDENTE] As correções de escape e de conjunto exato ainda precisam de CI no head atual. A consulta de workflows para commits criados pela integração GitHub não retornou execuções; não reutilizar CI antiga como prova do novo código. A PR permanece aberta em draft.
 - [CONTRATO ROMM] O modelo local lê a lista de arquivos da API para RemoteAssociatedFile com tamanho e SHA-1, mas ainda falta confirmação empírica no servidor 5.4.x de que todos os arquivos CUE/companions relevantes aparecem com hashes. Sem isso, o reconciliador intencionalmente não associa.
+
+
+REVISÃO DE FORMATOS MULTIDISCO — GDI/CCD E REFERÊNCIAS CUE — 2026-11-24
+- [ACHADO] A primeira implementação interpretava referências FILE de CUE, mas não possuía parser específico para descritores GDI e CCD. Permitir associação nesses formatos sem verificar as imagens/companions poderia aceitar um conjunto incompleto.
+- [CORREÇÃO CONSERVADORA] GDI e CCD agora ficam explicitamente adiados, sem associação automática, até existir parser e testes específicos para suas referências. CUE continua suportado; referências repetidas ao mesmo arquivo no CUE são deduplicadas para comparar arquivos físicos, não quantidade de faixas.
+- [TESTES] Adicionada cobertura para garantir que GDI/CCD sejam adiados e CUE/CHD continuem elegíveis.
+- [COMMITS] Política do reconciliador: 479b9031fe0b803a0c4c73ca2cefc65537240f43. Testes: fcc6a9df40c995575424148d924951d9c01040ab.
+- [VALIDAÇÃO] CI ainda pendente para o head atualizado. Nenhum vínculo automático é feito para formato de descritor não validado; nenhuma ROM ou save é removido ou substituído.
