@@ -633,12 +633,18 @@ class DeviceSyncProtocolTest {
     }
 
     @Test
-    fun compatibilityRegistryAllowsOnlyExplicitPsxAndSnesCoreGroups() {
+    fun compatibilityRegistryAllowsRomMAndTandemIdentifiersOnlyWithinDeclaredGroups() {
         assertTrue(DeviceSyncArtifactPolicy.isCompatibleRemote("pcsx_rearmed", "tandem_swanstation"))
+        assertTrue(DeviceSyncArtifactPolicy.isCompatibleRemote("pcsx_rearmed", "swanstation"))
         assertTrue(DeviceSyncArtifactPolicy.isCompatibleRemote("snes9x", "tandem_snes9x2010"))
+        assertTrue(DeviceSyncArtifactPolicy.isCompatibleRemote("snes9x", "snes9x2010"))
         assertTrue(DeviceSyncArtifactPolicy.isCompatibleRemote("snes9x", "tandem_bsnes"))
+        assertTrue(DeviceSyncArtifactPolicy.isCompatibleRemote("snes9x", "bsnes"))
         assertFalse(DeviceSyncArtifactPolicy.isCompatibleRemote("snes9x", "tandem_mgba"))
+        assertFalse(DeviceSyncArtifactPolicy.isCompatibleRemote("snes9x", "mgba"))
         assertFalse(DeviceSyncArtifactPolicy.isCompatibleRemote("snes9x", null))
+        assertTrue(DeviceSyncArtifactPolicy.compatibleEmulators("snes9x").contains("snes9x"))
+        assertTrue(DeviceSyncArtifactPolicy.compatibleEmulators("snes9x").contains("tandem_snes9x"))
     }
 
     @Test
