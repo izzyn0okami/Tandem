@@ -72,12 +72,24 @@ internal class RemoteLibrary(private val context: Context, private val scope: Co
         val force = forced
         forced = false
         val fresh = System.currentTimeMillis() - RomMCache.lastRefreshMs < REFRESH_INTERVAL_MS
-        if (!force && games != null && fresh) return
+        if (!force && games != null && fresh) {
+            val cachedGames = games.orEmpty()
+            withContext(Dispatchers.IO) {
+                val localGames = GameLibraryScanner.scan(File(GameLibrarySettings.rootPath(context)))
+                GameLibraryReconciler.reconcile(context, localGames, cachedGames)
+            }
+            return
+        }
         error = ""
         refreshing = true
         try {
             val client = RomMClient(url, RomMSettings.token(context))
-            val fetched = withContext(Dispatchers.IO) { client.listGames() }
+            val fetched = withContext(Dispatchers.IO) {
+                val catalog = client.listGames()
+                val localGames = GameLibraryScanner.scan(File(GameLibrarySettings.rootPath(context)))
+                GameLibraryReconciler.reconcile(context, localGames, catalog)
+                catalog
+            }
             games = fetched
             report = client.listReport
             GameLog.log("romm", "lista: ${fetched.size} jogos. $report")
