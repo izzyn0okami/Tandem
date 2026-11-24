@@ -4938,3 +4938,5 @@ ATUALIZAÇÃO — RESULTADO DA CI #995 E CORREÇÃO (2026-11-24)
 - [CORREÇÃO APLICADA] O teste foi atualizado para usar a API Builder de MockResponse, já padronizada pelo Spotless, e kotlin.io.path.createTempDirectory para diretórios temporários. A alteração foi registrada no commit a5de3f96f44a9d6885a3f62f1a932133b2c1049c.
 - [CI DE REVALIDAÇÃO] Nova execução #1015 (run 45322505814) foi iniciada para o commit corrigido. Na última consulta, os jobs check-style e build-debug-apk estavam em andamento; testes, APK e resultado final ainda não confirmados.
 - [SEGURANÇA] Nenhum save real foi transferido, sobrescrito ou removido. PR #49 continua sem merge e sem publicação.
+
+- [CONSULTA POSTERIOR] CI #1018 / run `45322553107` foi iniciada no head da PR `466eb517a40be65663b8cdc1e97a66c3dc58a7e3`; na última verificação, os jobs de build e estilo ainda estavam em execução. Esta é a execução que deve ser acompanhada para validar o head corrente; não declarar sucesso antecipadamente.
