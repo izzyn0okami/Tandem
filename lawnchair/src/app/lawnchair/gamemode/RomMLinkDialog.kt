@@ -22,6 +22,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import java.io.File
+import java.security.MessageDigest
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -55,14 +56,19 @@ internal fun RomMLinkDialog(
         selected = null
         scope.launch {
             try {
-                val found = withContext(Dispatchers.IO) {
+                val (found, localSha1) = withContext(Dispatchers.IO) {
                     val url = RomMSettings.url(context).orEmpty()
                     val token = RomMSettings.token(context)
-                    RomMClient(url, token).listGames(searchTerm = query.trim())
+                    val results = RomMClient(url, token).listGames(searchTerm = query.trim())
+                    results to localFile.takeIf { it.isFile }?.let(::romMLinkSha1)
                 }
                 candidates = found.filter { it.platform.slug == local.platform.slug }
                     .sortedWith(
                         compareByDescending<RemoteGame> { game ->
+                            localSha1 != null && game.associatedFiles.any {
+                                it.sha1Hash.equals(localSha1, ignoreCase = true)
+                            }
+                        }.thenByDescending { game ->
                             val localNames = listOf(local.title, localFile.nameWithoutExtension)
                                 .map(::romMLinkNormalize)
                             val remoteNames = listOf(game.title, game.fileName.substringBeforeLast('.')) + game.alternativeNames
@@ -170,6 +176,19 @@ internal fun RomMLinkDialog(
     )
 }
 
+private fun romMLinkSha1(file: File): String {
+    val digest = MessageDigest.getInstance("SHA-1")
+    file.inputStream().buffered().use { input ->
+        val buffer = ByteArray(64 * 1024)
+        while (true) {
+            val count = input.read(buffer)
+            if (count < 0) break
+            digest.update(buffer, 0, count)
+        }
+    }
+    return digest.digest().joinToString("") { "%02x".format(it) }
+}
+
 private fun romMLinkNormalize(value: String): String =
-    value.lowercase().replace(Regex("""\\.[a-z0-9]{1,5}$"""), "")
-        .replace(Regex("""[^\\p{L}\\p{N}]"""), "")
+    value.lowercase().replace(Regex("""\.[a-z0-9]{1,5}$"""), "")
+        .replace(Regex("""[^\p{L}\p{N}]"""), "")
