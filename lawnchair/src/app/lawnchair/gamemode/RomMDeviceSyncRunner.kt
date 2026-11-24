@@ -6,6 +6,7 @@ import java.io.IOException
 import java.security.MessageDigest
 import java.time.Instant
 import java.util.UUID
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -37,7 +38,8 @@ object RomMDeviceSyncRunner {
         coreId: String,
         platformSlug: String? = null,
     ): DeviceSyncExecutionResult = withContext(Dispatchers.IO) {
-        val app = context.applicationContext
+        SaveSync.withExclusiveSyncLock {
+            val app = context.applicationContext
         val connection = GameIdentityResolver.connectionSnapshot(app)
             ?: throw IOException("Conecte a mesma conta RomM vinculada a este jogo.")
         val romFile = File(romPath)
@@ -119,7 +121,7 @@ object RomMDeviceSyncRunner {
                             if (!originalSram.matchesMd5(initialLocalHash)) {
                                 throw IOException("A SRAM local mudou após a negociação; upload cancelado.")
                             }
-                            client.uploadSave(
+                            val uploadedSave = client.uploadSave(
                                 romId = romId,
                                 deviceId = deviceId,
                                 sessionId = negotiation.sessionId,
@@ -127,6 +129,10 @@ object RomMDeviceSyncRunner {
                                 file = snapshot,
                             )
                             uploaded++
+                            GameLog.log(
+                                "Device Sync",
+                                "SRAM enviada para ROM #$romId; save_id=${uploadedSave.optLong("id", -1L)}, bytes=${snapshot.length()}",
+                            )
                         }
 
                         DeviceSyncAction.Download -> {
@@ -172,6 +178,10 @@ object RomMDeviceSyncRunner {
                                 RomMFileReplacement.replaceFile(staging, target)
                                 client.confirmDownloaded(saveId, deviceId, downloadedHash)
                                 downloaded++
+                                GameLog.log(
+                                    "Device Sync",
+                                    "SRAM remota aplicada e confirmada; ROM #$romId, save_id=$saveId, bytes=${target.length()}",
+                                )
                             } finally {
                                 staging.delete()
                             }
@@ -192,6 +202,8 @@ object RomMDeviceSyncRunner {
                             GameLog.log("Device Sync", "operação desconhecida recusada; SRAM local preservada")
                         }
                     }
+                } catch (cancelled: CancellationException) {
+                    throw cancelled
                 } catch (error: Exception) {
                     failed++
                     GameLog.error("Device Sync", "operação ${operation.action} falhou para ROM #$romId", error)
@@ -201,6 +213,10 @@ object RomMDeviceSyncRunner {
             val completed = noOp + uploaded + downloaded
             val failedOperations = failed + conflicts + deletesIgnored + unknownIgnored
             client.complete(negotiation.sessionId, completed, failedOperations)
+            GameLog.log(
+                "Device Sync",
+                "sessão ${negotiation.sessionId} concluída; ok=$completed, falhas=$failedOperations",
+            )
             DeviceSyncExecutionResult(
                 romId = romId,
                 uploaded = uploaded,
@@ -213,6 +229,7 @@ object RomMDeviceSyncRunner {
             )
         } finally {
             snapshot.delete()
+        }
         }
     }
 
