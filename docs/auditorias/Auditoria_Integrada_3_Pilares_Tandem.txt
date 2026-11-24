@@ -279,3 +279,13 @@ CORREÇÃO DE COMPATIBILIDADE DOS IDENTIFICADORES DE NÚCLEO — 2026-11-24
 - [PENDENTE] Repetir teste SNES no telefone e confirmar que o save remoto "snes9x" deixa de ser bloqueado por incompatibilidade. Depois validar upload/download e slot autosave sem sobrescrita. O teste PSX continua pendente de confirmação ponta a ponta.
 - [SEGURANÇA] Nenhum save local/remoto foi alterado, apagado, migrado ou transferido por esta correção. overwrite=false, exclusões ignoradas e conflitos preservados permanecem inalterados.
 - [PR] #50 continua aberta em draft, sem merge e sem publicação tandem-latest.
+
+
+
+VALIDAÇÃO DA CORREÇÃO DE ALIASES DE EMULADOR — CI #1109/#1110 — 2026-11-24
+- [CI #1109 — FALHA PARCIAL] Run 45494955253, commit 351c9d1f7ff69c70ad3b6e03dd3584ade6ab21a3: build Debug APK e testes unitários passaram; check-style falhou na etapa "Commit formatting and rerun CI", e final-status consequentemente falhou. Não foi falha de compilação nem dos testes da correção.
+- [CI #1110 — APROVADA] Run 45494980827, commit  ed3ac767e92f02521c1d0073f539f65a0c7a5e38: check-style, testes unitários, build Debug APK e final-status aprovados.
+- [APK DE TESTE] Artefato ID 14966344934, tamanho 46.417.999 bytes, SHA-256 43f84a2ce6da5397b85bafd07c8abc3a6edc4b1b3a2278a30f260188cc64f06d; expira em 2027-02-22. Execução: https://github.com/izzyn0okami/Tandem/actions/runs/45494980827. Não houve publicação tandem-latest.
+- [STATUS] A correção de compatibilidade está validada automaticamente. Falta teste funcional no telefone para confirmar o download do save SNES remoto identificado como "snes9x", além de upload/retorno PSX e validação dos estados rápidos.
+- [SEGURANÇA] Nenhum save foi apagado, movido, migrado ou sobrescrito. Conflitos continuam preservados e overwrite=false.
+- [PR] #50 permanece aberta em draft e sem merge.
