@@ -1001,7 +1001,7 @@ internal fun GameDetailScreen(
                                 }
                             }
                         },
-                        enabled = !deviceSyncInspectionLoading && !busy,
+                        enabled = !deviceSyncInspectionLoading && !deviceSyncExecutionLoading && !busy,
                         modifier = Modifier.width(230.dp),
                     )
                     deviceSyncInspection?.let { inspection ->
@@ -1068,7 +1068,7 @@ internal fun GameDetailScreen(
                                 }
                             }
                         },
-                        enabled = !deviceSyncExecutionLoading && !busy,
+                        enabled = !deviceSyncExecutionLoading && !deviceSyncInspectionLoading && !busy,
                         primary = true,
                         modifier = Modifier.width(260.dp),
                     )
