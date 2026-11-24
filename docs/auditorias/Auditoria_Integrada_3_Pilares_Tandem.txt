@@ -175,3 +175,15 @@ ATUALIZAÇÃO — VALIDAÇÃO FINAL DO DIAGNÓSTICO HTTP (2026-11-24)
 - [PENDENTE] Teste funcional no telefone para capturar o detalhe real do HTTP 409 e confirmar a causa do conflito com RomM 5.4.x. A CI valida o código e testes sintéticos, não a interoperabilidade com o servidor real.
 - [PENDENTE] Integrar o inventário tipado ao RomMDeviceSyncRunner, declarar mapeamento local/remoto de artefatos e substituir a duplicidade de sincronizadores por um motor único. Save states e progresso RA continuam fora do transporte.
 - [SEGURANÇA] Nenhum save local ou remoto foi transferido, sobrescrito, apagado ou migrado por esta mudança. overwrite continua desativado; PR #50 permanece aberta em draft, sem merge.
+
+
+ATUALIZAÇÃO — SLOT REMOTO EXPLÍCITO PARA SRAM E CARTÃO PSX (2026-11-24)
+- [CI #1090 APROVADA] Run 45411164250 concluiu com sucesso no head e7aed57f5b95f5d0c0b7c8129d872f0637945de6: Spotless/formatação, testes unitários, build Debug APK, upload do artefato e final-status aprovados. Jobs de publicação permaneceram ignorados; não houve release tandem-latest.
+- [CORREÇÃO DE ARQUITETURA IMPLEMENTADA NA PR #50] O adaptador por núcleo agora declara também o slot remoto RomM, separado do slot local: CORE_SAVE usa autosave; MEMORY_CARD PSX usa memory-card-0.
+- [PROTOCOLO] DeviceSyncProtocolJson.localSave recebe o slot remoto explicitamente; validateDownloadOperation valida o slot esperado; RomMDeviceSyncRunner usa o mesmo slot no manifesto, na negociação, no filtro de upload e na validação de download.
+- [PRIMEIRO DOWNLOAD] Quando ainda não existe arquivo local, o slot esperado é derivado do adaptador do coreId, permitindo negociar o download PSX em memory-card-0 sem confundi-lo com autosave.
+- [TESTES ADICIONADOS/ATUALIZADOS] Verificação de preservação do slot explícito no manifesto, upload PSX em memory-card-0 e validação de download com slot PSX esperado; SNES mantém autosave por padrão.
+- [PENDENTE] CI desta alteração; teste real no RomM 5.4.x e no telefone ainda necessário. Saves PSX existentes em autosave não são migrados automaticamente para memory-card-0; planejar migração separadamente e sem sobrescrita.
+- [PENDENTE] Save states e progresso RA continuam fora do transporte; unificação do ciclo e substituição do sincronizador tradicional permanecem em aberto.
+- [SEGURANÇA] overwrite=false, delete ignorado e conflitos preservados. Nenhum save local/remoto foi apagado, movido, sobrescrito ou migrado.
+- [PR] #50 permanece aberta em draft, sem merge.

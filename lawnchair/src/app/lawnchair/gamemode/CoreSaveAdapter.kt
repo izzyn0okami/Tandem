@@ -10,6 +10,8 @@ package app.lawnchair.gamemode
 internal data class CoreSaveAdapter(
     val artifactType: SaveArtifactType,
     val localSlot: String,
+    /** Slot remoto estável do protocolo RomM. */
+    val remoteSlot: String,
 )
 
 /** Mapeamento explícito por núcleo; núcleos não reconhecidos permanecem genéricos. */
@@ -24,11 +26,13 @@ internal object CoreSaveAdapterRegistry {
         CoreSaveAdapter(
             artifactType = SaveArtifactType.MEMORY_CARD,
             localSlot = "memory-card-0",
+            remoteSlot = "memory-card-0",
         )
     } else {
         CoreSaveAdapter(
             artifactType = SaveArtifactType.CORE_SAVE,
             localSlot = "core-save",
+            remoteSlot = "autosave",
         )
     }
 }

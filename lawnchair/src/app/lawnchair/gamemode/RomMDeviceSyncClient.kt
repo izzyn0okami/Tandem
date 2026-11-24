@@ -95,6 +95,7 @@ object DeviceSyncProtocolJson {
         emulator: String,
         file: File,
         updatedAt: String,
+        remoteSlot: String = "autosave",
     ): DeviceSyncSave? {
         require(romId > 0L)
         require(fileName.endsWith(".srm", ignoreCase = true)) {
@@ -102,6 +103,7 @@ object DeviceSyncProtocolJson {
         }
         require(emulator.isNotBlank())
         require(updatedAt.isNotBlank())
+        require(remoteSlot.isNotBlank())
         if (!file.isFile || file.length() <= 0L) return null
         val digest = MessageDigest.getInstance("MD5")
         file.inputStream().buffered().use { input ->
@@ -116,7 +118,7 @@ object DeviceSyncProtocolJson {
         return DeviceSyncSave(
             romId = romId,
             fileName = fileName,
-            slot = "autosave",
+            slot = remoteSlot,
             emulator = emulator,
             contentHashMd5 = md5,
             updatedAt = updatedAt,
@@ -177,12 +179,16 @@ object DeviceSyncProtocolJson {
         return RegisteredSyncDevice(id, json.optString("name").ifBlank { "Tandem" })
     }
 
-    fun validateDownloadOperation(operation: DeviceSyncOperation, expectedEmulator: String) {
+    fun validateDownloadOperation(
+        operation: DeviceSyncOperation,
+        expectedEmulator: String,
+        expectedSlot: String = "autosave",
+    ) {
         if (operation.action != DeviceSyncAction.Download) {
             throw IOException("A operação recebida não é um download.")
         }
-        if (operation.slot != "autosave") {
-            throw IOException("Download fora do slot autosave foi preservado sem alteração.")
+        if (operation.slot != expectedSlot) {
+            throw IOException("Download fora do slot $expectedSlot foi preservado sem alteração.")
         }
         if (operation.fileName?.endsWith(".srm", ignoreCase = true) != true) {
             throw IOException("O arquivo remoto não é um save .srm compatível; download recusado.")

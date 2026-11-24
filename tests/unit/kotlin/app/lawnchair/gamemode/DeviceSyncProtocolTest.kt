@@ -176,6 +176,25 @@ class DeviceSyncProtocolTest {
     }
 
     @Test
+    fun localSaveManifestPreservesExplicitRemoteSlot() {
+        val file = java.io.File.createTempFile("psx-card-slot-", ".srm")
+        try {
+            file.writeBytes(byteArrayOf(1, 2, 3))
+            val save = DeviceSyncProtocolJson.localSave(
+                42L,
+                "sram.srm",
+                "tandem_pcsx_rearmed",
+                file,
+                "2026-11-24T12:00:00Z",
+                remoteSlot = "memory-card-0",
+            )
+            assertEquals("memory-card-0", save?.slot)
+        } finally {
+            file.delete()
+        }
+    }
+
+    @Test
     fun localSaveManifestSkipsMissingOrEmptyFiles() {
         val file = java.io.File.createTempFile("empty-sram-", ".srm")
         try {
@@ -489,7 +508,7 @@ class DeviceSyncProtocolTest {
 
 
     @Test
-    fun psxSrmUsesGenericSaveEndpointAndPreservesExactBytesInAutosaveSlot() {
+    fun psxSrmUsesGenericSaveEndpointAndPreservesExactBytesInMemoryCardSlot() {
         val server = MockWebServer()
         val file = java.io.File.createTempFile("pcsx-rearmed-card-", ".srm")
         val payload = "PSX-MEMORY-CARD-SLOT-0-TEST-BYTES"
@@ -502,7 +521,7 @@ class DeviceSyncProtocolTest {
                 42L,
                 "device-123",
                 8L,
-                "autosave",
+                "memory-card-0",
                 "tandem_pcsx_rearmed",
                 file.name,
                 file,
@@ -511,7 +530,7 @@ class DeviceSyncProtocolTest {
             val uploadBody = upload.body!!.utf8()
 
             assertEquals("/api/saves", upload.url.encodedPath)
-            assertEquals("autosave", upload.url.queryParameter("slot"))
+            assertEquals("memory-card-0", upload.url.queryParameter("slot"))
             assertEquals("false", upload.url.queryParameter("overwrite"))
             assertTrue(uploadBody.contains("filename=\"${file.name}\""))
             assertTrue(uploadBody.contains(payload))
@@ -551,7 +570,7 @@ class DeviceSyncProtocolTest {
                             "rom_id": 42,
                             "save_id": 314,
                             "file_name": "pcsx-rearmed.srm",
-                            "slot": "autosave",
+                            "slot": "memory-card-0",
                             "emulator": "tandem_pcsx_rearmed",
                             "reason": "server save is newer",
                             "server_updated_at": "2026-11-23T22:10:00Z",
@@ -567,12 +586,12 @@ class DeviceSyncProtocolTest {
         assertEquals(42L, operation.romId)
         assertEquals(314L, operation.saveId)
         assertEquals("pcsx-rearmed.srm", operation.fileName)
-        assertEquals("autosave", operation.slot)
+        assertEquals("memory-card-0", operation.slot)
         assertEquals("tandem_pcsx_rearmed", operation.emulator)
         assertEquals("server save is newer", operation.reason)
         assertEquals("2026-11-23T22:10:00Z", operation.serverUpdatedAt)
         assertEquals("0123456789abcdef0123456789abcdef", operation.serverContentHash)
-        DeviceSyncProtocolJson.validateDownloadOperation(operation, "tandem_pcsx_rearmed")
+        DeviceSyncProtocolJson.validateDownloadOperation(operation, "tandem_pcsx_rearmed", "memory-card-0")
     }
 
     @Test

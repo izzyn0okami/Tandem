@@ -76,6 +76,8 @@ object RomMDeviceSyncRunner {
             try {
                 val artifacts = store.inventory()
                 val localArtifact = DeviceSyncArtifactPolicy.selectForRomM(artifacts)
+                val remoteSlot = localArtifact?.let(DeviceSyncArtifactPolicy::remoteSlot)
+                    ?: DeviceSyncArtifactPolicy.remoteSlotForCore(coreId)
                 val originalSave = localArtifact?.file ?: store.sramFile
                 val localSave = localArtifact?.let { artifact ->
                     artifact.file.copyTo(snapshot, overwrite = false)
@@ -88,6 +90,7 @@ object RomMDeviceSyncRunner {
                         emulator = emulator,
                         file = snapshot,
                         updatedAt = Instant.ofEpochMilli(artifact.modifiedAtEpochMs).toString(),
+                        remoteSlot = remoteSlot,
                     ) ?: throw IOException("Não foi possível preparar o artefato local.")
                 }
                 GameLog.log(
@@ -99,7 +102,7 @@ object RomMDeviceSyncRunner {
                 val initialLocalHash = localSave?.contentHashMd5
                 GameLog.log(
                     "Device Sync",
-                    "manifesto local: ROM #$romId, slot=autosave, arquivo=${localSave?.fileName ?: "ausente"}, " +
+                    "manifesto local: ROM #$romId, slot=$remoteSlot, arquivo=${localSave?.fileName ?: "ausente"}, " +
                         "emulador=${localSave?.emulator ?: "—"}, bytes=${localSave?.fileSizeBytes ?: 0L}, " +
                         "atualizado=${localSave?.updatedAt ?: "—"}, MD5=${localSave?.contentHashMd5?.take(8) ?: "—"}",
                 )
@@ -136,8 +139,8 @@ object RomMDeviceSyncRunner {
                             DeviceSyncAction.NoOp -> noOp++
 
                             DeviceSyncAction.Upload -> {
-                                if (localSave == null || operation.slot != "autosave") {
-                                    throw IOException("Upload sem save local compatível ou fora do slot autosave.")
+                                if (localSave == null || operation.slot != remoteSlot) {
+                                    throw IOException("Upload sem save local compatível ou fora do slot $remoteSlot.")
                                 }
                                 if (!originalSave.matchesMd5(initialLocalHash)) {
                                     throw IOException("O save local mudou após a negociação; upload cancelado.")
@@ -146,7 +149,7 @@ object RomMDeviceSyncRunner {
                                     romId = romId,
                                     deviceId = deviceId,
                                     sessionId = negotiation.sessionId,
-                                    slot = "autosave",
+                                    slot = remoteSlot,
                                     emulator = emulator,
                                     fileName = originalSave.name,
                                     file = snapshot,
@@ -159,7 +162,7 @@ object RomMDeviceSyncRunner {
                             }
 
                             DeviceSyncAction.Download -> {
-                                DeviceSyncProtocolJson.validateDownloadOperation(operation, emulator)
+                                DeviceSyncProtocolJson.validateDownloadOperation(operation, emulator, remoteSlot)
                                 val saveId = operation.saveId
                                     ?: throw IOException("O RomM não informou o ID do save para download.")
                                 val expectedHash = operation.serverContentHash
