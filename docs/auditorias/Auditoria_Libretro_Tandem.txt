@@ -4841,3 +4841,33 @@ CONTINUIDADE DO ESTÁGIO E — PR #49 (2026-11-24)
 - E5: interoperabilidade real com RomM 5.4.x e teste no telefone ainda pendentes.
 - CI #965 / run 45317009273: em execução no momento deste registro; Spotless e testes/build ainda não concluídos. Não registrar sucesso antecipadamente.
 - Nenhuma transferência real foi executada nesta alteração. Nenhum save foi apagado, movido ou sobrescrito. Nenhum merge ou publicação tandem-latest foi realizado.
+
+
+AUDITORIA — DISTINÇÃO ENTRE SRAM LIBRETRO E MEMORY CARDS ROMM (2026-11-23)
+
+FONTES E VERSÕES
+- RomM 5.4.1: backend/endpoints/saves.py, backend/endpoints/memory_cards.py, backend/endpoints/responses/memory_cards.py, backend/models/assets.py, backend/handler/streaming/memory_cards.py e backend/utils/memory_cards.py.
+- Libretro Docs — PCSX-ReARMed: https://docs.libretro.com/library/pcsx_rearmed/.
+- Código Tandem inspecionado na branch feat/stage-e-completion: SaveStore.kt e RomMDeviceSyncRunner.kt.
+
+CONCLUSÕES CONFIRMADAS
+1. RomM 5.4.1 NÃO modela memory cards como saves comuns. Há entidades e rotas próprias: /api/memory-cards, /api/memory-cards/{id}/content, /api/memory-cards/{id}/versions e /api/memory-cards/versions/{id}/content. MemoryCard é uma entidade independente de Save e State, associada a um usuário e a um emulador; não é associada diretamente a um rom_id. Suas versões são snapshots de arquivo ZIP.
+2. O endpoint comum /api/saves aceita arquivos genéricos enviados como saveFile e armazena nome, extensão, emulador, ROM e slot. Isso permite transportar bytes de um .srm como asset Save, mas NÃO transforma esse registro em MemoryCard nem o torna visível/gerenciável pelas rotas de memory cards.
+3. A API dedicada de memory cards aceita somente arquivo ZIP no layout esperado pelo broker. O endpoint rejeita imagem de cartão avulsa/raw; o backend valida segurança do ZIP. A integração de streaming documentada no código 5.4.1 é voltada a cartões inteiros de PCSX2 (Slot 1 em pasta) e Dolphin (Slot A), não há evidência de suporte pronto para o arquivo .srm por jogo do PCSX-ReARMed.
+4. A documentação oficial Libretro do PCSX-ReARMed identifica *.srm como o cartão de memória do slot 0, por jogo; pcsx-card2.mcd é o slot 1 opcional. Portanto, no PlayStation/PCSX-ReARMed, a extensão .srm não significa SRAM de bateria: representa o memory card do primeiro slot.
+5. O SaveStore atual do Tandem cria um arquivo fixo sram.srm e um state1.state; não modela slot de memory card, nem arquivo separado para pcsx-card2.mcd. O RomMDeviceSyncRunner lê store.sramFile e envia seu conteúdo ao endpoint Device Sync de /api/saves, slot autosave, classificando-o como SRAM. Para PSX/PCSX-ReARMed, isso pode enviar um memory card como Save comum, não como MemoryCard dedicado do RomM.
+
+IMPLICAÇÕES E DECISÃO TÉCNICA PENDENTE
+- A exclusão de .mcd/.mcr/.mem no manifesto não resolve o caso PSX: o cartão do slot 0 usa .srm e passa pelo filtro atual.
+- Não ampliar agora o Device Sync genérico para aceitar extensões de cartão nem encaminhar .srm automaticamente à API MemoryCard.
+- Antes de sincronizar PSX, mapear por núcleo o significado real de cada arquivo e separar SRAM genuína, cartão de memória por jogo, cartão compartilhado e save state.
+- Para PCSX-ReARMed, confirmar o caminho efetivo do LibretroDroid/RetroArch e se o arquivo sram.srm do SaveStore corresponde ao slot 0. A documentação do core indica que sim quanto ao formato, mas o caminho real do frontend deve ser validado no aparelho.
+- Avaliar separadamente se RomM MemoryCard pode ser adaptado com um ZIP contendo o cartão PSX e um identificador de emulador estável. Isso exigiria verificar semântica de importação/hidratação e não deve ser presumido compatível com o broker atual de PCSX2/Dolphin.
+- Não transferir, reclassificar, renomear, apagar ou sobrescrever nenhum save real nesta auditoria.
+
+STATUS
+- RomM 5.4.1 possui suporte explícito e separado a MemoryCard: CONFIRMADO por código-fonte.
+- PCSX-ReARMed slot 0 usa .srm como memory card: CONFIRMADO pela documentação oficial Libretro.
+- Compatibilidade direta do endpoint MemoryCard RomM com .srm de PCSX-ReARMed: NÃO COMPROVADA; a API dedicada exige ZIP e o fluxo de streaming inspecionado cobre PCSX2/Dolphin.
+- O transporte atual da PR #49 classifica store.sramFile como SRAM e usa /api/saves; para PSX isso é uma classificação semântica incorreta, ainda que o endpoint aceite o arquivo como blob genérico.
+- Nenhuma alteração de código, transferência, merge ou publicação foi feita por esta auditoria.
