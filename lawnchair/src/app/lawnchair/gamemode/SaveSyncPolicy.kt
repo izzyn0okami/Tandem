@@ -87,12 +87,16 @@ internal object SaveSyncPolicy {
         RemoteFileKind.State -> emulator == "tandem_$coreId"
     }
 
+    const val AUTOSAVE_SLOT = "autosave"
+
     fun newestCompatibleRemote(
         kind: RemoteFileKind,
         remotes: List<RemoteFile>,
         coreId: String,
+        slot: String? = null,
     ): RemoteFile? = remotes
         .filter { isCompatibleRemote(kind, it.emulator, coreId) }
+        .filter { kind != RemoteFileKind.Save || it.slot == slot }
         .maxWithOrNull(compareBy<RemoteFile> { it.updatedAtMs }.thenBy { it.id })
 
     /** SRAM sem hash remoto anterior precisa ser baixado para estabelecer uma comparação confiável. */
