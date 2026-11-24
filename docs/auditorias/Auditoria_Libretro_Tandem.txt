@@ -4931,3 +4931,10 @@ ATUALIZAÇÃO — ANÁLISE DA CI #998 E CORREÇÃO DOS TESTES WEBDAV (2026-11-24
 - [PENDENTE DE CI] Correção commitada na branch `feat/stage-e-completion` em `052e48c309dad2c92aa5ae76da040f916218a070`. Ainda não há run de CI associada a esse commit na consulta atual; não declarar correção validada até nova CI concluir.
 - [CI #998] O job `check-style` concluiu com sucesso. O job de build falhou antes de executar testes ou produzir APK; portanto não há artefato válido dessa execução.
 - PR #49 permanece aberta, sem merge e sem publicação `tandem-latest`. Nenhum save real foi alterado ou transferido.
+
+
+ATUALIZAÇÃO — RESULTADO DA CI #995 E CORREÇÃO (2026-11-24)
+- [CI #995 — FALHA IDENTIFICADA] A compilação dos testes unitários falhou em RetroArchWebDavClientTest.kt:20 porque MockResponse da versão mockwebserver3 usada no projeto não possui addHeader(). O compilador também reportou o uso obsoleto de createTempDir() em duas partes do teste.
+- [CORREÇÃO APLICADA] O teste foi atualizado para usar a API Builder de MockResponse, já padronizada pelo Spotless, e kotlin.io.path.createTempDirectory para diretórios temporários. A alteração foi registrada no commit a5de3f96f44a9d6885a3f62f1a932133b2c1049c.
+- [CI DE REVALIDAÇÃO] Nova execução #1015 (run 45322505814) foi iniciada para o commit corrigido. Na última consulta, os jobs check-style e build-debug-apk estavam em andamento; testes, APK e resultado final ainda não confirmados.
+- [SEGURANÇA] Nenhum save real foi transferido, sobrescrito ou removido. PR #49 continua sem merge e sem publicação.
