@@ -1008,7 +1008,7 @@ internal fun GameDetailScreen(
                         val operations = inspection.negotiation.operations
                         Text(
                             text = "Inspeção concluída — ROM #${inspection.romId}. " +
-                                if (inspection.localSaveIncluded) "Save local encontrada." else "Nenhum save local válido encontrado.",
+                                if (inspection.localSaveIncluded) "Save local encontrado." else "Nenhum save local válido encontrado.",
                             color = GameColors.text,
                             fontSize = 13.sp,
                         )
