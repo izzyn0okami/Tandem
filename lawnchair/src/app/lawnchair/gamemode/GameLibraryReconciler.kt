@@ -201,7 +201,7 @@ internal object GameLibraryReconciler {
 
         val primary = mutableListOf<FileFingerprint>()
         val companions = mutableListOf<FileFingerprint>()
-        val cueReference = Regex("""(?i)^\\s*FILE\\s+(?:"([^"]+)"|(\\S+))""")
+        val cueReference = Regex("""(?i)^\s*FILE\s+(?:"([^"]+)"|(\S+))""")
         val allowedPrimary = platform.extensions - "m3u"
 
         for (disc in playlistEntries) {
