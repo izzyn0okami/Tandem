@@ -19,11 +19,11 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 
 /**
- * Sincroniza saves de bateria e o estado rápido com o RomM, só para jogos baixados do servidor.
+ * Transporte RomM dos estados rápidos. SRAM e cartões de memória usam o Device Sync
+ * e são coordenados com este transporte por GameSessionCoordinator.
  *
- * Regra: antes de jogar, baixa o do servidor se ele mudou e o local não; ao sair, envia o local
- * se mudou. Se os dois mudaram, vence o mais recente e o outro vai para uma pasta de backup.
- * Falhas de rede nunca atrapalham o jogo.
+ * Antes de jogar, aplica o estado remoto quando a política confirma que ele é a versão nova;
+ * ao sair, envia o estado local quando mudou. Conflitos preservam cópias de segurança.
  */
 enum class SaveSyncStatus { PENDING, SYNCING, SYNCED }
 
@@ -84,7 +84,9 @@ object SaveSync {
             gameIdentity = gameIdentity,
             migrationSourcesOverride = emptyMap(),
         )
-        if (files(store).none { (_, file) -> file.isFile && file.length() > 0L }) return null
+        if (files(store).none { (_, file) -> file.isFile && file.length() > 0L } &&
+            !(store.sramFile.isFile && store.sramFile.length() > 0L)
+        ) return null
         val prefs = prefs(context)
         val resolution = SaveSyncPolicy.resolveStatus(
             prefs.getString(statusKey, null),
@@ -162,7 +164,6 @@ object SaveSync {
     }
 
     private fun files(store: SaveStore) = listOf(
-        RemoteFileKind.Save to store.sramFile,
         RemoteFileKind.State to store.stateFile,
     )
 
