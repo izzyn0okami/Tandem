@@ -44,16 +44,7 @@ internal object GameLibraryReconciler {
                 continue
             }
 
-            val matchingRomIds = remote.asSequence()
-                .filter { it.platform.slug == local.platform.slug }
-                .filter { game ->
-                    game.associatedFiles.any { associated ->
-                        associated.sha1Hash?.trim()?.equals(localHash, ignoreCase = true) == true
-                    }
-                }
-                .map { it.id }
-                .distinct()
-                .toList()
+            val matchingRomIds = matchingRomIds(localHash, local.platform.slug, remote)
 
             when (matchingRomIds.size) {
                 0 -> {
@@ -97,6 +88,18 @@ internal object GameLibraryReconciler {
         }
         return report
     }
+
+    internal fun matchingRomIds(localSha1: String, platformSlug: String, remote: List<RemoteGame>): List<Long> =
+        remote.asSequence()
+            .filter { it.platform.slug == platformSlug }
+            .filter { game ->
+                game.associatedFiles.any { associated ->
+                    associated.sha1Hash?.trim()?.equals(localSha1, ignoreCase = true) == true
+                }
+            }
+            .map { it.id }
+            .distinct()
+            .toList()
 
     fun isAmbiguous(context: Context, path: String): Boolean =
         context.getSharedPreferences("romm_auto_link", Context.MODE_PRIVATE)
