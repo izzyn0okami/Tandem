@@ -4731,3 +4731,14 @@ LIMITES E PENDÊNCIAS
 - CI #933 falhou no Spotless por nome de callback Compose onLinked; callback renomeado para onLink.
 - CI #942, no head e60ebec4f14d178e8625d0aa4dcb2f2d4f34c4d7, estava em execução no momento deste registro; ainda não registrar sucesso.
 - PR #47 permanece Draft, aberta e sem merge. Nenhuma publicação tandem-latest autorizada.
+
+
+CORREÇÃO DE PRÉ-FILTRO E ESTADO DE AMBIGUIDADE — PR #47 (2026-11-24)
+- Revisão adicional identificou que o pré-filtro exigia igualdade de extensão além de tamanho/plataforma. Isso poderia descartar um arquivo com SHA-1 idêntico caso o nome/extensão publicados no RomM fossem diferentes.
+- O pré-filtro foi ajustado para usar apenas plataforma e tamanho como otimização de leitura; a associação continua dependendo exclusivamente de SHA-1 exato e de um único rom.id.
+- Também foi corrigido o estado persistente de ambiguidade para ser limpo quando não há candidato ou quando não foi possível verificar hash, evitando sinalização antiga obsoleta.
+- Testes unitários adicionais cobrem extensão diferente com tamanho/plataforma compatíveis e rejeição de plataforma/tamanho divergentes.
+- Commits desta correção: c1cb71e710879c69a2a2de7924faaf3114e9381f e b69c86512d9cf1f78a53dca3284ed030776b967c.
+- CI #943 / run 45301928805 foi disparada para o head ebdf1bf6126a115d9087e2109855163c0fb8d975; estava em execução na última consulta. A alteração posterior gerou commits adicionais; aguardar a CI correspondente ao head atual antes de declarar validação.
+- Multidisco/M3U permanecem pendentes; não foram associados por heurística parcial. Teste físico de Super Mario World ainda pendente.
+- PR #47 continua Draft, aberta e sem merge; nenhum save ou ROM foi modificado, e nenhuma transferência foi iniciada.
