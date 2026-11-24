@@ -1007,3 +1007,14 @@ ATUALIZAÇÃO DO CHECKLIST — LOG #951 (2026-11-24)
 - [PENDENTE DE CORREÇÃO] Slot RomM: RemoteFile/parser/listagem/upload ainda não modelam ou filtram slot; POST não envia slot. Isso impede tratar corretamente autosave e saves manuais como registros distintos.
 - [PRÓXIMO] Auditar/implementar slot e melhorar diagnóstico da decisão de pull, sem registrar conteúdo/hash integral dos saves. Depois validar download controlado preservando backup local.
 - E4/E5 permanecem EM ANDAMENTO; não ativar sincronização real nem apagar/mover/sobrescrever saves sem autorização explícita.
+
+
+IMPLEMENTAÇÃO — SLOT AUTOSAVE (PR EM PREPARAÇÃO, 2026-11-24)
+- [IMPLEMENTADO NA BRANCH] RemoteFile/parser passam a ler slot; GET de SRAM pode filtrar slot=autosave; POST de SRAM envia slot=autosave.
+- [IMPLEMENTADO NA BRANCH] Sincronização automática prioriza exclusivamente autosave e ignora slots manuais.
+- [COMPATIBILIDADE] Enquanto não existir autosave Tandem, permite leitura de SRAM legado sem slot e com emulator tandem_*. Upload seguinte cria registro novo em autosave em vez de atualizar o legado; conteúdo legado permanece no RomM.
+- [SEM ALTERAÇÃO] Save states permanecem sem slot, conforme contrato do endpoint /states.
+- [TESTES ADICIONADOS] Seleção de autosave sobre legado/manual e fallback somente para registro sem slot.
+- [PENDENTE] CI/Spotless/testes/build APK e revisão do diff.
+- [PENDENTE] Teste controlado no aparelho: confirmar que o save mais recente PSX é localizado em autosave e baixado; confirmar envio em autosave sem sobrescrever registro legado/manual. Preservar backup local.
+- Não executar Device Sync, não mesclar/publicar e não alterar saves reais até autorização/validação.
