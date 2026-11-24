@@ -1035,3 +1035,59 @@ ATUALIZAÇÃO — PR #48 MESCLADA / CI #959 (2026-11-24)
 - [IMPLEMENTADO] Isolamento da SRAM automática no slot RomM autosave; fallback temporário para save legado sem slot; criação de novo registro autosave em vez de sobrescrever o legado. Slots manuais não são selecionados pelo fluxo automático.
 - [PENDENTE] Validar no aparelho pull/download do PSX autosave, preservação de backup local, upload no slot autosave, preservação de saves manuais/legados e continuidade do SNES.
 - E4/E5 e multidisco/M3U continuam em andamento. A release fixa tandem-latest não foi publicada/atualizada por esta PR.
+
+
+ATUALIZAÇÃO — CONTINUIDADE DO ESTÁGIO E / DEVICE SYNC E WEBDAV (2026-11-24)
+Branch de trabalho: feat/stage-e-completion
+Base: game-mode-m2-dev
+PRs abertas verificadas antes do início: nenhuma.
+
+E4 — RESOLUÇÃO DE CONFLITOS
+- A implementação de staging, SHA-256, backups e rollback permanece na base após o merge da PR #41.
+- O log de aparelho #6 confirma downloads/aplicações de SRAM PSX e SNES e de save state PSX; não substitui o teste específico de conflito e rollback.
+- [PENDENTE DE VALIDAÇÃO NO APARELHO] Repetir conflito controlado e confirmar escolha explícita, backups dos dois conjuntos e rollback. Não declarar E4 concluído apenas por CI ou por downloads bem-sucedidos.
+
+E5 — INTEGRAÇÃO EXPLÍCITA DO DEVICE SYNC
+- [IMPLEMENTADO NESTA BRANCH] Criado RomMDeviceSyncRunner.kt e ação explícita “Sincronizar SRAM com RomM” na tela de detalhes do jogo.
+- A ação exige jogo fechado, vínculo RomM confirmado para a conta atual e dispositivo previamente registrado.
+- A negociação é limitada ao rom_id do jogo e restore_unlisted=false.
+- Upload só ocorre para operação upload no slot autosave, com captura imutável local e verificação de que a SRAM não mudou após a negociação; POST mantém overwrite=false e autocleanup=false.
+- Download só ocorre para operação download no slot autosave; baixa para staging, valida MD5, preserva backup local com verificação SHA-256 e só então promove o arquivo. A confirmação downloaded é enviada depois da aplicação.
+- Conflitos ficam sem resolução automática; operações delete e desconhecidas são recusadas. Nenhum save manual é sobrescrito.
+- Save states e memory cards não são enumerados pelo executor Device Sync.
+- [PENDENTE] CI/Spotless/testes automatizados do novo executor e interoperabilidade real com RomM 5.4.x no telefone. Não executar transferência real durante auditoria remota.
+
+E6 — PROVA DE CONCEITO WEBDAV SOMENTE LEITURA
+- [IMPLEMENTADO NESTA BRANCH] RetroArchWebDavClient.kt oferece OPTIONS, PROPFIND e download para staging com SHA-256 opcional.
+- Caminhos relativos são validados contra traversal e não podem mudar de servidor.
+- Nenhuma operação de escrita é necessária para a etapa de descoberta/leitura.
+- [PENDENTE] CI e testes controlados.
+
+E7 — TESTES CONTROLADOS WEBDAV
+- [IMPLEMENTADO NESTA BRANCH] PUT de arquivo novo exige If-None-Match: *; destinos existentes devem ser recusados pelo servidor (HTTP 412), sem sobrescrita.
+- Download grava somente em staging e valida SHA-256 quando fornecido.
+- Não existem métodos DELETE, MOVE ou sobrescrita de arquivo na PoC.
+- Testes MockWebServer cobrem OPTIONS/PROPFIND, GET para staging, PUT com precondição, recusa HTTP 412 e bloqueio de path traversal.
+- [PENDENTE] CI. A PoC não está conectada ao sincronizador nem a um servidor de produção.
+
+E8 — COMPARAÇÃO ARQUITETURAL
+- Device Sync é preferível para SRAM sincronizada com RomM: usa identidade de dispositivo, sessão negociada, baseline por hash, slots e ações explícitas por ROM; oferece semântica de upload/download/conflito/no-op/delete.
+- WebDAV é transporte genérico por caminho/arquivo: exige manifesto e reconciliação de três vias no cliente, não oferece por si só identidade de jogo, slot RomM ou negociação de conflitos equivalente.
+- Recomendação: manter Device Sync como caminho específico de SRAM no RomM; manter WebDAV como PoC opcional para armazenamento genérico, sem substituir SaveSync nem habilitar sincronização automática. Save states continuam no endpoint /api/states/fluxo existente até política própria. Memory cards continuam fora de ambos até mapeamento por núcleo e formato.
+- Não misturar os dois protocolos nem permitir que um deles remova arquivos geridos pelo outro.
+
+E9 — SEPARAÇÃO SRAM / SAVE STATES / MEMORY CARDS
+- SaveStore mantém sram.srm e state1.state como arquivos distintos; RemoteFileKind distingue Save e State em endpoints separados.
+- Device Sync desta etapa aceita somente nome .srm e constrói o manifesto a partir de store.sramFile; save states não entram na lista.
+- [TESTE ADICIONADO NESTA BRANCH] Casos negativos rejeitam extensões .mcd, .mcr, .mem, .state e .sav no manifesto SRAM.
+- Memory cards não são uma terceira categoria suportada pelo SaveStore/Device Sync. Permanecem explicitamente excluídos; o mapeamento de caminhos por núcleo ainda é pendente e não deve ser inferido por extensão.
+
+STATUS GERAL DO ESTÁGIO E
+- E1–E3: concluídos na base.
+- E4: implementação existente; validação funcional de conflito/rollback no telefone pendente.
+- E5: executor manual e conservador implementado nesta branch; CI e teste real pendentes.
+- E6–E7: PoC WebDAV e testes MockWebServer implementados nesta branch; CI pendente.
+- E8: comparação e recomendação documentadas.
+- E9: separação de SRAM/state e exclusão de memory cards reforçadas por testes; mapeamento de memory cards por núcleo permanece fora da sincronização.
+- E10: continua aguardando decisão explícita do usuário; não substituir o sincronizador atual.
+- Nenhuma transferência foi executada por esta alteração de código. Nenhum save local/remoto foi apagado, movido ou sobrescrito. Nenhuma release foi publicada e nenhum merge foi realizado.
