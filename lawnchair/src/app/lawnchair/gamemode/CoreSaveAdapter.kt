@@ -20,16 +20,15 @@ internal object CoreSaveAdapterRegistry {
         "mednafen_psx",
     )
 
-    fun resolve(coreId: String): CoreSaveAdapter =
-        if (coreId.lowercase() in memoryCardCores) {
-            CoreSaveAdapter(
-                artifactType = SaveArtifactType.MEMORY_CARD,
-                localSlot = "memory-card-0",
-            )
-        } else {
-            CoreSaveAdapter(
-                artifactType = SaveArtifactType.CORE_SAVE,
-                localSlot = "core-save",
-            )
-        }
+    fun resolve(coreId: String): CoreSaveAdapter = if (coreId.lowercase() in memoryCardCores) {
+        CoreSaveAdapter(
+            artifactType = SaveArtifactType.MEMORY_CARD,
+            localSlot = "memory-card-0",
+        )
+    } else {
+        CoreSaveAdapter(
+            artifactType = SaveArtifactType.CORE_SAVE,
+            localSlot = "core-save",
+        )
+    }
 }
