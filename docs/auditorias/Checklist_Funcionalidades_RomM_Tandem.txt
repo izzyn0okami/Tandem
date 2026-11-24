@@ -1188,3 +1188,9 @@ ATUALIZAÇÃO DO CHECKLIST — FILTRO DE EMULADOR E VALIDAÇÃO DE DOWNLOAD (202
 - [PENDENTE DE CI] Alterações de código enviadas à branch `feat/stage-e-completion`. CI #1026 estava em andamento no head anterior; aguardar nova CI que cubra o head atual.
 - [PENDENTE DE APARELHO] Validar inspeção e interoperabilidade RomM 5.4.x em PSX e SNES. Não executar transferência real sem autorização explícita e preservar backups.
 - PR #49 segue aberta e não mesclada; `tandem-latest` não foi publicada.
+
+ATUALIZAÇÃO DO CHECKLIST — NOME ORIGINAL NO UPLOAD DEVICE SYNC (2026-11-24)
+- [CORREÇÃO] O upload Device Sync passa a preservar o nome original `.srm` do SaveStore no multipart, sem expor o nome UUID do arquivo de staging. A origem temporária permanece usada somente para leitura dos bytes.
+- [TESTE ADICIONADO] Verifica o nome do arquivo multipart enviado.
+- [PENDENTE DE CI] Aguardar CI do head mais recente da PR #49.
+- [PENDENTE DE APARELHO] Validar interoperabilidade com RomM 5.4.x em PSX e SNES. Sem transferência real sem autorização explícita.
