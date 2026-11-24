@@ -154,3 +154,13 @@ ATUALIZAÇÃO — INVENTÁRIO INICIAL E ADAPTADORES POR NÚCLEO (2026-11-24)
 - [CI #1068] Execução manual de revalidação no head formatado 9e79b4881eee94bbac119d7aad75fb66f9943c9f iniciada; aguardar todos os jobs para registrar o resultado.
 - [PENDENTE] Teste real no telefone, implementação do mapeamento entre slots locais e remotos, transporte seguro de outros tipos de artefatos, coordenador de sessão e substituição do sincronizador duplicado.
 - [SEGURANÇA] Nenhum save real, ROM ou dado remoto foi apagado, movido, transferido ou sobrescrito por esta etapa. PR #50 continua aberta em draft e não foi mesclada.
+
+
+ATUALIZAÇÃO — DIAGNÓSTICO DE ERROS DEVICE SYNC (2026-11-24)
+- [CI APROVADA] Run #1070 / 45393575954 e run #1071 / 45393872116 concluíram com sucesso no head c554b47361eae6825a0591737bfbc99c365f2495. A validação cobre o inventário tipado, adaptadores PSX e testes adicionados até aquele commit.
+- [IMPLEMENTADO NA PR #50] RomMHttpException agora preserva status HTTP e detalhe estruturado do servidor (detail/message/error), limitado a 300 caracteres e higienizado contra caracteres de controle.
+- [IMPLEMENTADO] O cliente Device Sync usa o detalhe estruturado em falhas de negociação/upload e download. O corpo HTTP arbitrário não é incluído em logs.
+- [TESTE ADICIONADO] Resposta HTTP 409 com {"detail":"conflict"} deve preservar status 409 e detalhe "conflict"; overwrite permanece false.
+- [PENDENTE DE VALIDAÇÃO] CI #1075, no commit 7c771ba702cb4d9e80282af58b0792b2585f5325, ainda estava em execução na última consulta; também existem execuções concorrentes mais antigas da mesma sequência. Não declarar esta mudança validada até uma CI verde no head atual.
+- [PR] #50 continua aberta em draft, base game-mode-m2-dev. Não houve merge.
+- [SEGURANÇA] Nenhum arquivo local ou remoto foi apagado, sobrescrito ou migrado. Esta mudança é exclusivamente diagnóstica; não tenta contornar 409 nem ativar overwrite.
