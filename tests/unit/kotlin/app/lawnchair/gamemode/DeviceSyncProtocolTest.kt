@@ -538,4 +538,20 @@ class DeviceSyncProtocolTest {
         }.isFailure)
     }
 
+    @Test
+    fun errorDetailReadsServerDetailAndBoundsItsLength() {
+        assertEquals("Save conflict", DeviceSyncProtocolJson.errorDetail("{\"detail\":\"Save   conflict\"}"))
+        assertEquals(240, DeviceSyncProtocolJson.errorDetail("{\"detail\":\"" + "x".repeat(500) + "\"}")!!.length)
+        assertNull(DeviceSyncProtocolJson.errorDetail(""))
+        assertNull(DeviceSyncProtocolJson.errorDetail(null))
+        assertEquals("plain text", DeviceSyncProtocolJson.errorDetail("plain text"))
+    }
+
+    @Test
+    fun httpFailureKeepsStatusCodeAndAppendsDetail() {
+        val failure = DeviceSyncProtocolJson.httpFailure(409, "{\"detail\":\"slot occupied\"}")
+        assertEquals(409, failure.statusCode)
+        assertTrue(failure.message!!.endsWith(": slot occupied"))
+        assertEquals("RomM Device Sync respondeu HTTP 500", DeviceSyncProtocolJson.httpFailure(500, null).message)
+    }
 }

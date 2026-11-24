@@ -136,20 +136,29 @@ object RomMDeviceSyncRunner {
                                 if (!originalSave.matchesMd5(initialLocalHash)) {
                                     throw IOException("O save local mudou após a negociação; upload cancelado.")
                                 }
-                                val uploadedSave = client.uploadSave(
-                                    romId = romId,
-                                    deviceId = deviceId,
-                                    sessionId = negotiation.sessionId,
-                                    slot = "autosave",
-                                    emulator = emulator,
-                                    fileName = originalSave.name,
-                                    file = snapshot,
-                                )
-                                uploaded++
-                                GameLog.log(
-                                    "Device Sync",
-                                    "save enviada para ROM #$romId; save_id=${uploadedSave.optLong("id", -1L)}, bytes=${snapshot.length()}",
-                                )
+                                try {
+                                    val uploadedSave = client.uploadSave(
+                                        romId = romId,
+                                        deviceId = deviceId,
+                                        sessionId = negotiation.sessionId,
+                                        slot = "autosave",
+                                        emulator = emulator,
+                                        fileName = originalSave.name,
+                                        file = snapshot,
+                                    )
+                                    uploaded++
+                                    GameLog.log(
+                                        "Device Sync",
+                                        "save enviada para ROM #$romId; save_id=${uploadedSave.optLong("id", -1L)}, bytes=${snapshot.length()}",
+                                    )
+                                } catch (rejected: RomMHttpException) {
+                                    if (rejected.statusCode != 409) throw rejected
+                                    conflicts++
+                                    GameLog.log(
+                                        "Device Sync",
+                                        "upload recusado pelo RomM (slot já ocupado); tratado como conflito, nada foi sobrescrito: ${rejected.message}",
+                                    )
+                                }
                             }
 
                             DeviceSyncAction.Download -> {

@@ -171,6 +171,22 @@ object DeviceSyncProtocolJson {
             .put("emulators", emulatorArray)
     }
 
+    fun errorDetail(body: String?): String? {
+        if (body.isNullOrBlank()) return null
+        val detail = try {
+            JSONObject(body).opt("detail")?.toString()
+        } catch (_: org.json.JSONException) {
+            body
+        }
+        return detail?.replace(Regex("\\s+"), " ")?.trim()?.take(240)?.takeIf { it.isNotEmpty() }
+    }
+
+    fun httpFailure(code: Int, body: String?): RomMHttpException {
+        val detail = errorDetail(body)
+        val suffix = if (detail != null) ": $detail" else ""
+        return RomMHttpException(code, "RomM Device Sync respondeu HTTP $code$suffix")
+    }
+
     fun parseRegistration(json: JSONObject): RegisteredSyncDevice {
         val id = json.optString("device_id")
         require(id.isNotBlank() && id != "null") { "O RomM não retornou device_id." }
@@ -247,10 +263,10 @@ class RomMDeviceSyncClient(
 
     private fun executeJson(request: Request): JSONObject {
         http.newCall(request).execute().use { response ->
-            if (!response.isSuccessful) {
-                throw RomMHttpException(response.code, "RomM Device Sync respondeu HTTP ${response.code}")
-            }
             val body = response.body?.string().orEmpty()
+            if (!response.isSuccessful) {
+                throw DeviceSyncProtocolJson.httpFailure(response.code, body)
+            }
             if (body.isBlank()) return JSONObject()
             return JSONObject(body)
         }
@@ -376,7 +392,7 @@ class RomMDeviceSyncClient(
         try {
             http.newCall(request(url.encodedPath).url(url).get().build()).execute().use { response ->
                 if (!response.isSuccessful) {
-                    throw RomMHttpException(response.code, "RomM Device Sync respondeu HTTP ${response.code}")
+                    throw DeviceSyncProtocolJson.httpFailure(response.code, response.body?.string())
                 }
                 val body = response.body ?: throw IOException("O RomM retornou um save sem conteúdo.")
                 stagingFile.outputStream().use { output -> body.byteStream().use { input -> input.copyTo(output) } }
