@@ -827,6 +827,10 @@ internal fun GameDetailScreen(
     val syncStatus by produceState<SaveSyncStatus?>(null, local?.path, chosenCoreId, syncVersion) {
         value = local?.let { SaveSync.status(context, it.path, chosenCoreId) }
     }
+    var rommLinked by remember(local?.path) {
+        mutableStateOf(local?.let { runCatching { GameIdentityResolver.hasRomMLink(context, File(it.path)) }.getOrDefault(false) } ?: false)
+    }
+    var showRomMLinkDialog by remember(entry.key) { mutableStateOf(false) }
     val coreUpdateAvailable by produceState<Boolean?>(null, local?.path, chosenCoreId) {
         value = if (local != null && entry.platform.launch == LaunchMode.LIBRETRO && chosenCoreId.isNotBlank()) {
             CoreInstaller.updateAvailable(context, chosenCoreId)
@@ -857,6 +861,17 @@ internal fun GameDetailScreen(
         }
     }
     Box(modifier = Modifier.fillMaxSize()) {
+        if (showRomMLinkDialog && local != null) {
+            RomMLinkDialog(
+                local = local,
+                onDismiss = { showRomMLinkDialog = false },
+                onLinked = {
+                    rommLinked = true
+                    showRomMLinkDialog = false
+                    GameLog.log("romm", "ROM local associada explicitamente ao registro RomM #${it.id}: ${local.title}")
+                },
+            )
+        }
         // Arte grande de fundo: do SteamGridDB quando tiver, senão a própria capa ampliada, com um
         // gradiente escuro por cima pra manter o texto legível (estilo tela de detalhes do SteamOS).
         (heroArt ?: coverArt)?.let { background ->
@@ -916,6 +931,22 @@ internal fun GameDetailScreen(
                 }
                 if (syncStatus != null) {
                     SaveSyncBadge(syncStatus)
+                }
+                if (
+                    local != null &&
+                    entry.platform.launch == LaunchMode.LIBRETRO &&
+                    RomMSettings.isConnected(context)
+                ) {
+                    if (rommLinked) {
+                        Text("Vínculo com RomM confirmado para esta conta.", color = GameColors.accent, fontSize = 13.sp)
+                    } else {
+                        GameButton(
+                            label = "Associar ROM existente ao RomM",
+                            onClick = { showRomMLinkDialog = true },
+                            enabled = !busy,
+                            modifier = Modifier.width(250.dp),
+                        )
+                    }
                 }
                 if (canInspectDeviceSyncSram) {
                     GameButton(
