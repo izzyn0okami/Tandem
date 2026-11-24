@@ -1200,3 +1200,12 @@ ATUALIZAÇÃO DO CHECKLIST — DIAGNÓSTICO PASSIVO DO PULL (2026-11-24)
 - [IMPLEMENTADO NA PR #49] Logs de SaveSync agora expõem apenas metadados/prefixos de hash para explicar por que um save remoto foi ou não aplicado; nenhuma lógica de sincronização foi alterada.
 - [PENDENTE] CI e teste no telefone, exportando novo game_log.txt após instalar o APK correspondente. Investigar PSX autosave com base em ID, slot, emulador, hashes e decisão remoteChanged/aplicar.
 - Não executar transferências reais adicionais sem autorização; preservar saves e backups.
+
+
+AUDITORIA DA PR #49 — RESULTADO CI #1045 (2026-11-24)
+- Head auditado: a55fce988ff0da8482fe0721be27d23d4e5c2af9.
+- CI #1045 / run 45324835382: check-style/Spotless aprovado; testes unitários falharam; Build APK, Upload artifact e final-status não aprovados. Nenhum APK foi gerado.
+- Bloqueio confirmado em DeviceSyncProtocolTest.kt: duas chamadas a client.uploadSave(...) estão sem o parêntese de fechamento: uploadSaveUsesSafeQueryParametersAndMultipartSaveFile e psxSrmUsesGenericSaveEndpointAndPreservesExactBytesInAutosaveSlot.
+- [PENDENTE] Corrigir ambas as chamadas e validar o novo head com CI completa.
+- [PENDENTE NO APARELHO] Instalar somente APK gerado por CI integralmente aprovada; depois executar inspeção somente leitura e validar PSX/SNES com RomM 5.4.x, exportando novo game_log.txt. Não realizar transferências reais sem autorização explícita e preservar backups.
+- PR #49 segue aberta, sem merge e sem publicação tandem-latest. Nenhum save real foi alterado nesta auditoria.
