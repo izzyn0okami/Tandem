@@ -1109,3 +1109,12 @@ COMPLEMENTO — PSX .SRM NO FLUXO DE SAVE DO ROMM (2026-11-23)
 - [RESSALVA] .srm do PCSX-ReARMed é memory card do slot 0, não SRAM de bateria. A presunção não se estende a outros formatos/núcleos sem mapeamento.
 - [PENDENTE] A falha de recuperar o save PSX mais recente não é explicada apenas pela extensão. Verificar (rom_id, slot), se o save remoto está em autosave, timestamps/hashes da negociação e destino local real.
 - [SEGURANÇA] Nenhuma transferência ou alteração de saves reais foi executada.
+
+ATUALIZAÇÃO — DIAGNÓSTICO DE AUTOSAVE PSX E TESTE DE BYTES (2026-11-23)
+- [IMPLEMENTADO NA PR #49] Rótulos e identificadores do fluxo Device Sync foram generalizados de SRAM para save; a restrição de transporte permanece em arquivo .srm nesta etapa.
+- [IMPLEMENTADO NA PR #49] Diagnóstico somente leitura exibe arquivo/tamanho/atualização/MD5 local e, para cada operação remota, action, rom_id, slot, save_id, nome, emulador, timestamp e prefixo do hash do servidor. Nenhuma operação é aplicada durante a inspeção.
+- [TESTE AUTOMATIZADO ADICIONADO] Simula um cartão PSX .srm sintético e confirma transporte pelos endpoints /api/saves e /api/saves/{id}/content, slot autosave, ausência de overwrite e identidade exata dos bytes após download e validação MD5.
+- [CI] #978 / run 45319749113: no head anterior 9a287e9c23513d557befe5ad24c0bb23ae8de3de, check-style aprovado e build ainda em execução na última leitura. Nova CI #984 / run 45320373747 foi disparada para o head atualizado 3b242d3b17d76a2c274f09d409c034d66ab85c9f; aguardando execução. Não registrar sucesso até conclusão de todos os jobs.
+- [PENDENTE] Confirmar no telefone a operação de negociação retornada para o PSX e comparar rom_id, autosave, timestamp/hash e caminho local real. A compatibilidade de bytes é coberta por teste sintético, não por transferência real.
+- Nenhum save real foi transferido, substituído, movido ou apagado. PR #49 permanece aberta; sem merge ou publicação.
+
