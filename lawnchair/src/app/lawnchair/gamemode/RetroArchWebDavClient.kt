@@ -121,7 +121,7 @@ class RetroArchWebDavClient(
     }
 
     private fun resolve(relativePath: String): HttpUrl {
-        val clean = relativePath.replace('\\\\', '/')
+        val clean = relativePath.replace('\\', '/')
         require(!clean.startsWith('/')) { "O caminho WebDAV deve ser relativo à raiz configurada." }
         require(!clean.contains('?') && !clean.contains('#')) { "O caminho WebDAV não pode conter query ou fragmento." }
         require(!Regex("(?i)%2e|%2f|%5c").containsMatchIn(clean)) { "O caminho WebDAV contém codificação não permitida." }
