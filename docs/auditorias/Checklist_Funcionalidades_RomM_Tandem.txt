@@ -885,3 +885,54 @@ ATUALIZAÇÃO — ANÁLISE DO game_log.txt ENVIADO PELO USUÁRIO (2026-11-23)
 - RomM: houve erros de conectividade temporários, incluindo hostname digitado como 192,169.0.102 e falha de conexão ao endereço correto; posteriormente heartbeat e listagem de ROMs responderam HTTP 200. Não atribuir essas falhas ao caminho de saves sem nova reprodução.
 - O log não contém os campos de diagnóstico da PR #46 (caminhos configurado/padrão/efetivo, savesDirectory, SaveStore e permissões). Próxima validação necessária: instalar build pós-PR #46/tandem-latest, repetir PSX e SNES e exportar novo game_log.txt. Até lá, E4/E5 permanecem EM ANDAMENTO.
 - Segurança: nenhum save deve ser apagado, sobrescrito ou movido automaticamente; manter backups e modo somente leitura até esclarecer identidade e localização dos arquivos. Não habilitar sincronização automática com base neste log.
+
+
+ANÁLISE DO LOG #924 — CAMINHOS DE SAVE E SINCRONIZAÇÃO (2026-11-23/24)
+Fonte: tandem-log (4).txt, recebido via Dropbox.
+Build: 16.Dev.(#924), versionCode 1600021024.
+Aparelho: Motorola Edge 30 Fusion, Android 17 / API 37.
+Sessões relevantes: eb322fda e 16d91df3.
+
+CAMINHOS — CONFIRMAÇÃO
+- Pasta personalizada configurada: /storage/emulated/0/Emulation/SAVES.
+- Pasta efetivamente usada: a mesma pasta personalizada; File.canWrite()=true.
+- MANAGE_EXTERNAL_STORAGE=true.
+- O caminho entregue ao LibretroDroid em savesDirectory corresponde à pasta personalizada.
+- PSX / pcsx_rearmed: SaveStore encontrou sram.srm com 131072 bytes e state1.state com 4456448 bytes.
+- SNES / snes9x: SaveStore encontrou sram.srm com 2048 bytes; state1.state não existia.
+- Conclusão: o log confirma que a pasta customizada está efetivamente selecionada e gravável nos dois núcleos. Não há evidência de fallback para a pasta interna nem de que a customização seja a causa da falha de sincronização.
+- A existência/tamanho dos arquivos não prova, isoladamente, que tenham sido alterados durante a sessão.
+
+PSX — ROMM E RECUPERAÇÃO
+- Castlevania - Symphony of the Night Ultimate usa identidade romm-..., vinculada ao registro RomM.
+- Save remoto tipo saves, id=25, núcleo tandem_pcsx_rearmed, foi selecionado; em verificações posteriores o cliente informou que o arquivo local já correspondia à versão remota conhecida.
+- Save state remoto id=6 foi baixado por GET /api/states/6/content: HTTP 200, application/octet-stream, 4456448 bytes recebidos, correspondentes ao tamanho esperado.
+- O arquivo foi validado pelo fluxo de download e, em sessões posteriores, o estado local já correspondia à versão remota conhecida.
+- Isso comprova recuperação/download do state PSX nesta execução, mas não comprova upload novo de SRAM ou state.
+
+SNES — ASSOCIAÇÃO E MIGRAÇÃO
+- Super Mario World usa identidade local-..., não identidade romm-....
+- O código do fluxo legado SaveSync exige vínculo RomM verificado: sem linkedRomId, o pull não consulta saves remotos e o push em segundo plano não envia arquivos.
+- Portanto, a identidade local explica por que o fluxo legado de sincronização RomM não tem um destino remoto confirmado para esse jogo nesta sessão. Isso não prova defeito no núcleo snes9x nem na pasta personalizada.
+- O log registra migração legada ambígua e diretórios antigos preservados; depois registra conflito resolvido por escolha explícita, preferência pelo conteúdo atual e preservação dos originais em .conflict-backups.
+- SRAM local de 2048 bytes existe. Não há evidência de upload remoto SNES concluído nem de inspeção Device Sync específica do SNES nesta execução.
+
+DEVICE SYNC — LIMITE DA EVIDÊNCIA
+- As inspeções de Castlevania registraram SRAM local incluída=true e Upload=1, Download=0, Conflict=0, Delete=0, NoOp=0, Unknown=0.
+- As mesmas linhas declaram explicitamente: nenhuma operação aplicada.
+- Não há no arquivo confirmação de POST/PUT de upload concluído pelo Device Sync.
+- Não interpretar Upload=1 como transferência realizada; trata-se de uma operação planejada pela inspeção somente leitura.
+
+OUTROS EVENTOS
+- Houve falha temporária de conexão com 192.168.0.102:8080 e uma resposta HTTP 500 em GET /api/platforms.
+- O download multidisco de Castlevania foi concluído posteriormente com 683035703 bytes recebidos e extração concluída.
+- Erros HTTP 404 do scraper de miniaturas do Game Boy Advance são independentes do fluxo de saves e não devem ser usados como evidência de falha de sincronização.
+
+STATUS DA AUDITORIA
+- Pasta personalizada e caminho entregue ao LibretroDroid: CONFIRMADOS nos dois núcleos.
+- PSX: download de save state RomM confirmado; upload novo não comprovado.
+- SNES: SRAM local confirmada; associação RomM não confirmada; upload não comprovado.
+- E4: resolução explícita de conflito exercitada, com originais preservados; cobertura funcional ainda incompleta.
+- E5: inspeção somente leitura produziu uma operação Upload candidata, mas nenhuma operação foi aplicada. Interoperabilidade e upload real continuam pendentes.
+- Não alterar, mover, apagar ou sobrescrever saves com base neste log.
+- Próxima validação: confirmar a associação do jogo SNES à entrada correta do RomM antes de avaliar o fluxo legado; em paralelo, executar uma operação Device Sync controlada após confirmar o estado do dispositivo, registrando o resultado real da transferência. Manter save states fora do Device Sync.
