@@ -4827,3 +4827,175 @@ ATUALIZAÇÃO — PR #48 MESCLADA / CI #959 (2026-11-24)
 - A implementação separa SRAM automática no slot autosave; saves manuais e legados são preservados. Estados rápidos permanecem sem slot, conforme contrato RomM.
 - PENDENTE: teste controlado no aparelho para confirmar pull PSX autosave, backup local, upload no slot correto e preservação de saves manuais/legados; verificar também SNES.
 - E4/E5 e multidisco/M3U permanecem EM ANDAMENTO. Não iniciar Device Sync amplo nem apagar/mover/sobrescrever saves sem autorização explícita.
+
+
+CONTINUIDADE DO ESTÁGIO E — PR #49 (2026-11-24)
+- PR: https://github.com/izzyn0okami/Tandem/pull/49
+- Branch: feat/stage-e-completion; base game-mode-m2-dev.
+- Abertura: PRs abertas verificadas antes da criação; nenhuma concorrente encontrada. PR #49 está aberta, não mesclada.
+- E5: executor manual RomM Device Sync adicionado para SRAM .srm do jogo vinculado e fechado. A negociação é limitada ao rom_id selecionado, com restore_unlisted=false. Upload usa slot autosave, overwrite=false e autocleanup=false; download usa staging, valida MD5, backup local validado por SHA-256 e confirmação downloaded após aplicação. Conflitos ficam preservados; delete/unknown não são executados.
+- E6/E7: PoC WebDAV adicionada com OPTIONS/PROPFIND/GET e PUT condicional para arquivo novo (If-None-Match: *), sem DELETE/MOVE/sobrescrita. Testes MockWebServer adicionados.
+- E8: recomendação registrada: Device Sync para SRAM RomM; WebDAV permanece PoC genérica e não substitui o sincronizador.
+- E9: testes negativos adicionados para .mcd/.mcr/.mem/.state/.sav; memory cards continuam fora do transporte até mapeamento por núcleo.
+- E4: implementação existente; teste funcional de conflito/backup/rollback no telefone ainda pendente.
+- E5: interoperabilidade real com RomM 5.4.x e teste no telefone ainda pendentes.
+- CI #965 / run 45317009273: em execução no momento deste registro; Spotless e testes/build ainda não concluídos. Não registrar sucesso antecipadamente.
+- Nenhuma transferência real foi executada nesta alteração. Nenhum save foi apagado, movido ou sobrescrito. Nenhum merge ou publicação tandem-latest foi realizado.
+
+
+AUDITORIA — DISTINÇÃO ENTRE SRAM LIBRETRO E MEMORY CARDS ROMM (2026-11-23)
+
+FONTES E VERSÕES
+- RomM 5.4.1: backend/endpoints/saves.py, backend/endpoints/memory_cards.py, backend/endpoints/responses/memory_cards.py, backend/models/assets.py, backend/handler/streaming/memory_cards.py e backend/utils/memory_cards.py.
+- Libretro Docs — PCSX-ReARMed: https://docs.libretro.com/library/pcsx_rearmed/.
+- Código Tandem inspecionado na branch feat/stage-e-completion: SaveStore.kt e RomMDeviceSyncRunner.kt.
+
+CONCLUSÕES CONFIRMADAS
+1. RomM 5.4.1 NÃO modela memory cards como saves comuns. Há entidades e rotas próprias: /api/memory-cards, /api/memory-cards/{id}/content, /api/memory-cards/{id}/versions e /api/memory-cards/versions/{id}/content. MemoryCard é uma entidade independente de Save e State, associada a um usuário e a um emulador; não é associada diretamente a um rom_id. Suas versões são snapshots de arquivo ZIP.
+2. O endpoint comum /api/saves aceita arquivos genéricos enviados como saveFile e armazena nome, extensão, emulador, ROM e slot. Isso permite transportar bytes de um .srm como asset Save, mas NÃO transforma esse registro em MemoryCard nem o torna visível/gerenciável pelas rotas de memory cards.
+3. A API dedicada de memory cards aceita somente arquivo ZIP no layout esperado pelo broker. O endpoint rejeita imagem de cartão avulsa/raw; o backend valida segurança do ZIP. A integração de streaming documentada no código 5.4.1 é voltada a cartões inteiros de PCSX2 (Slot 1 em pasta) e Dolphin (Slot A), não há evidência de suporte pronto para o arquivo .srm por jogo do PCSX-ReARMed.
+4. A documentação oficial Libretro do PCSX-ReARMed identifica *.srm como o cartão de memória do slot 0, por jogo; pcsx-card2.mcd é o slot 1 opcional. Portanto, no PlayStation/PCSX-ReARMed, a extensão .srm não significa SRAM de bateria: representa o memory card do primeiro slot.
+5. O SaveStore atual do Tandem cria um arquivo fixo sram.srm e um state1.state; não modela slot de memory card, nem arquivo separado para pcsx-card2.mcd. O RomMDeviceSyncRunner lê store.sramFile e envia seu conteúdo ao endpoint Device Sync de /api/saves, slot autosave, classificando-o como SRAM. Para PSX/PCSX-ReARMed, isso pode enviar um memory card como Save comum, não como MemoryCard dedicado do RomM.
+
+IMPLICAÇÕES E DECISÃO TÉCNICA PENDENTE
+- A exclusão de .mcd/.mcr/.mem no manifesto não resolve o caso PSX: o cartão do slot 0 usa .srm e passa pelo filtro atual.
+- Não ampliar agora o Device Sync genérico para aceitar extensões de cartão nem encaminhar .srm automaticamente à API MemoryCard.
+- Antes de sincronizar PSX, mapear por núcleo o significado real de cada arquivo e separar SRAM genuína, cartão de memória por jogo, cartão compartilhado e save state.
+- Para PCSX-ReARMed, confirmar o caminho efetivo do LibretroDroid/RetroArch e se o arquivo sram.srm do SaveStore corresponde ao slot 0. A documentação do core indica que sim quanto ao formato, mas o caminho real do frontend deve ser validado no aparelho.
+- Avaliar separadamente se RomM MemoryCard pode ser adaptado com um ZIP contendo o cartão PSX e um identificador de emulador estável. Isso exigiria verificar semântica de importação/hidratação e não deve ser presumido compatível com o broker atual de PCSX2/Dolphin.
+- Não transferir, reclassificar, renomear, apagar ou sobrescrever nenhum save real nesta auditoria.
+
+STATUS
+- RomM 5.4.1 possui suporte explícito e separado a MemoryCard: CONFIRMADO por código-fonte.
+- PCSX-ReARMed slot 0 usa .srm como memory card: CONFIRMADO pela documentação oficial Libretro.
+- Compatibilidade direta do endpoint MemoryCard RomM com .srm de PCSX-ReARMed: NÃO COMPROVADA; a API dedicada exige ZIP e o fluxo de streaming inspecionado cobre PCSX2/Dolphin.
+- O transporte atual da PR #49 classifica store.sramFile como SRAM e usa /api/saves; para PSX isso é uma classificação semântica incorreta, ainda que o endpoint aceite o arquivo como blob genérico.
+- Nenhuma alteração de código, transferência, merge ou publicação foi feita por esta auditoria.
+
+
+COMPLEMENTO — ROMM WEB PLAYER E ARQUIVO PSX .SRM (2026-11-23)
+
+- [CONFIRMADO — ROMM 5.4.1] O player web EmulatorJS usa o fluxo genérico de saves (/api/saves). saveSave usa autosave como slot padrão quando não há outro slot selecionado. O endpoint recebe saveFile como bytes genéricos e armazena nome, extensão, ROM, emulador e slot; não exige que o arquivo seja SRAM de bateria.
+- [DECISÃO TÉCNICA] Para o PSX, podemos presumir compatibilidade do CONTEÚDO do arquivo .srm entre os núcleos envolvidos quando ambos geram o mesmo formato de cartão PCSX-ReARMed/PSX. O Tandem pode transportar esses bytes pelo recurso Save comum do RomM, no slot estável autosave, sem usar a API MemoryCard dedicada.
+- [LIMITE DA PRESUNÇÃO] Isso não significa que o arquivo PSX .srm seja SRAM de bateria, nem prova que toda implementação de PSX ou todo núcleo gere layout idêntico. A presunção é restrita ao formato observado no servidor e no núcleo cliente compatível; não se estende a .mcd/.mcr nem a cartões de outros núcleos.
+- [PENDENTE — CAUSA DO DOWNLOAD] A extensão .srm, por si só, não explica falha de download: o RomM 5.4.1 aceita saves genéricos e o player web usa autosave por padrão. Investigar o resultado da negociação no caso PSX, em especial correspondência (rom_id, slot), presença do save remoto no slot autosave, comparação timestamp/hash e caminho efetivo do arquivo local. O Device Sync pareia por (rom_id, slot); a lista de emuladores não filtra quando enviada como null.
+- Nenhum arquivo real foi transferido ou alterado nesta investigação.
+
+ATUALIZAÇÃO — DIAGNÓSTICO E NOMENCLATURA DE SAVE NA PR #49 (2026-11-23)
+- [IMPLEMENTADO NA BRANCH] Interface e abstração Device Sync passaram a usar nomenclatura neutra de "save", em vez de chamar todo arquivo .srm de SRAM. Isso evita classificar incorretamente o cartão de memória PSX como SRAM de bateria.
+- [IMPLEMENTADO NA BRANCH] A inspeção somente leitura agora apresenta os metadados locais e remotos relevantes: ROM ID, arquivo, slot, save ID, emulador, timestamps, tamanho e prefixo do MD5. O diagnóstico não baixa, envia, aplica nem exclui saves.
+- [TESTE ADICIONADO] Caso PSX .srm usa o endpoint comum /api/saves, slot autosave, overwrite=false e verifica que os bytes do arquivo enviados e recuperados são idênticos. O teste usa MockWebServer e dados sintéticos; não acessa saves reais.
+- [CI PENDENTE] CI #978 / run 45319749113 foi consultada no head anterior 9a287e9c23513d557befe5ad24c0bb23ae8de3de: check-style passou e build-debug-apk ainda estava em execução. Após os novos commits, CI #984 / run 45320373747 foi iniciada para o head 3b242d3b17d76a2c274f09d409c034d66ab85c9f; estava em fila na última consulta. Nenhuma CI completa foi declarada aprovada.
+- [PENDENTE] A causa concreta do pull PSX ainda depende do diagnóstico no aparelho. A inspeção deve revelar se o servidor retorna download, no_op, conflict ou nenhuma operação, e se (rom_id, autosave), timestamps e MD5 correspondem ao arquivo esperado.
+- [SEGURANÇA] Nenhuma transferência real, alteração de save, merge ou publicação tandem-latest foi realizada.
+
+REVISÃO FINAL DE NOMENCLATURA E COBERTURA — PR #49 (2026-11-23)
+- [REVISADO] Chamadas e tipos do fluxo Device Sync foram renomeados de SRAM para save nos pontos de integração, diagnóstico e interface. O nome físico legado SaveStore.sramFile foi mantido intacto para não provocar migração ou mudança de caminho.
+- [REVISADO] O protocolo continua aceitando .srm nesta etapa e usa o endpoint genérico /api/saves; a documentação deixa explícito que no PSX esse conteúdo pode ser um cartão de memória.
+- [TESTE] O caso sintético PSX verifica multipart de upload no slot autosave, overwrite=false, endpoint de conteúdo no download, MD5 e igualdade byte a byte. Nenhum arquivo real é usado.
+- [DIAGNÓSTICO] A inspeção apresenta metadados de local e remoto necessários para interpretar a negociação. Para a causa raiz no aparelho, registrar o resultado observado e conferir ROM ID, slot, save ID, nome, emulador, timestamp e MD5; não concluir apenas pela extensão.
+- [CI PENDENTE] Run #986 / 45320422408 foi iniciada no head c494c286be052731a376246c8804577f4722dd28. Na última consulta, check-style e build-debug-apk estavam em execução. O head avançou depois para a0ff5a30340e99388b662675be285c60b78844a3 e a2f90ba196c5d049616683cb91d2c8f38c39263a; esses commits finais ainda não têm execução CI identificada nesta consulta. Não marcar CI como aprovada.
+- [PENDENTE] Teste no telefone de E4 (conflito/backup/rollback) e interoperabilidade Device Sync com RomM real, incluindo investigação do pull PSX, permanecem pendentes.
+- Sem transferência real, merge ou publicação tandem-latest.
+
+
+
+ATUALIZAÇÃO — COBERTURA DOS METADADOS DA NEGOCIAÇÃO DEVICE SYNC (2026-11-23)
+- [CORREÇÃO DE INTERFACE] Ajustada a mensagem de diagnóstico para concordância correta: “Save local encontrado”.
+- [TESTE AUTOMATIZADO ADICIONADO] DeviceSyncProtocolTest agora simula uma operação download PSX no slot autosave e verifica que o parser preserva rom_id, save_id, file_name, slot, emulator, reason, server_updated_at e server_content_hash. Isso protege os campos usados para identificar por que um save remoto mais recente é ou não selecionado.
+- [VALIDAÇÃO DE BRANCH] Os dois arquivos alterados foram conferidos novamente no head da branch feat/stage-e-completion; o teste e a correção de interface estão presentes. A branch está 36 commits à frente de game-mode-m2-dev.
+- [CI PENDENTE] A run #995 / 45320622544 foi localizada no commit de correção de interface db0248685853809b154e9e83d6c61a83c47b65df, mas o commit posterior que adiciona o teste é 04b3b0ed2654ec64edcf0b8773c238053ae4f39b. Portanto, a run #995 não deve ser tratada como validação do head final enquanto não for confirmado que inclui esse commit. Aguardando CI no head completo.
+- [PENDENTE NO APARELHO] Continua necessária a inspeção somente leitura da negociação PSX real para observar action, rom_id, autosave, save_id, emulador, timestamp e hash. Nenhum save real foi transferido ou alterado.
+- PR #49 permanece aberta; sem merge e sem publicação tandem-latest.
+
+ATUALIZAÇÃO DE ESTADO — HEAD 04B3B0E / CI #986 (2026-11-23)
+- Head atual da PR #49 no momento desta atualização: 04b3b0ed2654ec64edcf0b8773c238053ae4f39b.
+- Compare com game-mode-m2-dev: branch 36 commits à frente, 0 atrás; PR aberta e mergeable, ainda sem merge.
+- CI #986 / run 45320422408 foi executada inicialmente sobre head anterior c494c286be052731a376246c8804577f4722dd28. check-style concluiu com sucesso; Spotless não encontrou alterações e spotlessCheck passou. O job build-debug-apk ainda estava em execução na última consulta, com testes unitários em andamento. Esta execução não valida automaticamente commits posteriores ao head inicial.
+- O head 04b3b0e acrescentou teste unitário que confirma o parser preserva action, rom_id, save_id, file_name, slot, emulator, reason, server_updated_at e server_content_hash da operação remota. O teste não acessa o servidor real.
+- [PENDENTE] CI completa no head final, validação de interoperabilidade no aparelho e análise do resultado real da negociação PSX. Não considerar o download corrigido antes desses dados.
+- Nenhuma transferência real, merge ou publicação foi realizada.
+
+COMPLEMENTO — LOGS DE NEGOCIAÇÃO DEVICE SYNC (2026-11-23)
+- [IMPLEMENTADO NA BRANCH] O executor registra, sem conteúdo do save, metadados do manifesto local e de cada operação retornada: rom_id, ação, slot, save_id, nome, emulador, timestamp, motivo e prefixo MD5. Isso permite coletar evidência do caso PSX no telefone sem expor os bytes do cartão.
+- Head observado antes desta atualização: 8903e543d46fab9e2aadc66fda8a56ee727dbd51.
+- CI #995 / run 45320622544: check-style concluiu com sucesso; testes unitários ainda estavam em andamento e build APK aguardava na última consulta. A execução foi iniciada no commit anterior db0248685853809b154e9e83d6c61a83c47b65df, antes dos commits 04b3b0e e 8903e54; portanto não valida o head final.
+- Compare da branch com game-mode-m2-dev: 41 commits à frente, 0 atrás. PR #49 continua aberta e não mesclada.
+- [PENDENTE] Aguardar CI aplicável ao head final e obter diagnóstico no aparelho. Não executar transferência real nesta etapa.
+
+
+
+ATUALIZAÇÃO — ANÁLISE DA CI #998 E CORREÇÃO DOS TESTES WEBDAV (2026-11-24)
+- [FALHA CONFIRMADA] A CI #998 (run 45320704837), no head que continha a cobertura de metadados, falhou durante a compilação dos testes unitários. O erro concreto foi `Unresolved reference 'addHeader'` em `RetroArchWebDavClientTest.kt:20`, porque `mockwebserver3.MockResponse` não expõe esse método diretamente na instância criada pelo construtor usado.
+- [CORREÇÃO APLICADA] Os testes WebDAV passaram a construir respostas por `MockResponse.Builder()`, aplicando `code`, `addHeader` e `body` no builder antes de `build()`. Também foi substituído `createTempDir` depreciado por `kotlin.io.path.createTempDirectory(...).toFile()`.
+- [PENDENTE DE CI] Correção commitada na branch `feat/stage-e-completion` em `052e48c309dad2c92aa5ae76da040f916218a070`. Ainda não há run de CI associada a esse commit na consulta atual; não declarar correção validada até nova CI concluir.
+- [CI #998] O job `check-style` concluiu com sucesso. O job de build falhou antes de executar testes ou produzir APK; portanto não há artefato válido dessa execução.
+- PR #49 permanece aberta, sem merge e sem publicação `tandem-latest`. Nenhum save real foi alterado ou transferido.
+
+
+ATUALIZAÇÃO — RESULTADO DA CI #995 E CORREÇÃO (2026-11-24)
+- [CI #995 — FALHA IDENTIFICADA] A compilação dos testes unitários falhou em RetroArchWebDavClientTest.kt:20 porque MockResponse da versão mockwebserver3 usada no projeto não possui addHeader(). O compilador também reportou o uso obsoleto de createTempDir() em duas partes do teste.
+- [CORREÇÃO APLICADA] O teste foi atualizado para usar a API Builder de MockResponse, já padronizada pelo Spotless, e kotlin.io.path.createTempDirectory para diretórios temporários. A alteração foi registrada no commit a5de3f96f44a9d6885a3f62f1a932133b2c1049c.
+- [CI DE REVALIDAÇÃO] Nova execução #1015 (run 45322505814) foi iniciada para o commit corrigido. Na última consulta, os jobs check-style e build-debug-apk estavam em andamento; testes, APK e resultado final ainda não confirmados.
+- [SEGURANÇA] Nenhum save real foi transferido, sobrescrito ou removido. PR #49 continua sem merge e sem publicação.
+
+- [CONSULTA POSTERIOR] CI #1018 / run `45322553107` foi iniciada no head da PR `466eb517a40be65663b8cdc1e97a66c3dc58a7e3`; na última verificação, os jobs de build e estilo ainda estavam em execução. Esta é a execução que deve ser acompanhada para validar o head corrente; não declarar sucesso antecipadamente.
+
+
+ATUALIZAÇÃO — CI #1015 E CI #1025 APROVADAS (2026-11-24)
+- [CI #1015 — SUCESSO] Run 45322505814 concluída com sucesso no commit a5de3f96f44a9d6885a3f62f1a932133b2c1049c. check-style/Spotless, testes unitários, build Debug APK, upload do artefato e final-status aprovados.
+- [CI #1025 — SUCESSO NO HEAD DA PR] Run 45322831975 concluída com sucesso no head atual 0d40f768a75db31f4c204834b95010e98f10b20a. Spotless, testes unitários, build Debug APK, upload do artefato e final-status aprovados.
+- Artefato da CI #1025: assembleLawnWithQuickstepGithubDebug, ID 14888019023, 46.394.121 bytes, SHA-256 f630f0ac72b24d94f4147b6a3895390445113e159d59449b78e99fca65e769c0; expira em 2027-02-22.
+- Esta atualização substitui os registros anteriores que indicavam CI #1015 ou #1018 ainda em andamento. A #1015 foi concluída com sucesso; a #1025 validou o head corrente da PR.
+- PR #49 permanece aberta, sem merge e sem publicação tandem-latest. A CI comprova testes automatizados e geração do APK, não interoperabilidade real com RomM no telefone.
+- Nenhuma transferência real de save foi realizada por estas execuções. Testes controlados no aparelho, especialmente download PSX autosave e upload PSX/SNES, continuam pendentes. Preservar saves e backups; não executar operações reais sem autorização explícita.
+
+AUDITORIA COMPLEMENTAR — ESCOPO DE EMULADOR E TIPO DO SAVE NO DEVICE SYNC (2026-11-24)
+- Fonte oficial RomM 5.4.1: `backend/endpoints/sync/__init__.py` e `backend/endpoints/saves.py`.
+- O contrato de `SyncNegotiatePayload.emulators` filtra os saves do servidor: quando informado, somente registros cujo campo emulator pertence à lista podem ser pareados/oferecidos. O valor null não restringe emuladores.
+- O Tandem já identifica seus saves legados com `tandem_$coreId` em SaveSync. A negociação Device Sync anterior enviava `emulators: null`, permitindo que saves de outros emuladores do mesmo jogo/slot fossem oferecidos ao núcleo atual.
+- A rota `POST /api/saves` aceita o parâmetro `emulator`, mas o upload Device Sync não o enviava. Assim, o RomM poderia gravar o save enviado sem identidade de emulador, prejudicando o pareamento futuro.
+- A resposta de download inclui `file_name`, `slot` e `emulator`. O executor anterior validava o slot e hash do conteúdo, mas não exigia extensão `.srm` nem emulador compatível antes de aplicar o arquivo em `SaveStore.sramFile`.
+- [CORREÇÃO NA PR #49] Negociação e inspeção agora restringem emuladores a `tandem_$coreId`; uploads passam o mesmo valor no parâmetro `emulator`; downloads exigem slot `autosave`, extensão `.srm` e emulador exatamente correspondente.
+- [TESTES ADICIONADOS] Verificação do filtro de emulador no manifesto, envio do parâmetro emulator no upload e rejeição de downloads com extensão, slot ou emulador divergentes.
+- [PENDENTE] CI das alterações mais recentes e revisão final. A CI #1026 estava em andamento em head anterior a estas correções; não representa validação do código recém-alterado.
+- [PENDENTE] Teste controlado no telefone com RomM 5.4.x, primeiro em inspeção somente leitura e depois com operação explicitamente autorizada. Nenhum save real foi transferido ou alterado por esta auditoria.
+- PR #49 permanece aberta, sem merge e sem publicação `tandem-latest`. Não remover, mover, sobrescrever ou limpar saves.
+
+AJUSTE DE IDENTIDADE DO ARQUIVO NO UPLOAD DEVICE SYNC (2026-11-24)
+- A captura temporária local recebe nome UUID para evitar colisões no staging. O upload anterior usava esse nome temporário como filename multipart, fazendo o RomM armazenar nomes aleatórios em vez do nome real do save.
+- [CORREÇÃO NA PR #49] O cliente agora recebe separadamente o nome original do arquivo (`SaveStore.sramFile.name`), valida a extensão `.srm` e o usa no multipart; o arquivo temporário continua sendo apenas a fonte dos bytes.
+- [TESTE ADICIONADO] Upload verifica que o nome multipart enviado é o nome original informado, não o nome temporário da captura.
+- [PENDENTE] CI do head atualizado e teste controlado no aparelho. Nenhuma transferência real foi realizada.
+
+
+DIAGNÓSTICO PASSIVO DO MOTIVO DE PULL PSX NÃO APLICADO (2026-11-24)
+- [IMPLEMENTADO NA PR #49] SaveSync agora registra metadados suficientes para explicar a decisão de pull: ID/slot/emulador remoto, timestamps remoto/anterior, presença e prefixos curtos dos hashes do servidor/anterior/local/aplicado/legado, necessidade de GET de verificação, hash comparado e flags remoteChanged/aplicar.
+- Os logs não registram conteúdo do save nem hashes completos. O fluxo de pull permanece com a mesma lógica; a mudança é somente observabilidade.
+- Objetivo: diferenciar hash remoto igual ao conhecido, timestamp/ID divergente, ausência de hash e conteúdo baixado diferente. Isso investiga o caso PSX em que o save remoto mais recente não gerou GET de conteúdo.
+- [PENDENTE] CI do head atual e novo game_log.txt de teste no telefone. Não presumir causa raiz antes de comparar os metadados observados.
+- Nenhum save real foi baixado, enviado, movido, sobrescrito ou apagado por esta instrumentação.
+
+
+AUDITORIA DA PR #49 — CI #1045 / BLOQUEIO DE COMPILAÇÃO (2026-11-24)
+- Head auditado: a55fce988ff0da8482fe0721be27d23d4e5c2af9; PR #49 permanece aberta.
+- CI #1045 / run 45324835382: check-style/Spotless passou; build-debug-apk falhou no passo "Run unit tests"; Build APK e Upload artifact foram ignorados; final-status falhou. Não foi gerado APK válido.
+- [ERRO CONFIRMADO POR INSPEÇÃO DO CÓDIGO] Em tests/unit/kotlin/app/lawnchair/gamemode/DeviceSyncProtocolTest.kt, teste uploadSaveUsesSafeQueryParametersAndMultipartSaveFile: a chamada client.uploadSave(..., file está sem o parêntese de fechamento.
+- [ERRO CONFIRMADO POR INSPEÇÃO DO CÓDIGO] No teste psxSrmUsesGenericSaveEndpointAndPreservesExactBytesInAutosaveSlot, a segunda chamada client.uploadSave(..., file também está sem o parêntese de fechamento.
+- Os dois erros são sintaxe Kotlin e impedem a compilação dos testes unitários; a correção deve fechar ambas as chamadas antes de qualquer nova validação.
+- Check-style verde não valida compilação/testes. O head a55fce9 não possui APK aprovado por esta execução.
+- Revisão estática dos arquivos de execução não identificou motivo para autorizar transferência real. Continuam obrigatórios os testes controlados PSX/SNES e a análise do game_log.txt no telefone.
+- [PENDENTE] Corrigir os dois parênteses, executar CI no novo head e conferir todos os jobs, inclusive testes, APK, artefato e final-status.
+- PR #49 permanece aberta, sem merge e sem publicação tandem-latest. Nenhum save real foi transferido, alterado ou removido nesta auditoria.
+
+
+ATUALIZAÇÃO DA AUDITORIA — CORREÇÃO E CI #1051 APROVADAS (2026-11-24)
+- [CORREÇÃO] No commit 5dccab9d9fbfa7d31de141320ba0f008ae872a48, foram fechadas as duas chamadas client.uploadSave(...) em DeviceSyncProtocolTest.kt que impediam a compilação dos testes unitários.
+- [CI #1051 — SUCESSO] Run 45326906240: https://github.com/izzyn0okami/Tandem/actions/runs/45326906240. Head validado: 5dccab9d9fbfa7d31de141320ba0f008ae872a48.
+- check-style: sucesso; etapa de aplicação/verificação Spotless concluída.
+- build-debug-apk (assembleLawnWithQuickstepGithubDebug): sucesso; Run unit tests, Build APK e Upload artifact concluídos com sucesso.
+- final-status: sucesso. Jobs opcionais de release/notificação foram ignorados conforme as condições do workflow; não representam falha.
+- [ARTEFATO GERADO] assembleLawnWithQuickstepGithubDebug, ID 14889444076, 46.397.554 bytes; SHA-256 do ZIP: 0ed5d82461b3296c27d2719143f36580d0a824a21665378045cb4ad61b45943c; expira em 2027-02-22.
+- [STATUS] A falha de sintaxe apontada na CI #1045 foi corrigida e a CI integral passou. O APK é artefato de CI, não uma publicação tandem-latest.
+- [PENDENTE NO APARELHO] Instalar/testar o APK em ambiente controlado; executar inspeção somente leitura e validar interoperabilidade real PSX/SNES com RomM 5.4.x; exportar game_log.txt para diagnóstico do pull PSX. Preservar backups. Não realizar transferências reais sem autorização explícita.
+- PR #49 permanece aberta e sem merge; nenhuma publicação tandem-latest foi feita. Nenhum save real foi transferido, alterado ou removido nesta correção.
