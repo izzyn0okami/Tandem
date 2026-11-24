@@ -267,3 +267,15 @@ VALIDAÇÃO FINAL DA ETAPA DE COORDENAÇÃO E NEGOCIAÇÃO — 2026-11-24
 
 
 - [CI APROVADA] Run #1108 / 45434510655, head 855d3c3f282087f1cf86bc464bd815d54ff37728: workflow_dispatch também concluiu com sucesso no mesmo código validado por #1107. Artefato ID 14939914369, 46.418.315 bytes, SHA-256 c7bdf7db2b004af588092d29d3dd3920994474e1e30545d509f56a5df2b8b5e0; expira em 2027-02-22. Nenhuma publicação tandem-latest.
+
+
+
+CORREÇÃO DE COMPATIBILIDADE DOS IDENTIFICADORES DE NÚCLEO — 2026-11-24
+- [ACHADO NO TESTE REAL] O log do telefone referente ao APK identificado como #1108 registra save remoto SNES com emulador "snes9x", enquanto o cliente local usa "tandem_snes9x". A validação anterior aceitava somente a forma namespaced "tandem_<core>" e classificava incorretamente o save remoto como incompatível.
+- [CORREÇÃO IMPLEMENTADA NA PR #50] DeviceSyncArtifactPolicy agora reconhece as duas representações do mesmo núcleo: identificador original reportado pelo RomM (ex.: "snes9x") e identificador namespaced do Tandem (ex.: "tandem_snes9x"). A equivalência é aplicada somente aos grupos explicitamente declarados no CoreSaveAdapterRegistry.
+- [SEGURANÇA] A correção não amplia compatibilidade entre famílias distintas; SNES continua incompatível com mGBA e PSX continua restrito ao grupo PSX declarado. Emuladores desconhecidos permanecem incompatíveis, e valores ausentes continuam rejeitados.
+- [TESTES ADICIONADOS] Cobertura para identificadores com e sem prefixo nos grupos PSX/SNES, para a lista usada na validação de download e para rejeição de núcleos fora do grupo.
+- [CI PENDENTE] Alterações enviadas nos commits 351c9d1f7ff69c70ad3b6e03dd3584ade6ab21a3 e ed3ac767e92f02521c1d0073f539f65a0c7a5e38. Aguardar CI verde no head atualizado antes de considerar a correção validada ou orientar novo teste no telefone.
+- [PENDENTE] Repetir teste SNES no telefone e confirmar que o save remoto "snes9x" deixa de ser bloqueado por incompatibilidade. Depois validar upload/download e slot autosave sem sobrescrita. O teste PSX continua pendente de confirmação ponta a ponta.
+- [SEGURANÇA] Nenhum save local/remoto foi alterado, apagado, migrado ou transferido por esta correção. overwrite=false, exclusões ignoradas e conflitos preservados permanecem inalterados.
+- [PR] #50 continua aberta em draft, sem merge e sem publicação tandem-latest.
