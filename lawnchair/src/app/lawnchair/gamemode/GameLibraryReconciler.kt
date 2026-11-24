@@ -118,6 +118,9 @@ internal object GameLibraryReconciler {
         return report
     }
 
+    internal fun supportsAutomaticDiscDescriptor(extension: String): Boolean =
+        extension.lowercase(Locale.ROOT) !in setOf("gdi", "ccd")
+
     internal fun candidateGames(localSize: Long, platformSlug: String, remote: List<RemoteGame>): List<RemoteGame> = remote.filter { game ->
         game.platform.slug == platformSlug &&
             game.associatedFiles.any { associated -> associated.sizeBytes == localSize }
@@ -206,7 +209,7 @@ internal object GameLibraryReconciler {
             if (!disc.isFile || extension !in allowedPrimary) return null
             // GDI e CCD possuem referências próprias a imagens/faixas; até existir parser
             // específico, não afirmamos que o conjunto local está completo.
-            if (extension == "gdi" || extension == "ccd") return null
+            if (!supportsAutomaticDiscDescriptor(extension)) return null
             primary += fingerprint(disc)
 
             if (extension == "cue") {
