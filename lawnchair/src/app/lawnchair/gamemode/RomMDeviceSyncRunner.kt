@@ -90,6 +90,12 @@ object RomMDeviceSyncRunner {
                     null
                 }
                 val initialLocalHash = localSave?.contentHashMd5
+                GameLog.log(
+                    "Device Sync",
+                    "manifesto local: ROM #$romId, slot=autosave, arquivo=${localSave?.fileName ?: "ausente"}, " +
+                        "emulador=${localSave?.emulator ?: "—"}, bytes=${localSave?.fileSizeBytes ?: 0L}, " +
+                        "atualizado=${localSave?.updatedAt ?: "—"}, MD5=${localSave?.contentHashMd5?.take(8) ?: "—"}",
+                )
                 val negotiation = client.negotiate(
                     deviceId = deviceId,
                     saves = listOfNotNull(localSave),
@@ -105,6 +111,13 @@ object RomMDeviceSyncRunner {
                 var failed = 0
 
                 negotiation.operations.forEach { operation ->
+                    GameLog.log(
+                        "Device Sync",
+                        "operação recebida: ação=${operation.action}, ROM #${operation.romId}, slot=${operation.slot ?: "—"}, " +
+                            "save_id=${operation.saveId ?: "—"}, arquivo=${operation.fileName ?: "—"}, " +
+                            "emulador=${operation.emulator ?: "—"}, atualizado=${operation.serverUpdatedAt ?: "—"}, " +
+                            "MD5=${operation.serverContentHash?.take(8) ?: "—"}, motivo=${operation.reason ?: "—"}",
+                    )
                     if (operation.romId != romId) {
                         failed++
                         GameLog.log("Device Sync", "operação ignorada: ROM fora do escopo negociado")
