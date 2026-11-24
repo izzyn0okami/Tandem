@@ -178,12 +178,9 @@ internal object GameLibraryReconciler {
                     .map { it.key() }
                     .toMutableList()
                 // Cada arquivo referenciado por CUE precisa estar representado no mesmo registro remoto.
-                for (key in localCompanionKeys) {
-                    val index = remoteCompanions.indexOf(key)
-                    if (index < 0) return@filter false
-                    remoteCompanions.removeAt(index)
-                }
-                true
+                // O conjunto de companions deve ser exato; arquivos extras também podem indicar
+                // que o registro remoto representa outra revisão/estrutura do disco.
+                remoteCompanions.sorted() == localCompanionKeys
             }
             .map { it.id }
             .distinct()
