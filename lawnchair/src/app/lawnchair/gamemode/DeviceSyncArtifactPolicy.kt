@@ -23,10 +23,9 @@ internal object DeviceSyncArtifactPolicy {
      * o identificador namespaced do cliente (ex.: tandem_snes9x). Aceitamos
      * ambas as formas somente para os núcleos declarados no mesmo grupo.
      */
-    fun compatibleEmulators(coreId: String): Set<String> =
-        CoreSaveAdapterRegistry.resolve(coreId).compatibleCoreIds.flatMap { compatibleCore ->
-            listOf(compatibleCore, "tandem_$compatibleCore")
-        }.toSet()
+    fun compatibleEmulators(coreId: String): Set<String> = CoreSaveAdapterRegistry.resolve(coreId).compatibleCoreIds.flatMap { compatibleCore ->
+        listOf(compatibleCore, "tandem_$compatibleCore")
+    }.toSet()
 
     fun isCompatibleRemote(coreId: String, remoteEmulator: String?): Boolean {
         if (remoteEmulator.isNullOrBlank()) return false
