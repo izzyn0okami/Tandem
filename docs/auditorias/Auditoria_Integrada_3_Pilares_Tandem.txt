@@ -363,3 +363,11 @@ REVISÃO DE FORMATOS MULTIDISCO — GDI/CCD E REFERÊNCIAS CUE — 2026-11-24
 - [TESTES] Adicionada cobertura para garantir que GDI/CCD sejam adiados e CUE/CHD continuem elegíveis.
 - [COMMITS] Política do reconciliador: 479b9031fe0b803a0c4c73ca2cefc65537240f43. Testes: fcc6a9df40c995575424148d924951d9c01040ab.
 - [VALIDAÇÃO] CI ainda pendente para o head atualizado. Nenhum vínculo automático é feito para formato de descritor não validado; nenhuma ROM ou save é removido ou substituído.
+
+
+TESTES DO PARSER DE DISCOS — 2026-11-24
+- [MELHORIA DE TESTABILIDADE] O parser de fingerprints foi exposto apenas no escopo interno do módulo para permitir testes unitários diretos, sem alterar sua disponibilidade pública.
+- [TESTES ADICIONADOS] CUE calcula fingerprint do arquivo principal e de cada companion físico; múltiplas faixas que referenciam o mesmo arquivo não duplicam o companion. M3U exige todos os CUEs/discos e companions. CUE com arquivo ausente é adiado. GDI e CCD são explicitamente recusados até que seus formatos sejam interpretados por parsers próprios.
+- [COMMITS] Parser: 181a40b58d3056668be5971ee36ba842eb82590e. Testes: cd3db234a0bff4c6f319cf499812bc661f839cf3.
+- [CI PENDENTE] Nenhuma execução de workflow foi retornada para os commits mais recentes; CI #1123 validou um head anterior e falhou por escapes de parser. Não considerar os testes novos aprovados até executar CI no head atual.
+- [SEGURANÇA] A política continua fail-closed: formatos sem parser, companions ausentes, hashes ausentes, conjunto parcial ou conteúdo divergente não recebem vínculo automático.
