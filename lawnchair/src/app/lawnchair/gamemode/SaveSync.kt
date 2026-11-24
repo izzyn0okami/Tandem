@@ -749,7 +749,7 @@ object SaveSync {
             if (current == confirmedHash) continue
             val storedId = prefs.getLong("$key:id", -1L).takeIf { it >= 0 }
             val remotes = if (kind == RemoteFileKind.Save || storedId == null) {
-                listRemoteFilesForSync(syncClient, kind, romId, coreId)
+                listRemoteFilesForSync(client, kind, romId, coreId)
             } else {
                 emptyList()
             }
