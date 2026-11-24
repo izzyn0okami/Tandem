@@ -23,7 +23,7 @@ class SaveArtifactCatalogTest {
     }
 
     @Test
-    fun inventorySeparatesCoreSaveStateAndAccountScopedRaProgress() {
+    fun inventorySeparatesMemoryCardStateAndAccountScopedRaProgress() {
         val store = SaveStore(root, "swanstation", File("Castlevania.cue"), gameIdentity = "romm-account-game-830")
         store.writeSram(byteArrayOf(1, 2, 3, 4))
         store.writeState(byteArrayOf(5, 6, 7))
@@ -33,13 +33,13 @@ class SaveArtifactCatalogTest {
 
         assertEquals(
             listOf(
-                SaveArtifactType.CORE_SAVE,
+                SaveArtifactType.MEMORY_CARD,
                 SaveArtifactType.SAVE_STATE,
                 SaveArtifactType.RETRO_ACHIEVEMENTS_PROGRESS,
             ),
             artifacts.map { it.type },
         )
-        assertEquals(listOf("autosave", "state1", artifacts[2].slot), artifacts.map { it.slot })
+        assertEquals(listOf("memory-card-0", "state1", artifacts[2].slot), artifacts.map { it.slot })
         assertEquals("romm-account-game-830", artifacts.first().gameIdentity)
         assertEquals("swanstation", artifacts.first().coreId)
         assertEquals(4L, artifacts.first().sizeBytes)
@@ -61,6 +61,24 @@ class SaveArtifactCatalogTest {
     }
 
     @Test
+    fun adapterDistinguishesPsxMemoryCardsFromBatterySaves() {
+        val psxSave = File(root, "sram.srm").apply { writeBytes(byteArrayOf(1, 2)) }
+        val snesSave = File(root, "sram-snes.srm").apply { writeBytes(byteArrayOf(3, 4)) }
+
+        val psx = SaveArtifactCatalog.inspect("psx-game", "swanstation", listOf(psxSave)).single()
+        val snes = SaveArtifactCatalog.inspect(
+            "snes-game",
+            "snes9x",
+            listOf(snesSave.renameTo(File(root, "sram.srm")).let { File(root, "sram.srm") }),
+        ).single()
+
+        assertEquals(SaveArtifactType.MEMORY_CARD, psx.type)
+        assertEquals("memory-card-0", psx.slot)
+        assertEquals(SaveArtifactType.CORE_SAVE, snes.type)
+        assertEquals("core-save", snes.slot)
+    }
+
+    @Test
     fun catalogIgnoresUnknownEmptyAndDuplicateFiles() {
         val save = File(root, "sram.srm").apply { writeBytes(byteArrayOf(1, 2)) }
         val emptyState = File(root, "state1.state").apply { createNewFile() }
@@ -74,5 +92,6 @@ class SaveArtifactCatalogTest {
 
         assertEquals(1, artifacts.size)
         assertEquals(SaveArtifactType.CORE_SAVE, artifacts.single().type)
+        assertEquals("core-save", artifacts.single().slot)
     }
 }
