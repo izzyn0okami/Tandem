@@ -67,6 +67,7 @@ object RomMDeviceSyncRunner {
                 migrationSourcesOverride = emptyMap(),
             )
             val client = RomMDeviceSyncClient(connection.url, connection.token)
+            val emulator = "tandem_$coreId"
             val snapshotRoot = File(app.filesDir, "device-sync-snapshots")
             if (!snapshotRoot.exists() && !snapshotRoot.mkdirs()) {
                 throw IOException("Não foi possível preparar a captura temporária do save.")
@@ -82,7 +83,7 @@ object RomMDeviceSyncRunner {
                     DeviceSyncProtocolJson.localSave(
                         romId = romId,
                         fileName = originalSave.name,
-                        emulator = "tandem_$coreId",
+                        emulator = emulator,
                         file = snapshot,
                         updatedAt = Instant.ofEpochMilli(originalSave.lastModified()).toString(),
                     ) ?: throw IOException("Não foi possível preparar o save local.")
@@ -100,6 +101,7 @@ object RomMDeviceSyncRunner {
                     deviceId = deviceId,
                     saves = listOfNotNull(localSave),
                     romIds = setOf(romId),
+                    emulators = setOf(emulator),
                 )
 
                 var uploaded = 0
@@ -139,6 +141,7 @@ object RomMDeviceSyncRunner {
                                     deviceId = deviceId,
                                     sessionId = negotiation.sessionId,
                                     slot = "autosave",
+                                    emulator = emulator,
                                     file = snapshot,
                                 )
                                 uploaded++
@@ -149,9 +152,7 @@ object RomMDeviceSyncRunner {
                             }
 
                             DeviceSyncAction.Download -> {
-                                if (operation.slot != "autosave") {
-                                    throw IOException("Download fora do slot autosave foi preservado sem alteração.")
-                                }
+                                DeviceSyncProtocolJson.validateDownloadOperation(operation, emulator)
                                 val saveId = operation.saveId
                                     ?: throw IOException("O RomM não informou o ID do save para download.")
                                 val expectedHash = operation.serverContentHash
