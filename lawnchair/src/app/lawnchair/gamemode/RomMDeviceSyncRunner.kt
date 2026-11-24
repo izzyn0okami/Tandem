@@ -171,7 +171,7 @@ object RomMDeviceSyncRunner {
                                         target.copyTo(backup, overwrite = false)
                                         if (sha256(target) != sha256(backup)) {
                                             backup.delete()
-                                            throw IOException("Não foi possível verificar o backup da save local.")
+                                            throw IOException("Não foi possível verificar o backup do save local.")
                                         }
                                         GameLog.log("Device Sync", "save local preservado em backup antes do download: ${backup.name}")
                                     }
