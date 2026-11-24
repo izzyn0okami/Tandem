@@ -815,7 +815,7 @@ internal fun GameDetailScreen(
         }
     }
     val chosenCoreId = remember(entry.platform.slug) { CoreRegistry.chosen(context, entry.platform) }
-    var deviceSyncInspection by remember(entry.key) { mutableStateOf<DeviceSyncSramInspection?>(null) }
+    var deviceSyncInspection by remember(entry.key) { mutableStateOf<DeviceSyncSaveInspection?>(null) }
     var deviceSyncInspectionLoading by remember(entry.key) { mutableStateOf(false) }
     var deviceSyncInspectionError by remember(entry.key) { mutableStateOf<String?>(null) }
     var deviceSyncExecution by remember(entry.key) { mutableStateOf<DeviceSyncExecutionResult?>(null) }
@@ -963,7 +963,7 @@ internal fun GameDetailScreen(
                 }
                 if (canInspectDeviceSyncSram) {
                     GameButton(
-                        label = if (deviceSyncInspectionLoading) "Inspecionando SRAM…" else "Inspecionar SRAM no RomM",
+                        label = if (deviceSyncInspectionLoading) "Inspecionando save…" else "Inspecionar save no RomM",
                         onClick = {
                             if (!deviceSyncInspectionLoading && local != null) {
                                 deviceSyncInspectionLoading = true
@@ -972,7 +972,7 @@ internal fun GameDetailScreen(
                                 detailScope.launch {
                                     try {
                                         val inspection = withContext(Dispatchers.IO) {
-                                            RomMDeviceSyncDiagnostics.inspectLocalSram(
+                                            RomMDeviceSyncDiagnostics.inspectLocalSave(
                                                 context = context,
                                                 romPath = local.path,
                                                 coreId = chosenCoreId,
@@ -985,7 +985,7 @@ internal fun GameDetailScreen(
                                         }
                                         GameLog.log(
                                             "Device Sync",
-                                            "inspeção somente leitura concluída para ${entry.title}; SRAM local incluída=${inspection.localSramIncluded}; " +
+                                            "inspeção somente leitura concluída para ${entry.title}; save local incluída=${inspection.localSaveIncluded}; " +
                                                 counts.entries.joinToString { "${it.key}=${it.value}" } +
                                                 "; nenhuma operação aplicada",
                                         )
@@ -993,7 +993,7 @@ internal fun GameDetailScreen(
                                         deviceSyncInspectionLoading = false
                                         throw error
                                     } catch (error: Exception) {
-                                        deviceSyncInspectionError = error.message ?: "Não foi possível inspecionar a SRAM no RomM."
+                                        deviceSyncInspectionError = error.message ?: "Não foi possível inspecionar a save no RomM."
                                         GameLog.error("Device Sync", "falha na inspeção somente leitura de ${entry.title}", error)
                                     } finally {
                                         deviceSyncInspectionLoading = false
@@ -1008,7 +1008,7 @@ internal fun GameDetailScreen(
                         val operations = inspection.negotiation.operations
                         Text(
                             text = "Inspeção concluída — ROM #${inspection.romId}. " +
-                                if (inspection.localSramIncluded) "SRAM local encontrada." else "Nenhuma SRAM local válida encontrada.",
+                                if (inspection.localSaveIncluded) "save local encontrada." else "Nenhuma save local válida encontrada.",
                             color = GameColors.text,
                             fontSize = 13.sp,
                         )
@@ -1032,7 +1032,7 @@ internal fun GameDetailScreen(
                         )
                     }
                     GameButton(
-                        label = if (deviceSyncExecutionLoading) "Sincronizando SRAM…" else "Sincronizar SRAM com RomM",
+                        label = if (deviceSyncExecutionLoading) "Sincronizando save…" else "Sincronizar save com RomM",
                         onClick = {
                             if (!deviceSyncExecutionLoading && local != null) {
                                 deviceSyncExecutionLoading = true
@@ -1041,7 +1041,7 @@ internal fun GameDetailScreen(
                                 detailScope.launch {
                                     try {
                                         val result = withContext(Dispatchers.IO) {
-                                            RomMDeviceSyncRunner.synchronizeLocalSram(
+                                            RomMDeviceSyncRunner.synchronizeLocalSave(
                                                 context = context,
                                                 romPath = local.path,
                                                 coreId = chosenCoreId,
@@ -1051,7 +1051,7 @@ internal fun GameDetailScreen(
                                         deviceSyncExecution = result
                                         GameLog.log(
                                             "Device Sync",
-                                            "sincronização SRAM concluída para ${entry.title}; " +
+                                            "sincronização save concluída para ${entry.title}; " +
                                                 "upload=${result.uploaded}, download=${result.downloaded}, noOp=${result.noOp}, " +
                                                 "conflict=${result.conflictsPreserved}, delete_ignored=${result.deletesIgnored}, " +
                                                 "unknown_ignored=${result.unknownIgnored}, failed=${result.failed}",
@@ -1060,8 +1060,8 @@ internal fun GameDetailScreen(
                                         deviceSyncExecutionLoading = false
                                         throw error
                                     } catch (error: Exception) {
-                                        deviceSyncExecutionError = error.message ?: "Não foi possível sincronizar a SRAM com o RomM."
-                                        GameLog.error("Device Sync", "falha na sincronização SRAM de ${entry.title}", error)
+                                        deviceSyncExecutionError = error.message ?: "Não foi possível sincronizar a save com o RomM."
+                                        GameLog.error("Device Sync", "falha na sincronização save de ${entry.title}", error)
                                     } finally {
                                         deviceSyncExecutionLoading = false
                                     }
@@ -1074,7 +1074,7 @@ internal fun GameDetailScreen(
                     )
                     deviceSyncExecution?.let { result ->
                         Text(
-                            text = "Sincronização SRAM — ROM #${result.romId}: " +
+                            text = "Sincronização save — ROM #${result.romId}: " +
                                 "${result.uploaded} envio(s), ${result.downloaded} download(s), ${result.noOp} sem alteração.",
                             color = GameColors.text,
                             fontSize = 13.sp,
@@ -1090,7 +1090,7 @@ internal fun GameDetailScreen(
                     }
                     deviceSyncExecutionError?.let { error ->
                         Text(
-                            text = "Falha na sincronização SRAM: $error",
+                            text = "Falha na sincronização save: $error",
                             color = GameColors.danger,
                             fontSize = 12.sp,
                         )
