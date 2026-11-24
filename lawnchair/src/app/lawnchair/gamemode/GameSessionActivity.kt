@@ -157,6 +157,7 @@ class GameSessionActivity : ComponentActivity() {
         )
         saveStore = store
         coreIdForOptions = coreId
+        logArtifactInventory("início da sessão")
         SessionDiagnostics.sessionStarted(this, coreId, romPath, platformSlug)
         coreLog = SessionDiagnostics.startCoreLog()
 
@@ -498,6 +499,21 @@ class GameSessionActivity : ComponentActivity() {
         }
     }
 
+    /** Registra somente metadados do inventário local; nunca registra conteúdo ou credenciais. */
+    private fun logArtifactInventory(trigger: String) {
+        val store = saveStore ?: return
+        runCatching {
+            val artifacts = store.inventory(RaSettings.user(this))
+            val summary = artifacts.joinToString(separator = "; ") { artifact ->
+                "${artifact.type}/${artifact.slot} ${artifact.format} ${artifact.sizeBytes}B sha256=${artifact.sha256.take(12)}"
+            }.ifEmpty { "vazio" }
+            GameLog.log(
+                "inventário",
+                "${trigger}: jogo=${gameIdentity ?: "—"}, núcleo=${coreIdOf() ?: "—"}, artefatos=${artifacts.size} [$summary]",
+            )
+        }.onFailure { GameLog.error("inventário", "falha ao inspecionar artefatos locais", it) }
+    }
+
     private fun saveQuickState() {
         val view = retroView ?: return
         val store = saveStore ?: return
@@ -517,6 +533,7 @@ class GameSessionActivity : ComponentActivity() {
                 emuState
             }
             store.writeState(payload)
+            logArtifactInventory("estado rápido salvo")
             romPath?.let { path -> coreIdOf()?.let { SaveSync.markPending(this, path, it, intent.getStringExtra(EXTRA_PLATFORM), gameIdentity) } }
             true
         }.getOrDefault(false)
@@ -633,6 +650,7 @@ class GameSessionActivity : ComponentActivity() {
     override fun onPause() {
         // Antes do super: a superfície de vídeo ainda está ativa e consegue entregar o save.
         persistSram()
+        logArtifactInventory("pausa/encerramento da sessão")
         romPath?.let {
             val elapsed = SystemClock.elapsedRealtime() - resumedAtMs
             if (resumedAtMs > 0) PlayHistory.addSession(this, it, elapsed, System.currentTimeMillis())
