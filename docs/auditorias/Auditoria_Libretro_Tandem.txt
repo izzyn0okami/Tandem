@@ -4907,3 +4907,12 @@ ATUALIZAÇÃO — COBERTURA DOS METADADOS DA NEGOCIAÇÃO DEVICE SYNC (2026-11-2
 - [CI PENDENTE] A run #995 / 45320622544 foi localizada no commit de correção de interface db0248685853809b154e9e83d6c61a83c47b65df, mas o commit posterior que adiciona o teste é 04b3b0ed2654ec64edcf0b8773c238053ae4f39b. Portanto, a run #995 não deve ser tratada como validação do head final enquanto não for confirmado que inclui esse commit. Aguardando CI no head completo.
 - [PENDENTE NO APARELHO] Continua necessária a inspeção somente leitura da negociação PSX real para observar action, rom_id, autosave, save_id, emulador, timestamp e hash. Nenhum save real foi transferido ou alterado.
 - PR #49 permanece aberta; sem merge e sem publicação tandem-latest.
+
+ATUALIZAÇÃO DE ESTADO — HEAD 04B3B0E / CI #986 (2026-11-23)
+- Head atual da PR #49 no momento desta atualização: 04b3b0ed2654ec64edcf0b8773c238053ae4f39b.
+- Compare com game-mode-m2-dev: branch 36 commits à frente, 0 atrás; PR aberta e mergeable, ainda sem merge.
+- CI #986 / run 45320422408 foi executada inicialmente sobre head anterior c494c286be052731a376246c8804577f4722dd28. check-style concluiu com sucesso; Spotless não encontrou alterações e spotlessCheck passou. O job build-debug-apk ainda estava em execução na última consulta, com testes unitários em andamento. Esta execução não valida automaticamente commits posteriores ao head inicial.
+- O head 04b3b0e acrescentou teste unitário que confirma o parser preserva action, rom_id, save_id, file_name, slot, emulator, reason, server_updated_at e server_content_hash da operação remota. O teste não acessa o servidor real.
+- [PENDENTE] CI completa no head final, validação de interoperabilidade no aparelho e análise do resultado real da negociação PSX. Não considerar o download corrigido antes desses dados.
+- Nenhuma transferência real, merge ou publicação foi realizada.
+
