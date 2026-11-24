@@ -29,7 +29,8 @@ object RomMDeviceSyncDiagnostics {
         coreId: String,
         platformSlug: String? = null,
     ): DeviceSyncSramInspection = withContext(Dispatchers.IO) {
-        val connection = GameIdentityResolver.connectionSnapshot(context)
+        SaveSync.withExclusiveSyncLock {
+            val connection = GameIdentityResolver.connectionSnapshot(context)
             ?: throw IOException("Conecte a mesma conta RomM que está vinculada a este jogo.")
         val romFile = File(romPath)
         if (!GameIdentityResolver.hasRomMLink(context, romFile)) {
@@ -67,10 +68,11 @@ object RomMDeviceSyncDiagnostics {
             saves = listOfNotNull(localSave),
             romIds = setOf(romId),
         )
-        DeviceSyncSramInspection(
-            romId = romId,
-            localSramIncluded = localSave != null,
-            negotiation = negotiation,
-        )
+            DeviceSyncSramInspection(
+                romId = romId,
+                localSramIncluded = localSave != null,
+                negotiation = negotiation,
+            )
+        }
     }
 }
