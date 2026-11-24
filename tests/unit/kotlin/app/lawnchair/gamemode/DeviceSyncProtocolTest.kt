@@ -42,11 +42,13 @@ class DeviceSyncProtocolTest {
                 ),
             ),
             romIds = setOf(42),
+            emulators = setOf("tandem_mgba"),
         )
 
         assertEquals("device-uuid", json.getString("device_id"))
         assertEquals(42, json.getJSONArray("rom_ids").getLong(0))
         assertFalse(json.getBoolean("restore_unlisted"))
+        assertEquals("tandem_mgba", json.getJSONArray("emulators").getString(0))
         assertEquals(1, json.getJSONArray("saves").length())
         assertEquals("0123456789abcdef0123456789abcdef", json.getJSONArray("saves").getJSONObject(0).getString("content_hash"))
     }
@@ -200,7 +202,7 @@ class DeviceSyncProtocolTest {
         try {
             server.enqueue(MockResponse(body = """{"session_id":8,"operations":[]}"""))
             val client = RomMDeviceSyncClient(server.url("/").toString(), "test-token")
-            val result = client.negotiate("device-123", emptyList(), setOf(42L))
+            val result = client.negotiate("device-123", emptyList(), setOf(42L), setOf("tandem_mgba"))
             val request = server.takeRequest()
             val payload = JSONObject(request.body!!.utf8())
 
@@ -209,6 +211,7 @@ class DeviceSyncProtocolTest {
             assertEquals("POST", request.method)
             assertEquals(42L, payload.getJSONArray("rom_ids").getLong(0))
             assertFalse(payload.getBoolean("restore_unlisted"))
+            assertEquals("tandem_mgba", payload.getJSONArray("emulators").getString(0))
         } finally {
             server.close()
         }
@@ -232,7 +235,7 @@ class DeviceSyncProtocolTest {
             server.enqueue(MockResponse(body = """{"session":{}}"""))
             val client = RomMDeviceSyncClient(server.url("/").toString(), "test-token")
 
-            val result = client.inspectNegotiation("device-123", emptyList(), setOf(42L))
+            val result = client.inspectNegotiation("device-123", emptyList(), setOf(42L), setOf("tandem_mgba"))
             val negotiateRequest = server.takeRequest()
             val completeRequest = server.takeRequest()
             val completeBody = JSONObject(completeRequest.body!!.utf8())
@@ -297,7 +300,7 @@ class DeviceSyncProtocolTest {
         try {
             server.enqueue(MockResponse(body = """{"id":91}"""))
             val client = RomMDeviceSyncClient(server.url("/").toString(), "test-token")
-            client.uploadSave(42L, "device-123", 8L, "autosave", file)
+            client.uploadSave(42L, "device-123", 8L, "autosave", "tandem_mgba", file)
             val request = server.takeRequest()
 
             assertEquals("POST", request.method)
@@ -306,6 +309,7 @@ class DeviceSyncProtocolTest {
             assertEquals("device-123", request.url.queryParameter("device_id"))
             assertEquals("8", request.url.queryParameter("session_id"))
             assertEquals("autosave", request.url.queryParameter("slot"))
+            assertEquals("tandem_mgba", request.url.queryParameter("emulator"))
             assertEquals("false", request.url.queryParameter("overwrite"))
             assertEquals("false", request.url.queryParameter("autocleanup"))
             assertEquals("Bearer test-token", request.headers["Authorization"])
@@ -326,7 +330,7 @@ class DeviceSyncProtocolTest {
         try {
             server.enqueue(MockResponse(code = 409, body = """{"detail":"conflict"}"""))
             val client = RomMDeviceSyncClient(server.url("/").toString(), "test-token")
-            val error = runCatching { client.uploadSave(42L, "device-123", 8L, "autosave", file) }.exceptionOrNull()
+            val error = runCatching { client.uploadSave(42L, "device-123", 8L, "autosave", "tandem_mgba", file) }.exceptionOrNull()
             val request = server.takeRequest()
 
             assertTrue(error is RomMHttpException)
@@ -424,7 +428,7 @@ class DeviceSyncProtocolTest {
         try {
             server.enqueue(MockResponse(body = """{"id":314}"""))
             val client = RomMDeviceSyncClient(server.url("/").toString(), "test-token")
-            client.uploadSave(42L, "device-123", 8L, "autosave", file)
+            client.uploadSave(42L, "device-123", 8L, "autosave", "tandem_pcsx_rearmed", file)
             val upload = server.takeRequest()
             val uploadBody = upload.body!!.utf8()
 
@@ -470,7 +474,7 @@ class DeviceSyncProtocolTest {
                             "save_id": 314,
                             "file_name": "pcsx-rearmed.srm",
                             "slot": "autosave",
-                            "emulator": "pcsx_rearmed",
+                            "emulator": "tandem_pcsx_rearmed",
                             "reason": "server save is newer",
                             "server_updated_at": "2026-11-23T22:10:00Z",
                             "server_content_hash": "0123456789abcdef0123456789abcdef"
@@ -486,10 +490,36 @@ class DeviceSyncProtocolTest {
         assertEquals(314L, operation.saveId)
         assertEquals("pcsx-rearmed.srm", operation.fileName)
         assertEquals("autosave", operation.slot)
-        assertEquals("pcsx_rearmed", operation.emulator)
+        assertEquals("tandem_pcsx_rearmed", operation.emulator)
         assertEquals("server save is newer", operation.reason)
         assertEquals("2026-11-23T22:10:00Z", operation.serverUpdatedAt)
         assertEquals("0123456789abcdef0123456789abcdef", operation.serverContentHash)
+        DeviceSyncProtocolJson.validateDownloadOperation(operation, "tandem_pcsx_rearmed")
+    }
+
+    @Test
+    fun downloadValidationRejectsWrongExtensionSlotOrEmulator() {
+        val valid = DeviceSyncOperation(
+            action = DeviceSyncAction.Download,
+            romId = 42L,
+            saveId = 314L,
+            fileName = "pcsx-rearmed-2026-11-24.srm",
+            slot = "autosave",
+            emulator = "tandem_pcsx_rearmed",
+            reason = "server save is newer",
+            serverUpdatedAt = null,
+            serverContentHash = "0123456789abcdef0123456789abcdef",
+        )
+        DeviceSyncProtocolJson.validateDownloadOperation(valid, "tandem_pcsx_rearmed")
+        assertTrue(runCatching {
+            DeviceSyncProtocolJson.validateDownloadOperation(valid.copy(fileName = "memory-card.mcd"), "tandem_pcsx_rearmed")
+        }.isFailure)
+        assertTrue(runCatching {
+            DeviceSyncProtocolJson.validateDownloadOperation(valid.copy(slot = "manual"), "tandem_pcsx_rearmed")
+        }.isFailure)
+        assertTrue(runCatching {
+            DeviceSyncProtocolJson.validateDownloadOperation(valid.copy(emulator = "other_core"), "tandem_pcsx_rearmed")
+        }.isFailure)
     }
 
 }
