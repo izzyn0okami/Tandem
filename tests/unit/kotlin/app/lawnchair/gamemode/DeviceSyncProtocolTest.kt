@@ -52,12 +52,12 @@ class DeviceSyncProtocolTest {
     }
 
     @Test
-    fun localSramManifestUsesMd5AndNeverAcceptsSaveStateFiles() {
+    fun localSaveManifestUsesMd5AndNeverAcceptsSaveStateFiles() {
         val file = java.io.File.createTempFile("local-sram-", ".srm")
         try {
             val payload = "battery-save-data"
             file.writeText(payload)
-            val save = DeviceSyncProtocolJson.localSramSave(
+            val save = DeviceSyncProtocolJson.localSave(
                 romId = 42L,
                 fileName = "game.srm",
                 emulator = "tandem_mgba",
@@ -75,7 +75,7 @@ class DeviceSyncProtocolTest {
             assertEquals(payload.length.toLong(), save.fileSizeBytes)
             assertTrue(
                 runCatching {
-                    DeviceSyncProtocolJson.localSramSave(
+                    DeviceSyncProtocolJson.localSave(
                         42L,
                         "game.state",
                         "tandem_mgba",
@@ -90,7 +90,7 @@ class DeviceSyncProtocolTest {
     }
 
     @Test
-    fun localSramManifestRejectsMemoryCardsAndOtherNonSramArtifacts() {
+    fun localSaveManifestRejectsMemoryCardsAndOtherNonSramArtifacts() {
         val file = java.io.File.createTempFile("artifact-", ".srm")
         try {
             file.writeBytes(byteArrayOf(1, 2, 3))
@@ -98,7 +98,7 @@ class DeviceSyncProtocolTest {
                 assertTrue(
                     "Device Sync must reject $name",
                     runCatching {
-                        DeviceSyncProtocolJson.localSramSave(
+                        DeviceSyncProtocolJson.localSave(
                             42L,
                             name,
                             "tandem_pcsx_rearmed",
@@ -114,11 +114,11 @@ class DeviceSyncProtocolTest {
     }
 
     @Test
-    fun localSramManifestSkipsMissingOrEmptyFiles() {
+    fun localSaveManifestSkipsMissingOrEmptyFiles() {
         val file = java.io.File.createTempFile("empty-sram-", ".srm")
         try {
             assertNull(
-                DeviceSyncProtocolJson.localSramSave(
+                DeviceSyncProtocolJson.localSave(
                     42L,
                     "game.srm",
                     "tandem_mgba",
@@ -410,6 +410,50 @@ class DeviceSyncProtocolTest {
             assertEquals("0123456789abcdef0123456789abcdef", body.getString("content_hash"))
         } finally {
             server.close()
+        }
+    }
+
+
+    @Test
+    fun psxSrmUsesGenericSaveEndpointAndPreservesExactBytesInAutosaveSlot() {
+        val server = MockWebServer()
+        val file = java.io.File.createTempFile("pcsx-rearmed-card-", ".srm")
+        val payload = "PSX-MEMORY-CARD-SLOT-0-TEST-BYTES"
+        file.writeBytes(payload.toByteArray())
+        server.start()
+        try {
+            server.enqueue(MockResponse(body = """{"id":314}"""))
+            val client = RomMDeviceSyncClient(server.url("/").toString(), "test-token")
+            client.uploadSave(42L, "device-123", 8L, "autosave", file)
+            val upload = server.takeRequest()
+            val uploadBody = upload.body!!.utf8()
+
+            assertEquals("/api/saves", upload.url.encodedPath)
+            assertEquals("autosave", upload.url.queryParameter("slot"))
+            assertEquals("false", upload.url.queryParameter("overwrite"))
+            assertTrue(uploadBody.contains("filename=\"\${file.name}\""))
+            assertTrue(uploadBody.contains(payload))
+
+            val expectedHash = java.security.MessageDigest.getInstance("MD5")
+                .digest(payload.toByteArray())
+                .joinToString("") { "%02x".format(it) }
+            server.enqueue(MockResponse(body = payload))
+            val staging = java.io.File.createTempFile("psx-card-download-", ".part")
+            try {
+                val actualHash = client.downloadSaveToStaging(314L, "device-123", 8L, expectedHash, staging)
+                val download = server.takeRequest()
+
+                assertEquals(expectedHash, actualHash)
+                assertTrue(staging.readBytes().contentEquals(payload.toByteArray()))
+                assertEquals("/api/saves/314/content", download.url.encodedPath)
+                assertEquals("GET", download.method)
+                assertEquals(2, server.requestCount)
+            } finally {
+                staging.delete()
+            }
+        } finally {
+            server.close()
+            file.delete()
         }
     }
 
