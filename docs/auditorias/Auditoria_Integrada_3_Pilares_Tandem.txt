@@ -390,3 +390,12 @@ ADENDO — ESTADO APÓS REGISTRO DA AUDITORIA — 2026-11-24
 - [COMPORTAMENTO DO WORKFLOW] O job check-style, após aplicar Spotless e enviar formatação, chama gh workflow run ci.yml --ref "$PR_HEAD_REF". Portanto, a revalidação manual subsequente pode exigir aprovação explícita no GitHub Actions. Alterações apenas no arquivo .txt de auditoria estão em paths-ignore e não disparam nova CI por si só.
 - [ESTADO RECONFIRMADO] PR #50 continua aberta, em draft, não mesclada e mergeable=true após atualização do estado. Nenhuma outra PR aberta foi encontrada no repositório.
 - [PRÓXIMA AÇÃO EXTERNA] É necessário aprovar/liberar a execução pendente na interface GitHub Actions ou iniciar manualmente a workflow CI para a branch feat/unified-session-artifacts. Depois conferir check-style, testes unitários, build Debug APK e final-status no head atual antes de prosseguir.
+
+
+ATUALIZAÇÃO — CI #1145 APROVADA E APK GERADO — 2026-11-24
+- [RESULTADO FINAL] A execução #1145 / run 45507300941, tentativa 2, terminou com conclusion=success. A execução inicialmente observada como action_required foi posteriormente liberada e concluída.
+- [HEAD DE CÓDIGO VALIDADO] f39cf73f6f0054ae248aa4ce3ffa69033811b061 (style: apply Spotless formatting). Os commits posteriores na branch, 68a7466e17a617f0ab7de9c8a0254d39e6e3d740 e 049d207ef2d7ab543208bbf2f1c6740eb5732bcc, atualizam exclusivamente este arquivo de auditoria; o workflow ignora alterações .txt/docs e não houve alteração funcional após o head validado.
+- [JOBS] check-style: success; build-debug-apk / assembleLawnWithQuickstepGithubDebug: success (inclui testLawnWithQuickstepGithubDebugUnitTest e Build APK); final-status: success. Jobs de publicação/notificação foram ignorados conforme condições do workflow; não houve publicação tandem-latest.
+- [ARTEFATO] ID 14975451749, nome assembleLawnWithQuickstepGithubDebug, 46.423.074 bytes, SHA-256 6c0467ce294da99b5552485e8849408e04761b090bcca9356966ecc68f7d2edf. Expiração: 2027-02-22.
+- [PENDÊNCIA FUNCIONAL] A CI não substitui o teste no telefone. Ainda é necessário validar o vínculo de ROM local já existente sem apagar/baixar novamente, a identidade RomM no SaveStore e a preservação dos saves. Save states ainda precisam de teste completo de ida e volta. HTTP 500 em /api/platforms e /api/roms permanecem para investigação.
+- [SEGURANÇA/DECISÃO] Nenhum dado de jogo foi alterado nesta validação. PR #50 permanece aberta, draft e sem merge; não mesclar sem autorização explícita.
