@@ -86,7 +86,9 @@ object SaveSync {
         )
         if (files(store).none { (_, file) -> file.isFile && file.length() > 0L } &&
             !(store.sramFile.isFile && store.sramFile.length() > 0L)
-        ) return null
+        ) {
+            return null
+        }
         val prefs = prefs(context)
         val resolution = SaveSyncPolicy.resolveStatus(
             prefs.getString(statusKey, null),

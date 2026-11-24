@@ -166,17 +166,15 @@ internal object GameSessionCoordinator {
         }
     }
 
-    private fun statusKey(gameIdentity: String, accountFingerprint: String) =
-        "sync_status:$gameIdentity:$accountFingerprint"
+    private fun statusKey(gameIdentity: String, accountFingerprint: String) = "sync_status:$gameIdentity:$accountFingerprint"
 }
 
 internal object GameSessionSyncPolicy {
 
-    fun blocksSessionStart(result: DeviceSyncExecutionResult): Boolean =
-        result.failed > 0 ||
-            result.conflictsPreserved > 0 ||
-            result.deletesIgnored > 0 ||
-            result.unknownIgnored > 0
+    fun blocksSessionStart(result: DeviceSyncExecutionResult): Boolean = result.failed > 0 ||
+        result.conflictsPreserved > 0 ||
+        result.deletesIgnored > 0 ||
+        result.unknownIgnored > 0
 
     /** Conflitos são estacionados para resolução; somente falhas operacionais pedem retry automático. */
     fun shouldRetryBackground(result: DeviceSyncExecutionResult): Boolean = result.failed > 0
