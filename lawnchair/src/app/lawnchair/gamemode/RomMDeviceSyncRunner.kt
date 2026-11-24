@@ -111,6 +111,7 @@ object RomMDeviceSyncRunner {
                 try {
                     when (operation.action) {
                         DeviceSyncAction.NoOp -> noOp++
+
                         DeviceSyncAction.Upload -> {
                             if (localSave == null || operation.slot != "autosave") {
                                 throw IOException("Upload sem SRAM local compatível ou fora do slot autosave.")
@@ -127,6 +128,7 @@ object RomMDeviceSyncRunner {
                             )
                             uploaded++
                         }
+
                         DeviceSyncAction.Download -> {
                             if (operation.slot != "autosave") {
                                 throw IOException("Download fora do slot autosave foi preservado sem alteração.")
@@ -142,7 +144,7 @@ object RomMDeviceSyncRunner {
                             target.parentFile?.let {
                                 if (!it.exists() && !it.mkdirs()) throw IOException("Não foi possível preparar a pasta local de saves.")
                             }
-                            val staging = File(target.parentFile, ".${target.name}.${negotiation.sessionId}.${saveId}.part")
+                            val staging = File(target.parentFile, ".${target.name}.${negotiation.sessionId}.$saveId.part")
                             try {
                                 val downloadedHash = client.downloadSaveToStaging(
                                     saveId = saveId,
@@ -174,14 +176,17 @@ object RomMDeviceSyncRunner {
                                 staging.delete()
                             }
                         }
+
                         DeviceSyncAction.Conflict -> {
                             conflicts++
                             GameLog.log("Device Sync", "conflito preservado para resolução explícita; nenhum lado foi sobrescrito")
                         }
+
                         DeviceSyncAction.Delete -> {
                             deletesIgnored++
                             GameLog.log("Device Sync", "operação delete recusada; SRAM local preservada")
                         }
+
                         DeviceSyncAction.Unknown -> {
                             unknownIgnored++
                             GameLog.log("Device Sync", "operação desconhecida recusada; SRAM local preservada")
