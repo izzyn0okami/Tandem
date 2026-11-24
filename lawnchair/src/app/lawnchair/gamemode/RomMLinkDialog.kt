@@ -139,8 +139,11 @@ internal fun RomMLinkDialog(
                                 }
                                 val sizeMatches = game.sizeBytes == localFile.length() ||
                                     game.associatedFiles.any { it.sizeBytes == localFile.length() }
-                                if (hashMatches) Text("SHA-1 do arquivo local confirmado no RomM.")
-                                else if (sizeMatches) Text("Tamanho do arquivo local corresponde a um arquivo do registro.")
+                                if (hashMatches) {
+                                    Text("SHA-1 do arquivo local confirmado no RomM.")
+                                } else if (sizeMatches) {
+                                    Text("Tamanho do arquivo local corresponde a um arquivo do registro.")
+                                }
                             }
                         }
                     }
@@ -195,6 +198,5 @@ private fun romMLinkSha1(file: File): String {
     return digest.digest().joinToString("") { "%02x".format(it) }
 }
 
-private fun romMLinkNormalize(value: String): String =
-    value.lowercase().replace(Regex("""\.[a-z0-9]{1,5}$"""), "")
-        .replace(Regex("""[^\p{L}\p{N}]"""), "")
+private fun romMLinkNormalize(value: String): String = value.lowercase().replace(Regex("""\.[a-z0-9]{1,5}$"""), "")
+    .replace(Regex("""[^\p{L}\p{N}]"""), "")

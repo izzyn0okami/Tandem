@@ -59,6 +59,7 @@ internal object GameLibraryReconciler {
                     markAmbiguous(context, local.path, false)
                     withoutVerifiedHash++
                 }
+
                 1 -> {
                     val romId = matchingRomIds.single()
                     val existingId = GameIdentityResolver.linkedRomId(context, file, connection)
@@ -67,10 +68,12 @@ internal object GameLibraryReconciler {
                             markAmbiguous(context, local.path, false)
                             alreadyLinked++
                         }
+
                         existingId != null -> {
                             markAmbiguous(context, local.path, true)
                             ambiguous++
                         }
+
                         else -> {
                             SaveSync.link(context, file.absolutePath, romId)
                             markAmbiguous(context, local.path, false)
@@ -78,6 +81,7 @@ internal object GameLibraryReconciler {
                         }
                     }
                 }
+
                 else -> {
                     markAmbiguous(context, local.path, true)
                     ambiguous++
@@ -97,27 +101,24 @@ internal object GameLibraryReconciler {
         return report
     }
 
-    internal fun candidateGames(localSize: Long, platformSlug: String, remote: List<RemoteGame>): List<RemoteGame> =
-        remote.filter { game ->
-            game.platform.slug == platformSlug &&
-                game.associatedFiles.any { associated -> associated.sizeBytes == localSize }
-        }
+    internal fun candidateGames(localSize: Long, platformSlug: String, remote: List<RemoteGame>): List<RemoteGame> = remote.filter { game ->
+        game.platform.slug == platformSlug &&
+            game.associatedFiles.any { associated -> associated.sizeBytes == localSize }
+    }
 
-    internal fun matchingRomIds(localSha1: String, platformSlug: String, remote: List<RemoteGame>): List<Long> =
-        remote.asSequence()
-            .filter { it.platform.slug == platformSlug }
-            .filter { game ->
-                game.associatedFiles.any { associated ->
-                    associated.sha1Hash?.trim()?.equals(localSha1, ignoreCase = true) == true
-                }
+    internal fun matchingRomIds(localSha1: String, platformSlug: String, remote: List<RemoteGame>): List<Long> = remote.asSequence()
+        .filter { it.platform.slug == platformSlug }
+        .filter { game ->
+            game.associatedFiles.any { associated ->
+                associated.sha1Hash?.trim()?.equals(localSha1, ignoreCase = true) == true
             }
-            .map { it.id }
-            .distinct()
-            .toList()
+        }
+        .map { it.id }
+        .distinct()
+        .toList()
 
-    fun isAmbiguous(context: Context, path: String): Boolean =
-        context.getSharedPreferences("romm_auto_link", Context.MODE_PRIVATE)
-            .getBoolean("ambiguous:$path", false)
+    fun isAmbiguous(context: Context, path: String): Boolean = context.getSharedPreferences("romm_auto_link", Context.MODE_PRIVATE)
+        .getBoolean("ambiguous:$path", false)
 
     private fun markAmbiguous(context: Context, path: String, value: Boolean) {
         context.getSharedPreferences("romm_auto_link", Context.MODE_PRIVATE).edit {
