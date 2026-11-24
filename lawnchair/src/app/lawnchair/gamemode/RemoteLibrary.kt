@@ -77,7 +77,12 @@ internal class RemoteLibrary(private val context: Context, private val scope: Co
         refreshing = true
         try {
             val client = RomMClient(url, RomMSettings.token(context))
-            val fetched = withContext(Dispatchers.IO) { client.listGames() }
+            val fetched = withContext(Dispatchers.IO) {
+                val catalog = client.listGames()
+                val localGames = GameLibraryScanner.scan(File(GameLibrarySettings.rootPath(context)))
+                GameLibraryReconciler.reconcile(context, localGames, catalog)
+                catalog
+            }
             games = fetched
             report = client.listReport
             GameLog.log("romm", "lista: ${fetched.size} jogos. $report")
