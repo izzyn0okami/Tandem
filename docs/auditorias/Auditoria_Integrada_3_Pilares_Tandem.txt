@@ -164,3 +164,14 @@ ATUALIZAÇÃO — DIAGNÓSTICO DE ERROS DEVICE SYNC (2026-11-24)
 - [PENDENTE DE VALIDAÇÃO] CI #1075, no commit 7c771ba702cb4d9e80282af58b0792b2585f5325, ainda estava em execução na última consulta; também existem execuções concorrentes mais antigas da mesma sequência. Não declarar esta mudança validada até uma CI verde no head atual.
 - [PR] #50 continua aberta em draft, base game-mode-m2-dev. Não houve merge.
 - [SEGURANÇA] Nenhum arquivo local ou remoto foi apagado, sobrescrito ou migrado. Esta mudança é exclusivamente diagnóstica; não tenta contornar 409 nem ativar overwrite.
+
+
+ATUALIZAÇÃO — VALIDAÇÃO FINAL DO DIAGNÓSTICO HTTP (2026-11-24)
+- [FALHAS INICIAIS REGISTRADAS] CI #1072 e #1073 falharam no ktlint por erro de escape na regex do sanitizador em RomMClient.kt. A causa foi corrigida no commit 26435facca4cca5c018925d6b8883aed920c0be7; a expressão atual usa escapes Kotlin válidos para caracteres de controle e espaços em branco.
+- [CI APROVADA NO HEAD CORRIGIDO] CI #1081 / run 45397131590 concluiu com sucesso exatamente no commit 26435facca4cca5c018925d6b8883aed920c0be7. check-style/Spotless, testes unitários, build Debug APK, upload do artefato e final-status passaram.
+- [ARTEFATO #1081] assembleLawnWithQuickstepGithubDebug, ID 14920708978, 46.403.710 bytes, disponível até 2027-02-22. Jobs de release/publicação foram ignorados; nenhum tandem-latest foi publicado.
+- [REVALIDAÇÕES ADICIONAIS] CI #1082 / run 45397293770 e #1083 / run 45397335549 também concluíram com sucesso no mesmo head 26435facca4cca5c018925d6b8883aed920c0be7. A CI #1080 / run 45397077989 (evento pull_request) igualmente passou.
+- [CORREÇÃO DO REGISTRO] A anotação anterior que deixava #1081 pendente está superada. O diagnóstico HTTP e os testes de preservação do detalhe estruturado estão validados por CI no head atual.
+- [PENDENTE] Teste funcional no telefone para capturar o detalhe real do HTTP 409 e confirmar a causa do conflito com RomM 5.4.x. A CI valida o código e testes sintéticos, não a interoperabilidade com o servidor real.
+- [PENDENTE] Integrar o inventário tipado ao RomMDeviceSyncRunner, declarar mapeamento local/remoto de artefatos e substituir a duplicidade de sincronizadores por um motor único. Save states e progresso RA continuam fora do transporte.
+- [SEGURANÇA] Nenhum save local ou remoto foi transferido, sobrescrito, apagado ou migrado por esta mudança. overwrite continua desativado; PR #50 permanece aberta em draft, sem merge.
