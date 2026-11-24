@@ -189,6 +189,23 @@ class GameLibraryReconcilerTest {
     }
 
     @Test
+    fun extraRemoteCueCompanionPreventsAssociation() {
+        val localPrimary = listOf(local(100L, "disc-one"))
+        val localCompanions = listOf(local(500L, "track-bin"))
+        val game = remoteGame(30L, platform = psx).copy(
+            associatedFiles = listOf(
+                associated(31L, "Disc 1.cue", 100L, "disc-one"),
+                associated(32L, "Disc 1.bin", 500L, "track-bin"),
+                associated(33L, "Extra.bin", 600L, "extra-track"),
+            ),
+        )
+        assertEquals(
+            emptyList<Long>(),
+            GameLibraryReconciler.matchingDiscSetRomIds(localPrimary, localCompanions, psx, listOf(game)),
+        )
+    }
+
+    @Test
     fun identicalDiscSetInDifferentRemoteRecordsRemainsAmbiguous() {
         val primary = listOf(local(100L, "disc-one"))
         val first = remoteGame(30L, platform = psx).copy(
