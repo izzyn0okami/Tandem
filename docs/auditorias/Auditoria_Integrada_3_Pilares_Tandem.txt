@@ -142,3 +142,15 @@ IMPLEMENTAÇÃO INICIAL — INVENTÁRIO TIPADO DE ARTEFATOS (2026-11-24)
 - [PENDENTE] CI desta branch; revisar resultado Spotless/testes/build. Depois integrar o inventário ao motor unificado e aos adaptadores por núcleo.
 - [PENDENTE] Device Sync ainda não transporta SAVE_STATE nem RETRO_ACHIEVEMENTS_PROGRESS; esta entrega apenas inventaria os artefatos e não inicia transferência remota.
 - Nenhum save local ou remoto foi apagado, sobrescrito, transferido ou migrado por esta implementação.
+
+
+ATUALIZAÇÃO — INVENTÁRIO INICIAL E ADAPTADORES POR NÚCLEO (2026-11-24)
+- [CI APROVADA — INVENTÁRIO INICIAL] Run #1062 / 45390900101 concluiu com sucesso no commit 0619bffe74ff6f9cf45f82e1f6c8f473e5ca6689: check-style/Spotless, testes unitários, build Debug APK, upload do artefato e final-status aprovados.
+- [ARTEFATO #1062] assembleLawnWithQuickstepGithubDebug, ID 14918488915, 46.403.031 bytes, SHA-256 0240c38b3b4bd12b94edc0c9bb2ff56b347a98a801e7079ccb6ecad98f891e28; expira em 2027-02-22. Os jobs de publicação foram ignorados; não houve release tandem-latest.
+- [CORREÇÃO ARQUITETURAL NA PR #50] Criado CoreSaveAdapterRegistry. Núcleos PSX PCSXR ReARMed, SwanStation e Beetle PSX classificam o arquivo físico sram.srm como MEMORY_CARD / memory-card-0; demais núcleos ainda não mapeados usam CORE_SAVE / core-save, sem inferir compatibilidade.
+- [TESTES ADICIONADOS] Cobertura para distinguir cartão de memória PSX e save genérico de SNES, além dos testes anteriores de identidade, conta RA, hash, arquivos vazios/desconhecidos e deduplicação.
+- [REVISÃO DO ESCOPO] O inventário local agora diferencia o slot memory-card-0, mas o executor RomM Device Sync ainda usa o slot remoto autosave e o arquivo .srm genérico. Não foi feita integração de transferência desses novos tipos; não declarar sincronização de memory cards/save states concluída.
+- [CI #1067 — FALHA DE AUTOMAÇÃO, NÃO DE CÓDIGO] A etapa Spotless aplicou formatação, mas o push automático falhou por corrida entre execuções concorrentes que tentaram atualizar a mesma branch. O commit de formatação 9e79b4881eee94bbac119d7aad75fb66f9943c9f foi enviado por outra execução; a falha reportada é rejeição non-fast-forward, não erro do compilador nem do Spotless.
+- [CI #1068] Execução manual de revalidação no head formatado 9e79b4881eee94bbac119d7aad75fb66f9943c9f iniciada; aguardar todos os jobs para registrar o resultado.
+- [PENDENTE] Teste real no telefone, implementação do mapeamento entre slots locais e remotos, transporte seguro de outros tipos de artefatos, coordenador de sessão e substituição do sincronizador duplicado.
+- [SEGURANÇA] Nenhum save real, ROM ou dado remoto foi apagado, movido, transferido ou sobrescrito por esta etapa. PR #50 continua aberta em draft e não foi mesclada.
