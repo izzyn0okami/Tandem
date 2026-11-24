@@ -4889,3 +4889,12 @@ ATUALIZAÇÃO — DIAGNÓSTICO E NOMENCLATURA DE SAVE NA PR #49 (2026-11-23)
 - [PENDENTE] A causa concreta do pull PSX ainda depende do diagnóstico no aparelho. A inspeção deve revelar se o servidor retorna download, no_op, conflict ou nenhuma operação, e se (rom_id, autosave), timestamps e MD5 correspondem ao arquivo esperado.
 - [SEGURANÇA] Nenhuma transferência real, alteração de save, merge ou publicação tandem-latest foi realizada.
 
+REVISÃO FINAL DE NOMENCLATURA E COBERTURA — PR #49 (2026-11-23)
+- [REVISADO] Chamadas e tipos do fluxo Device Sync foram renomeados de SRAM para save nos pontos de integração, diagnóstico e interface. O nome físico legado SaveStore.sramFile foi mantido intacto para não provocar migração ou mudança de caminho.
+- [REVISADO] O protocolo continua aceitando .srm nesta etapa e usa o endpoint genérico /api/saves; a documentação deixa explícito que no PSX esse conteúdo pode ser um cartão de memória.
+- [TESTE] O caso sintético PSX verifica multipart de upload no slot autosave, overwrite=false, endpoint de conteúdo no download, MD5 e igualdade byte a byte. Nenhum arquivo real é usado.
+- [DIAGNÓSTICO] A inspeção apresenta metadados de local e remoto necessários para interpretar a negociação. Para a causa raiz no aparelho, registrar o resultado observado e conferir ROM ID, slot, save ID, nome, emulador, timestamp e MD5; não concluir apenas pela extensão.
+- [CI PENDENTE] Run #986 / 45320422408 foi iniciada no head c494c286be052731a376246c8804577f4722dd28. Na última consulta, check-style e build-debug-apk estavam em execução. O head avançou depois para a0ff5a30340e99388b662675be285c60b78844a3 e a2f90ba196c5d049616683cb91d2c8f38c39263a; esses commits finais ainda não têm execução CI identificada nesta consulta. Não marcar CI como aprovada.
+- [PENDENTE] Teste no telefone de E4 (conflito/backup/rollback) e interoperabilidade Device Sync com RomM real, incluindo investigação do pull PSX, permanecem pendentes.
+- Sem transferência real, merge ou publicação tandem-latest.
+
