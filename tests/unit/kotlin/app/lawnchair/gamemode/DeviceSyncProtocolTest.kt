@@ -12,6 +12,66 @@ import org.junit.Test
 
 class DeviceSyncProtocolTest {
     @Test
+    fun deviceSyncArtifactPolicySelectsPsxMemoryCardFromTypedInventoryOnly() {
+        val directory = java.io.File(
+            System.getProperty("java.io.tmpdir"),
+            "device-sync-artifacts-${System.nanoTime()}",
+        )
+        assertTrue(directory.mkdirs())
+        try {
+            java.io.File(directory, "sram.srm").writeBytes(byteArrayOf(1, 2, 3))
+            java.io.File(directory, "state0.state").writeBytes(byteArrayOf(4, 5))
+            java.io.File(directory, "ra-progress-a1b2.bin").writeBytes(byteArrayOf(6, 7))
+            val artifacts = SaveArtifactCatalog.inspect(
+                gameIdentity = "romm-test-42",
+                coreId = "pcsx_rearmed",
+                files = directory.listFiles()?.toList().orEmpty(),
+            )
+
+            val selected = DeviceSyncArtifactPolicy.selectForRomM(artifacts)
+
+            assertEquals(SaveArtifactType.MEMORY_CARD, selected?.type)
+            assertEquals("memory-card-0", selected?.slot)
+            assertEquals("srm", selected?.format)
+            assertNull(DeviceSyncArtifactPolicy.selectForRomM(artifacts.filter { it.type != SaveArtifactType.MEMORY_CARD }))
+            assertTrue(
+                runCatching {
+                    DeviceSyncArtifactPolicy.selectForRomM(listOfNotNull(selected, selected?.copy(slot = "memory-card-1")))
+                }.isFailure,
+            )
+        } finally {
+            directory.deleteRecursively()
+        }
+    }
+
+    @Test
+    fun deviceSyncArtifactPolicySelectsGenericCoreSaveButNeverStateOrRaProgress() {
+        val directory = java.io.File(
+            System.getProperty("java.io.tmpdir"),
+            "device-sync-core-save-${System.nanoTime()}",
+        )
+        assertTrue(directory.mkdirs())
+        try {
+            val save = java.io.File(directory, "sram.srm").apply { writeBytes(byteArrayOf(1, 2, 3)) }
+            val state = java.io.File(directory, "state1.state").apply { writeBytes(byteArrayOf(4, 5)) }
+            val progress = java.io.File(directory, "ra-progress-c3d4.bin").apply { writeBytes(byteArrayOf(6, 7)) }
+            val artifacts = SaveArtifactCatalog.inspect(
+                gameIdentity = "romm-test-43",
+                coreId = "snes9x",
+                files = listOf(save, state, progress),
+            )
+
+            val selected = DeviceSyncArtifactPolicy.selectForRomM(artifacts)
+
+            assertEquals(SaveArtifactType.CORE_SAVE, selected?.type)
+            assertEquals("core-save", selected?.slot)
+            assertNull(DeviceSyncArtifactPolicy.selectForRomM(artifacts.filter { it.type != SaveArtifactType.CORE_SAVE }))
+        } finally {
+            directory.deleteRecursively()
+        }
+    }
+
+    @Test
     fun registrationUsesStableHostnameAndApiSyncModeWithoutAssumingMacAddress() {
         val json = DeviceSyncProtocolJson.registration(
             DeviceSyncRegistration(
