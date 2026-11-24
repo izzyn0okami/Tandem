@@ -158,6 +158,21 @@ class GameLibraryReconcilerTest {
     }
 
     @Test
+    fun missingHashOnAnyRemoteDiscPreventsAssociation() {
+        val primary = listOf(local(100L, "disc-one"), local(200L, "disc-two"))
+        val game = remoteGame(30L, platform = psx).copy(
+            associatedFiles = listOf(
+                associated(31L, "Disc 1.cue", 100L, "disc-one"),
+                associated(32L, "Disc 2.cue", 200L, null),
+            ),
+        )
+        assertEquals(
+            emptyList<Long>(),
+            GameLibraryReconciler.matchingDiscSetRomIds(primary, emptyList(), psx, listOf(game)),
+        )
+    }
+
+    @Test
     fun cueCompanionsMustAlsoMatch() {
         val localPrimary = listOf(local(100L, "disc-one"))
         val localCompanions = listOf(local(500L, "track-bin"))
