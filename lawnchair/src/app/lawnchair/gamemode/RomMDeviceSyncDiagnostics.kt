@@ -58,10 +58,11 @@ object RomMDeviceSyncDiagnostics {
                 gameIdentity = identity,
                 migrationSourcesOverride = emptyMap(),
             )
+            val emulator = "tandem_$coreId"
             val localSave = DeviceSyncProtocolJson.localSave(
                 romId = romId,
                 fileName = store.sramFile.name,
-                emulator = "tandem_$coreId",
+                emulator = emulator,
                 file = store.sramFile,
                 updatedAt = Instant.ofEpochMilli(store.sramFile.lastModified()).toString(),
             )
@@ -70,6 +71,7 @@ object RomMDeviceSyncDiagnostics {
                 deviceId = deviceId,
                 saves = listOfNotNull(localSave),
                 romIds = setOf(romId),
+                emulators = setOf(emulator),
             )
             DeviceSyncSaveInspection(
                 romId = romId,
