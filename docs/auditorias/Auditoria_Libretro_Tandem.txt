@@ -4671,3 +4671,31 @@ ESTADO
 - E5: upload real pelo Device Sync continua não comprovado; inspeção não aplicou operação.
 - Não alterar/mover/apagar/substituir saves sem autorização.
 - Próxima etapa: confirmar associação da ROM SNES ao registro RomM correto e, separadamente, realizar uma transferência Device Sync controlada, preservando a regra de que save states não entram nesse transporte.
+
+
+AUDITORIA DE SLOT DE SAVES — PR #41 / ROMM 5.4.1 (2026-11-23/24)
+Arquivos do Tandem inspecionados no head refs/pull/41/head:
+- lawnchair/src/app/lawnchair/gamemode/RomMClient.kt — blob 30486b017b513da2e3dec0b80f07a494de0b45e5.
+- lawnchair/src/app/lawnchair/gamemode/SaveSync.kt — blob b1d677caee0b95398369f73847d7ba675b303f5a.
+
+Achado confirmado no cliente:
+- RemoteFile não possui propriedade slot.
+- parseRemoteFile() lê id, emulator, updated_at e content_hash, mas ignora slot.
+- listRemoteFiles() consulta /api/saves?rom_id=... sem filtro de slot.
+- newestRemoteFile() delega seleção à compatibilidade de tipo/núcleo; não há distinção entre autosave e save manual.
+- uploadRemoteFile() cria POST /api/saves com rom_id e emulator, mas não envia slot.
+- Atualização PUT /api/saves/{id} usa o registro existente; a rota oficial mantém o slot já associado ao registro e não recebe um novo slot no query.
+- Consequência: ao criar um novo save, o cliente não consegue classificá-lo como autosave. Também não consegue selecionar com segurança um registro remoto específico por slot. Isso é compatível com a falha anterior de recuperação/pareamento do slot autosave.
+
+Contrato oficial RomM 5.4.1 conferido em rommapp/romm/backend/endpoints/saves.py (tag 5.4.1; blob 6925ac7626f0ac9f14c15590c156aa7deece7386):
+- POST /api/saves aceita rom_id, emulator e slot como parâmetros de query.
+- GET /api/saves aceita filtro slot.
+- PUT /api/saves/{id} atualiza o conteúdo do registro existente; o slot pertence ao registro e não é alterado por esse endpoint.
+- Fonte: https://github.com/rommapp/romm/blob/5.4.1/backend/endpoints/saves.py
+
+Conclusão e correção necessária:
+- O fluxo legado de saves do Tandem ainda não é slot-aware.
+- A correção deve modelar e interpretar slot, consultar/selecionar o slot apropriado e enviar slot no POST de criação, sem alterar o slot de registros existentes por engano.
+- Definir o mapeamento de slots usado pelo Tandem (incluindo autosave e manual) de acordo com a nomenclatura efetiva do RomM.
+- Não misturar esta correção do fluxo legado com o Device Sync Protocol E5; são contratos distintos.
+- Nenhuma alteração de código foi feita nesta auditoria.
