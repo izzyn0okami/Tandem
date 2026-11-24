@@ -90,6 +90,30 @@ class DeviceSyncProtocolTest {
     }
 
     @Test
+    fun localSramManifestRejectsMemoryCardsAndOtherNonSramArtifacts() {
+        val file = java.io.File.createTempFile("artifact-", ".srm")
+        try {
+            file.writeBytes(byteArrayOf(1, 2, 3))
+            listOf("game.mcd", "game.mcr", "game.mem", "game.state", "game.sav").forEach { name ->
+                assertTrue(
+                    "Device Sync must reject $name",
+                    runCatching {
+                        DeviceSyncProtocolJson.localSramSave(
+                            42L,
+                            name,
+                            "tandem_pcsx_rearmed",
+                            file,
+                            "2026-11-23T12:00:00Z",
+                        )
+                    }.isFailure,
+                )
+            }
+        } finally {
+            file.delete()
+        }
+    }
+
+    @Test
     fun localSramManifestSkipsMissingOrEmptyFiles() {
         val file = java.io.File.createTempFile("empty-sram-", ".srm")
         try {
