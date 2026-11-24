@@ -1209,3 +1209,13 @@ AUDITORIA DA PR #49 — RESULTADO CI #1045 (2026-11-24)
 - [PENDENTE] Corrigir ambas as chamadas e validar o novo head com CI completa.
 - [PENDENTE NO APARELHO] Instalar somente APK gerado por CI integralmente aprovada; depois executar inspeção somente leitura e validar PSX/SNES com RomM 5.4.x, exportando novo game_log.txt. Não realizar transferências reais sem autorização explícita e preservar backups.
 - PR #49 segue aberta, sem merge e sem publicação tandem-latest. Nenhum save real foi alterado nesta auditoria.
+
+
+ATUALIZAÇÃO DO CHECKLIST — CI #1051 APROVADA E APK GERADO (2026-11-24)
+- [CONCLUÍDO] Corrigidas as duas chamadas incompletas client.uploadSave(...) em DeviceSyncProtocolTest.kt no commit 5dccab9d9fbfa7d31de141320ba0f008ae872a48.
+- [CI APROVADA] Run #1051 / 45326906240: https://github.com/izzyn0okami/Tandem/actions/runs/45326906240. check-style/Spotless, testes unitários, build Debug APK, upload do artefato e final-status concluídos com sucesso.
+- [ARTEFATO] assembleLawnWithQuickstepGithubDebug, ID 14889444076, 46.397.554 bytes; SHA-256 0ed5d82461b3296c27d2719143f36580d0a824a21665378045cb4ad61b45943c; disponível até 2027-02-22.
+- Os jobs opcionais de release/notificações foram ignorados por condição do workflow; não houve publicação.
+- [PR #49] Continua aberta, sem merge e sem publicação tandem-latest.
+- [PENDENTE NO APARELHO] Instalar o APK e executar primeiro inspeção somente leitura; validar RomM 5.4.x em PSX e SNES, com atenção ao pull PSX/autosave. Exportar novo game_log.txt. Preservar backups e não executar transferências reais sem autorização explícita.
+- Nenhum save real foi transferido, substituído, movido ou apagado pela correção/CI.
