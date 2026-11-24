@@ -262,4 +262,19 @@ class SaveSyncPolicyTest {
         assertFalse(SaveSyncPolicy.isSameSyncAccount(null, "account-a"))
     }
 
+    @Test
+    fun legacySnapshotsTransportOnlyQuickStatesThroughTheStatesEndpoint() {
+        val sram = java.io.File("legacy.srm")
+        val quickState = java.io.File("slot1.state")
+
+        val transportFiles = SaveSync.stateTransportFiles(
+            mapOf(
+                RemoteFileKind.Save to sram,
+                RemoteFileKind.State to quickState,
+            ),
+        )
+
+        assertEquals(mapOf(RemoteFileKind.State to quickState), transportFiles)
+    }
+
 }
