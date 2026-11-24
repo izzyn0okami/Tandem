@@ -509,7 +509,7 @@ class GameSessionActivity : ComponentActivity() {
             }.ifEmpty { "vazio" }
             GameLog.log(
                 "inventário",
-                "${trigger}: jogo=${gameIdentity ?: "—"}, núcleo=${coreIdOf() ?: "—"}, artefatos=${artifacts.size} [$summary]",
+                "$trigger: jogo=${gameIdentity ?: "—"}, núcleo=${coreIdOf() ?: "—"}, artefatos=${artifacts.size} [$summary]",
             )
         }.onFailure { GameLog.error("inventário", "falha ao inspecionar artefatos locais", it) }
     }

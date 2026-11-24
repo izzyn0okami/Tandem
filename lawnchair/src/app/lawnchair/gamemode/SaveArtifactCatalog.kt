@@ -65,10 +65,13 @@ internal object SaveArtifactCatalog {
         val name = file.name.lowercase(Locale.ROOT)
         return when {
             name == "sram.srm" -> SaveArtifactType.CORE_SAVE to "autosave"
+
             name.matches(Regex("state[0-9]+\\.state")) ->
                 SaveArtifactType.SAVE_STATE to name.removeSuffix(".state")
+
             name.matches(Regex("ra-progress-[a-f0-9]+\\.bin")) ->
                 SaveArtifactType.RETRO_ACHIEVEMENTS_PROGRESS to name.removePrefix("ra-progress-").removeSuffix(".bin")
+
             else -> null
         }
     }
