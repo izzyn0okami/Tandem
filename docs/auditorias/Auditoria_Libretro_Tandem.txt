@@ -4815,3 +4815,15 @@ VALIDAÇÃO DA PR #48 — CI #956 (2026-11-24)
 - PR #48 continua direcionada a game-mode-m2-dev; nenhuma transferência de saves reais foi realizada.
 - PENDENTE: validação controlada no aparelho para pull PSX autosave, preservação do backup local, upload em autosave e não interferência em saves manuais/legados; verificar também SNES.
 - Não mesclar nem atualizar a release fixa tandem-latest sem autorização explícita. E4/E5 e multidisco/M3U permanecem em andamento.
+
+ATUALIZAÇÃO — PR #48 MESCLADA / CI #959 (2026-11-24)
+- PR #48 — fix(romm): isolate automatic saves in autosave slot — mesclada por squash em game-mode-m2-dev após autorização explícita do usuário.
+- URL: https://github.com/izzyn0okami/Tandem/pull/48
+- Head integrado: be07bbd91c0e23299f2cd67e11d70f9e6f67b832.
+- Commit de merge: 71bb5606c570b5be438db13ffa25698d2097b839.
+- CI #959 / run 45311928423: SUCCESS no head be07bbd91c0e23299f2cd67e11d70f9e6f67b832. Spotless, testes unitários, build Debug APK, upload do artefato e final-status aprovados.
+- Artefato: assembleLawnWithQuickstepGithubDebug, ID 14883792296, 46.373.176 bytes; SHA-256 4fa13155f9efa398fc4b706a09acb642f3933abe365d3821930c6e7519fd5fe0; disponível até 2027-02-22.
+- A CI foi executada no head exato integrado; a execução não publicou release, e a release fixa tandem-latest não foi alterada.
+- A implementação separa SRAM automática no slot autosave; saves manuais e legados são preservados. Estados rápidos permanecem sem slot, conforme contrato RomM.
+- PENDENTE: teste controlado no aparelho para confirmar pull PSX autosave, backup local, upload no slot correto e preservação de saves manuais/legados; verificar também SNES.
+- E4/E5 e multidisco/M3U permanecem EM ANDAMENTO. Não iniciar Device Sync amplo nem apagar/mover/sobrescrever saves sem autorização explícita.
