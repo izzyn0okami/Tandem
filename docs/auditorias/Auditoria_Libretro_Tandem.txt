@@ -4805,3 +4805,13 @@ IMPLEMENTAÇÃO — ISOLAMENTO DO SLOT AUTOSAVE ROMM (PR EM PREPARAÇÃO, 2026-1
 - O diagnóstico da seleção agora registra slot do save remoto escolhido. Nenhum conteúdo de save foi lido/alterado no servidor durante a implementação.
 - Adicionados testes unitários para priorizar autosave e manter registros manuais/legados fora da seleção quando existe autosave.
 - PENDENTE: executar CI completa, revisar diff, confirmar sem regressões e atualizar este registro com o resultado. Não mesclar nem publicar sem autorização explícita.
+
+
+VALIDAÇÃO DA PR #48 — CI #956 (2026-11-24)
+- Corrigida a referência inexistente `syncClient` em `push()`, usando o parâmetro `client`; commit corretivo f34ddf883b2724d5cdf5d529fd1c96df12442cbe.
+- CI #956 / run 45310403107 concluída com sucesso no commit corretivo: testes unitários, Spotless, compilação Debug APK e upload do artefato.
+- Artefato `assembleLawnWithQuickstepGithubDebug` gerado (46.373.302 bytes; SHA-256 1f4d38c2347b82c4e5d398b059557879871131a4625fdc150e5b74d6e5eda428).
+- Revisão estática confirmou que o endpoint RomM 5.4.1 aceita `slot` em GET /api/saves e POST /api/saves; PUT /api/saves/{id} atualiza o registro existente sem campo slot. O endpoint /api/states permanece sem slot.
+- PR #48 continua direcionada a game-mode-m2-dev; nenhuma transferência de saves reais foi realizada.
+- PENDENTE: validação controlada no aparelho para pull PSX autosave, preservação do backup local, upload em autosave e não interferência em saves manuais/legados; verificar também SNES.
+- Não mesclar nem atualizar a release fixa tandem-latest sem autorização explícita. E4/E5 e multidisco/M3U permanecem em andamento.
