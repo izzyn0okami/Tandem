@@ -4916,3 +4916,10 @@ ATUALIZAÇÃO DE ESTADO — HEAD 04B3B0E / CI #986 (2026-11-23)
 - [PENDENTE] CI completa no head final, validação de interoperabilidade no aparelho e análise do resultado real da negociação PSX. Não considerar o download corrigido antes desses dados.
 - Nenhuma transferência real, merge ou publicação foi realizada.
 
+COMPLEMENTO — LOGS DE NEGOCIAÇÃO DEVICE SYNC (2026-11-23)
+- [IMPLEMENTADO NA BRANCH] O executor registra, sem conteúdo do save, metadados do manifesto local e de cada operação retornada: rom_id, ação, slot, save_id, nome, emulador, timestamp, motivo e prefixo MD5. Isso permite coletar evidência do caso PSX no telefone sem expor os bytes do cartão.
+- Head observado antes desta atualização: 8903e543d46fab9e2aadc66fda8a56ee727dbd51.
+- CI #995 / run 45320622544: check-style concluiu com sucesso; testes unitários ainda estavam em andamento e build APK aguardava na última consulta. A execução foi iniciada no commit anterior db0248685853809b154e9e83d6c61a83c47b65df, antes dos commits 04b3b0e e 8903e54; portanto não valida o head final.
+- Compare da branch com game-mode-m2-dev: 41 commits à frente, 0 atrás. PR #49 continua aberta e não mesclada.
+- [PENDENTE] Aguardar CI aplicável ao head final e obter diagnóstico no aparelho. Não executar transferência real nesta etapa.
+
