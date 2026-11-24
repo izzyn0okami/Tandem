@@ -76,6 +76,7 @@ internal object GameLibraryReconciler {
                     withoutVerifiedHash++
                     if (local.platform.discBased) deferredMultiDisc++
                 }
+
                 1 -> {
                     val romId = matchingRomIds.single()
                     val existingId = GameIdentityResolver.linkedRomId(context, file, connection)
@@ -84,10 +85,12 @@ internal object GameLibraryReconciler {
                             markAmbiguous(context, local.path, false)
                             alreadyLinked++
                         }
+
                         existingId != null -> {
                             markAmbiguous(context, local.path, true)
                             ambiguous++
                         }
+
                         else -> {
                             SaveSync.link(context, file.absolutePath, romId)
                             markAmbiguous(context, local.path, false)
@@ -95,6 +98,7 @@ internal object GameLibraryReconciler {
                         }
                     }
                 }
+
                 else -> {
                     markAmbiguous(context, local.path, true)
                     ambiguous++
@@ -167,7 +171,9 @@ internal object GameLibraryReconciler {
                 val remoteCompanionFingerprints = remoteCompanionFiles.mapNotNull(::fingerprint)
                 if (localCompanions.isNotEmpty() &&
                     remoteCompanionFingerprints.size != remoteCompanionFiles.size
-                ) return@filter false
+                ) {
+                    return@filter false
+                }
                 val remoteCompanions = remoteCompanionFingerprints
                     .map { it.key() }
                     .toMutableList()
@@ -211,7 +217,9 @@ internal object GameLibraryReconciler {
                     val companion = File(disc.parentFile, reference.replace('\\\\', '/'))
                     if (!companion.isFile ||
                         companion.extension.lowercase(Locale.ROOT) !in platform.discCompanionExtensions
-                    ) return null
+                    ) {
+                        return null
+                    }
                     companions += fingerprint(companion)
                 }
             }
