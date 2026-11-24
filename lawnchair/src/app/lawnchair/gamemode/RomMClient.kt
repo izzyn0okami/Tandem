@@ -44,7 +44,7 @@ internal fun romMErrorDetail(body: String?): String? {
         .replace(Regex("\\s+"), " ")
         .take(300)
         .takeIf { it.isNotBlank() }
-
+}
 
 internal const val MAX_ROMM_PATCH_UPLOAD_BYTES = 1024L * 1024L * 1024L
 
