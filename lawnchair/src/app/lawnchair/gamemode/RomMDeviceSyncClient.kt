@@ -248,7 +248,12 @@ class RomMDeviceSyncClient(
     private fun executeJson(request: Request): JSONObject {
         http.newCall(request).execute().use { response ->
             if (!response.isSuccessful) {
-                throw RomMHttpException(response.code, "RomM Device Sync respondeu HTTP ${response.code}")
+                val errorBody = response.body?.string().orEmpty()
+                throw RomMHttpException(
+                    response.code,
+                    "RomM Device Sync respondeu HTTP ${response.code}",
+                    romMErrorDetail(errorBody),
+                )
             }
             val body = response.body?.string().orEmpty()
             if (body.isBlank()) return JSONObject()
@@ -376,7 +381,12 @@ class RomMDeviceSyncClient(
         try {
             http.newCall(request(url.encodedPath).url(url).get().build()).execute().use { response ->
                 if (!response.isSuccessful) {
-                    throw RomMHttpException(response.code, "RomM Device Sync respondeu HTTP ${response.code}")
+                    val errorBody = response.body?.string().orEmpty()
+                    throw RomMHttpException(
+                        response.code,
+                        "RomM Device Sync respondeu HTTP ${response.code}",
+                        romMErrorDetail(errorBody),
+                    )
                 }
                 val body = response.body ?: throw IOException("O RomM retornou um save sem conteúdo.")
                 stagingFile.outputStream().use { output -> body.byteStream().use { input -> input.copyTo(output) } }
