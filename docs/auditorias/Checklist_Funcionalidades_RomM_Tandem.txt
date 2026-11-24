@@ -1101,3 +1101,11 @@ ATUALIZAÇÃO DE AUDITORIA — MEMORY CARDS NÃO SÃO SINÔNIMO DE SRAM (2026-11
 - [PENDENTE] Mapear arquivos por núcleo e separar SRAM verdadeira, memory card por jogo, memory card compartilhado e save state. Verificar caminho real do frontend no aparelho.
 - [PENDENTE] Investigar se o modelo/API MemoryCard RomM pode receber cartão PSX encapsulado em ZIP com semântica correta; não presumir compatibilidade com o broker atual de PCSX2/Dolphin.
 - [SEGURANÇA] Não alterar, transferir, reclassificar, renomear, apagar ou sobrescrever saves reais até decisão e implementação específica. Nenhuma transferência foi executada nesta auditoria.
+
+
+COMPLEMENTO — PSX .SRM NO FLUXO DE SAVE DO ROMM (2026-11-23)
+- [CONFIRMADO — ROMM 5.4.1] O player web EmulatorJS salva pelo endpoint comum /api/saves; quando não há slot herdado do save carregado, usa autosave como padrão. O endpoint aceita saveFile genérico, sem exigir SRAM de bateria.
+- [DECISÃO] Para o PSX, presumir compatibilidade dos bytes .srm entre os núcleos envolvidos quando o arquivo gerado no servidor for o mesmo formato de cartão de memória esperado pelo núcleo cliente. Transportar como Save comum do RomM, pareado no slot estável autosave. Não encaminhar para a API MemoryCard dedicada neste caso.
+- [RESSALVA] .srm do PCSX-ReARMed é memory card do slot 0, não SRAM de bateria. A presunção não se estende a outros formatos/núcleos sem mapeamento.
+- [PENDENTE] A falha de recuperar o save PSX mais recente não é explicada apenas pela extensão. Verificar (rom_id, slot), se o save remoto está em autosave, timestamps/hashes da negociação e destino local real.
+- [SEGURANÇA] Nenhuma transferência ou alteração de saves reais foi executada.
