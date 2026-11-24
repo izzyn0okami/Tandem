@@ -131,6 +131,14 @@ class GameLibraryReconcilerTest {
     }
 
     @Test
+    fun unsupportedGdiAndCcdDescriptorsAreDeferred() {
+        assertEquals(false, GameLibraryReconciler.supportsAutomaticDiscDescriptor("gdi"))
+        assertEquals(false, GameLibraryReconciler.supportsAutomaticDiscDescriptor("ccd"))
+        assertEquals(true, GameLibraryReconciler.supportsAutomaticDiscDescriptor("cue"))
+        assertEquals(true, GameLibraryReconciler.supportsAutomaticDiscDescriptor("chd"))
+    }
+
+    @Test
     fun completeMultiDiscSetMatchesOnlyWhenEveryDiscMatches() {
         val localPrimary = listOf(local(100L, "disc-one"), local(200L, "disc-two"))
         val game = remoteGame(30L, platform = psx).copy(
