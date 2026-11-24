@@ -4987,3 +4987,15 @@ AUDITORIA DA PR #49 — CI #1045 / BLOQUEIO DE COMPILAÇÃO (2026-11-24)
 - Revisão estática dos arquivos de execução não identificou motivo para autorizar transferência real. Continuam obrigatórios os testes controlados PSX/SNES e a análise do game_log.txt no telefone.
 - [PENDENTE] Corrigir os dois parênteses, executar CI no novo head e conferir todos os jobs, inclusive testes, APK, artefato e final-status.
 - PR #49 permanece aberta, sem merge e sem publicação tandem-latest. Nenhum save real foi transferido, alterado ou removido nesta auditoria.
+
+
+ATUALIZAÇÃO DA AUDITORIA — CORREÇÃO E CI #1051 APROVADAS (2026-11-24)
+- [CORREÇÃO] No commit 5dccab9d9fbfa7d31de141320ba0f008ae872a48, foram fechadas as duas chamadas client.uploadSave(...) em DeviceSyncProtocolTest.kt que impediam a compilação dos testes unitários.
+- [CI #1051 — SUCESSO] Run 45326906240: https://github.com/izzyn0okami/Tandem/actions/runs/45326906240. Head validado: 5dccab9d9fbfa7d31de141320ba0f008ae872a48.
+- check-style: sucesso; etapa de aplicação/verificação Spotless concluída.
+- build-debug-apk (assembleLawnWithQuickstepGithubDebug): sucesso; Run unit tests, Build APK e Upload artifact concluídos com sucesso.
+- final-status: sucesso. Jobs opcionais de release/notificação foram ignorados conforme as condições do workflow; não representam falha.
+- [ARTEFATO GERADO] assembleLawnWithQuickstepGithubDebug, ID 14889444076, 46.397.554 bytes; SHA-256 do ZIP: 0ed5d82461b3296c27d2719143f36580d0a824a21665378045cb4ad61b45943c; expira em 2027-02-22.
+- [STATUS] A falha de sintaxe apontada na CI #1045 foi corrigida e a CI integral passou. O APK é artefato de CI, não uma publicação tandem-latest.
+- [PENDENTE NO APARELHO] Instalar/testar o APK em ambiente controlado; executar inspeção somente leitura e validar interoperabilidade real PSX/SNES com RomM 5.4.x; exportar game_log.txt para diagnóstico do pull PSX. Preservar backups. Não realizar transferências reais sem autorização explícita.
+- PR #49 permanece aberta e sem merge; nenhuma publicação tandem-latest foi feita. Nenhum save real foi transferido, alterado ou removido nesta correção.
