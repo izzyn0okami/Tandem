@@ -420,3 +420,11 @@ AUDITORIA ESTÁTICA — TRANSPORTE DE SAVE STATES — 2026-11-24
 - [DIAGNÓSTICO HTTP] RomMClient.listRemoteFiles e uploadRemoteFile atualmente reduzem respostas não exitosas a mensagens genéricas com código HTTP; isso limita a investigação de falhas 500 em endpoints de saves/states. O diagnóstico estruturado já existente no cliente Device Sync não cobre automaticamente essas chamadas da API tradicional /api/states.
 - [PRÓXIMA PRIORIDADE] Adicionar testes de contrato para o transporte /api/states e melhorar o diagnóstico seguro das respostas HTTP sem registrar tokens, conteúdo de saves ou corpos arbitrários. Depois executar CI e validar no telefone um ciclo real: criar estado em um dispositivo, encerrar a sessão, aguardar o worker e recuperar/carregar o estado no outro dispositivo.
 - [LIMITES] Esta foi uma auditoria estática dos arquivos e testes da branch. Nenhuma alteração de código, save, ROM ou dado remoto foi realizada nesta revisão.
+
+
+TESTE ADICIONAL — ISOLAMENTO DO TRANSPORTE DE SAVE STATES — 2026-11-24
+- [TESTE ADICIONADO] SaveSyncPolicyTest agora verifica que snapshots legados contendo SRAM e save state encaminham somente RemoteFileKind.State ao transporte /api/states. Isso protege contra reenvio acidental de SRAM pelo endpoint tradicional após a separação dos transportes.
+- [ESCOPO] O teste cobre a filtragem local do worker; não substitui testes HTTP do RomM nem o ciclo funcional entre dispositivos.
+- [COMMIT] 1e4e36067e76469188b386f10534d3fd4fcfdf02 — test(sync): keep legacy SRAM out of quick-state transport.
+- [CI] A CI #1151 / run 45511949873 ainda estava em andamento e foi iniciada antes deste commit de teste. Nenhuma execução de workflow foi retornada ainda para o novo head; obter validação específica do commit 1e4e36067e76469188b386f10534d3fd4fcfdf02 antes de considerar o teste aprovado.
+- [PR] #50 permanece aberta em draft e sem merge. Não mesclar; continuar somente nesta PR.
