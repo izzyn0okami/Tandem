@@ -323,10 +323,12 @@ class RomMDeviceSyncClient(
         sessionId: Long,
         slot: String,
         emulator: String,
+        fileName: String,
         file: File,
     ): JSONObject {
         require(romId > 0L && sessionId > 0L)
         require(deviceId.isNotBlank() && slot.isNotBlank() && emulator.isNotBlank())
+        require(fileName.endsWith(".srm", ignoreCase = true)) { "O upload Device Sync aceita somente arquivos .srm." }
         require(file.isFile && file.length() > 0L) { "O save local está ausente ou vazio." }
         val contentHash = md5(file)
         val url = base.resolve("api/saves")!!.newBuilder()
@@ -343,7 +345,7 @@ class RomMDeviceSyncClient(
             .setType(MultipartBody.FORM)
             .addFormDataPart(
                 "saveFile",
-                file.name,
+                fileName,
                 file.asRequestBody("application/octet-stream".toMediaType()),
             )
             .build()
