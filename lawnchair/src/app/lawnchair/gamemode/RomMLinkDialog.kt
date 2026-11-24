@@ -36,7 +36,7 @@ import kotlinx.coroutines.withContext
 internal fun RomMLinkDialog(
     local: LocalGame,
     onDismiss: () -> Unit,
-    onLinked: (RemoteGame) -> Unit,
+    onLink: (RemoteGame) -> Unit,
 ) {
     val context = androidx.compose.ui.platform.LocalContext.current
     val scope = rememberCoroutineScope()
@@ -162,7 +162,7 @@ internal fun RomMLinkDialog(
                                     "O vínculo não pôde ser confirmado para a conta RomM atual."
                                 }
                             }
-                            onLinked(game)
+                            onLink(game)
                         } catch (failure: CancellationException) {
                             throw failure
                         } catch (failure: Exception) {
