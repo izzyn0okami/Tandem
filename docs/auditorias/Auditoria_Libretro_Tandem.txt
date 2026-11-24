@@ -4752,3 +4752,45 @@ MERGE PARA TESTES — PR #47 (2026-11-24)
 - A publicação tandem-latest ainda não foi confirmada. Verificar execução do workflow disparado pela atualização da branch game-mode-m2-dev antes de orientar instalação.
 - Próximo teste no aparelho: instalar o APK de CI correspondente à versão mesclada, verificar associação automática do Super Mario World e persistência do vínculo. Não iniciar sincronização de saves durante a validação de identidade.
 - Multidisco/M3U permanecem pendentes; registros sem SHA-1 verificável não são associados. Nenhuma ROM/save foi alterado ou transferido pela implementação.
+
+
+ANÁLISE DO LOG #951 — TESTE DE DOWNLOAD SNES E PENDÊNCIA PSX (2026-11-24)
+Fonte: tandem-log (5).txt enviado pelo usuário via Dropbox.
+Build: 16.Dev.(#951), versionCode 1600021051.
+Aparelho: Motorola Edge 30 Fusion, Android 17 / API 37.
+Servidor: RomM em http://192.168.0.102:8080.
+
+SNES — DOWNLOAD CONFIRMADO
+- Super Mario World foi associado automaticamente ao registro RomM; a identidade passou de local-... para romm-07c863620e8baed51c29ced9df18214f617a388250eb150d0f3493d9cb4fe8b2.
+- A sessão registrou seleção do save remoto tipo saves, ID 15, núcleo tandem_snes9x.
+- GET /api/saves/15/content respondeu HTTP 200, application/octet-stream, 2.048 bytes; tamanho esperado e recebido coincidiram.
+- O download foi concluído e aplicado ao SaveStore do núcleo snes9x. O arquivo local divergente foi preservado em backup antes da substituição.
+- Uma migração legada posterior encontrou outro sram.srm conflitante e preservou a origem; o usuário resolveu o conflito por escolha explícita, mantendo o conteúdo atual e os originais em .conflict-backups.
+- Em inspeções Device Sync posteriores, houve estados Upload=1 ou NoOp=1, mas todas declaram explicitamente que nenhuma operação foi aplicada. Não registrar upload SNES como concluído.
+
+PSX — DOWNLOAD DO SAVE MAIS RECENTE NÃO OCORREU
+- Castlevania - Symphony of the Night Ultimate manteve identidade RomM persistente: romm-389df3d787361f3a2b84f1098d2a78ff8105f92311e19b14bf2af6adfe44557d.
+- SaveStore encontrou SRAM de 131.072 bytes e state1.state de 4.456.448 bytes no caminho personalizado /storage/emulated/0/Emulation/SAVES/pcsx_rearmed/<identidade>.
+- Em várias tentativas de inicialização, SaveSync selecionou o mesmo save remoto tipo saves ID 25 (emulator tandem_pcsx_rearmed; updatedAt=1795475056000) e state ID 6 (updatedAt=1795475060000).
+- O cliente registrou “save local já corresponde à versão remota conhecida; nenhum download necessário” para ambos. Não houve tentativa registrada de GET /api/saves/25/content nem de GET /api/states/6/content neste log.
+- Não há POST/PUT de upload PSX confirmado no log. A linha Device Sync para Castlevania indica Upload=1 em inspeção somente leitura e declara “nenhuma operação aplicada”; isso é apenas uma operação candidata, não transferência.
+- Portanto, o log não prova que o save PSX mais recente chegou ao RomM, nem que exista uma versão remota mais nova para baixar. Ele prova apenas que o app continuou considerando os registros remotos ID 25 e ID 6 como a última versão conhecida.
+
+CAUSA PROVÁVEL / LACUNA DE CÓDIGO A INVESTIGAR
+- A auditoria do código atual confirma que RemoteFile não modela slot; parseRemoteFile ignora o campo slot; listRemoteFiles consulta apenas rom_id; newestCompatibleRemote escolhe por updated_at/id e compatibilidade de núcleo.
+- uploadRemoteFile cria registros com rom_id e emulator, mas não envia slot. PUT atualiza o registro existente e não pode alterar seu slot.
+- Isso mantém aberta a lacuna já identificada para autosave/manual: o fluxo atual não distingue nem seleciona explicitamente o slot autosave. Se o save esperado está no autosave ou foi criado em outro slot, o Tandem pode estar consultando/selecionando outro registro.
+- Outra possibilidade ainda não eliminada: o arquivo local PSX não mudou em relação ao hash que o app considera aplicado, ou o RomM não expôs mudança de versão/hash no registro selecionado. O log atual não contém hashes comparativos suficientes para decidir entre essas hipóteses.
+- Não atribuir a falha à pasta personalizada: o caminho está configurado, gravável e é o mesmo entregue ao LibretroDroid/SaveStore.
+
+PRÓXIMAS VERIFICAÇÕES
+1. Auditar o contrato e a implementação do slot para saves RomM: incluir slot no modelo/parser, filtrar listagem por slot, enviar slot no POST de criação e preservar slot existente no PUT.
+2. Instrumentar, sem expor conteúdo de saves, o motivo da decisão de pull: slot selecionado, ID, updated_at, content_hash presente/ausente, hash remoto conhecido e hash local/aplicado (preferencialmente apenas prefixos ou igualdade, sem registrar hashes completos).
+3. Confirmar se o save que o usuário espera recuperar está no registro RomM ID 25 e em qual slot; comparar o horário/slot do registro com o save mais recente feito no PSX.
+4. Depois da correção e CI, validar primeiro download controlado; preservar o arquivo local em backup e não executar upload automático ou sobrescrita sem confirmação.
+
+STATUS
+- SNES: pull de SRAM real confirmado; upload ainda não confirmado.
+- PSX: pull do save mais recente não confirmado; o app não tentou baixar porque classificou o remoto como já conhecido. Upload PSX recente também não comprovado.
+- E4/E5 continuam EM ANDAMENTO. Não iniciar Device Sync real, não apagar/mover saves e não sobrescrever arquivos locais sem autorização explícita.
+- Nenhuma alteração funcional foi feita nesta auditoria. Nenhuma PR estava aberta no repositório no momento da verificação.
