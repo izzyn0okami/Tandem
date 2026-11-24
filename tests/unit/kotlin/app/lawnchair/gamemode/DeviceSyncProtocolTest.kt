@@ -689,4 +689,42 @@ class DeviceSyncProtocolTest {
         assertFalse(DeviceSyncArtifactPolicy.isUnbasedUpload(operation.copy(reason = "Client save is newer than last sync")))
     }
 
+    @Test
+    fun readOnlyInspectionCountsOnlyTheManagedRomAndSlot() {
+        val server = MockWebServer()
+        server.start()
+        try {
+            server.enqueue(
+                MockResponse(
+                    body = """{"session_id":19,"operations":[
+                        {"action":"no_op","rom_id":42,"slot":"autosave"},
+                        {"action":"upload","rom_id":42,"slot":"manual"},
+                        {"action":"delete","rom_id":42,"slot":"memory-card-0"},
+                        {"action":"download","rom_id":99,"slot":"autosave"}
+                    ]}""",
+                ),
+            )
+            server.enqueue(MockResponse(body = """{"session":{}}"""))
+            val client = RomMDeviceSyncClient(server.url("/").toString(), "test-token")
+
+            val result = client.inspectNegotiation(
+                deviceId = "device-123",
+                saves = emptyList(),
+                romIds = setOf(42L),
+                emulators = null,
+                managedSlot = "autosave",
+            )
+            val negotiateRequest = server.takeRequest()
+            val completeRequest = server.takeRequest()
+            val completeBody = JSONObject(completeRequest.body!!.utf8())
+
+            assertEquals(4, result.operations.size)
+            assertFalse(JSONObject(negotiateRequest.body!!.utf8()).has("emulators"))
+            assertEquals(1, completeBody.getInt("operations_completed"))
+            assertEquals(0, completeBody.getInt("operations_failed"))
+        } finally {
+            server.close()
+        }
+    }
+
 }

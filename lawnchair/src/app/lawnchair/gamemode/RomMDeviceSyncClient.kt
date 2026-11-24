@@ -86,8 +86,9 @@ data class DeviceSyncNegotiation(
 object DeviceSyncProtocolJson {
     /**
      * Constrói a entrada de negociação a partir do arquivo de save local aceito nesta etapa.
-     * A extensão .srm é exigida nesta etapa; para PSX, o conteúdo pode ser um cartão de memória
-     * transportado como Save comum do RomM, não necessariamente SRAM de bateria.
+     * A extensão .srm é exigida; para PSX, o conteúdo pode ser cartão de memória transportado
+     * como Save comum do RomM. O filtro de emuladores é opcional: null permite ao cliente
+     * detectar saves de outros núcleos no mesmo slot e validar a compatibilidade localmente.
      */
     fun localSave(
         romId: Long,
@@ -307,17 +308,21 @@ class RomMDeviceSyncClient(
 
     /**
      * Executa apenas a negociação para diagnóstico e encerra a sessão sem transferir arquivos.
-     * Operações no-op contam como concluídas; todas as demais ficam registradas como não executadas.
+     * A contagem considera somente a ROM e, quando informado, o slot administrado pelo adaptador.
      */
     fun inspectNegotiation(
         deviceId: String,
         saves: List<DeviceSyncSave>,
         romIds: Set<Long>,
         emulators: Set<String>? = null,
+        managedSlot: String? = null,
     ): DeviceSyncNegotiation {
         val negotiation = negotiate(deviceId, saves, romIds, emulators)
-        val completed = negotiation.operations.count { it.action == DeviceSyncAction.NoOp }
-        val failed = negotiation.operations.size - completed
+        val scoped = negotiation.operations.filter {
+            it.romId in romIds && (managedSlot == null || it.slot == managedSlot)
+        }
+        val completed = scoped.count { it.action == DeviceSyncAction.NoOp }
+        val failed = scoped.size - completed
         complete(negotiation.sessionId, completed, failed)
         return negotiation
     }

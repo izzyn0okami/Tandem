@@ -244,3 +244,13 @@ ANÁLISE DA CAUSA DOS HTTP 409 E PROTEÇÃO DE COMPATIBILIDADE — 2026-11-24
 - [TESTES ADICIONADOS] Payload sem filtro de emuladores; grupos PSX/SNES; rejeição de núcleos não compatíveis; validação de download por grupo; bloqueio de upload sem histórico. A CI ainda precisa validar esta alteração.
 - [PENDENTE] Teste real em PSX e SNES com os saves que antes retornavam 409; verificar se o servidor agora retorna download/no-op ou conflito preservado, e confirmar que slots fora do escopo permanecem intocados.
 - [SEGURANÇA] overwrite continua false. Nenhum upload é forçado, nenhum save remoto é substituído e nenhum slot diferente do adaptador é alterado.
+
+
+
+ATUALIZAÇÃO DE VALIDAÇÃO E DIAGNÓSTICO — 2026-11-24
+- [CI APROVADA] Run #1101 / 45429636145, head d34b5dfac9fbf1c7c66d6841349a7bb37714e0e5: estilo, testes unitários, build Debug APK e final-status aprovados.
+- [CI APROVADA] Run #1102 / 45429934097, head 74d0ec8b888fd3372cf5b059373748cc8a5727c8: estilo, testes unitários, build Debug APK, upload do artefato e final-status aprovados. Publicação foi ignorada.
+- [AÇÃO REQUERIDA] Runs #1103 e #1106, eventos pull_request, foram marcadas action_required; não representam falha de código. As execuções workflow_dispatch #1102 e #1105 validaram seus respectivos heads.
+- [CI APROVADA] Run #1105 / 45432492981, head 87379545636f792ce8109f622470fff0be762d5a: estilo, testes unitários, build Debug APK, upload do artefato e final-status aprovados. Artefato ID 14938399728, 46.416.752 bytes, SHA-256 b17ffce37c34dd1e80625ec95b51b2983fa3baeaa493b90e87e0b367e7aca5e0; expira em 2027-02-22. Nenhuma publicação tandem-latest.
+- [DIAGNÓSTICO ALINHADO] A inspeção manual agora usa o mesmo slot do adaptador e pode observar saves de outros emuladores sem transferi-los; sua contagem de conclusão considera apenas a ROM e o slot administrado.
+- [PENDENTE] Teste funcional no telefone após a última correção de filtro/compatibilidade; resolução explícita de conflitos locais/remotos permanece como etapa futura.

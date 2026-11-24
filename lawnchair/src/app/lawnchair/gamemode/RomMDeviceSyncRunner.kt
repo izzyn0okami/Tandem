@@ -10,7 +10,7 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
-/** Resultado de uma sincronização save explicitamente iniciada pelo usuário. */
+/** Resultado de uma execução Device Sync para o ciclo de sessão ou ação manual. */
 data class DeviceSyncExecutionResult(
     val romId: Long,
     val uploaded: Int,
@@ -25,9 +25,9 @@ data class DeviceSyncExecutionResult(
 /**
  * Executor conservador do Device Sync RomM.
  *
- * Só opera a save do jogo explicitamente vinculado e fechado. Upload/download são executados
- * somente após negociação iniciada por ação explícita do usuário. Conflitos ficam preservados
- * para resolução explícita; operações delete e desconhecidas nunca são aplicadas.
+ * Só opera a save do jogo explicitamente vinculado e fora de uma sessão ativa. O
+ * GameSessionCoordinator usa este executor antes e depois da partida; a tela também pode
+ * acioná-lo manualmente. Conflitos ficam preservados; operações delete e desconhecidas nunca são aplicadas.
  * O inventário tipado escolhe somente save de núcleo ou cartão PSX em .srm; estados rápidos e progresso RA ficam locais.
  */
 object RomMDeviceSyncRunner {
