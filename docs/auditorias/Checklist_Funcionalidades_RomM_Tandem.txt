@@ -874,3 +874,14 @@ ATUALIZAÇÃO — PR #46 / MERGE E CI #922 (2026-11-23)
 - A CI da PR comprova compilação e testes automatizados, não o funcionamento no telefone. Próxima validação: instalar o APK gerado, testar sessões PSX e SNES e exportar game_log.txt para análise dos diretórios reais.
 - E4/E5 continuam EM ANDAMENTO. Não presumir sincronização corrigida; não ativar transferências Device Sync nem apagar/substituir saves. Save states e memory cards permanecem fora do transporte SRAM isolado.
 - A PR #46 está fechada e mesclada. A publicação tandem-latest e a CI de push após merge ainda precisam ser verificadas separadamente.
+
+
+ATUALIZAÇÃO — ANÁLISE DO game_log.txt ENVIADO PELO USUÁRIO (2026-11-23)
+- Arquivo analisado: tandem-log (2)(1).txt; aparelho Motorola Edge 30 Fusion / Android 17; sessão eb322fda.
+- Versão registrada no cabeçalho: 16.Dev.(#911), versionCode 1600021011. Portanto, este log NÃO comprova a execução do novo SavePathDiagnostics da PR #46, pois foi gerado por build anterior à integração.
+- PSX / Castlevania: pcsx_rearmed carregou e abriu normalmente. RomM selecionou save remoto tipo states id=6; download HTTP 200, 4.456.448 bytes, e aplicação local concluída. Em sessões posteriores, save tipo saves id=25 e state id=6 foram considerados já correspondentes à versão remota conhecida. A inspeção Device Sync somente leitura indicou SRAM local incluída=true e Upload=1, mas nenhuma operação foi aplicada; não interpretar como upload concluído.
+- PSX: houve conflito de save resolvido explicitamente com preferência atual; os originais foram preservados em .conflict-backups. Também houve falha de inspeção read-only por vínculo de jogo não corresponder à conta RomM atual em uma tentativa anterior; depois a inspeção foi concluída.
+- SNES / Super Mario World: snes9x carregou e iniciou normalmente. Migração legada foi ambígua/conflitante; o conflito foi resolvido explicitamente com preferência atual e os originais preservados em .conflict-backups. O jogo abriu novamente após a resolução. Isso aponta para problema de identificação/migração de diretórios legados, não prova falha do core nem do caminho personalizado.
+- RomM: houve erros de conectividade temporários, incluindo hostname digitado como 192,169.0.102 e falha de conexão ao endereço correto; posteriormente heartbeat e listagem de ROMs responderam HTTP 200. Não atribuir essas falhas ao caminho de saves sem nova reprodução.
+- O log não contém os campos de diagnóstico da PR #46 (caminhos configurado/padrão/efetivo, savesDirectory, SaveStore e permissões). Próxima validação necessária: instalar build pós-PR #46/tandem-latest, repetir PSX e SNES e exportar novo game_log.txt. Até lá, E4/E5 permanecem EM ANDAMENTO.
+- Segurança: nenhum save deve ser apagado, sobrescrito ou movido automaticamente; manter backups e modo somente leitura até esclarecer identidade e localização dos arquivos. Não habilitar sincronização automática com base neste log.
