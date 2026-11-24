@@ -142,6 +142,7 @@ object RomMDeviceSyncRunner {
                                     sessionId = negotiation.sessionId,
                                     slot = "autosave",
                                     emulator = emulator,
+                                    fileName = originalSave.name,
                                     file = snapshot,
                                 )
                                 uploaded++
