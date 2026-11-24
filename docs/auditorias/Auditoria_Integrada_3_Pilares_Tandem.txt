@@ -399,3 +399,13 @@ ATUALIZAÇÃO — CI #1145 APROVADA E APK GERADO — 2026-11-24
 - [ARTEFATO] ID 14975451749, nome assembleLawnWithQuickstepGithubDebug, 46.423.074 bytes, SHA-256 6c0467ce294da99b5552485e8849408e04761b090bcca9356966ecc68f7d2edf. Expiração: 2027-02-22.
 - [PENDÊNCIA FUNCIONAL] A CI não substitui o teste no telefone. Ainda é necessário validar o vínculo de ROM local já existente sem apagar/baixar novamente, a identidade RomM no SaveStore e a preservação dos saves. Save states ainda precisam de teste completo de ida e volta. HTTP 500 em /api/platforms e /api/roms permanecem para investigação.
 - [SEGURANÇA/DECISÃO] Nenhum dado de jogo foi alterado nesta validação. PR #50 permanece aberta, draft e sem merge; não mesclar sem autorização explícita.
+
+
+VALIDAÇÃO FUNCIONAL — ROM LOCAL RECONHECIDA SEM RE-DOWNLOAD — 2026-11-24
+- [CONFIRMAÇÃO DO USUÁRIO] Após a correção do reconciliador Local/RomM, o usuário confirmou que o teste funcionou com uma ROM que já estava no aparelho, sem precisar excluí-la nem baixá-la novamente do servidor.
+- [RESULTADO] Validação funcional positiva do vínculo de uma ROM local preexistente com o catálogo RomM. Este resultado atende ao cenário que estava pendente desde o log #9 e demonstra que, nesse caso testado, a associação não dependeu de re-download.
+- [ESCOPO DA EVIDÊNCIA] O usuário confirmou o funcionamento, mas não especificou nesta confirmação o título da ROM nem forneceu um novo log técnico. Portanto, registrar como teste funcional reportado pelo usuário, sem inferir quantas das 16 ROMs sem hash correspondente foram resolvidas ou que todos os formatos multidisco estejam cobertos.
+- [SEGURANÇA] O teste confirmado não exigiu exclusão nem novo download da ROM local. Não há indicação de remoção, substituição ou migração de ROMs ou saves nesta validação.
+- [PENDENTE] Reavaliar a biblioteca completa, incluindo os 16 itens anteriormente sem hash correspondente e os conjuntos multidisco; GDI/CCD continuam adiados até suporte específico. Ainda faltam o ciclo completo de upload/retorno de save states, investigação dos HTTP 500 em /api/platforms e /api/roms e demais cenários de recuperação.
+- [CI] A CI #1151 / run 45511949873 está em andamento no head de código 4a477f4df9971aa360df2101eb103ce6dbc60e7e. A validação funcional reportada não substitui a conclusão dessa CI.
+- [PR] #50 permanece aberta, em draft, sem merge. Não abrir PR concorrente; continuar o trabalho na PR #50.
