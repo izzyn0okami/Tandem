@@ -4975,3 +4975,15 @@ DIAGNÓSTICO PASSIVO DO MOTIVO DE PULL PSX NÃO APLICADO (2026-11-24)
 - Objetivo: diferenciar hash remoto igual ao conhecido, timestamp/ID divergente, ausência de hash e conteúdo baixado diferente. Isso investiga o caso PSX em que o save remoto mais recente não gerou GET de conteúdo.
 - [PENDENTE] CI do head atual e novo game_log.txt de teste no telefone. Não presumir causa raiz antes de comparar os metadados observados.
 - Nenhum save real foi baixado, enviado, movido, sobrescrito ou apagado por esta instrumentação.
+
+
+AUDITORIA DA PR #49 — CI #1045 / BLOQUEIO DE COMPILAÇÃO (2026-11-24)
+- Head auditado: a55fce988ff0da8482fe0721be27d23d4e5c2af9; PR #49 permanece aberta.
+- CI #1045 / run 45324835382: check-style/Spotless passou; build-debug-apk falhou no passo "Run unit tests"; Build APK e Upload artifact foram ignorados; final-status falhou. Não foi gerado APK válido.
+- [ERRO CONFIRMADO POR INSPEÇÃO DO CÓDIGO] Em tests/unit/kotlin/app/lawnchair/gamemode/DeviceSyncProtocolTest.kt, teste uploadSaveUsesSafeQueryParametersAndMultipartSaveFile: a chamada client.uploadSave(..., file está sem o parêntese de fechamento.
+- [ERRO CONFIRMADO POR INSPEÇÃO DO CÓDIGO] No teste psxSrmUsesGenericSaveEndpointAndPreservesExactBytesInAutosaveSlot, a segunda chamada client.uploadSave(..., file também está sem o parêntese de fechamento.
+- Os dois erros são sintaxe Kotlin e impedem a compilação dos testes unitários; a correção deve fechar ambas as chamadas antes de qualquer nova validação.
+- Check-style verde não valida compilação/testes. O head a55fce9 não possui APK aprovado por esta execução.
+- Revisão estática dos arquivos de execução não identificou motivo para autorizar transferência real. Continuam obrigatórios os testes controlados PSX/SNES e a análise do game_log.txt no telefone.
+- [PENDENTE] Corrigir os dois parênteses, executar CI no novo head e conferir todos os jobs, inclusive testes, APK, artefato e final-status.
+- PR #49 permanece aberta, sem merge e sem publicação tandem-latest. Nenhum save real foi transferido, alterado ou removido nesta auditoria.
