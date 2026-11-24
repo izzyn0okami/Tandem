@@ -2,8 +2,10 @@ package app.lawnchair.gamemode
 
 import java.io.File
 import java.security.MessageDigest
+import java.nio.file.Files
 import mockwebserver3.MockResponse
 import mockwebserver3.MockWebServer
+import okhttp3.Headers
 import okhttp3.OkHttpClient
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
