@@ -85,11 +85,11 @@ data class DeviceSyncNegotiation(
 
 object DeviceSyncProtocolJson {
     /**
-     * Constrói a entrada de negociação exclusivamente a partir de uma SRAM local.
-     * O nome .srm é obrigatório para impedir que estados rápidos ou outros arquivos
-     * sejam classificados acidentalmente como save de bateria.
+     * Constrói a entrada de negociação a partir do arquivo de save local aceito nesta etapa.
+     * A extensão .srm é exigida nesta etapa; para PSX, o conteúdo pode ser um cartão de memória
+     * transportado como Save comum do RomM, não necessariamente SRAM de bateria.
      */
-    fun localSramSave(
+    fun localSave(
         romId: Long,
         fileName: String,
         emulator: String,
@@ -293,7 +293,7 @@ class RomMDeviceSyncClient(
     }
 
     /**
-     * Envia uma SRAM como save do Device Sync. Nunca sobrescreve e desativa a limpeza
+     * Envia um arquivo .srm como Save comum do Device Sync. Nunca sobrescreve e desativa a limpeza
      * automática do servidor para preservar versões anteriores.
      */
     fun uploadSave(
