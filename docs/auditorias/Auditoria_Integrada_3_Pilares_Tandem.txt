@@ -371,3 +371,14 @@ TESTES DO PARSER DE DISCOS — 2026-11-24
 - [COMMITS] Parser: 181a40b58d3056668be5971ee36ba842eb82590e. Testes: cd3db234a0bff4c6f319cf499812bc661f839cf3.
 - [CI PENDENTE] Nenhuma execução de workflow foi retornada para os commits mais recentes; CI #1123 validou um head anterior e falhou por escapes de parser. Não considerar os testes novos aprovados até executar CI no head atual.
 - [SEGURANÇA] A política continua fail-closed: formatos sem parser, companions ausentes, hashes ausentes, conjunto parcial ou conteúdo divergente não recebem vínculo automático.
+
+
+REVALIDAÇÃO DO HEAD DA PR #50 — CI #1145 E REVISÃO DO ESTADO — 2026-11-24
+- [ESTADO DA PR] PR #50 permanece aberta, em draft, com base game-mode-m2-dev, mergeable=true e sem merge. O head atual é f39cf73f6f0054ae248aa4ce3ffa69033811b061.
+- [CONFERÊNCIA DE PRS] A busca por PRs abertas no repositório retornou somente a própria PR #50; não há PR concorrente para o Estágio E.
+- [MUDANÇA DESDE A ÚLTIMA AUDITORIA] O único commit posterior ao registro anterior é f39cf73f6f0054ae248aa4ce3ffa69033811b061 (style: apply Spotless formatting), criado pelo github-actions[bot]. A comparação com 8a0bea557e5eb9222c108455f7c5a9b2155b0a1e mostra somente uma alteração de formatação em GameLibraryReconciler.kt; nenhuma mudança funcional adicional foi introduzida nesse commit.
+- [CI #1145 — BLOQUEADA POR AÇÃO] Run 45507300941, associada ao head f39cf73f6f0054ae248aa4ce3ffa69033811b061, terminou com conclusion=action_required. A consulta de jobs retornou lista vazia; portanto não há evidência de execução de check-style, testes unitários ou build APK nessa run. Não classificar como CI aprovada nem como falha de código.
+- [PENDENTE — AUTORIZAÇÃO/EXECUÇÃO DA CI] Investigar a exigência de aprovação/ação no GitHub Actions e obter execução completa no head atual. Não reutilizar CI #1110 ou #1123 como validação deste código; #1110 antecede o reconciliador e #1123 falhou em um head anterior por erros de compilação já corrigidos.
+- [PENDENTE — VALIDAÇÃO FUNCIONAL] Depois da CI verde, testar no telefone uma ROM já existente sem apagá-la nem baixá-la novamente, confirmando vínculo RomM, identidade estável do SaveStore e preservação dos saves. Permanecem pendentes o ciclo completo de upload/retorno de save states e a investigação dos HTTP 500 em /api/platforms e /api/roms.
+- [SEGURANÇA] Nenhuma ROM, save local/remoto ou dado remoto foi apagado, movido, sobrescrito ou migrado nesta revisão. Não alterar a política fail-closed para M3U/CUE; GDI/CCD continuam adiados até parsers próprios. overwrite=false e exclusões ignoradas permanecem.
+- [DECISÃO] Manter PR #50 em draft e sem merge até CI completa, revisão dos resultados e teste funcional. Não abrir PR concorrente.
