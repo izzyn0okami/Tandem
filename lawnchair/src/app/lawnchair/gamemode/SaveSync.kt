@@ -489,13 +489,25 @@ object SaveSync {
 
         val temp = File(file.parentFile, "${file.name}.remote")
         val serverContentHash = remote.contentHash
+        val verifyRemoteContent = SaveSyncPolicy.shouldVerifyRemoteContent(kind, serverContentHash, lastRemoteHash)
         var downloadedContentHash: String? = null
         var tempReady = false
         try {
+            GameLog.log(
+                "saves",
+                "pull remoto: tipo=${kind.path}, id=${remote.id}, slot=${remote.slot ?: "legado-sem-slot"}, " +
+                    "emulador=${remote.emulator ?: "—"}, updatedAt=${remote.updatedAtMs}, " +
+                    "idAnterior=$lastRemoteId, updatedAtAnterior=$lastRemoteMs, " +
+                    "hashServidor=${serverContentHash?.take(8) ?: "ausente"}, " +
+                    "hashServidorAnterior=${lastRemoteHash?.take(8) ?: "ausente"}, " +
+                    "hashLocal=${localHash?.take(8) ?: "ausente"}, " +
+                    "hashAplicado=${appliedHash?.take(8) ?: "ausente"}, " +
+                    "hashLegado=${legacyHash?.take(8) ?: "ausente"}, verificarConteudo=$verifyRemoteContent",
+            )
             // Sem um hash remoto anterior não há como provar que content_hash corresponde
             // à versão que o aparelho já conhecia. Fazemos uma verificação inicial do conteúdo.
             // Se o servidor não fornece content_hash, a SRAM é verificada em cada inicialização.
-            if (SaveSyncPolicy.shouldVerifyRemoteContent(kind, serverContentHash, lastRemoteHash)) {
+            if (verifyRemoteContent) {
                 client.downloadRemoteFile(kind, remote.id, temp)
                 if (temp.length() == 0L) {
                     throw IOException("O servidor RomM retornou um save vazio para ${File(romPath).name}")
@@ -529,6 +541,13 @@ object SaveSync {
                 remoteChanged = remoteChanged,
                 localExists = local != null,
                 appliedHash = appliedHash,
+            )
+            GameLog.log(
+                "saves",
+                "pull comparação: tipo=${kind.path}, id=${remote.id}, remoteChanged=$remoteChanged, " +
+                    "aplicar=$shouldApplyRemote, hashComparado=${comparisonRemoteHash?.take(8) ?: "ausente"}, " +
+                    "hashAnteriorComparado=${comparisonLastRemoteHash?.take(8) ?: "ausente"}, " +
+                    "hashBaixado=${downloadedContentHash?.take(8) ?: "não-baixado"}",
             )
 
             if (!shouldApplyRemote) {
