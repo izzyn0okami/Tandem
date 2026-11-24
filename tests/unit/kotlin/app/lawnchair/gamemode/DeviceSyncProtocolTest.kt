@@ -147,7 +147,7 @@ class DeviceSyncProtocolTest {
 
         assertTrue(
             runCatching {
-                DeviceSyncProtocolJson.negotiation("device-uuid", listOf(save), setOf(42))
+                DeviceSyncProtocolJson.negotiation("device-uuid", listOf(save), setOf(42), setOf("tandem_mgba"))
             }.isFailure,
         )
     }
