@@ -40,7 +40,7 @@ internal fun romMErrorDetail(body: String?): String? {
         .firstOrNull()
         ?: return null
     return raw
-        .replace(Regex("[\\\\r\\\\n\\\\t\\\\p{Cntrl}]"), " ")
+        .replace(Regex("[\r\n\t\p{Cntrl}]"), " ")
         .replace(Regex("\\s+"), " ")
         .take(300)
         .takeIf { it.isNotBlank() }
