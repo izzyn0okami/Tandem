@@ -273,6 +273,7 @@ class DeviceSyncProtocolTest {
             val error = runCatching { client.registerDevice(DeviceSyncRegistration("Tandem", clientVersion = "1.0", hostname = "tandem")) }.exceptionOrNull()
             assertTrue(error is RomMHttpException)
             assertEquals(403, (error as RomMHttpException).statusCode)
+            assertEquals("forbidden", (error as RomMHttpException).detail)
         } finally {
             server.close()
         }
