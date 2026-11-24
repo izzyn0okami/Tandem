@@ -1091,3 +1091,13 @@ STATUS GERAL DO ESTÁGIO E
 - E9: separação de SRAM/state e exclusão de memory cards reforçadas por testes; mapeamento de memory cards por núcleo permanece fora da sincronização.
 - E10: continua aguardando decisão explícita do usuário; não substituir o sincronizador atual.
 - Nenhuma transferência foi executada por esta alteração de código. Nenhum save local/remoto foi apagado, movido ou sobrescrito. Nenhuma release foi publicada e nenhum merge foi realizado.
+
+
+ATUALIZAÇÃO DE AUDITORIA — MEMORY CARDS NÃO SÃO SINÔNIMO DE SRAM (2026-11-23)
+- [CONFIRMADO — ROMM 5.4.1] Memory cards têm modelo e API próprios (/api/memory-cards e rotas de versões/conteúdo), separados de /api/saves e /api/states. A entidade é vinculada ao emulador/usuário, não a um rom_id, e armazena versões de snapshots ZIP.
+- [CONFIRMADO — LIMITAÇÃO] A API dedicada rejeita imagens de cartão raw e exige ZIP seguro no layout de integração. O fluxo de streaming consultado implementa cartões inteiros de PCSX2 e Dolphin; não foi comprovada compatibilidade direta com PCSX-ReARMed.
+- [CONFIRMADO — LIBRETRO/PCSX-REARMED] O arquivo *.srm é o cartão de memória do slot 0 por jogo; pcsx-card2.mcd é o slot 1 opcional. Logo, .srm não deve ser chamado genericamente de SRAM nesse núcleo.
+- [ACHADO NA PR #49] RomMDeviceSyncRunner usa SaveStore.sramFile (sram.srm) e envia o conteúdo como asset comum /api/saves no slot autosave. No núcleo pcsx_rearmed, isso pode sincronizar o memory card do slot 0 como Save comum, não como MemoryCard RomM. O filtro que rejeita .mcd/.mcr/.mem não impede esse caso porque a extensão é .srm.
+- [PENDENTE] Mapear arquivos por núcleo e separar SRAM verdadeira, memory card por jogo, memory card compartilhado e save state. Verificar caminho real do frontend no aparelho.
+- [PENDENTE] Investigar se o modelo/API MemoryCard RomM pode receber cartão PSX encapsulado em ZIP com semântica correta; não presumir compatibilidade com o broker atual de PCSX2/Dolphin.
+- [SEGURANÇA] Não alterar, transferir, reclassificar, renomear, apagar ou sobrescrever saves reais até decisão e implementação específica. Nenhuma transferência foi executada nesta auditoria.
