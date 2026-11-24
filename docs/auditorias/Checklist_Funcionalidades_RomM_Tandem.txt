@@ -988,3 +988,11 @@ CORREÇÃO DO PRÉ-FILTRO DE IDENTIDADE — PR #47 (2026-11-24)
 - Commits: c1cb71e710879c69a2a2de7924faaf3114e9381f; b69c86512d9cf1f78a53dca3284ed030776b967c.
 - CI #943 estava em execução no head ebdf1bf6126a115d9087e2109855163c0fb8d975 na última consulta; aguardar validação do head mais recente.
 - Multidisco/M3U e teste no aparelho continuam pendentes. PR #47 segue Draft e não mesclada. Nenhuma operação de save ou transferência foi realizada.
+
+
+PR #47 — MESCLADA PARA TESTES (2026-11-24)
+- PR #47 mesclada por squash em game-mode-m2-dev; commit 646d7ca2f75752a9900b323bf88fc44203771a4d.
+- CI #947 / run 45302304879 concluída com sucesso no head 4aa2f1659cad909a110368e7daa3bc5f77b0b330: Spotless, testes unitários, build Debug APK e upload do artefato.
+- A publicação tandem-latest pós-merge ainda precisa ser confirmada; até lá, não presumir que a release fixa foi atualizada.
+- Teste físico pendente: associação automática de Super Mario World por SHA-1, persistência do vínculo e confirmação da identidade SaveSync. Não iniciar Device Sync nesta etapa.
+- Multidisco/M3U e registros sem SHA-1 verificável continuam pendentes. Nenhuma ROM ou save deve ser movido, sobrescrito ou apagado.
