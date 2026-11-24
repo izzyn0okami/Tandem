@@ -125,8 +125,11 @@ class RetroArchWebDavClient(
         require(!clean.startsWith('/')) { "O caminho WebDAV deve ser relativo à raiz configurada." }
         require(!clean.contains('?') && !clean.contains('#')) { "O caminho WebDAV não pode conter query ou fragmento." }
         require(!Regex("(?i)%2e|%2f|%5c").containsMatchIn(clean)) { "O caminho WebDAV contém codificação não permitida." }
-        require(clean.split('/').none { it == "." || it == ".." || it.isBlank() }) {
-            "O caminho WebDAV não pode sair da pasta configurada."
+        val normalized = clean.trimEnd('/')
+        if (normalized.isNotEmpty()) {
+            require(normalized.split('/').none { it == "." || it == ".." || it.isBlank() }) {
+                "O caminho WebDAV não pode sair da pasta configurada."
+            }
         }
         val url = base.resolve(clean) ?: throw IOException("Caminho WebDAV inválido.")
         require(url.scheme == base.scheme && url.host == base.host && url.port == base.port) {
