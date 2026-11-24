@@ -187,3 +187,13 @@ ATUALIZAÇÃO — SLOT REMOTO EXPLÍCITO PARA SRAM E CARTÃO PSX (2026-11-24)
 - [PENDENTE] Save states e progresso RA continuam fora do transporte; unificação do ciclo e substituição do sincronizador tradicional permanecem em aberto.
 - [SEGURANÇA] overwrite=false, delete ignorado e conflitos preservados. Nenhum save local/remoto foi apagado, movido, sobrescrito ou migrado.
 - [PR] #50 permanece aberta em draft, sem merge.
+
+
+ATUALIZAÇÃO — VALIDAÇÃO DO MAPEAMENTO DE SLOTS REMOTOS (2026-11-24)
+- [CI #1092 APROVADA] Run 45416096119 concluiu com sucesso exatamente no commit e150abf7c9bcd267ccc7aead049944e6ee690ee4. Os jobs check-style, build-debug-apk (incluindo testes unitários) e final-status foram aprovados.
+- [ARTEFATO #1092] assembleLawnWithQuickstepGithubDebug, ID 14931944394, 46.403.364 bytes, disponível até 2027-02-22. Jobs de publicação permaneceram ignorados; não houve release tandem-latest.
+- [RESULTADO] Mapeamento CORE_SAVE -> autosave e MEMORY_CARD PSX -> memory-card-0 validado por CI. O protocolo usa o slot esperado de forma consistente na negociação, upload e validação de download.
+- [PENDENTE] Ainda não houve teste real no telefone nem confirmação de interoperabilidade com servidor RomM 5.4.x. A CI não comprova a migração de dados já existentes.
+- [PENDENTE] Saves PSX preexistentes no slot remoto autosave permanecem intocados; nenhuma migração para memory-card-0 foi executada ou presumida.
+- [PR] #50 permanece aberta em draft, sem merge. Próxima prioridade: planejar a substituição do SaveSync tradicional e Device Sync por um único motor, com análise de todos os chamadores, workers, filas e política de reconciliação antes de remover o caminho legado.
+- [SEGURANÇA] overwrite=false, delete ignorado e conflitos preservados. Nenhum save, ROM ou dado remoto foi apagado, movido, sobrescrito ou migrado.
