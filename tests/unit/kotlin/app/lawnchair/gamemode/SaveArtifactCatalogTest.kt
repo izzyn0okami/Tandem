@@ -62,15 +62,13 @@ class SaveArtifactCatalogTest {
 
     @Test
     fun adapterDistinguishesPsxMemoryCardsFromBatterySaves() {
-        val psxSave = File(root, "sram.srm").apply { writeBytes(byteArrayOf(1, 2)) }
-        val snesSave = File(root, "sram-snes.srm").apply { writeBytes(byteArrayOf(3, 4)) }
+        val psxSave = File(root, "psx").apply { mkdirs() }.let { File(it, "sram.srm") }
+            .apply { writeBytes(byteArrayOf(1, 2)) }
+        val snesSave = File(root, "snes").apply { mkdirs() }.let { File(it, "sram.srm") }
+            .apply { writeBytes(byteArrayOf(3, 4)) }
 
         val psx = SaveArtifactCatalog.inspect("psx-game", "swanstation", listOf(psxSave)).single()
-        val snes = SaveArtifactCatalog.inspect(
-            "snes-game",
-            "snes9x",
-            listOf(snesSave.renameTo(File(root, "sram.srm")).let { File(root, "sram.srm") }),
-        ).single()
+        val snes = SaveArtifactCatalog.inspect("snes-game", "snes9x", listOf(snesSave)).single()
 
         assertEquals(SaveArtifactType.MEMORY_CARD, psx.type)
         assertEquals("memory-card-0", psx.slot)
