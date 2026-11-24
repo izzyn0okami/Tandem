@@ -818,6 +818,9 @@ internal fun GameDetailScreen(
     var deviceSyncInspection by remember(entry.key) { mutableStateOf<DeviceSyncSramInspection?>(null) }
     var deviceSyncInspectionLoading by remember(entry.key) { mutableStateOf(false) }
     var deviceSyncInspectionError by remember(entry.key) { mutableStateOf<String?>(null) }
+    var deviceSyncExecution by remember(entry.key) { mutableStateOf<DeviceSyncExecutionResult?>(null) }
+    var deviceSyncExecutionLoading by remember(entry.key) { mutableStateOf(false) }
+    var deviceSyncExecutionError by remember(entry.key) { mutableStateOf<String?>(null) }
     val canInspectDeviceSyncSram = local != null &&
         entry.platform.launch == LaunchMode.LIBRETRO &&
         chosenCoreId.isNotBlank() &&
@@ -1025,6 +1028,70 @@ internal fun GameDetailScreen(
                         Text(
                             text = "Falha na inspeção: $error",
                             color = GameColors.text,
+                            fontSize = 12.sp,
+                        )
+                    }
+                    GameButton(
+                        label = if (deviceSyncExecutionLoading) "Sincronizando SRAM…" else "Sincronizar SRAM com RomM",
+                        onClick = {
+                            if (!deviceSyncExecutionLoading && local != null) {
+                                deviceSyncExecutionLoading = true
+                                deviceSyncExecution = null
+                                deviceSyncExecutionError = null
+                                detailScope.launch {
+                                    try {
+                                        val result = withContext(Dispatchers.IO) {
+                                            RomMDeviceSyncRunner.synchronizeLocalSram(
+                                                context = context,
+                                                romPath = local.path,
+                                                coreId = chosenCoreId,
+                                                platformSlug = entry.platform.slug,
+                                            )
+                                        }
+                                        deviceSyncExecution = result
+                                        GameLog.log(
+                                            "Device Sync",
+                                            "sincronização SRAM concluída para ${entry.title}; " +
+                                                "upload=${result.uploaded}, download=${result.downloaded}, noOp=${result.noOp}, " +
+                                                "conflict=${result.conflictsPreserved}, delete_ignored=${result.deletesIgnored}, " +
+                                                "unknown_ignored=${result.unknownIgnored}, failed=${result.failed}",
+                                        )
+                                    } catch (error: CancellationException) {
+                                        deviceSyncExecutionLoading = false
+                                        throw error
+                                    } catch (error: Exception) {
+                                        deviceSyncExecutionError = error.message ?: "Não foi possível sincronizar a SRAM com o RomM."
+                                        GameLog.error("Device Sync", "falha na sincronização SRAM de ${entry.title}", error)
+                                    } finally {
+                                        deviceSyncExecutionLoading = false
+                                    }
+                                }
+                            }
+                        },
+                        enabled = !deviceSyncExecutionLoading && !busy,
+                        primary = true,
+                        modifier = Modifier.width(260.dp),
+                    )
+                    deviceSyncExecution?.let { result ->
+                        Text(
+                            text = "Sincronização SRAM — ROM #${result.romId}: " +
+                                "${result.uploaded} envio(s), ${result.downloaded} download(s), ${result.noOp} sem alteração.",
+                            color = GameColors.text,
+                            fontSize = 13.sp,
+                        )
+                        Text(
+                            text = "Conflitos preservados: ${result.conflictsPreserved} · " +
+                                "exclusões recusadas: ${result.deletesIgnored} · " +
+                                "operações desconhecidas: ${result.unknownIgnored} · falhas: ${result.failed}. " +
+                                "Save states e memory cards não foram incluídos.",
+                            color = GameColors.textDim,
+                            fontSize = 12.sp,
+                        )
+                    }
+                    deviceSyncExecutionError?.let { error ->
+                        Text(
+                            text = "Falha na sincronização SRAM: $error",
+                            color = GameColors.danger,
                             fontSize = 12.sp,
                         )
                     }
