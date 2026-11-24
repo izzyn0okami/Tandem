@@ -1019,7 +1019,7 @@ class SaveStore internal constructor(
     romFile: File,
     /** Outros núcleos da mesma plataforma: o save de bateria deles serve como ponto de partida. */
     private val siblingCores: List<String> = emptyList(),
-    gameIdentity: String? = null,
+    private val gameIdentity: String? = null,
     private val migrationSources: Map<String, File> = emptyMap(),
 ) {
     constructor(
