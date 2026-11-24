@@ -118,8 +118,7 @@ internal object GameLibraryReconciler {
         return report
     }
 
-    internal fun supportsAutomaticDiscDescriptor(extension: String): Boolean =
-        extension.lowercase(Locale.ROOT) !in setOf("gdi", "ccd")
+    internal fun supportsAutomaticDiscDescriptor(extension: String): Boolean = extension.lowercase(Locale.ROOT) !in setOf("gdi", "ccd")
 
     internal fun candidateGames(localSize: Long, platformSlug: String, remote: List<RemoteGame>): List<RemoteGame> = remote.filter { game ->
         game.platform.slug == platformSlug &&
