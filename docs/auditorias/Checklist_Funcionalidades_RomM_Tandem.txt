@@ -1152,3 +1152,11 @@ COMPLEMENTO — LOGS DE NEGOCIAÇÃO DEVICE SYNC (2026-11-23)
 - Compare da branch com game-mode-m2-dev: 41 commits à frente, 0 atrás. PR #49 continua aberta e não mesclada.
 - [PENDENTE] Aguardar CI aplicável ao head final e obter diagnóstico no aparelho. Não executar transferência real nesta etapa.
 
+
+
+ATUALIZAÇÃO — ANÁLISE DA CI #998 E CORREÇÃO DOS TESTES WEBDAV (2026-11-24)
+- [FALHA CONFIRMADA] A CI #998 (run 45320704837), no head que continha a cobertura de metadados, falhou durante a compilação dos testes unitários. O erro concreto foi `Unresolved reference 'addHeader'` em `RetroArchWebDavClientTest.kt:20`, porque `mockwebserver3.MockResponse` não expõe esse método diretamente na instância criada pelo construtor usado.
+- [CORREÇÃO APLICADA] Os testes WebDAV passaram a construir respostas por `MockResponse.Builder()`, aplicando `code`, `addHeader` e `body` no builder antes de `build()`. Também foi substituído `createTempDir` depreciado por `kotlin.io.path.createTempDirectory(...).toFile()`.
+- [PENDENTE DE CI] Correção commitada na branch `feat/stage-e-completion` em `052e48c309dad2c92aa5ae76da040f916218a070`. Ainda não há run de CI associada a esse commit na consulta atual; não declarar correção validada até nova CI concluir.
+- [CI #998] O job `check-style` concluiu com sucesso. O job de build falhou antes de executar testes ou produzir APK; portanto não há artefato válido dessa execução.
+- PR #49 permanece aberta, sem merge e sem publicação `tandem-latest`. Nenhum save real foi alterado ou transferido.
