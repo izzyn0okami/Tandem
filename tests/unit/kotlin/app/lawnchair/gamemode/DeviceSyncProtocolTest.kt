@@ -330,7 +330,7 @@ class DeviceSyncProtocolTest {
         try {
             server.enqueue(MockResponse(code = 409, body = """{"detail":"conflict"}"""))
             val client = RomMDeviceSyncClient(server.url("/").toString(), "test-token")
-            val error = runCatching { client.uploadSave(42L, "device-123", 8L, "autosave", "tandem_mgba", file) }.exceptionOrNull()
+            val error = runCatching { client.uploadSave(42L, "device-123", 8L, "autosave", "tandem_mgba", "game.srm", file) }.exceptionOrNull()
             val request = server.takeRequest()
 
             assertTrue(error is RomMHttpException)
