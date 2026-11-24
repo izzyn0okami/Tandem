@@ -28,7 +28,7 @@ data class DeviceSyncExecutionResult(
  * Só opera a save do jogo explicitamente vinculado e fechado. Upload/download são executados
  * somente após negociação iniciada por ação explícita do usuário. Conflitos ficam preservados
  * para resolução explícita; operações delete e desconhecidas nunca são aplicadas.
- * Save states e memory cards não são enumerados nem enviados.
+ * O inventário tipado escolhe somente save de núcleo ou cartão PSX em .srm; estados rápidos e progresso RA ficam locais.
  */
 object RomMDeviceSyncRunner {
 
@@ -74,22 +74,28 @@ object RomMDeviceSyncRunner {
             }
             val snapshot = File(snapshotRoot, "${UUID.randomUUID()}.srm")
             try {
-                val originalSave = store.sramFile
-                val localSave = if (originalSave.isFile && originalSave.length() > 0L) {
-                    originalSave.copyTo(snapshot, overwrite = false)
-                    val before = md5(originalSave)
+                val artifacts = store.inventory()
+                val localArtifact = DeviceSyncArtifactPolicy.selectForRomM(artifacts)
+                val originalSave = localArtifact?.file ?: store.sramFile
+                val localSave = localArtifact?.let { artifact ->
+                    artifact.file.copyTo(snapshot, overwrite = false)
+                    val before = md5(artifact.file)
                     val captured = md5(snapshot)
-                    if (before != captured) throw IOException("O save mudou durante a captura; tente novamente.")
+                    if (before != captured) throw IOException("O artefato mudou durante a captura; tente novamente.")
                     DeviceSyncProtocolJson.localSave(
                         romId = romId,
-                        fileName = originalSave.name,
+                        fileName = artifact.file.name,
                         emulator = emulator,
                         file = snapshot,
-                        updatedAt = Instant.ofEpochMilli(originalSave.lastModified()).toString(),
-                    ) ?: throw IOException("Não foi possível preparar o save local.")
-                } else {
-                    null
+                        updatedAt = Instant.ofEpochMilli(artifact.modifiedAtEpochMs).toString(),
+                    ) ?: throw IOException("Não foi possível preparar o artefato local.")
                 }
+                GameLog.log(
+                    "Device Sync",
+                    "artefatos elegíveis: " + artifacts.joinToString { artifact ->
+                        "${artifact.type}/${artifact.slot} ${artifact.format} ${artifact.sizeBytes}B sha256=${artifact.sha256.take(8)}"
+                    }.ifBlank { "nenhum" } + "; selecionado=${localArtifact?.type ?: "nenhum"}",
+                )
                 val initialLocalHash = localSave?.contentHashMd5
                 GameLog.log(
                     "Device Sync",
