@@ -996,3 +996,14 @@ PR #47 — MESCLADA PARA TESTES (2026-11-24)
 - A publicação tandem-latest pós-merge ainda precisa ser confirmada; até lá, não presumir que a release fixa foi atualizada.
 - Teste físico pendente: associação automática de Super Mario World por SHA-1, persistência do vínculo e confirmação da identidade SaveSync. Não iniciar Device Sync nesta etapa.
 - Multidisco/M3U e registros sem SHA-1 verificável continuam pendentes. Nenhuma ROM ou save deve ser movido, sobrescrito ou apagado.
+
+
+ATUALIZAÇÃO DO CHECKLIST — LOG #951 (2026-11-24)
+- [VALIDADO NO APARELHO] SNES / Super Mario World: associação automática RomM persistiu; save remoto ID 15 foi baixado por HTTP 200 (2.048 bytes) e aplicado ao SaveStore snes9x. Backup da versão local divergente foi preservado antes da aplicação.
+- [PARCIAL] Migração legada SNES encontrou conflito adicional; origem foi preservada e o usuário resolveu por escolha explícita. Não tratar migração automática como totalmente concluída.
+- [PENDENTE] Upload SNES: inspeções Device Sync somente leitura mostram candidatos Upload ou NoOp, sempre sem operações aplicadas. Nenhum POST/PUT confirmado.
+- [PENDENTE] PSX / Castlevania: o cliente continua selecionando saves ID 25 e states ID 6 e decide que a versão local já corresponde à remota; não há GET de conteúdo desses IDs no log #951. Download do save PSX mais recente não foi realizado nem comprovado.
+- [PENDENTE] Upload PSX: nenhuma transferência POST/PUT comprovada; Upload=1 no diagnóstico Device Sync é somente plano read-only.
+- [PENDENTE DE CORREÇÃO] Slot RomM: RemoteFile/parser/listagem/upload ainda não modelam ou filtram slot; POST não envia slot. Isso impede tratar corretamente autosave e saves manuais como registros distintos.
+- [PRÓXIMO] Auditar/implementar slot e melhorar diagnóstico da decisão de pull, sem registrar conteúdo/hash integral dos saves. Depois validar download controlado preservando backup local.
+- E4/E5 permanecem EM ANDAMENTO; não ativar sincronização real nem apagar/mover/sobrescrever saves sem autorização explícita.
