@@ -264,3 +264,6 @@ VALIDAÇÃO FINAL DA ETAPA DE COORDENAÇÃO E NEGOCIAÇÃO — 2026-11-24
 - [STATUS ATUAL] Coordenador pré/pós-sessão, registro automático de dispositivo, worker único, transporte separado de SRAM/cartões e estados rápidos, filtragem de snapshots antigos e diagnóstico alinhado estão implementados na PR #50.
 - [PENDENTE] Testes reais no telefone com PSX/SNES, estados rápidos e sincronização ao sair; observar se os casos antigos de 409 agora resultam em download/no-op ou conflito preservado. A interface para escolher explicitamente entre versão local e versão RomM ainda não foi implementada.
 - [SEGURANÇA] Nenhum save, ROM ou dado remoto foi apagado, movido ou sobrescrito. A PR continua em draft e não foi mesclada.
+
+
+- [CI APROVADA] Run #1108 / 45434510655, head 855d3c3f282087f1cf86bc464bd815d54ff37728: workflow_dispatch também concluiu com sucesso no mesmo código validado por #1107. Artefato ID 14939914369, 46.418.315 bytes, SHA-256 c7bdf7db2b004af588092d29d3dd3920994474e1e30545d509f56a5df2b8b5e0; expira em 2027-02-22. Nenhuma publicação tandem-latest.
