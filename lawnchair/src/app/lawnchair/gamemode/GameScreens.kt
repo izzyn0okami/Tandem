@@ -985,7 +985,7 @@ internal fun GameDetailScreen(
                                         }
                                         GameLog.log(
                                             "Device Sync",
-                                            "inspeção somente leitura concluída para ${entry.title}; save local incluída=${inspection.localSaveIncluded}; " +
+                                            "inspeção somente leitura concluída para ${entry.title}; save local incluído=${inspection.localSaveIncluded}; " +
                                                 counts.entries.joinToString { "${it.key}=${it.value}" } +
                                                 "; nenhuma operação aplicada",
                                         )
@@ -993,7 +993,7 @@ internal fun GameDetailScreen(
                                         deviceSyncInspectionLoading = false
                                         throw error
                                     } catch (error: Exception) {
-                                        deviceSyncInspectionError = error.message ?: "Não foi possível inspecionar a save no RomM."
+                                        deviceSyncInspectionError = error.message ?: "Não foi possível inspecionar o save no RomM."
                                         GameLog.error("Device Sync", "falha na inspeção somente leitura de ${entry.title}", error)
                                     } finally {
                                         deviceSyncInspectionLoading = false
@@ -1008,7 +1008,7 @@ internal fun GameDetailScreen(
                         val operations = inspection.negotiation.operations
                         Text(
                             text = "Inspeção concluída — ROM #${inspection.romId}. " +
-                                if (inspection.localSaveIncluded) "save local encontrada." else "Nenhuma save local válida encontrada.",
+                                if (inspection.localSaveIncluded) "Save local encontrada." else "Nenhum save local válido encontrado.",
                             color = GameColors.text,
                             fontSize = 13.sp,
                         )
@@ -1022,6 +1022,20 @@ internal fun GameDetailScreen(
                                 "Desconhecidas: ${operations.count { it.action == DeviceSyncAction.Unknown }}",
                             color = GameColors.textDim,
                             fontSize = 12.sp,
+                        )
+                        Text(
+                            text = "Save local: " +
+                                (inspection.localSaveSizeBytes?.let { "$it bytes" } ?: "ausente") +
+                                " · atualizado: ${inspection.localSaveUpdatedAt ?: "—"} · MD5: " +
+                                (inspection.localSaveMd5?.take(8) ?: "—") +
+                                ". Operações remotas: " +
+                                operations.joinToString(" | ") { op ->
+                                    "${op.action}/ROM ${op.romId}/slot ${op.slot ?: "—"}/ID ${op.saveId ?: "—"}/" +
+                                        "${op.fileName ?: "—"}/emulador ${op.emulator ?: "—"}/" +
+                                        "atualizado ${op.serverUpdatedAt ?: "—"}/MD5 ${op.serverContentHash?.take(8) ?: "—"}"
+                                },
+                            color = GameColors.textDim,
+                            fontSize = 11.sp,
                         )
                     }
                     deviceSyncInspectionError?.let { error ->
@@ -1051,7 +1065,7 @@ internal fun GameDetailScreen(
                                         deviceSyncExecution = result
                                         GameLog.log(
                                             "Device Sync",
-                                            "sincronização save concluída para ${entry.title}; " +
+                                            "sincronização do save concluída para ${entry.title}; " +
                                                 "upload=${result.uploaded}, download=${result.downloaded}, noOp=${result.noOp}, " +
                                                 "conflict=${result.conflictsPreserved}, delete_ignored=${result.deletesIgnored}, " +
                                                 "unknown_ignored=${result.unknownIgnored}, failed=${result.failed}",
@@ -1060,8 +1074,8 @@ internal fun GameDetailScreen(
                                         deviceSyncExecutionLoading = false
                                         throw error
                                     } catch (error: Exception) {
-                                        deviceSyncExecutionError = error.message ?: "Não foi possível sincronizar a save com o RomM."
-                                        GameLog.error("Device Sync", "falha na sincronização save de ${entry.title}", error)
+                                        deviceSyncExecutionError = error.message ?: "Não foi possível sincronizar o save com o RomM."
+                                        GameLog.error("Device Sync", "falha na sincronização do save de ${entry.title}", error)
                                     } finally {
                                         deviceSyncExecutionLoading = false
                                     }
@@ -1074,7 +1088,7 @@ internal fun GameDetailScreen(
                     )
                     deviceSyncExecution?.let { result ->
                         Text(
-                            text = "Sincronização save — ROM #${result.romId}: " +
+                            text = "Sincronização do save — ROM #${result.romId}: " +
                                 "${result.uploaded} envio(s), ${result.downloaded} download(s), ${result.noOp} sem alteração.",
                             color = GameColors.text,
                             fontSize = 13.sp,
