@@ -41,7 +41,7 @@ internal object SaveArtifactCatalog {
         require(coreId.isNotBlank()) { "A identidade do núcleo é obrigatória." }
 
         return files.asSequence()
-            .distinctBy { it.absoluteFile.normalize().path }
+            .distinctBy { it.absoluteFile.toPath().normalize().toString() }
             .filter { it.isFile && it.length() > 0L }
             .mapNotNull { file ->
                 val typeAndSlot = classify(file) ?: return@mapNotNull null
