@@ -167,7 +167,7 @@ object RomMDeviceSyncRunner {
                                 if (!originalSave.matchesMd5(initialLocalHash)) {
                                     throw IOException("O save local mudou após a negociação; download cancelado.")
                                 }
-                                val target = store.sramFile
+                                val target = originalSave
                                 target.parentFile?.let {
                                     if (!it.exists() && !it.mkdirs()) throw IOException("Não foi possível preparar a pasta local de saves.")
                                 }
