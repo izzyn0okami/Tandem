@@ -10,7 +10,7 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
-/** Resultado de uma sincronização SRAM explicitamente iniciada pelo usuário. */
+/** Resultado de uma sincronização save explicitamente iniciada pelo usuário. */
 data class DeviceSyncExecutionResult(
     val romId: Long,
     val uploaded: Int,
@@ -25,14 +25,14 @@ data class DeviceSyncExecutionResult(
 /**
  * Executor conservador do Device Sync RomM.
  *
- * Só opera a SRAM do jogo explicitamente vinculado e fechado. Upload/download são executados
+ * Só opera a save do jogo explicitamente vinculado e fechado. Upload/download são executados
  * somente após negociação iniciada por ação explícita do usuário. Conflitos ficam preservados
  * para resolução explícita; operações delete e desconhecidas nunca são aplicadas.
  * Save states e memory cards não são enumerados nem enviados.
  */
 object RomMDeviceSyncRunner {
 
-    suspend fun synchronizeLocalSram(
+    suspend fun synchronizeLocalSave(
         context: Context,
         romPath: String,
         coreId: String,
@@ -53,7 +53,7 @@ object RomMDeviceSyncRunner {
             val sessionKey = "session_active:$identity"
             val activeAt = app.getSharedPreferences("romm_sync", Context.MODE_PRIVATE).getLong(sessionKey, 0L)
             if (SaveSyncPolicy.isSessionActive(activeAt, System.currentTimeMillis())) {
-                throw IOException("Feche o jogo antes de sincronizar a SRAM.")
+                throw IOException("Feche o jogo antes de sincronizar a save.")
             }
             val deviceId = RomMSettings.deviceSyncDeviceId(app)
                 ?: throw IOException("Este dispositivo ainda não está registrado no Device Sync do RomM.")
@@ -69,23 +69,23 @@ object RomMDeviceSyncRunner {
             val client = RomMDeviceSyncClient(connection.url, connection.token)
             val snapshotRoot = File(app.filesDir, "device-sync-snapshots")
             if (!snapshotRoot.exists() && !snapshotRoot.mkdirs()) {
-                throw IOException("Não foi possível preparar a captura temporária da SRAM.")
+                throw IOException("Não foi possível preparar a captura temporária da save.")
             }
             val snapshot = File(snapshotRoot, "${UUID.randomUUID()}.srm")
             try {
-                val originalSram = store.sramFile
-                val localSave = if (originalSram.isFile && originalSram.length() > 0L) {
-                    originalSram.copyTo(snapshot, overwrite = false)
-                    val before = md5(originalSram)
+                val originalSave = store.sramFile
+                val localSave = if (originalSave.isFile && originalSave.length() > 0L) {
+                    originalSave.copyTo(snapshot, overwrite = false)
+                    val before = md5(originalSave)
                     val captured = md5(snapshot)
-                    if (before != captured) throw IOException("A SRAM mudou durante a captura; tente novamente.")
-                    DeviceSyncProtocolJson.localSramSave(
+                    if (before != captured) throw IOException("A save mudou durante a captura; tente novamente.")
+                    DeviceSyncProtocolJson.localSave(
                         romId = romId,
-                        fileName = originalSram.name,
+                        fileName = originalSave.name,
                         emulator = "tandem_$coreId",
                         file = snapshot,
-                        updatedAt = Instant.ofEpochMilli(originalSram.lastModified()).toString(),
-                    ) ?: throw IOException("Não foi possível preparar a SRAM local.")
+                        updatedAt = Instant.ofEpochMilli(originalSave.lastModified()).toString(),
+                    ) ?: throw IOException("Não foi possível preparar a save local.")
                 } else {
                     null
                 }
@@ -116,10 +116,10 @@ object RomMDeviceSyncRunner {
 
                             DeviceSyncAction.Upload -> {
                                 if (localSave == null || operation.slot != "autosave") {
-                                    throw IOException("Upload sem SRAM local compatível ou fora do slot autosave.")
+                                    throw IOException("Upload sem save local compatível ou fora do slot autosave.")
                                 }
-                                if (!originalSram.matchesMd5(initialLocalHash)) {
-                                    throw IOException("A SRAM local mudou após a negociação; upload cancelado.")
+                                if (!originalSave.matchesMd5(initialLocalHash)) {
+                                    throw IOException("A save local mudou após a negociação; upload cancelado.")
                                 }
                                 val uploadedSave = client.uploadSave(
                                     romId = romId,
@@ -131,7 +131,7 @@ object RomMDeviceSyncRunner {
                                 uploaded++
                                 GameLog.log(
                                     "Device Sync",
-                                    "SRAM enviada para ROM #$romId; save_id=${uploadedSave.optLong("id", -1L)}, bytes=${snapshot.length()}",
+                                    "save enviada para ROM #$romId; save_id=${uploadedSave.optLong("id", -1L)}, bytes=${snapshot.length()}",
                                 )
                             }
 
@@ -143,8 +143,8 @@ object RomMDeviceSyncRunner {
                                     ?: throw IOException("O RomM não informou o ID do save para download.")
                                 val expectedHash = operation.serverContentHash
                                     ?: throw IOException("O RomM não informou o hash do save para download.")
-                                if (!originalSram.matchesMd5(initialLocalHash)) {
-                                    throw IOException("A SRAM local mudou após a negociação; download cancelado.")
+                                if (!originalSave.matchesMd5(initialLocalHash)) {
+                                    throw IOException("A save local mudou após a negociação; download cancelado.")
                                 }
                                 val target = store.sramFile
                                 target.parentFile?.let {
@@ -159,8 +159,8 @@ object RomMDeviceSyncRunner {
                                         expectedContentHash = expectedHash,
                                         stagingFile = staging,
                                     )
-                                    if (!originalSram.matchesMd5(initialLocalHash)) {
-                                        throw IOException("A SRAM local mudou durante o download; arquivo remoto não aplicado.")
+                                    if (!originalSave.matchesMd5(initialLocalHash)) {
+                                        throw IOException("A save local mudou durante o download; arquivo remoto não aplicado.")
                                     }
                                     if (target.isFile && target.length() > 0L) {
                                         store.backupDir.mkdirs()
@@ -171,16 +171,16 @@ object RomMDeviceSyncRunner {
                                         target.copyTo(backup, overwrite = false)
                                         if (sha256(target) != sha256(backup)) {
                                             backup.delete()
-                                            throw IOException("Não foi possível verificar o backup da SRAM local.")
+                                            throw IOException("Não foi possível verificar o backup da save local.")
                                         }
-                                        GameLog.log("Device Sync", "SRAM local preservada em backup antes do download: ${backup.name}")
+                                        GameLog.log("Device Sync", "save local preservada em backup antes do download: ${backup.name}")
                                     }
                                     RomMFileReplacement.replaceFile(staging, target)
                                     client.confirmDownloaded(saveId, deviceId, downloadedHash)
                                     downloaded++
                                     GameLog.log(
                                         "Device Sync",
-                                        "SRAM remota aplicada e confirmada; ROM #$romId, save_id=$saveId, bytes=${target.length()}",
+                                        "save remota aplicada e confirmada; ROM #$romId, save_id=$saveId, bytes=${target.length()}",
                                     )
                                 } finally {
                                     staging.delete()
@@ -194,12 +194,12 @@ object RomMDeviceSyncRunner {
 
                             DeviceSyncAction.Delete -> {
                                 deletesIgnored++
-                                GameLog.log("Device Sync", "operação delete recusada; SRAM local preservada")
+                                GameLog.log("Device Sync", "operação delete recusada; save local preservada")
                             }
 
                             DeviceSyncAction.Unknown -> {
                                 unknownIgnored++
-                                GameLog.log("Device Sync", "operação desconhecida recusada; SRAM local preservada")
+                                GameLog.log("Device Sync", "operação desconhecida recusada; save local preservada")
                             }
                         }
                     } catch (cancelled: CancellationException) {
