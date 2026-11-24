@@ -202,13 +202,17 @@ internal object GameLibraryReconciler {
         val allowedPrimary = platform.extensions - "m3u"
 
         for (disc in playlistEntries) {
-            if (!disc.isFile || disc.extension.lowercase(Locale.ROOT) !in allowedPrimary) return null
+            val extension = disc.extension.lowercase(Locale.ROOT)
+            if (!disc.isFile || extension !in allowedPrimary) return null
+            // GDI e CCD possuem referências próprias a imagens/faixas; até existir parser
+            // específico, não afirmamos que o conjunto local está completo.
+            if (extension == "gdi" || extension == "ccd") return null
             primary += fingerprint(disc)
 
-            if (disc.extension.equals("cue", ignoreCase = true)) {
+            if (extension == "cue") {
                 val references = disc.readLines().mapNotNull { line ->
                     cueReference.find(line)?.let { match -> match.groupValues[1].ifBlank { match.groupValues[2] } }
-                }
+                }.distinct()
                 if (references.isEmpty()) return null
                 for (reference in references) {
                     val companion = File(disc.parentFile, reference.replace('\\', '/'))
