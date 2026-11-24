@@ -332,3 +332,8 @@ ADENDO — BLOQUEIO DE HASH AUSENTE EM DISCOS REMOTOS — 2026-11-24
 - [TESTE ADICIONAL] Incluído caso em que um disco remoto tem hash e outro não; o registro inteiro deve ser rejeitado, evitando falso positivo por comparação parcial.
 - [COMMITS ADICIONAIS] Reconciliador: 2e2b94b7d05ae9efe275e1e7ae0c72d5bbce8439. Teste: ed5b4ea1adcf81fc76dbcfdc01311c1f9dfd8538.
 - [CI] A run #1121 / 45505236662 foi iniciada para o commit anterior ca693f9946dacafc881b6b3bc1a60adaa47d3934 e ainda estava em andamento na última consulta. Ela não valida os commits adicionais acima. Aguardar a execução no head mais recente; a automação de estilo pode também formatar e criar novo commit.
+
+
+NOTA DE CI — CONCORRÊNCIA DO FORMATADOR — 2026-11-24
+- [CI #1121 / RUN 45505236662] O job check-style executou Spotless, mas falhou ao tentar enviar o commit automático de formatação: o branch já havia recebido commits mais novos durante a execução. A falha foi de atualização concorrente do ref remoto, não uma rejeição dos testes ou compilação.
+- [CI ATUAL] A execução #1123 / run 45505446651 foi iniciada para validar os commits mais recentes. No último estado consultado, check-style e build Debug APK ainda estavam em andamento; aguardar resultado final antes de declarar a alteração validada.
