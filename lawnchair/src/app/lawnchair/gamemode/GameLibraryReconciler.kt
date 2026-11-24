@@ -152,18 +152,23 @@ internal object GameLibraryReconciler {
         return remote.asSequence()
             .filter { it.platform.slug == platform.slug }
             .filter { game ->
-                val remotePrimary = game.associatedFiles
+                val remotePrimaryFiles = game.associatedFiles
                     .filter(::isPlayable)
                     .filter { extension(it.fileName) in primaryExtensions }
-                    .mapNotNull(::fingerprint)
-                    .map { it.key() }
-                    .sorted()
+                val remotePrimaryFingerprints = remotePrimaryFiles.mapNotNull(::fingerprint)
+                // Hash ausente em qualquer disco impede afirmar que o conjunto remoto está completo.
+                if (remotePrimaryFingerprints.size != remotePrimaryFiles.size) return@filter false
+                val remotePrimary = remotePrimaryFingerprints.map { it.key() }.sorted()
                 if (remotePrimary != localPrimaryKeys) return@filter false
 
-                val remoteCompanions = game.associatedFiles
+                val remoteCompanionFiles = game.associatedFiles
                     .filter(::isPlayable)
                     .filter { extension(it.fileName) in platform.discCompanionExtensions }
-                    .mapNotNull(::fingerprint)
+                val remoteCompanionFingerprints = remoteCompanionFiles.mapNotNull(::fingerprint)
+                if (localCompanions.isNotEmpty() &&
+                    remoteCompanionFingerprints.size != remoteCompanionFiles.size
+                ) return@filter false
+                val remoteCompanions = remoteCompanionFingerprints
                     .map { it.key() }
                     .toMutableList()
                 // Cada arquivo referenciado por CUE precisa estar representado no mesmo registro remoto.
