@@ -346,3 +346,12 @@ ATUALIZAÇÃO — CI #1123, CORREÇÃO DO PARSER M3U/CUE E REVALIDAÇÃO — 202
 - [STATUS DA VALIDAÇÃO] O head atual da PR #50 é 484cccb837e7a4e90ca627419b6baac94ca3cedb. A consulta de execuções associadas a esse commit ainda não retornou CI. É obrigatório obter CI verde no head atual antes de considerar a correção validada.
 - [PENDENTE] Revisar o contrato real de RemoteAssociatedFile/associatedFiles do RomM para confirmar presença de hash e tamanho de cada disco e companion. A associação permanece estrita e conservadora; nenhum arquivo local/remoto é apagado, movido ou substituído.
 - [PR] #50 continua aberta em draft, sem merge. O teste funcional no telefone e o ciclo completo de save states continuam pendentes.
+
+
+REVISÃO ADICIONAL — CONJUNTO EXATO DE ARQUIVOS CUE — 2026-11-24
+- [ACHADO] A primeira versão da correção exigia todos os companions locais referenciados pelo CUE, mas permitia arquivos companions extras no registro RomM. Isso poderia vincular um conjunto com conteúdo adicional/revisão diferente.
+- [CORREÇÃO] A associação agora exige igualdade exata entre o conjunto de fingerprints dos companions locais referenciados e o conjunto remoto de companions associados ao mesmo jogo. Arquivo remoto extra, ausente ou com hash/tamanho divergente impede vínculo.
+- [TESTE] Adicionado caso para rejeitar companion remoto extra.
+- [COMMITS] Reconciliador: 02339bb203dbbe75c1676e561969c44310c1d199. Teste: 2084283023994d66c97a53c32ebd7aa2c69e39c6.
+- [VALIDAÇÃO PENDENTE] As correções de escape e de conjunto exato ainda precisam de CI no head atual. A consulta de workflows para commits criados pela integração GitHub não retornou execuções; não reutilizar CI antiga como prova do novo código. A PR permanece aberta em draft.
+- [CONTRATO ROMM] O modelo local lê a lista de arquivos da API para RemoteAssociatedFile com tamanho e SHA-1, mas ainda falta confirmação empírica no servidor 5.4.x de que todos os arquivos CUE/companions relevantes aparecem com hashes. Sem isso, o reconciliador intencionalmente não associa.
