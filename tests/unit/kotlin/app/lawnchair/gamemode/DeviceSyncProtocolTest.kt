@@ -344,6 +344,7 @@ class DeviceSyncProtocolTest {
 
             assertTrue(error is RomMHttpException)
             assertEquals(409, (error as RomMHttpException).statusCode)
+            assertEquals("conflict", (error as RomMHttpException).detail)
             assertEquals("false", request.url.queryParameter("overwrite"))
         } finally {
             server.close()
