@@ -6,11 +6,12 @@ import java.security.MessageDigest
 import java.util.Locale
 
 /**
- * Papel local do artefato. CORE_SAVE é intencionalmente neutro: um .srm pode ser SRAM,
- * cartão de memória ou outro formato definido pelo adaptador do núcleo.
+ * Papel local do artefato. A distinção entre save de núcleo e cartão de memória
+ * vem do adaptador do núcleo, nunca apenas da extensão .srm.
  */
 internal enum class SaveArtifactType {
     CORE_SAVE,
+    MEMORY_CARD,
     SAVE_STATE,
     RETRO_ACHIEVEMENTS_PROGRESS,
 }
@@ -44,7 +45,7 @@ internal object SaveArtifactCatalog {
             .distinctBy { it.absoluteFile.toPath().normalize().toString() }
             .filter { it.isFile && it.length() > 0L }
             .mapNotNull { file ->
-                val typeAndSlot = classify(file) ?: return@mapNotNull null
+                val typeAndSlot = classify(file, coreId) ?: return@mapNotNull null
                 SaveArtifact(
                     gameIdentity = gameIdentity,
                     coreId = coreId,
@@ -61,10 +62,13 @@ internal object SaveArtifactCatalog {
             .toList()
     }
 
-    private fun classify(file: File): Pair<SaveArtifactType, String>? {
+    private fun classify(file: File, coreId: String): Pair<SaveArtifactType, String>? {
         val name = file.name.lowercase(Locale.ROOT)
         return when {
-            name == "sram.srm" -> SaveArtifactType.CORE_SAVE to "autosave"
+            name == "sram.srm" -> {
+                val adapter = CoreSaveAdapterRegistry.resolve(coreId)
+                adapter.artifactType to adapter.localSlot
+            }
 
             name.matches(Regex("state[0-9]+\\.state")) ->
                 SaveArtifactType.SAVE_STATE to name.removeSuffix(".state")
