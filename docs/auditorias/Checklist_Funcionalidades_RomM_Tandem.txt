@@ -1169,3 +1169,13 @@ ATUALIZAÇÃO — RESULTADO DA CI #995 E CORREÇÃO (2026-11-24)
 - [SEGURANÇA] Nenhum save real foi transferido, sobrescrito ou removido. PR #49 continua sem merge e sem publicação.
 
 - [CONSULTA POSTERIOR] CI #1018 / run `45322553107` foi iniciada no head da PR `466eb517a40be65663b8cdc1e97a66c3dc58a7e3`; na última verificação, os jobs de build e estilo ainda estavam em execução. Esta é a execução que deve ser acompanhada para validar o head corrente; não declarar sucesso antecipadamente.
+
+
+ATUALIZAÇÃO DO CHECKLIST — CI #1015 E CI #1025 APROVADAS (2026-11-24)
+- [CI APROVADA] Run 45322505814 (#1015): Spotless, testes unitários, build Debug APK, upload do artefato e final-status concluídos com sucesso no commit a5de3f96f44a9d6885a3f62f1a932133b2c1049c.
+- [CI APROVADA NO HEAD ATUAL DA PR] Run 45322831975 (#1025): Spotless, testes unitários, build Debug APK, upload do artefato e final-status concluídos com sucesso no head 0d40f768a75db31f4c204834b95010e98f10b20a.
+- Artefato #1025: assembleLawnWithQuickstepGithubDebug, ID 14888019023, 46.394.121 bytes; SHA-256 f630f0ac72b24d94f4147b6a3895390445113e159d59449b78e99fca65e769c0; disponível até 2027-02-22.
+- [CORREÇÃO DE STATUS] Os registros anteriores que diziam CI #1015/#1018 em andamento estão superados: #1015 e #1025 terminaram com sucesso.
+- [PENDENTE] Teste no aparelho da interoperabilidade Device Sync com RomM 5.4.x: recuperar PSX autosave sem confundir save legado/manual; confirmar upload real PSX e SNES com identidade RomM correta; manter backups.
+- [PENDENTE] WebDAV permanece PoC; não usar para sincronização real nem substituir SaveSync.
+- PR #49 continua aberta e não mesclada. Nenhuma publicação tandem-latest foi feita. Nenhuma transferência real foi executada pela CI.
