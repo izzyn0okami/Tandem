@@ -4949,3 +4949,15 @@ ATUALIZAÇÃO — CI #1015 E CI #1025 APROVADAS (2026-11-24)
 - Esta atualização substitui os registros anteriores que indicavam CI #1015 ou #1018 ainda em andamento. A #1015 foi concluída com sucesso; a #1025 validou o head corrente da PR.
 - PR #49 permanece aberta, sem merge e sem publicação tandem-latest. A CI comprova testes automatizados e geração do APK, não interoperabilidade real com RomM no telefone.
 - Nenhuma transferência real de save foi realizada por estas execuções. Testes controlados no aparelho, especialmente download PSX autosave e upload PSX/SNES, continuam pendentes. Preservar saves e backups; não executar operações reais sem autorização explícita.
+
+AUDITORIA COMPLEMENTAR — ESCOPO DE EMULADOR E TIPO DO SAVE NO DEVICE SYNC (2026-11-24)
+- Fonte oficial RomM 5.4.1: `backend/endpoints/sync/__init__.py` e `backend/endpoints/saves.py`.
+- O contrato de `SyncNegotiatePayload.emulators` filtra os saves do servidor: quando informado, somente registros cujo campo emulator pertence à lista podem ser pareados/oferecidos. O valor null não restringe emuladores.
+- O Tandem já identifica seus saves legados com `tandem_$coreId` em SaveSync. A negociação Device Sync anterior enviava `emulators: null`, permitindo que saves de outros emuladores do mesmo jogo/slot fossem oferecidos ao núcleo atual.
+- A rota `POST /api/saves` aceita o parâmetro `emulator`, mas o upload Device Sync não o enviava. Assim, o RomM poderia gravar o save enviado sem identidade de emulador, prejudicando o pareamento futuro.
+- A resposta de download inclui `file_name`, `slot` e `emulator`. O executor anterior validava o slot e hash do conteúdo, mas não exigia extensão `.srm` nem emulador compatível antes de aplicar o arquivo em `SaveStore.sramFile`.
+- [CORREÇÃO NA PR #49] Negociação e inspeção agora restringem emuladores a `tandem_$coreId`; uploads passam o mesmo valor no parâmetro `emulator`; downloads exigem slot `autosave`, extensão `.srm` e emulador exatamente correspondente.
+- [TESTES ADICIONADOS] Verificação do filtro de emulador no manifesto, envio do parâmetro emulator no upload e rejeição de downloads com extensão, slot ou emulador divergentes.
+- [PENDENTE] CI das alterações mais recentes e revisão final. A CI #1026 estava em andamento em head anterior a estas correções; não representa validação do código recém-alterado.
+- [PENDENTE] Teste controlado no telefone com RomM 5.4.x, primeiro em inspeção somente leitura e depois com operação explicitamente autorizada. Nenhum save real foi transferido ou alterado por esta auditoria.
+- PR #49 permanece aberta, sem merge e sem publicação `tandem-latest`. Não remover, mover, sobrescrever ou limpar saves.
