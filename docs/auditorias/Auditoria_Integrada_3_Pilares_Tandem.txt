@@ -254,3 +254,13 @@ ATUALIZAÇÃO DE VALIDAÇÃO E DIAGNÓSTICO — 2026-11-24
 - [CI APROVADA] Run #1105 / 45432492981, head 87379545636f792ce8109f622470fff0be762d5a: estilo, testes unitários, build Debug APK, upload do artefato e final-status aprovados. Artefato ID 14938399728, 46.416.752 bytes, SHA-256 b17ffce37c34dd1e80625ec95b51b2983fa3baeaa493b90e87e0b367e7aca5e0; expira em 2027-02-22. Nenhuma publicação tandem-latest.
 - [DIAGNÓSTICO ALINHADO] A inspeção manual agora usa o mesmo slot do adaptador e pode observar saves de outros emuladores sem transferi-los; sua contagem de conclusão considera apenas a ROM e o slot administrado.
 - [PENDENTE] Teste funcional no telefone após a última correção de filtro/compatibilidade; resolução explícita de conflitos locais/remotos permanece como etapa futura.
+
+
+
+VALIDAÇÃO FINAL DA ETAPA DE COORDENAÇÃO E NEGOCIAÇÃO — 2026-11-24
+- [CI APROVADA] Run #1104 / 45432189847, head ec65434067d47126bda5cd54c65aaad323cad989: check-style, testes unitários, build Debug APK e final-status aprovados. Foi supersedida pela validação do head posterior.
+- [CI APROVADA] Run #1107 / 45434230023, head 855d3c3f282087f1cf86bc464bd815d54ff37728: check-style, testes unitários, build Debug APK, upload do artefato e final-status aprovados. Artefato ID 14941121359, 46.418.261 bytes, SHA-256 8f361c9f437ca9b95b927716d7e38873491925a2b325af5d2557ba79511c7749; expira em 2027-02-22. Jobs de publicação/notificação/Crowdin foram ignorados por condição do workflow; não houve tandem-latest.
+- [DIAGNÓSTICO] RomM 5.4.1 confirma que o filtro emulators pode ocultar saves existentes de outro núcleo e que o endpoint de upload exige baseline para atualizar slot ocupado. A negociação sem filtro, a validação por grupos compatíveis e o bloqueio de upload “no sync history” estão implementados e cobertos por testes unitários.
+- [STATUS ATUAL] Coordenador pré/pós-sessão, registro automático de dispositivo, worker único, transporte separado de SRAM/cartões e estados rápidos, filtragem de snapshots antigos e diagnóstico alinhado estão implementados na PR #50.
+- [PENDENTE] Testes reais no telefone com PSX/SNES, estados rápidos e sincronização ao sair; observar se os casos antigos de 409 agora resultam em download/no-op ou conflito preservado. A interface para escolher explicitamente entre versão local e versão RomM ainda não foi implementada.
+- [SEGURANÇA] Nenhum save, ROM ou dado remoto foi apagado, movido ou sobrescrito. A PR continua em draft e não foi mesclada.
