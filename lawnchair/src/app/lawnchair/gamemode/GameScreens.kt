@@ -821,7 +821,7 @@ internal fun GameDetailScreen(
     var deviceSyncExecution by remember(entry.key) { mutableStateOf<DeviceSyncExecutionResult?>(null) }
     var deviceSyncExecutionLoading by remember(entry.key) { mutableStateOf(false) }
     var deviceSyncExecutionError by remember(entry.key) { mutableStateOf<String?>(null) }
-    val canInspectDeviceSyncSram = local != null &&
+    val canInspectDeviceSyncSave = local != null &&
         entry.platform.launch == LaunchMode.LIBRETRO &&
         chosenCoreId.isNotBlank() &&
         RomMSettings.isConnected(context) &&
@@ -961,7 +961,7 @@ internal fun GameDetailScreen(
                         )
                     }
                 }
-                if (canInspectDeviceSyncSram) {
+                if (canInspectDeviceSyncSave) {
                     GameButton(
                         label = if (deviceSyncInspectionLoading) "Inspecionando save…" else "Inspecionar save no RomM",
                         onClick = {
