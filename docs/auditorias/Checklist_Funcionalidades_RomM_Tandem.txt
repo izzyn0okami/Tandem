@@ -1027,3 +1027,11 @@ VALIDAÇÃO DA PR #48 — CI #956 (2026-11-24)
 - [PENDENTE] Teste no aparelho: localizar e baixar o SRAM PSX mais recente no autosave; preservar backup local; confirmar upload em autosave sem sobrescrever registros manuais/legados; confirmar que SNES continua funcionando.
 - [PENDENTE] Não considerar E4/E5 concluídos, não iniciar Device Sync amplo e não apagar/mover/sobrescrever saves sem autorização.
 - PR #48 permanece aberta para game-mode-m2-dev. A release fixa tandem-latest não foi alterada; merge/publicação aguardam autorização explícita.
+
+ATUALIZAÇÃO — PR #48 MESCLADA / CI #959 (2026-11-24)
+- [PR MESCLADA] PR #48 integrada por squash em game-mode-m2-dev; commit 71bb5606c570b5be438db13ffa25698d2097b839; head be07bbd91c0e23299f2cd67e11d70f9e6f67b832.
+- [CI APROVADA] Run 45311928423: Spotless, testes unitários, build Debug APK, upload do artefato e final-status concluídos com sucesso.
+- [ARTEFATO GERADO] assembleLawnWithQuickstepGithubDebug, ID 14883792296, 46.373.176 bytes; SHA-256 4fa13155f9efa398fc4b706a09acb642f3933abe365d3821930c6e7519fd5fe0; expira em 2027-02-22.
+- [IMPLEMENTADO] Isolamento da SRAM automática no slot RomM autosave; fallback temporário para save legado sem slot; criação de novo registro autosave em vez de sobrescrever o legado. Slots manuais não são selecionados pelo fluxo automático.
+- [PENDENTE] Validar no aparelho pull/download do PSX autosave, preservação de backup local, upload no slot autosave, preservação de saves manuais/legados e continuidade do SNES.
+- E4/E5 e multidisco/M3U continuam em andamento. A release fixa tandem-latest não foi publicada/atualizada por esta PR.
