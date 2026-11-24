@@ -1,6 +1,7 @@
 package app.lawnchair.gamemode
 
 import android.content.Context
+import androidx.core.content.edit
 import java.io.File
 import java.security.MessageDigest
 
@@ -31,6 +32,7 @@ internal object GameLibraryReconciler {
 
         for (local in locals) {
             if (local.platform.discBased || local.path.endsWith(".m3u", ignoreCase = true)) {
+                markAmbiguous(context, local.path, false)
                 deferredMultiDisc++
                 continue
             }
@@ -54,20 +56,33 @@ internal object GameLibraryReconciler {
                 .toList()
 
             when (matchingRomIds.size) {
-                0 -> withoutVerifiedHash++
+                0 -> {
+                    markAmbiguous(context, local.path, false)
+                    withoutVerifiedHash++
+                }
                 1 -> {
                     val romId = matchingRomIds.single()
                     val existingId = GameIdentityResolver.linkedRomId(context, file, connection)
                     when {
-                        existingId == romId -> alreadyLinked++
-                        existingId != null -> ambiguous++
+                        existingId == romId -> {
+                            markAmbiguous(context, local.path, false)
+                            alreadyLinked++
+                        }
+                        existingId != null -> {
+                            markAmbiguous(context, local.path, true)
+                            ambiguous++
+                        }
                         else -> {
                             SaveSync.link(context, file.absolutePath, romId)
+                            markAmbiguous(context, local.path, false)
                             linked++
                         }
                     }
                 }
-                else -> ambiguous++
+                else -> {
+                    markAmbiguous(context, local.path, true)
+                    ambiguous++
+                }
             }
         }
 
@@ -81,6 +96,16 @@ internal object GameLibraryReconciler {
             )
         }
         return report
+    }
+
+    fun isAmbiguous(context: Context, path: String): Boolean =
+        context.getSharedPreferences("romm_auto_link", Context.MODE_PRIVATE)
+            .getBoolean("ambiguous:$path", false)
+
+    private fun markAmbiguous(context: Context, path: String, value: Boolean) {
+        context.getSharedPreferences("romm_auto_link", Context.MODE_PRIVATE).edit {
+            putBoolean("ambiguous:$path", value)
+        }
     }
 
     private fun sha1(file: File): String {
