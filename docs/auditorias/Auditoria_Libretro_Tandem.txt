@@ -4961,3 +4961,9 @@ AUDITORIA COMPLEMENTAR — ESCOPO DE EMULADOR E TIPO DO SAVE NO DEVICE SYNC (202
 - [PENDENTE] CI das alterações mais recentes e revisão final. A CI #1026 estava em andamento em head anterior a estas correções; não representa validação do código recém-alterado.
 - [PENDENTE] Teste controlado no telefone com RomM 5.4.x, primeiro em inspeção somente leitura e depois com operação explicitamente autorizada. Nenhum save real foi transferido ou alterado por esta auditoria.
 - PR #49 permanece aberta, sem merge e sem publicação `tandem-latest`. Não remover, mover, sobrescrever ou limpar saves.
+
+AJUSTE DE IDENTIDADE DO ARQUIVO NO UPLOAD DEVICE SYNC (2026-11-24)
+- A captura temporária local recebe nome UUID para evitar colisões no staging. O upload anterior usava esse nome temporário como filename multipart, fazendo o RomM armazenar nomes aleatórios em vez do nome real do save.
+- [CORREÇÃO NA PR #49] O cliente agora recebe separadamente o nome original do arquivo (`SaveStore.sramFile.name`), valida a extensão `.srm` e o usa no multipart; o arquivo temporário continua sendo apenas a fonte dos bytes.
+- [TESTE ADICIONADO] Upload verifica que o nome multipart enviado é o nome original informado, não o nome temporário da captura.
+- [PENDENTE] CI do head atualizado e teste controlado no aparelho. Nenhuma transferência real foi realizada.
