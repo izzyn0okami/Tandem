@@ -47,6 +47,7 @@ internal fun RomMLinkDialog(
     var saving by remember(local.path) { mutableStateOf(false) }
     var error by remember(local.path) { mutableStateOf("") }
     var searched by remember(local.path) { mutableStateOf(false) }
+    var localSha1 by remember(local.path) { mutableStateOf<String?>(null) }
     val localFile = remember(local.path) { File(local.path) }
 
     fun search() {
@@ -56,12 +57,13 @@ internal fun RomMLinkDialog(
         selected = null
         scope.launch {
             try {
-                val (found, localSha1) = withContext(Dispatchers.IO) {
+                val (found, calculatedSha1) = withContext(Dispatchers.IO) {
                     val url = RomMSettings.url(context).orEmpty()
                     val token = RomMSettings.token(context)
                     val results = RomMClient(url, token).listGames(searchTerm = query.trim())
-                    results to localFile.takeIf { it.isFile }?.let(::romMLinkSha1)
+                    results to (localSha1 ?: localFile.takeIf { it.isFile }?.let(::romMLinkSha1))
                 }
+                localSha1 = calculatedSha1
                 candidates = found.filter { it.platform.slug == local.platform.slug }
                     .sortedWith(
                         compareByDescending<RemoteGame> { game ->
@@ -132,9 +134,13 @@ internal fun RomMLinkDialog(
                                     text = (if (isSelected) "✓ " else "") + game.title,
                                 )
                                 Text("ID RomM #${game.id} • ${game.fileName}")
+                                val hashMatches = localSha1 != null && game.associatedFiles.any {
+                                    it.sha1Hash.equals(localSha1, ignoreCase = true)
+                                }
                                 val sizeMatches = game.sizeBytes == localFile.length() ||
                                     game.associatedFiles.any { it.sizeBytes == localFile.length() }
-                                if (sizeMatches) Text("Tamanho do arquivo local corresponde a um arquivo do registro.")
+                                if (hashMatches) Text("SHA-1 do arquivo local confirmado no RomM.")
+                                else if (sizeMatches) Text("Tamanho do arquivo local corresponde a um arquivo do registro.")
                             }
                         }
                     }
