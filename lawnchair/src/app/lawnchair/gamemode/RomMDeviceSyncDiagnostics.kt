@@ -11,13 +11,16 @@ import kotlinx.coroutines.withContext
 data class DeviceSyncSaveInspection(
     val romId: Long,
     val localSaveIncluded: Boolean,
+    val localSaveUpdatedAt: String?,
+    val localSaveMd5: String?,
+    val localSaveSizeBytes: Long?,
     val negotiation: DeviceSyncNegotiation,
 )
 
 /**
  * Integração diagnóstica do Device Sync ao save local.
  *
- * A inspeção envia somente o manifesto da save do jogo explicitamente vinculado. Não inclui
+ * A inspeção envia somente o manifesto do save do jogo explicitamente vinculado. Não inclui
  * save states, não registra automaticamente um dispositivo, não transfere arquivos e não
  * executa operações delete, upload, download ou conflict.
  */
@@ -43,7 +46,7 @@ object RomMDeviceSyncDiagnostics {
             val lastActive = context.getSharedPreferences("romm_sync", Context.MODE_PRIVATE)
                 .getLong("session_active:$identity", 0L)
             if (SaveSyncPolicy.isSessionActive(lastActive, System.currentTimeMillis())) {
-                throw IOException("Feche o jogo antes de inspecionar a sincronização da save.")
+                throw IOException("Feche o jogo antes de inspecionar a sincronização do save.")
             }
             val deviceId = RomMSettings.deviceSyncDeviceId(context)
                 ?: throw IOException("Este dispositivo ainda não está registrado no Device Sync do RomM.")
@@ -71,6 +74,9 @@ object RomMDeviceSyncDiagnostics {
             DeviceSyncSaveInspection(
                 romId = romId,
                 localSaveIncluded = localSave != null,
+                localSaveUpdatedAt = localSave?.updatedAt,
+                localSaveMd5 = localSave?.contentHashMd5,
+                localSaveSizeBytes = localSave?.fileSizeBytes,
                 negotiation = negotiation,
             )
         }
