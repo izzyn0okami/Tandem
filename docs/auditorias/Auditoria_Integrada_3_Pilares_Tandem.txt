@@ -1,0 +1,133 @@
+AUDITORIA INTEGRADA DOS 3 PILARES — TANDEM
+Data: 2026-11-24
+Repositório: izzyn0okami/Tandem
+Branch auditada: game-mode-m2-dev
+Head auditado antes do registro: f7536e35ebc67939aa6c15540a511b7081a226f6
+Escopo: LibretroDroid + RetroAchievements + RomM, avaliados como um único fluxo de jogo.
+
+DIRETRIZ ARQUITETURAL DO PROJETO
+O usuário autorizou reconstruir estruturas locais e descartar implementações legadas quando isso for necessário para a integração completa dos três pilares. Compatibilidade com fluxos antigos não deve bloquear a arquitetura definitiva.
+Esta autorização não significa apagar ROMs, saves ou dados remotos reais do RomM sem antes apresentar o alcance específico e obter confirmação.
+O objetivo é um único fluxo coordenado de jogo e sincronização, sem dois mecanismos concorrentes para o mesmo tipo de arquivo.
+
+MÉTODO E LIMITES
+- Leitura estática dos arquivos da branch indicada e consulta dos dois logs anteriores:
+  docs/auditorias/Auditoria_Libretro_Tandem.txt
+  docs/auditorias/Checklist_Funcionalidades_RomM_Tandem.txt
+- Arquivos centrais examinados: GameSessionActivity.kt, SaveStore.kt, SaveSync.kt, SaveSyncPolicy.kt, RomMDeviceSyncClient.kt, RomMDeviceSyncRunner.kt, RomMSaveSyncWorker.kt, RetroAchievements.kt, RaTokenKeyStore.kt, RaWebApiKeyStore.kt, BiosManager.kt, GamePlatforms.kt, CoreRegistry.kt e CoreInstaller.kt.
+- Testes existentes examinados: SaveStoreTest, SaveSyncPolicyTest e DeviceSyncProtocolTest; também foi identificado o conjunto nativo de testes de conquistas do LibretroDroid.
+- PRs abertas na consulta: nenhuma.
+- CI mais recente antes deste registro: #1059, run 45374148555, concluída com sucesso no commit f7536e35ebc67939aa6c15540a511b7081a226f6.
+- Esta auditoria é estática. Não foi executado APK novo nem teste no telefone nesta auditoria. CI verde comprova compilação/testes automatizados daquela revisão, não interoperabilidade real.
+- Nenhum arquivo local do usuário, ROM, save ou dado remoto foi apagado, transferido ou sobrescrito por esta auditoria.
+
+RESULTADO EXECUTIVO
+[CONCLUÍDO — AUDITORIA ESTÁTICA] Os três pilares já existem e têm integração funcional relevante, mas ainda não formam um sistema único.
+[BLOQUEADOR ARQUITETURAL] Existem dois caminhos distintos de sincronização RomM: SaveSync tradicional (pull/push de SRAM e quick states, com worker) e RomM Device Sync (negociação oficial, execução manual e limitada a .srm). O primeiro não usa o device_id/baseline do protocolo Device Sync. Manter ambos perpetua a classe de inconsistência que produziu HTTP 409 nos testes reais.
+[BLOQUEADOR FUNCIONAL] Device Sync não transporta save states nem outros formatos de save/memory card; só aceita .srm, slot autosave e emulador exato.
+[BLOQUEADOR DE VALIDAÇÃO] O teste real mais recente documentado (build #1056) não concluiu upload nem download: PSX e SNES receberam HTTP 409. A causa exata ainda não foi confirmada porque o cliente não registra o corpo/detail do erro HTTP.
+[CONCLUSÃO] Não considerar a integração dos três pilares concluída. A próxima etapa deve ser a arquitetura unificada, não mais uma correção isolada do 409.
+
+PILAR 1 — LIBRETRODROID
+[CONCLUÍDO / EXISTENTE]
+- LibretroDroid está integrado ao app e executa os núcleos no processo do launcher.
+- O alvo ARM64 é intencional para o aparelho principal.
+- GameSessionActivity cria GLRetroView, configura ROM, diretório de sistema/BIOS, diretório de saves, SRAM inicial e opções do núcleo.
+- SaveStore usa identidade estável do jogo e separa dados por núcleo quando o formato exige isolamento; há testes de identidade, migração e política.
+- O tratamento de ZIP ambíguo foi corrigido na PR #6 e está mesclado: não escolhe silenciosamente uma ROM entre várias entradas compatíveis.
+- CoreInstaller baixa o núcleo em staging, valida ELF ARM64, preserva a versão anterior e tenta rollback se a promoção falhar.
+- BiosManager já suporta grupos AND/OR e kits de diretórios, com staging e rollback na importação.
+- O ciclo de jogo já persiste SRAM periodicamente e no encerramento; estados rápidos e progresso de conquistas têm armazenamento local.
+
+[PENDÊNCIAS / RISCOS]
+1. A sessão nativa roda no mesmo processo do launcher. Uma falha nativa pode encerrar o launcher inteiro; isolamento de processo não existe.
+2. A validação de núcleo instalado verifica formato ELF/arquitetura, mas não foi identificada verificação criptográfica por hash/checksum assinado do artefato baixado. ETag/Last-Modified ajudam a detectar atualização, não autenticam o binário.
+3. A presença de BIOS e kits é validada por arquivo/pasta; a validação integral por hashes oficiais e por núcleo continua pendente, apesar de alguns hashes constarem no catálogo.
+4. A lista de núcleos/plataformas não equivale a compatibilidade comprovada. Falta matriz de jogos reais, núcleo, BIOS, áudio/vídeo, controles e estabilidade no aparelho.
+5. RomLauncher importa ROM avulsa para uma pasta interna pelo nome de exibição; revisar colisões de nomes, importação repetida, tamanho/limite e identidade de conteúdo como parte da arquitetura final.
+6. Rever o ciclo completo de saída forçada, encerramento do processo, rotação de Activity e gravação de SRAM/estado; o teste automatizado não substitui a validação no telefone.
+7. A integração com RA e RomM deve receber um identificador de sessão comum, sem cada serviço manter sua própria interpretação do jogo/arquivo.
+
+PILAR 2 — RETROACHIEVEMENTS
+[CONCLUÍDO / EXISTENTE]
+- A sessão de jogo usa a integração nativa rc_client/rcheevos através de LibretroDroid, com hash calculado pelo motor depois que o núcleo está carregado.
+- Há autenticação, sessão, identificação, Hardcore/Softcore, desbloqueios, Rich Presence, leaderboards, indicadores de desafio/progresso e overlays.
+- O token de login e a Web API Key são armazenados criptografados com AES-GCM e chave protegida pelo Android Keystore; há migração do token legado em SharedPreferences.
+- O Hardcore é verificado com opções do núcleo e bloqueia carregamento de estados quando aplicável.
+- O progresso local de conquistas é persistido junto ao armazenamento do jogo e pode ser associado ao estado rápido.
+- Logs anteriores registram validação real no telefone de notificações/overlays, além de CI aprovada.
+
+[PENDÊNCIAS / RISCOS]
+1. Há dois caminhos de API deliberadamente distintos: rc_client durante a partida e API clássica dorequest.php/Web API para login e prévia de conquistas. A prévia depende de gameId previamente descoberto e armazenado por caminho da ROM; ao mover/renomear o arquivo, a prévia pode não localizar o ID até novo reconhecimento.
+2. O progresso serializado de RA é local. Não foi encontrada integração desse progresso com a sincronização RomM nem garantia de continuidade entre dispositivos; definir se o estado é estritamente local ou se haverá mecanismo próprio de sincronização.
+3. A cobertura automatizada Kotlin para autenticação, callbacks, reconexão, ciclo de vida, Hardcore e persistência de progresso não apareceu entre os testes unitários examinados. Há testes nativos de conquistas, mas eles não cobrem o fluxo Android inteiro.
+4. Validar recuperação de sessão após perda de rede, troca de conta, token revogado, falha durante callback nativo, jogo sem hash reconhecido e fechamento inesperado.
+5. Vincular RA à identidade estável da sessão/jogo, e não depender exclusivamente do caminho do arquivo para cache de metadados.
+6. Garantir que credenciais e respostas sensíveis nunca apareçam nos logs. Revisar também mensagens de erro recebidas do servidor antes de exibi-las diretamente no overlay.
+
+PILAR 3 — ROMM
+[CONCLUÍDO / EXISTENTE]
+- Integração de biblioteca RomM, autenticação, cache, vínculo ROM-conta/servidor, metadados, capas, mídias, firmware e downloads está presente em vários estágios.
+- GameIdentityResolver diferencia identidade local por fingerprint e identidade RomM por servidor/conta/ID, evitando compartilhar saves entre contas diferentes.
+- SaveSync tradicional gerencia SRAM e quick states, verifica hashes/versões, mantém snapshots/backup e usa worker persistente para uploads.
+- O cliente Device Sync implementa registro, negotiate/complete, upload, download staging, validação de hash e confirmação /downloaded.
+- Device Sync recusa operações delete, desconhecidas e conflitos sem sobrescrever silenciosamente; downloads aplicados preservam backup local.
+- O checklist anterior documenta recursos de biblioteca, pesquisa, coleções, mídias, firmware e sincronização com vários itens já implementados e outros aguardando teste real.
+
+[PENDÊNCIAS / BLOQUEADORES]
+1. Duplicidade de sincronizadores: SaveSync usa endpoints tradicionais e não participa da baseline de Device Sync; RomMDeviceSyncRunner usa device_id/sessão oficial. A mesma SRAM pode ser vista/alterada por dois mecanismos com históricos diferentes.
+2. Device Sync só enumera store.sramFile. Save states, memory cards e outros artefatos não são transportados por esse executor.
+3. Device Sync é iniciado manualmente e exige dispositivo previamente registrado; ainda não é o coordenador automático do início/fim da sessão.
+4. A negociação restringe emuladores ao identificador tandem_<coreId> e a aplicação de download exige emulador exatamente igual. Isso é seguro contra mistura acidental, mas impede interoperabilidade entre núcleos diferentes mesmo quando o formato do arquivo é comprovadamente compatível. É necessário um mapa explícito de compatibilidade por sistema/formato, não uma igualdade universal nem uma liberação indiscriminada.
+5. O executor limita o transporte ao slot autosave e à extensão .srm. PSX .srm pode representar cartão de memória, não SRAM de bateria; a semântica precisa ser definida por adaptador de núcleo e tipo de artefato.
+6. RomMDeviceSyncClient descarta o corpo de respostas HTTP não exitosas. O 409 fica sem detail para diferenciar as condições de conflito e dificultar diagnóstico.
+7. O teste real do build #1056 documentou HTTP 409 em PSX (ROM #830) e SNES (ROM #650), sem upload/download concluído. A hipótese de divergência entre filtro de emuladores na negociação e proteção global do slot é plausível, mas ainda não confirmada pelo detail da resposta e inventário remoto.
+8. O caminho tradicional escolhe saves remotos compatíveis por núcleo/slot e quick states isolados por núcleo. Reavaliar essas políticas no desenho novo, sem copiar automaticamente as limitações ou heurísticas antigas.
+9. O worker tradicional tem fila persistente, mas o Device Sync ainda não tem fila/reconciliação durável equivalente para todos os artefatos, com retry/backoff e retomada de sessão.
+10. O checklist registra propriedades pessoais, atividade, estatísticas e notificações RomM como pendentes; definir se fazem parte da conclusão dos três pilares ou de uma fase posterior.
+
+INTEGRAÇÃO ENTRE OS 3 PILARES — ACHADOS
+[BLOQUEADOR 1] GameSessionActivity aciona SaveSync.markSessionActive e o ciclo tradicional de pull/push; o Device Sync permanece em uma ação separada. O jogo, RA e RomM não compartilham um único coordenador de sessão.
+[BLOQUEADOR 2] LibretroDroid escreve/serializa os artefatos locais; SaveStore os organiza; porém o protocolo remoto ainda não tem adaptadores que enumerem todos os artefatos suportados por cada núcleo.
+[BLOQUEADOR 3] RA é iniciado no ciclo da sessão Libretro, mas o estado de progresso não participa de uma política coordenada de backup/sincronização entre dispositivos.
+[BLOQUEADOR 4] Não há matriz de integração que comprove, por plataforma/núcleo, a identidade da ROM no RomM, o hash RA, o caminho de SRAM/memory card/state e o comportamento após fechar/reabrir o jogo.
+[POSITIVO] A identidade estável do jogo, o isolamento por conta e a proteção contra substituição silenciosa já fornecem bons componentes para a arquitetura nova; podem ser reutilizados conceitualmente, sem obrigação de manter o fluxo legado.
+
+ARQUITETURA-ALVO RECOMENDADA
+1. Um GameSessionCoordinator como dono do ciclo: resolver jogo/conta/núcleo, preparar artefatos, sincronizar antes da sessão, iniciar LibretroDroid e RA, observar eventos, persistir e sincronizar ao encerrar/retomar conectividade.
+2. Um único SaveArtifactStore local, com inventário tipado por jogo, núcleo, formato, slot e hash. Diferenciar SRAM, cartão de memória, save state, progresso RA e outros dados; não inferir compatibilidade apenas pela extensão.
+3. Um único RomMSyncEngine baseado no protocolo Device Sync quando a versão/capacidade do servidor suportar. Remover o sincronizador paralelo tradicional após migração/reconstrução deliberada dos dados locais de teste.
+4. Adaptadores por núcleo/plataforma que declarem quais artefatos podem ser exportados/importados, slots válidos, formatos e compatibilidade cruzada comprovada.
+5. Política de reconciliação explícita: no-op, upload, download, conflito e remoção são estados diferentes. Nunca executar delete remoto/local por inferência. Conflitos devem ser resolvidos por regra clara e interface compreensível.
+6. Fila persistente única com retry/backoff, idempotência, snapshots temporários, hash, validação antes/depois e retomada segura.
+7. RA como serviço de sessão ligado ao mesmo GameSessionId e à identidade estável do jogo; manter a validação Hardcore e separar claramente progresso local de eventual sincronização remota.
+8. Detectar versão/capacidades do RomM antes de usar recursos específicos; não presumir APIs de RomM 5.5 em servidor 5.4.x.
+9. Logs técnicos com IDs, tipo de artefato, slot, núcleo, hash abreviado, operação e resultado; nunca registrar tokens nem bytes dos arquivos.
+
+PLANO DE VALIDAÇÃO OBRIGATÓRIO
+- Libretro: abrir/fechar/reabrir jogo, salvar SRAM, carregar estado, desconexão de controle, falha de núcleo, BIOS ausente/inválida, ZIP simples/múltiplo/corrompido, multidisco e recuperação após encerramento forçado.
+- RetroAchievements: login/token inválido, hash reconhecido/não reconhecido, Hardcore permitido/bloqueado, desbloqueio, Rich Presence, leaderboard, offline/reconexão, restauração de progresso e troca de conta.
+- RomM: primeiro pareamento, primeira sincronização sem baseline, upload, download, no-op, conflito, arquivo remoto ausente, slot ocupado, núcleos compatíveis/incompatíveis, save state, cartão de memória, perda de rede, retry e retomada.
+- Integração: executar o mesmo jogo nos três pilares; verificar que ROM ID RomM, identidade local, hash RA e inventário de artefatos correspondem à mesma sessão.
+- Testes reais no aparelho são obrigatórios antes de declarar o estágio concluído; CI sozinha não basta.
+
+PENDÊNCIAS PRIORITÁRIAS
+P0 — Desenhar e implementar o coordenador único e o inventário tipado de artefatos.
+P0 — Substituir a duplicidade SaveSync tradicional + Device Sync por um único motor, sem sincronizadores concorrentes.
+P0 — Corrigir diagnóstico HTTP (preservar detail seguro) e resolver o conflito 409 com baseline/protocolo correto.
+P0 — Definir adaptadores de SRAM/cartão de memória/save state por núcleo e compatibilidade cruzada comprovada.
+P1 — Integrar RA ao identificador e ao ciclo da sessão unificada; decidir o escopo do progresso entre dispositivos.
+P1 — Fila persistente, retry, retomada e telemetria de sincronização.
+P1 — Testes unitários/integrados para toda a matriz de operações e teste real PSX/SNES no telefone.
+P2 — Segurança/atualização de núcleos com verificação de integridade autenticada.
+P2 — Validação de BIOS por núcleo e hashes oficiais.
+P2 — Isolamento de falhas nativas e testes de estabilidade/memória.
+
+ESTADO DESTA AUDITORIA
+[CONCLUÍDO] Leitura estática dos três pilares e dos dois logs anteriores.
+[CONCLUÍDO] PRs abertas consultadas: nenhuma.
+[CONCLUÍDO] CI #1059 consultada: sucesso no head auditado.
+[CONCLUÍDO] Bloqueadores arquiteturais e pendências registrados neste arquivo.
+[PENDENTE] Implementar arquitetura unificada; nenhuma alteração de código foi feita nesta auditoria.
+[PENDENTE] Executar CI após o commit deste registro e acrescentar o resultado.
+[PENDENTE] Validar a nova arquitetura em APK no telefone; não há validação funcional nova nesta auditoria.
