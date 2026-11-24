@@ -4827,3 +4827,17 @@ ATUALIZAÇÃO — PR #48 MESCLADA / CI #959 (2026-11-24)
 - A implementação separa SRAM automática no slot autosave; saves manuais e legados são preservados. Estados rápidos permanecem sem slot, conforme contrato RomM.
 - PENDENTE: teste controlado no aparelho para confirmar pull PSX autosave, backup local, upload no slot correto e preservação de saves manuais/legados; verificar também SNES.
 - E4/E5 e multidisco/M3U permanecem EM ANDAMENTO. Não iniciar Device Sync amplo nem apagar/mover/sobrescrever saves sem autorização explícita.
+
+
+CONTINUIDADE DO ESTÁGIO E — PR #49 (2026-11-24)
+- PR: https://github.com/izzyn0okami/Tandem/pull/49
+- Branch: feat/stage-e-completion; base game-mode-m2-dev.
+- Abertura: PRs abertas verificadas antes da criação; nenhuma concorrente encontrada. PR #49 está aberta, não mesclada.
+- E5: executor manual RomM Device Sync adicionado para SRAM .srm do jogo vinculado e fechado. A negociação é limitada ao rom_id selecionado, com restore_unlisted=false. Upload usa slot autosave, overwrite=false e autocleanup=false; download usa staging, valida MD5, backup local validado por SHA-256 e confirmação downloaded após aplicação. Conflitos ficam preservados; delete/unknown não são executados.
+- E6/E7: PoC WebDAV adicionada com OPTIONS/PROPFIND/GET e PUT condicional para arquivo novo (If-None-Match: *), sem DELETE/MOVE/sobrescrita. Testes MockWebServer adicionados.
+- E8: recomendação registrada: Device Sync para SRAM RomM; WebDAV permanece PoC genérica e não substitui o sincronizador.
+- E9: testes negativos adicionados para .mcd/.mcr/.mem/.state/.sav; memory cards continuam fora do transporte até mapeamento por núcleo.
+- E4: implementação existente; teste funcional de conflito/backup/rollback no telefone ainda pendente.
+- E5: interoperabilidade real com RomM 5.4.x e teste no telefone ainda pendentes.
+- CI #965 / run 45317009273: em execução no momento deste registro; Spotless e testes/build ainda não concluídos. Não registrar sucesso antecipadamente.
+- Nenhuma transferência real foi executada nesta alteração. Nenhum save foi apagado, movido ou sobrescrito. Nenhum merge ou publicação tandem-latest foi realizado.
