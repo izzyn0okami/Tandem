@@ -144,6 +144,38 @@ class SaveSyncPolicyTest {
     }
 
     @Test
+    fun autosaveSelectionIgnoresLegacyAndManualSlots() {
+        val remotes = listOf(
+            RemoteFile(10L, "tandem_pcsx_rearmed", slot = null, updatedAtMs = 3_000L),
+            RemoteFile(11L, "tandem_pcsx_rearmed", slot = "manual-1", updatedAtMs = 4_000L),
+            RemoteFile(12L, "tandem_pcsx_rearmed", slot = "autosave", updatedAtMs = 2_000L),
+        )
+
+        assertEquals(
+            12L,
+            SaveSyncPolicy.newestCompatibleRemote(
+                RemoteFileKind.Save,
+                remotes,
+                "pcsx_rearmed",
+                SaveSyncPolicy.AUTOSAVE_SLOT,
+            )?.id,
+        )
+    }
+
+    @Test
+    fun legacyUnslottedSavesCanBeSelectedOnlyAsFallback() {
+        val remotes = listOf(
+            RemoteFile(10L, "tandem_pcsx_rearmed", slot = null, updatedAtMs = 3_000L),
+            RemoteFile(11L, "tandem_pcsx_rearmed", slot = "manual-1", updatedAtMs = 4_000L),
+        )
+
+        assertEquals(
+            10L,
+            SaveSyncPolicy.newestCompatibleRemote(RemoteFileKind.Save, remotes, "pcsx_rearmed")?.id,
+        )
+    }
+
+    @Test
     fun quickStatesRemainRestrictedToTheirOriginalCore() {
         val remotes = listOf(
             RemoteFile(10L, "tandem_pcsx_rearmed", 2_000L),

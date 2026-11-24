@@ -173,7 +173,27 @@ object SaveSync {
         kind: RemoteFileKind,
         remotes: List<RemoteFile>,
         coreId: String,
-    ): RemoteFile? = SaveSyncPolicy.newestCompatibleRemote(kind, remotes, coreId)
+    ): RemoteFile? = if (kind == RemoteFileKind.Save) {
+        SaveSyncPolicy.newestCompatibleRemote(kind, remotes, coreId, SaveSyncPolicy.AUTOSAVE_SLOT)
+            ?: SaveSyncPolicy.newestCompatibleRemote(kind, remotes, coreId, slot = null)
+    } else {
+        SaveSyncPolicy.newestCompatibleRemote(kind, remotes, coreId)
+    }
+
+    /** Prefer RomM's autosave slot; read legacy un-slotted Tandem saves only until it exists. */
+    private fun listRemoteFilesForSync(
+        client: RomMClient,
+        kind: RemoteFileKind,
+        romId: Long,
+        coreId: String,
+    ): List<RemoteFile> {
+        if (kind != RemoteFileKind.Save) return client.listRemoteFiles(kind, romId)
+        val autosaves = client.listRemoteFiles(kind, romId, SaveSyncPolicy.AUTOSAVE_SLOT)
+        if (autosaves.any { SaveSyncPolicy.isCompatibleRemote(kind, it.emulator, coreId) }) return autosaves
+        return client.listRemoteFiles(kind, romId).filter {
+            it.slot == null && SaveSyncPolicy.isCompatibleRemote(kind, it.emulator, coreId)
+        }
+    }
 
     /** Move path-keyed metadata only when its old remote ID is proven to belong to this RomM game. */
     private fun migrateLegacyMetadata(
@@ -362,7 +382,7 @@ object SaveSync {
             var preserveSnapshots = false
             try {
                 for ((kind, file) in files(store)) {
-                    val remotes = client.listRemoteFiles(kind, linkedRomId)
+                    val remotes = listRemoteFilesForSync(client, kind, linkedRomId, coreId)
                     migrateLegacyMetadata(context, romPath, gameIdentity, coreId, kind, remotes, linkedRomId, connection)
                     val remote = newestRemoteFile(kind, remotes, coreId) ?: continue
                     val compatibleCount = remotes.count {
@@ -371,7 +391,8 @@ object SaveSync {
                     GameLog.log(
                         "saves",
                         "save remoto selecionado: tipo=${kind.path}, id=${remote.id}, núcleo=${remote.emulator}, " +
-                            "updatedAt=${remote.updatedAtMs}, candidatos compatíveis=$compatibleCount",
+                            "slot=${remote.slot ?: "legado-sem-slot"}, updatedAt=${remote.updatedAtMs}, " +
+                            "candidatos compatíveis=$compatibleCount",
                     )
                     pullOne(context, client, store, kind, file, remote, romPath, coreId, gameIdentity)
                 }
@@ -727,7 +748,11 @@ object SaveSync {
             )
             if (current == confirmedHash) continue
             val storedId = prefs.getLong("$key:id", -1L).takeIf { it >= 0 }
-            val remotes = if (storedId == null) client.listRemoteFiles(kind, romId) else emptyList()
+            val remotes = if (kind == RemoteFileKind.Save || storedId == null) {
+                listRemoteFilesForSync(client, kind, romId, coreId)
+            } else {
+                emptyList()
+            }
             if (storedId == null) {
                 migrateLegacyMetadata(
                     context,
@@ -743,17 +768,39 @@ object SaveSync {
             // A recuperação do Worker é "at least once": se o servidor aceitou um POST
             // antes de o processo morrer, encontre o head atual de qualquer núcleo Tandem
             // para SRAM; estados rápidos continuam vinculados ao núcleo de origem.
-            val existing = prefs.getLong("$key:id", -1L).takeIf { it >= 0 }
-                ?: newestRemoteFile(kind, remotes, coreId)?.id
+            val existing = if (kind == RemoteFileKind.Save) {
+                remotes.firstOrNull { it.id == storedId && it.slot == SaveSyncPolicy.AUTOSAVE_SLOT }?.id
+                    ?: newestRemoteFile(kind, remotes, coreId)
+                        ?.takeIf { it.slot == SaveSyncPolicy.AUTOSAVE_SLOT }
+                        ?.id
+            } else {
+                storedId ?: newestRemoteFile(kind, remotes, coreId)?.id
+            }
             val extension = if (kind == RemoteFileKind.Save) "srm" else "state"
             val uploadName = "${File(romPath).nameWithoutExtension}.$extension"
             val uploaded = try {
-                client.uploadRemoteFile(kind, romId, emulatorTag(coreId), existing, file, uploadName)
+                client.uploadRemoteFile(
+                    kind,
+                    romId,
+                    emulatorTag(coreId),
+                    existing,
+                    file,
+                    uploadName,
+                    slot = if (kind == RemoteFileKind.Save) SaveSyncPolicy.AUTOSAVE_SLOT else null,
+                )
             } catch (error: RomMHttpException) {
                 // Só cria um registro novo quando o RomM confirma que o antigo não existe.
                 // Falhas de rede, autenticação ou servidor não podem gerar saves duplicados.
                 if (existing == null || error.statusCode != 404) throw error
-                client.uploadRemoteFile(kind, romId, emulatorTag(coreId), null, file, uploadName)
+                client.uploadRemoteFile(
+                    kind,
+                    romId,
+                    emulatorTag(coreId),
+                    null,
+                    file,
+                    uploadName,
+                    slot = if (kind == RemoteFileKind.Save) SaveSyncPolicy.AUTOSAVE_SLOT else null,
+                )
             }
             prefs.edit {
                 putString("$key:hash", current)

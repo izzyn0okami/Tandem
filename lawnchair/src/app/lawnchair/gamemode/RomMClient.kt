@@ -252,6 +252,7 @@ data class RemoteFile(
     val emulator: String?,
     val updatedAtMs: Long,
     val contentHash: String? = null,
+    val slot: String? = null,
 )
 
 /** Pedido de aprovação do aparelho: o usuário confirma o código no RomM, pelo navegador. */
@@ -1969,8 +1970,13 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
     }
 
     /** Saves (bateria) e estados guardados no servidor para um jogo. */
-    fun listRemoteFiles(kind: RemoteFileKind, romId: Long): List<RemoteFile> {
-        val url = base.resolve("api/${kind.path}")!!.newBuilder().addQueryParameter("rom_id", romId.toString()).build()
+    fun listRemoteFiles(kind: RemoteFileKind, romId: Long, slot: String? = null): List<RemoteFile> {
+        val urlBuilder = base.resolve("api/${kind.path}")!!.newBuilder()
+            .addQueryParameter("rom_id", romId.toString())
+        if (kind == RemoteFileKind.Save && slot != null) {
+            urlBuilder.addQueryParameter("slot", slot)
+        }
+        val url = urlBuilder.build()
         val text = http.newCall(request(url).build()).execute().use { response ->
             if (!response.isSuccessful) throw IOException("Servidor respondeu ${response.code}")
             response.body.string()
@@ -1982,6 +1988,7 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
     private fun parseRemoteFile(json: JSONObject) = RemoteFile(
         id = json.getLong("id"),
         emulator = json.optString("emulator").ifEmpty { null },
+        slot = json.optString("slot").takeIf { it.isNotBlank() && it != "null" },
         updatedAtMs = parseTime(json.optString("updated_at")),
         contentHash = json.optString("content_hash").takeIf { it.isNotBlank() && it != "null" },
     )
@@ -1997,7 +2004,15 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
     }
 
     /** Envia o arquivo: atualiza o existente ([existingId]) ou cria um novo; devolve o registro no servidor. */
-    fun uploadRemoteFile(kind: RemoteFileKind, romId: Long, emulator: String, existingId: Long?, file: File, uploadName: String): RemoteFile {
+    fun uploadRemoteFile(
+        kind: RemoteFileKind,
+        romId: Long,
+        emulator: String,
+        existingId: Long?,
+        file: File,
+        uploadName: String,
+        slot: String? = null,
+    ): RemoteFile {
         val body = MultipartBody.Builder()
             .setType(MultipartBody.FORM)
             .addFormDataPart(kind.part, uploadName, file.asRequestBody("application/octet-stream".toMediaType()))
@@ -2008,6 +2023,9 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
             val url = base.resolve("api/${kind.path}")!!.newBuilder()
                 .addQueryParameter("rom_id", romId.toString())
                 .addQueryParameter("emulator", emulator)
+                .apply {
+                    if (kind == RemoteFileKind.Save && slot != null) addQueryParameter("slot", slot)
+                }
                 .build()
             request(url).post(body)
         }
