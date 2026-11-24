@@ -140,11 +140,11 @@ object DeviceSyncProtocolJson {
         deviceId: String,
         saves: List<DeviceSyncSave>,
         romIds: Set<Long>,
-        emulators: Set<String>,
+        emulators: Set<String>? = null,
     ): JSONObject {
         require(deviceId.isNotBlank())
         require(romIds.isNotEmpty() && romIds.all { it > 0L })
-        require(emulators.isNotEmpty() && emulators.all { it.isNotBlank() })
+        require(emulators == null || (emulators.isNotEmpty() && emulators.all { it.isNotBlank() }))
         require(saves.all { it.romId in romIds }) {
             "A negociação não pode incluir saves fora da lista explícita de jogos."
         }
@@ -163,14 +163,17 @@ object DeviceSyncProtocolJson {
         }
         val romArray = JSONArray()
         romIds.sorted().forEach(romArray::put)
-        val emulatorArray = JSONArray()
-        emulators.sorted().forEach(emulatorArray::put)
-        return JSONObject()
+        val payload = JSONObject()
             .put("device_id", deviceId)
             .put("saves", saveArray)
             .put("rom_ids", romArray)
             .put("restore_unlisted", false)
-            .put("emulators", emulatorArray)
+        if (emulators != null) {
+            val emulatorArray = JSONArray()
+            emulators.sorted().forEach(emulatorArray::put)
+            payload.put("emulators", emulatorArray)
+        }
+        return payload
     }
 
     fun parseRegistration(json: JSONObject): RegisteredSyncDevice {
@@ -183,6 +186,12 @@ object DeviceSyncProtocolJson {
         operation: DeviceSyncOperation,
         expectedEmulator: String,
         expectedSlot: String = "autosave",
+    ) = validateDownloadOperation(operation, setOf(expectedEmulator), expectedSlot)
+
+    fun validateDownloadOperation(
+        operation: DeviceSyncOperation,
+        compatibleEmulators: Set<String>,
+        expectedSlot: String = "autosave",
     ) {
         if (operation.action != DeviceSyncAction.Download) {
             throw IOException("A operação recebida não é um download.")
@@ -193,8 +202,8 @@ object DeviceSyncProtocolJson {
         if (operation.fileName?.endsWith(".srm", ignoreCase = true) != true) {
             throw IOException("O arquivo remoto não é um save .srm compatível; download recusado.")
         }
-        if (operation.emulator != expectedEmulator) {
-            throw IOException("O save remoto pertence a outro emulador ou não informa o emulador; download recusado.")
+        if (operation.emulator == null || compatibleEmulators.none { it.equals(operation.emulator, ignoreCase = true) }) {
+            throw IOException("O save remoto pertence a um núcleo sem compatibilidade declarada; download recusado.")
         }
     }
 
@@ -287,7 +296,7 @@ class RomMDeviceSyncClient(
         deviceId: String,
         saves: List<DeviceSyncSave>,
         romIds: Set<Long>,
-        emulators: Set<String>,
+        emulators: Set<String>? = null,
     ): DeviceSyncNegotiation {
         val body = DeviceSyncProtocolJson.negotiation(deviceId, saves, romIds, emulators)
             .toString()
@@ -304,7 +313,7 @@ class RomMDeviceSyncClient(
         deviceId: String,
         saves: List<DeviceSyncSave>,
         romIds: Set<Long>,
-        emulators: Set<String>,
+        emulators: Set<String>? = null,
     ): DeviceSyncNegotiation {
         val negotiation = negotiate(deviceId, saves, romIds, emulators)
         val completed = negotiation.operations.count { it.action == DeviceSyncAction.NoOp }

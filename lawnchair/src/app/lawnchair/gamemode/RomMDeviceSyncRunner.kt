@@ -110,7 +110,7 @@ object RomMDeviceSyncRunner {
                     deviceId = deviceId,
                     saves = listOfNotNull(localSave),
                     romIds = setOf(romId),
-                    emulators = setOf(emulator),
+                    emulators = null,
                 )
 
                 var uploaded = 0
@@ -121,7 +121,15 @@ object RomMDeviceSyncRunner {
                 var unknownIgnored = 0
                 var failed = 0
 
-                negotiation.operations.forEach { operation ->
+                val scopedOperations = negotiation.operations.filter { it.romId == romId && it.slot == remoteSlot }
+                val ignoredOutOfScope = negotiation.operations.size - scopedOperations.size
+                if (ignoredOutOfScope > 0) {
+                    GameLog.log(
+                        "Device Sync",
+                        "$ignoredOutOfScope operação(ões) de outros slots/ROMs ignoradas pelo adaptador $remoteSlot.",
+                    )
+                }
+                scopedOperations.forEach { operation ->
                     GameLog.log(
                         "Device Sync",
                         "operação recebida: ação=${operation.action}, ROM #${operation.romId}, slot=${operation.slot ?: "—"}, " +
@@ -129,9 +137,24 @@ object RomMDeviceSyncRunner {
                             "emulador=${operation.emulator ?: "—"}, atualizado=${operation.serverUpdatedAt ?: "—"}, " +
                             "MD5=${operation.serverContentHash?.take(8) ?: "—"}, motivo=${operation.reason ?: "—"}",
                     )
-                    if (operation.romId != romId) {
-                        failed++
-                        GameLog.log("Device Sync", "operação ignorada: ROM fora do escopo negociado")
+                    if (
+                        operation.saveId != null &&
+                        operation.action in setOf(DeviceSyncAction.Upload, DeviceSyncAction.Download) &&
+                        !DeviceSyncArtifactPolicy.isCompatibleRemote(coreId, operation.emulator)
+                    ) {
+                        conflicts++
+                        GameLog.log(
+                            "Device Sync",
+                            "save remoto de emulador sem compatibilidade declarada preservado; remoto=${operation.emulator ?: "—"}, local=$emulator",
+                        )
+                        return@forEach
+                    }
+                    if (DeviceSyncArtifactPolicy.isUnbasedUpload(operation)) {
+                        conflicts++
+                        GameLog.log(
+                            "Device Sync",
+                            "upload bloqueado: o RomM indica ausência de histórico Device Sync para o save remoto; ambos os lados preservados",
+                        )
                         return@forEach
                     }
                     try {
@@ -162,7 +185,11 @@ object RomMDeviceSyncRunner {
                             }
 
                             DeviceSyncAction.Download -> {
-                                DeviceSyncProtocolJson.validateDownloadOperation(operation, emulator, remoteSlot)
+                                DeviceSyncProtocolJson.validateDownloadOperation(
+                                    operation,
+                                    DeviceSyncArtifactPolicy.compatibleEmulators(coreId),
+                                    remoteSlot,
+                                )
                                 val saveId = operation.saveId
                                     ?: throw IOException("O RomM não informou o ID do save para download.")
                                 val expectedHash = operation.serverContentHash

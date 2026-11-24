@@ -233,3 +233,14 @@ VALIDAÇÃO DA PRIMEIRA IMPLEMENTAÇÃO DO COORDENADOR — 2026-11-24
 - [CONFLITO HTTP] HTTP 409 é classificado como conflito preservado, não como falha transitória que provoque retry infinito. O worker tenta o transporte de estados mesmo se o transporte Device Sync falhar; somente falhas operacionais pedem nova tentativa automática.
 - [PENDENTE] Validação real no telefone para pré-sync, pós-sync, registro automático, conflito HTTP 409, PSX memory-card-0, SNES autosave e estados rápidos específicos do núcleo. Nenhum teste real de servidor/telefone foi executado por CI.
 - [SEGURANÇA] overwrite=false, operações delete ignoradas e conflitos preservados. Nenhum save, ROM ou dado remoto foi apagado, movido ou sobrescrito nesta etapa.
+
+
+
+ANÁLISE DA CAUSA DOS HTTP 409 E PROTEÇÃO DE COMPATIBILIDADE — 2026-11-24
+- [CAUSA CONFIRMADA NO ROMM 5.4.1] O payload Device Sync incluía emulators={tandem_<core>}. O servidor aplica esse filtro ao montar os saves remotos por (rom_id, slot). Quando existe um save no mesmo slot, mas associado a outro emulador, ele fica invisível à negociação. O comparador pode então propor upload como se o slot estivesse vazio; o endpoint POST /api/saves, que verifica todos os saves do slot e o baseline por dispositivo, recusa a operação com HTTP 409 quando não existe histórico de sincronização válido. O comportamento explica a recorrência em slots ocupados e não é causado pela pasta customizável de saves.
+- [CORREÇÃO] A negociação principal deixa de enviar o filtro emulators, permitindo que o servidor revele saves existentes no slot. O cliente filtra localmente apenas a ROM e o slot administrado pelo adaptador, ignorando outros slots sem tentar transferi-los.
+- [COMPATIBILIDADE DECLARATIVA] Foram definidos grupos explícitos para cartões PSX (PCSX ReARMed, SwanStation e Beetle PSX) e SRAM SNES (Snes9x, Snes9x 2010 e bsnes). Núcleos desconhecidos permanecem compatíveis apenas consigo mesmos. Um save remoto de outro grupo é preservado como conflito; nunca é carregado apenas por ter extensão .srm.
+- [BASELINE AUSENTE] Quando RomM 5.4.1 informa “no sync history” em uma operação upload com save remoto existente, o cliente estaciona a operação como conflito antes do POST, evitando o 409 previsível e mantendo os dois lados. HTTP 409 ainda é tratado como conflito caso o servidor retorne a condição por outra razão.
+- [TESTES ADICIONADOS] Payload sem filtro de emuladores; grupos PSX/SNES; rejeição de núcleos não compatíveis; validação de download por grupo; bloqueio de upload sem histórico. A CI ainda precisa validar esta alteração.
+- [PENDENTE] Teste real em PSX e SNES com os saves que antes retornavam 409; verificar se o servidor agora retorna download/no-op ou conflito preservado, e confirmar que slots fora do escopo permanecem intocados.
+- [SEGURANÇA] overwrite continua false. Nenhum upload é forçado, nenhum save remoto é substituído e nenhum slot diferente do adaptador é alterado.

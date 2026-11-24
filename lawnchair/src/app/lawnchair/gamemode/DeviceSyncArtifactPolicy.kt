@@ -18,6 +18,18 @@ internal object DeviceSyncArtifactPolicy {
 
     fun remoteSlotForCore(coreId: String): String = CoreSaveAdapterRegistry.resolve(coreId).remoteSlot
 
+    fun compatibleEmulators(coreId: String): Set<String> =
+        CoreSaveAdapterRegistry.resolve(coreId).compatibleCoreIds.map { "tandem_$it" }.toSet()
+
+    fun isCompatibleRemote(coreId: String, remoteEmulator: String?): Boolean =
+        remoteEmulator != null && compatibleEmulators(coreId).any { it.equals(remoteEmulator, ignoreCase = true) }
+
+    /** RomM 5.4.1 reports this reason when a newer client save has no device baseline yet. */
+    fun isUnbasedUpload(operation: DeviceSyncOperation): Boolean =
+        operation.action == DeviceSyncAction.Upload &&
+            operation.saveId != null &&
+            operation.reason?.contains("no sync history", ignoreCase = true) == true
+
     fun selectForRomM(artifacts: List<SaveArtifact>): SaveArtifact? {
         val candidates = artifacts.filter {
             it.type in setOf(SaveArtifactType.CORE_SAVE, SaveArtifactType.MEMORY_CARD) &&

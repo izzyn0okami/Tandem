@@ -619,4 +619,74 @@ class DeviceSyncProtocolTest {
         }.isFailure)
     }
 
+    @Test
+    fun negotiationCanOmitEmulatorFilterToExposeExistingSlotConflicts() {
+        val json = DeviceSyncProtocolJson.negotiation(
+            deviceId = "device-uuid",
+            saves = emptyList(),
+            romIds = setOf(42L),
+            emulators = null,
+        )
+
+        assertFalse(json.has("emulators"))
+        assertFalse(json.getBoolean("restore_unlisted"))
+    }
+
+    @Test
+    fun compatibilityRegistryAllowsOnlyExplicitPsxAndSnesCoreGroups() {
+        assertTrue(DeviceSyncArtifactPolicy.isCompatibleRemote("pcsx_rearmed", "tandem_swanstation"))
+        assertTrue(DeviceSyncArtifactPolicy.isCompatibleRemote("snes9x", "tandem_snes9x2010"))
+        assertTrue(DeviceSyncArtifactPolicy.isCompatibleRemote("snes9x", "tandem_bsnes"))
+        assertFalse(DeviceSyncArtifactPolicy.isCompatibleRemote("snes9x", "tandem_mgba"))
+        assertFalse(DeviceSyncArtifactPolicy.isCompatibleRemote("snes9x", null))
+    }
+
+    @Test
+    fun downloadValidationAcceptsOnlyDeclaredCompatibleCoreGroup() {
+        val operation = DeviceSyncOperation(
+            action = DeviceSyncAction.Download,
+            romId = 42L,
+            saveId = 314L,
+            fileName = "memory-card.srm",
+            slot = "memory-card-0",
+            emulator = "tandem_swanstation",
+            reason = "server save is newer",
+            serverUpdatedAt = null,
+            serverContentHash = "0123456789abcdef0123456789abcdef",
+        )
+
+        DeviceSyncProtocolJson.validateDownloadOperation(
+            operation,
+            DeviceSyncArtifactPolicy.compatibleEmulators("pcsx_rearmed"),
+            "memory-card-0",
+        )
+        assertTrue(
+            runCatching {
+                DeviceSyncProtocolJson.validateDownloadOperation(
+                    operation.copy(emulator = "tandem_snes9x"),
+                    DeviceSyncArtifactPolicy.compatibleEmulators("pcsx_rearmed"),
+                    "memory-card-0",
+                )
+            }.isFailure,
+        )
+    }
+
+    @Test
+    fun unbasedUploadIsClassifiedAsConflictBeforeSendingASecondPost() {
+        val operation = DeviceSyncOperation(
+            action = DeviceSyncAction.Upload,
+            romId = 42L,
+            saveId = 314L,
+            fileName = "game.srm",
+            slot = "autosave",
+            emulator = "tandem_snes9x",
+            reason = "Client save is newer (no sync history)",
+            serverUpdatedAt = "2026-11-24T12:00:00Z",
+            serverContentHash = "0123456789abcdef0123456789abcdef",
+        )
+
+        assertTrue(DeviceSyncArtifactPolicy.isUnbasedUpload(operation))
+        assertFalse(DeviceSyncArtifactPolicy.isUnbasedUpload(operation.copy(reason = "Client save is newer than last sync")))
+    }
+
 }
