@@ -25,7 +25,26 @@ import okhttp3.RequestBody.Companion.toRequestBody
 import okhttp3.Response
 import org.json.JSONObject
 
-class RomMHttpException(val statusCode: Int, message: String) : IOException(message)
+class RomMHttpException(
+    val statusCode: Int,
+    message: String,
+    val detail: String? = null,
+) : IOException(if (detail.isNullOrBlank()) message else "$message: $detail")
+
+/** Extrai apenas campos de diagnóstico conhecidos; nunca registra o corpo HTTP arbitrário. */
+internal fun romMErrorDetail(body: String?): String? {
+    if (body.isNullOrBlank()) return null
+    val json = runCatching { JSONObject(body) }.getOrNull() ?: return null
+    val raw = sequenceOf("detail", "message", "error")
+        .mapNotNull { key -> json.optString(key).takeIf { it.isNotBlank() && it != "null" } }
+        .firstOrNull()
+        ?: return null
+    return raw
+        .replace(Regex("[\\\\r\\\\n\\\\t\\\\p{Cntrl}]"), " ")
+        .replace(Regex("\\s+"), " ")
+        .take(300)
+        .takeIf { it.isNotBlank() }
+
 
 internal const val MAX_ROMM_PATCH_UPLOAD_BYTES = 1024L * 1024L * 1024L
 
