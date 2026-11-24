@@ -946,3 +946,35 @@ AUDITORIA COMPLEMENTAR — SLOT AUTOSAVE DO ROMM (2026-11-23/24)
 - Correção pendente: adicionar slot ao modelo/parser, filtrar a consulta remota e enviar o slot no POST de criação; preservar o slot de registros existentes no PUT.
 - Não confundir com Device Sync E5, que tem protocolo separado. Não implementar nem alterar saves sem a autorização de trabalho correspondente.
 - Fonte oficial RomM 5.4.1: https://github.com/rommapp/romm/blob/5.4.1/backend/endpoints/saves.py
+
+
+AUDITORIA — RECONCILIAÇÃO AUTOMÁTICA DA BIBLIOTECA LOCAL COM ROMM (2026-11-24)
+
+ESCOPO E CÓDIGO INSPECIONADO
+- GameLibraryScanner.kt, LibraryEntry.kt, RemoteLibrary.kt, RomMClient.kt, SaveStore.kt/GameIdentityResolver e SaveSync.kt.
+- O catálogo RomM já é paginado e pode incluir arquivos associados com SHA-1; o cache RomM também preserva os hashes dos arquivos associados.
+- GameIdentityResolver já mantém vínculo por conteúdo e escopa a identidade pelo servidor e conta RomM.
+- buildEntries ainda usa nome de arquivo/título para agrupar a apresentação da biblioteca; isso não é prova segura de identidade RomM para sincronização.
+
+DECISÃO DE ARQUITETURA
+- A associação automática deve reconciliar ROM local com rom.id remoto, sem baixar ROM novamente.
+- Nome e tamanho não podem confirmar identidade; correspondência criptográfica exata e plataforma compatível são necessárias.
+- Duplicidade de registros com o mesmo conteúdo deve permanecer ambígua; não escolher automaticamente.
+- O vínculo usa o mecanismo existente GameIdentityResolver/SaveSync.link e não mistura GameEntity.id com rom.id.
+
+IMPLEMENTAÇÃO INICIAL NA PR #47 — EM ANDAMENTO
+- Criado GameLibraryReconciler: para arquivos de plataformas não-disc, exige SHA-1 exato, mesma plataforma e correspondência com um único rom.id.
+- Tamanho e extensão são apenas pré-filtros para reduzir leituras; não são critérios de associação.
+- Correspondências para mais de um rom.id ou conflito com vínculo existente são marcadas como ambíguas.
+- O catálogo é reconciliado após atualização e também quando a biblioteca reutiliza o cache fresco.
+- A associação manual foi restringida à resolução de ambiguidades; não é o fluxo principal.
+- Foram adicionados testes unitários para hash exato, plataforma divergente, ausência de hash e duplicidade de registros.
+
+LIMITES E PENDÊNCIAS
+- Jogos multidisco e playlists M3U ainda são adiados; falta comparar o conjunto completo de hashes dos discos/arquivos associados.
+- Registros sem SHA-1 verificável não recebem vínculo automático.
+- Teste no aparelho ainda pendente: associar Super Mario World e confirmar linkedRomId/identidade SaveSync, sem iniciar transferência.
+- Não baixar/enviar ROM, não alterar arquivos de jogo e não tocar em SRAM, saves, save states ou Device Sync.
+- CI #933 falhou no Spotless por nome de callback Compose onLinked; callback renomeado para onLink.
+- CI #942, no head e60ebec4f14d178e8625d0aa4dcb2f2d4f34c4d7, estava em execução no momento deste registro; ainda não registrar sucesso.
+- PR #47 permanece Draft, aberta e sem merge. Nenhuma publicação tandem-latest autorizada.
