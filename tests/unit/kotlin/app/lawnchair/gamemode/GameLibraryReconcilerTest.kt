@@ -1,6 +1,12 @@
 package app.lawnchair.gamemode
 
+import java.io.File
+import java.nio.file.Files
+import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
+import org.junit.Before
 import org.junit.Test
 
 class GameLibraryReconcilerTest {
@@ -8,6 +14,19 @@ class GameLibraryReconcilerTest {
     private val snes = checkNotNull(GamePlatforms.bySlug("snes"))
     private val gba = checkNotNull(GamePlatforms.bySlug("gba"))
     private val psx = checkNotNull(GamePlatforms.bySlug("psx"))
+    private val dreamcast = checkNotNull(GamePlatforms.bySlug("dreamcast"))
+    private val saturn = checkNotNull(GamePlatforms.bySlug("saturn"))
+    private lateinit var root: File
+
+    @Before
+    fun setUp() {
+        root = Files.createTempDirectory("tandem-rom-reconcile").toFile()
+    }
+
+    @After
+    fun tearDown() {
+        root.deleteRecursively()
+    }
 
     private fun associated(
         id: Long,
@@ -128,6 +147,62 @@ class GameLibraryReconcilerTest {
                 listOf(remoteGame(10L, platform = gba)),
             ),
         )
+    }
+
+    @Test
+    fun cueFingerprintIncludesEveryReferencedPhysicalCompanionOnlyOnce() {
+        val bin = File(root, "disc.bin").apply { writeBytes(byteArrayOf(1, 2, 3, 4)) }
+        val cue = File(root, "disc.cue").apply {
+            writeText(
+                """
+                FILE "disc.bin" BINARY
+                  TRACK 01 MODE1/2352
+                    INDEX 01 00:00:00
+                  TRACK 02 MODE1/2352
+                    INDEX 01 10:00:00
+                """.trimIndent(),
+            )
+        }
+
+        val set = GameLibraryReconciler.fingerprintDiscSet(cue, psx)
+
+        assertNotNull(set)
+        assertEquals(1, set!!.primary.size)
+        assertEquals(1, set.companions.size)
+        assertEquals(bin.length(), set.companions.single().sizeBytes)
+    }
+
+    @Test
+    fun m3uFingerprintRequiresEveryDiscCueAndCompanion() {
+        File(root, "disc1.bin").writeBytes(byteArrayOf(1, 2))
+        File(root, "disc2.bin").writeBytes(byteArrayOf(3, 4))
+        File(root, "disc1.cue").writeText("FILE \"disc1.bin\" BINARY\n TRACK 01 MODE1/2352\n INDEX 01 00:00:00")
+        File(root, "disc2.cue").writeText("FILE \"disc2.bin\" BINARY\n TRACK 01 MODE1/2352\n INDEX 01 00:00:00")
+        val playlist = File(root, "game.m3u").apply { writeText("disc1.cue\ndisc2.cue\n") }
+
+        val set = GameLibraryReconciler.fingerprintDiscSet(playlist, psx)
+
+        assertNotNull(set)
+        assertEquals(2, set!!.primary.size)
+        assertEquals(2, set.companions.size)
+    }
+
+    @Test
+    fun missingCueCompanionDefersFingerprinting() {
+        val cue = File(root, "disc.cue").apply {
+            writeText("FILE \"missing.bin\" BINARY\n TRACK 01 MODE1/2352\n INDEX 01 00:00:00")
+        }
+
+        assertNull(GameLibraryReconciler.fingerprintDiscSet(cue, psx))
+    }
+
+    @Test
+    fun gdiAndCcdAreNotFingerprintedWithoutTheirOwnParsers() {
+        val gdi = File(root, "disc.gdi").apply { writeText("1\n1 0 4 2352 track01.bin 0") }
+        val ccd = File(root, "disc.ccd").apply { writeText("[CloneCD]\nVersion=3") }
+
+        assertNull(GameLibraryReconciler.fingerprintDiscSet(gdi, dreamcast))
+        assertNull(GameLibraryReconciler.fingerprintDiscSet(ccd, saturn))
     }
 
     @Test
