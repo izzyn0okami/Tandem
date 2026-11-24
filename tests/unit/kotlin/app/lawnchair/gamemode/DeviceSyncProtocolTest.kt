@@ -457,4 +457,39 @@ class DeviceSyncProtocolTest {
         }
     }
 
+    @Test
+    fun negotiationPreservesRemoteAutosaveMetadataForDiagnosis() {
+        val parsed = DeviceSyncProtocolJson.parseNegotiation(
+            JSONObject(
+                """{
+                    "session_id": 29,
+                    "operations": [
+                        {
+                            "action": "download",
+                            "rom_id": 42,
+                            "save_id": 314,
+                            "file_name": "pcsx-rearmed.srm",
+                            "slot": "autosave",
+                            "emulator": "pcsx_rearmed",
+                            "reason": "server save is newer",
+                            "server_updated_at": "2026-11-23T22:10:00Z",
+                            "server_content_hash": "0123456789abcdef0123456789abcdef"
+                        }
+                    ]
+                }""",
+            ),
+        )
+
+        val operation = parsed.operations.single()
+        assertEquals(DeviceSyncAction.Download, operation.action)
+        assertEquals(42L, operation.romId)
+        assertEquals(314L, operation.saveId)
+        assertEquals("pcsx-rearmed.srm", operation.fileName)
+        assertEquals("autosave", operation.slot)
+        assertEquals("pcsx_rearmed", operation.emulator)
+        assertEquals("server save is newer", operation.reason)
+        assertEquals("2026-11-23T22:10:00Z", operation.serverUpdatedAt)
+        assertEquals("0123456789abcdef0123456789abcdef", operation.serverContentHash)
+    }
+
 }
