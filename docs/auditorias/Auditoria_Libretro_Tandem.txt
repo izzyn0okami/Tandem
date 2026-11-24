@@ -4742,3 +4742,13 @@ CORREÇÃO DE PRÉ-FILTRO E ESTADO DE AMBIGUIDADE — PR #47 (2026-11-24)
 - CI #943 / run 45301928805 foi disparada para o head ebdf1bf6126a115d9087e2109855163c0fb8d975; estava em execução na última consulta. A alteração posterior gerou commits adicionais; aguardar a CI correspondente ao head atual antes de declarar validação.
 - Multidisco/M3U permanecem pendentes; não foram associados por heurística parcial. Teste físico de Super Mario World ainda pendente.
 - PR #47 continua Draft, aberta e sem merge; nenhum save ou ROM foi modificado, e nenhuma transferência foi iniciada.
+
+
+MERGE PARA TESTES — PR #47 (2026-11-24)
+- Autorização explícita do usuário recebida para mesclar a implementação na base de desenvolvimento e disponibilizar a versão de teste.
+- PR #47 marcada como Ready for review e mesclada por squash com sucesso.
+- Commit de merge: 646d7ca2f75752a9900b323bf88fc44203771a4d.
+- CI #947 / run 45302304879 passou integralmente no head 4aa2f1659cad909a110368e7daa3bc5f77b0b330: Spotless/formatação, testes unitários, build Debug APK e upload do artefato.
+- A publicação tandem-latest ainda não foi confirmada. Verificar execução do workflow disparado pela atualização da branch game-mode-m2-dev antes de orientar instalação.
+- Próximo teste no aparelho: instalar o APK de CI correspondente à versão mesclada, verificar associação automática do Super Mario World e persistência do vínculo. Não iniciar sincronização de saves durante a validação de identidade.
+- Multidisco/M3U permanecem pendentes; registros sem SHA-1 verificável não são associados. Nenhuma ROM/save foi alterado ou transferido pela implementação.
