@@ -337,3 +337,12 @@ ADENDO — BLOQUEIO DE HASH AUSENTE EM DISCOS REMOTOS — 2026-11-24
 NOTA DE CI — CONCORRÊNCIA DO FORMATADOR — 2026-11-24
 - [CI #1121 / RUN 45505236662] O job check-style executou Spotless, mas falhou ao tentar enviar o commit automático de formatação: o branch já havia recebido commits mais novos durante a execução. A falha foi de atualização concorrente do ref remoto, não uma rejeição dos testes ou compilação.
 - [CI ATUAL] A execução #1123 / run 45505446651 foi iniciada para validar os commits mais recentes. No último estado consultado, check-style e build Debug APK ainda estavam em andamento; aguardar resultado final antes de declarar a alteração validada.
+
+
+ATUALIZAÇÃO — CI #1123, CORREÇÃO DO PARSER M3U/CUE E REVALIDAÇÃO — 2026-11-24
+- [CI #1123 / RUN 45505446651 — FALHOU] O build detectou escapes Kotlin inválidos no parser de playlists/discos em GameLibraryReconciler.kt (linhas 190 e 211 no commit testado). Os testes não chegaram a executar; o build APK foi ignorado. O job check-style também falhou no push automático do Spotless por atualização concorrente do branch.
+- [DIAGNÓSTICO] A falha de compilação foi causada por literais de caractere e regex raw-string com barras invertidas duplicadas. Não é falha da lógica de comparação de hashes.
+- [CORREÇÃO] Literais de separador Windows foram corrigidos para char Kotlin '\\'; a regex CUE FILE foi corrigida para escapes raw-string válidos (\s e \S). Commits: 88393dfd6512a6edf571c9fcc8ed89ddaaae85e4 e 484cccb837e7a4e90ca627419b6baac94ca3cedb.
+- [STATUS DA VALIDAÇÃO] O head atual da PR #50 é 484cccb837e7a4e90ca627419b6baac94ca3cedb. A consulta de execuções associadas a esse commit ainda não retornou CI. É obrigatório obter CI verde no head atual antes de considerar a correção validada.
+- [PENDENTE] Revisar o contrato real de RemoteAssociatedFile/associatedFiles do RomM para confirmar presença de hash e tamanho de cada disco e companion. A associação permanece estrita e conservadora; nenhum arquivo local/remoto é apagado, movido ou substituído.
+- [PR] #50 continua aberta em draft, sem merge. O teste funcional no telefone e o ciclo completo de save states continuam pendentes.
