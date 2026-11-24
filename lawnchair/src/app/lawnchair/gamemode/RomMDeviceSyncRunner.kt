@@ -53,7 +53,7 @@ object RomMDeviceSyncRunner {
             val sessionKey = "session_active:$identity"
             val activeAt = app.getSharedPreferences("romm_sync", Context.MODE_PRIVATE).getLong(sessionKey, 0L)
             if (SaveSyncPolicy.isSessionActive(activeAt, System.currentTimeMillis())) {
-                throw IOException("Feche o jogo antes de sincronizar a save.")
+                throw IOException("Feche o jogo antes de sincronizar o save.")
             }
             val deviceId = RomMSettings.deviceSyncDeviceId(app)
                 ?: throw IOException("Este dispositivo ainda não está registrado no Device Sync do RomM.")
@@ -69,7 +69,7 @@ object RomMDeviceSyncRunner {
             val client = RomMDeviceSyncClient(connection.url, connection.token)
             val snapshotRoot = File(app.filesDir, "device-sync-snapshots")
             if (!snapshotRoot.exists() && !snapshotRoot.mkdirs()) {
-                throw IOException("Não foi possível preparar a captura temporária da save.")
+                throw IOException("Não foi possível preparar a captura temporária do save.")
             }
             val snapshot = File(snapshotRoot, "${UUID.randomUUID()}.srm")
             try {
@@ -78,14 +78,14 @@ object RomMDeviceSyncRunner {
                     originalSave.copyTo(snapshot, overwrite = false)
                     val before = md5(originalSave)
                     val captured = md5(snapshot)
-                    if (before != captured) throw IOException("A save mudou durante a captura; tente novamente.")
+                    if (before != captured) throw IOException("O save mudou durante a captura; tente novamente.")
                     DeviceSyncProtocolJson.localSave(
                         romId = romId,
                         fileName = originalSave.name,
                         emulator = "tandem_$coreId",
                         file = snapshot,
                         updatedAt = Instant.ofEpochMilli(originalSave.lastModified()).toString(),
-                    ) ?: throw IOException("Não foi possível preparar a save local.")
+                    ) ?: throw IOException("Não foi possível preparar o save local.")
                 } else {
                     null
                 }
@@ -119,7 +119,7 @@ object RomMDeviceSyncRunner {
                                     throw IOException("Upload sem save local compatível ou fora do slot autosave.")
                                 }
                                 if (!originalSave.matchesMd5(initialLocalHash)) {
-                                    throw IOException("A save local mudou após a negociação; upload cancelado.")
+                                    throw IOException("O save local mudou após a negociação; upload cancelado.")
                                 }
                                 val uploadedSave = client.uploadSave(
                                     romId = romId,
@@ -144,7 +144,7 @@ object RomMDeviceSyncRunner {
                                 val expectedHash = operation.serverContentHash
                                     ?: throw IOException("O RomM não informou o hash do save para download.")
                                 if (!originalSave.matchesMd5(initialLocalHash)) {
-                                    throw IOException("A save local mudou após a negociação; download cancelado.")
+                                    throw IOException("O save local mudou após a negociação; download cancelado.")
                                 }
                                 val target = store.sramFile
                                 target.parentFile?.let {
@@ -160,7 +160,7 @@ object RomMDeviceSyncRunner {
                                         stagingFile = staging,
                                     )
                                     if (!originalSave.matchesMd5(initialLocalHash)) {
-                                        throw IOException("A save local mudou durante o download; arquivo remoto não aplicado.")
+                                        throw IOException("O save local mudou durante o download; arquivo remoto não aplicado.")
                                     }
                                     if (target.isFile && target.length() > 0L) {
                                         store.backupDir.mkdirs()
@@ -173,14 +173,14 @@ object RomMDeviceSyncRunner {
                                             backup.delete()
                                             throw IOException("Não foi possível verificar o backup da save local.")
                                         }
-                                        GameLog.log("Device Sync", "save local preservada em backup antes do download: ${backup.name}")
+                                        GameLog.log("Device Sync", "save local preservado em backup antes do download: ${backup.name}")
                                     }
                                     RomMFileReplacement.replaceFile(staging, target)
                                     client.confirmDownloaded(saveId, deviceId, downloadedHash)
                                     downloaded++
                                     GameLog.log(
                                         "Device Sync",
-                                        "save remota aplicada e confirmada; ROM #$romId, save_id=$saveId, bytes=${target.length()}",
+                                        "save remoto aplicado e confirmado; ROM #$romId, save_id=$saveId, bytes=${target.length()}",
                                     )
                                 } finally {
                                     staging.delete()
@@ -194,12 +194,12 @@ object RomMDeviceSyncRunner {
 
                             DeviceSyncAction.Delete -> {
                                 deletesIgnored++
-                                GameLog.log("Device Sync", "operação delete recusada; save local preservada")
+                                GameLog.log("Device Sync", "operação delete recusada; save local preservado")
                             }
 
                             DeviceSyncAction.Unknown -> {
                                 unknownIgnored++
-                                GameLog.log("Device Sync", "operação desconhecida recusada; save local preservada")
+                                GameLog.log("Device Sync", "operação desconhecida recusada; save local preservado")
                             }
                         }
                     } catch (cancelled: CancellationException) {
