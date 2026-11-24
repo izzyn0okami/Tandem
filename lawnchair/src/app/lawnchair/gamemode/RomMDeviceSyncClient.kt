@@ -98,7 +98,7 @@ object DeviceSyncProtocolJson {
     ): DeviceSyncSave? {
         require(romId > 0L)
         require(fileName.endsWith(".srm", ignoreCase = true)) {
-            "O Device Sync desta etapa aceita somente arquivos SRAM .srm."
+            "O Device Sync desta etapa aceita somente arquivos .srm."
         }
         require(emulator.isNotBlank())
         require(updatedAt.isNotBlank())
