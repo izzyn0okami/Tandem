@@ -193,7 +193,7 @@ internal object GameLibraryReconciler {
     private fun fingerprintDiscSet(entry: File, platform: GamePlatform): DiscSet? {
         val playlistEntries = if (entry.extension.equals("m3u", ignoreCase = true)) {
             entry.readLines().map(String::trim).filter { it.isNotEmpty() && !it.startsWith("#") }
-                .map { File(entry.parentFile, it.replace('\\\\', '/')) }
+                .map { File(entry.parentFile, it.replace('\\', '/')) }
         } else {
             listOf(entry)
         }
@@ -214,7 +214,7 @@ internal object GameLibraryReconciler {
                 }
                 if (references.isEmpty()) return null
                 for (reference in references) {
-                    val companion = File(disc.parentFile, reference.replace('\\\\', '/'))
+                    val companion = File(disc.parentFile, reference.replace('\\', '/'))
                     if (!companion.isFile ||
                         companion.extension.lowercase(Locale.ROOT) !in platform.discCompanionExtensions
                     ) {
