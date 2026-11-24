@@ -8,27 +8,27 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 /** Resultado de uma inspeção Device Sync que não aplica nenhuma operação retornada pelo servidor. */
-data class DeviceSyncSramInspection(
+data class DeviceSyncSaveInspection(
     val romId: Long,
-    val localSramIncluded: Boolean,
+    val localSaveIncluded: Boolean,
     val negotiation: DeviceSyncNegotiation,
 )
 
 /**
  * Integração diagnóstica do Device Sync ao save local.
  *
- * A inspeção envia somente o manifesto da SRAM do jogo explicitamente vinculado. Não inclui
+ * A inspeção envia somente o manifesto da save do jogo explicitamente vinculado. Não inclui
  * save states, não registra automaticamente um dispositivo, não transfere arquivos e não
  * executa operações delete, upload, download ou conflict.
  */
 object RomMDeviceSyncDiagnostics {
 
-    suspend fun inspectLocalSram(
+    suspend fun inspectLocalSave(
         context: Context,
         romPath: String,
         coreId: String,
         platformSlug: String? = null,
-    ): DeviceSyncSramInspection = withContext(Dispatchers.IO) {
+    ): DeviceSyncSaveInspection = withContext(Dispatchers.IO) {
         SaveSync.withExclusiveSyncLock {
             val connection = GameIdentityResolver.connectionSnapshot(context)
                 ?: throw IOException("Conecte a mesma conta RomM que está vinculada a este jogo.")
@@ -43,7 +43,7 @@ object RomMDeviceSyncDiagnostics {
             val lastActive = context.getSharedPreferences("romm_sync", Context.MODE_PRIVATE)
                 .getLong("session_active:$identity", 0L)
             if (SaveSyncPolicy.isSessionActive(lastActive, System.currentTimeMillis())) {
-                throw IOException("Feche o jogo antes de inspecionar a sincronização da SRAM.")
+                throw IOException("Feche o jogo antes de inspecionar a sincronização da save.")
             }
             val deviceId = RomMSettings.deviceSyncDeviceId(context)
                 ?: throw IOException("Este dispositivo ainda não está registrado no Device Sync do RomM.")
@@ -55,7 +55,7 @@ object RomMDeviceSyncDiagnostics {
                 gameIdentity = identity,
                 migrationSourcesOverride = emptyMap(),
             )
-            val localSave = DeviceSyncProtocolJson.localSramSave(
+            val localSave = DeviceSyncProtocolJson.localSave(
                 romId = romId,
                 fileName = store.sramFile.name,
                 emulator = "tandem_$coreId",
@@ -68,9 +68,9 @@ object RomMDeviceSyncDiagnostics {
                 saves = listOfNotNull(localSave),
                 romIds = setOf(romId),
             )
-            DeviceSyncSramInspection(
+            DeviceSyncSaveInspection(
                 romId = romId,
-                localSramIncluded = localSave != null,
+                localSaveIncluded = localSave != null,
                 negotiation = negotiation,
             )
         }
