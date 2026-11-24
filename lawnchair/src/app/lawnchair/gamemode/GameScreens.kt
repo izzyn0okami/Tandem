@@ -868,7 +868,7 @@ internal fun GameDetailScreen(
             RomMLinkDialog(
                 local = local,
                 onDismiss = { showRomMLinkDialog = false },
-                onLinked = {
+                onLink = {
                     rommLinked = true
                     rommLinkAmbiguous = false
                     showRomMLinkDialog = false
