@@ -131,3 +131,14 @@ ESTADO DESTA AUDITORIA
 [PENDENTE] Implementar arquitetura unificada; nenhuma alteração de código foi feita nesta auditoria.
 [PENDENTE] Executar CI após o commit deste registro e acrescentar o resultado.
 [PENDENTE] Validar a nova arquitetura em APK no telefone; não há validação funcional nova nesta auditoria.
+
+
+IMPLEMENTAÇÃO INICIAL — INVENTÁRIO TIPADO DE ARTEFATOS (2026-11-24)
+- [IMPLEMENTADO NA BRANCH feat/unified-session-artifacts] Criado SaveArtifactCatalog com classificação explícita de CORE_SAVE, SAVE_STATE e RETRO_ACHIEVEMENTS_PROGRESS.
+- [IMPLEMENTADO] SaveStore.inventory() expõe somente arquivos existentes e não vazios associados à identidade do jogo/núcleo; o progresso RA é incluído somente para a conta explicitamente informada.
+- [SEGURANÇA] CORE_SAVE é uma classificação neutra: a extensão .srm não é tratada automaticamente como SRAM, pois em PSX pode representar cartão de memória. Compatibilidade entre núcleos ainda exige adaptadores declarativos.
+- [INTEGRIDADE] O inventário calcula SHA-256 em fluxo, sem carregar arquivos inteiros na memória, e registra apenas metadados/prefixo do hash nos logs da sessão.
+- [TESTES ADICIONADOS] Cobertura para separação dos três tipos, isolamento de progresso por conta, exclusão de arquivos vazios/desconhecidos e deduplicação de caminhos.
+- [PENDENTE] CI desta branch; revisar resultado Spotless/testes/build. Depois integrar o inventário ao motor unificado e aos adaptadores por núcleo.
+- [PENDENTE] Device Sync ainda não transporta SAVE_STATE nem RETRO_ACHIEVEMENTS_PROGRESS; esta entrega apenas inventaria os artefatos e não inicia transferência remota.
+- Nenhum save local ou remoto foi apagado, sobrescrito, transferido ou migrado por esta implementação.
