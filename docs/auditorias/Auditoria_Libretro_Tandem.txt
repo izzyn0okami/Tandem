@@ -4794,3 +4794,14 @@ STATUS
 - PSX: pull do save mais recente não confirmado; o app não tentou baixar porque classificou o remoto como já conhecido. Upload PSX recente também não comprovado.
 - E4/E5 continuam EM ANDAMENTO. Não iniciar Device Sync real, não apagar/mover saves e não sobrescrever arquivos locais sem autorização explícita.
 - Nenhuma alteração funcional foi feita nesta auditoria. Nenhuma PR estava aberta no repositório no momento da verificação.
+
+
+IMPLEMENTAÇÃO — ISOLAMENTO DO SLOT AUTOSAVE ROMM (PR EM PREPARAÇÃO, 2026-11-24)
+- Criada branch isolada fix/romm-autosave-slot-sync a partir de game-mode-m2-dev; não havia PR aberta no momento da criação.
+- RemoteFile agora modela o campo slot retornado por RomM. O cliente consulta /api/saves com slot=autosave e envia slot=autosave ao criar novo SRAM.
+- SRAM passa a selecionar exclusivamente a versão autosave quando disponível; slots manuais não entram no fluxo automático.
+- Compatibilidade temporária: se ainda não existir SRAM Tandem no slot autosave, o cliente lê registros legados sem slot que pertençam a um emulador tandem_*. Ao enviar uma alteração, não atualiza esse registro legado: cria um novo no slot autosave, preservando o original.
+- PUT de registro existente é usado apenas para o autosave já selecionado, preservando seu slot; estados rápidos continuam no endpoint /states e não recebem slot, pois o contrato RomM não define slot para StateSchema.
+- O diagnóstico da seleção agora registra slot do save remoto escolhido. Nenhum conteúdo de save foi lido/alterado no servidor durante a implementação.
+- Adicionados testes unitários para priorizar autosave e manter registros manuais/legados fora da seleção quando existe autosave.
+- PENDENTE: executar CI completa, revisar diff, confirmar sem regressões e atualizar este registro com o resultado. Não mesclar nem publicar sem autorização explícita.
