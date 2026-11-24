@@ -38,12 +38,14 @@ internal object CoreSaveAdapterRegistry {
                 remoteSlot = "memory-card-0",
                 compatibleCoreIds = memoryCardCores,
             )
+
             in snesSaveCores -> CoreSaveAdapter(
                 artifactType = SaveArtifactType.CORE_SAVE,
                 localSlot = "core-save",
                 remoteSlot = "autosave",
                 compatibleCoreIds = snesSaveCores,
             )
+
             else -> CoreSaveAdapter(
                 artifactType = SaveArtifactType.CORE_SAVE,
                 localSlot = "core-save",
