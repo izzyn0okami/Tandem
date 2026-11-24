@@ -431,7 +431,7 @@ class DeviceSyncProtocolTest {
             assertEquals("/api/saves", upload.url.encodedPath)
             assertEquals("autosave", upload.url.queryParameter("slot"))
             assertEquals("false", upload.url.queryParameter("overwrite"))
-            assertTrue(uploadBody.contains("filename=\"\${file.name}\""))
+            assertTrue(uploadBody.contains("filename=\"${file.name}\""))
             assertTrue(uploadBody.contains(payload))
 
             val expectedHash = java.security.MessageDigest.getInstance("MD5")
