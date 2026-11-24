@@ -12,17 +12,18 @@ class GameLibraryReconcilerTest {
         id: Long,
         platform: GamePlatform = snes,
         hash: String? = "verified-sha1",
+        fileName: String = "Super Mario World.sfc",
     ) = RemoteGame(
         id = id,
         title = "Super Mario World",
         platform = platform,
-        fileName = "Super Mario World.sfc",
+        fileName = fileName,
         sizeBytes = 1024L,
         coverPath = null,
         associatedFiles = listOf(
             RemoteAssociatedFile(
                 id = id + 1000L,
-                fileName = "Super Mario World.sfc",
+                fileName = fileName,
                 sizeBytes = 1024L,
                 category = "game",
                 isTopLevel = true,
@@ -75,6 +76,27 @@ class GameLibraryReconcilerTest {
         assertEquals(
             listOf(10L),
             GameLibraryReconciler.matchingRomIds("verified-sha1", "snes", listOf(game)),
+        )
+    }
+
+    @Test
+    fun candidatePrefilterDoesNotRequireMatchingFileExtension() {
+        val remote = remoteGame(10L, fileName = "Super Mario World.bin")
+        assertEquals(
+            listOf(remote),
+            GameLibraryReconciler.candidateGames(1024L, "snes", listOf(remote)),
+        )
+    }
+
+    @Test
+    fun candidatePrefilterStillRequiresSamePlatformAndSize() {
+        assertEquals(
+            emptyList<RemoteGame>(),
+            GameLibraryReconciler.candidateGames(
+                2048L,
+                "snes",
+                listOf(remoteGame(10L, platform = gba)),
+            ),
         )
     }
 }
