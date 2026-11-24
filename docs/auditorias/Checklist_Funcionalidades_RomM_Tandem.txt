@@ -1179,3 +1179,12 @@ ATUALIZAÇÃO DO CHECKLIST — CI #1015 E CI #1025 APROVADAS (2026-11-24)
 - [PENDENTE] Teste no aparelho da interoperabilidade Device Sync com RomM 5.4.x: recuperar PSX autosave sem confundir save legado/manual; confirmar upload real PSX e SNES com identidade RomM correta; manter backups.
 - [PENDENTE] WebDAV permanece PoC; não usar para sincronização real nem substituir SaveSync.
 - PR #49 continua aberta e não mesclada. Nenhuma publicação tandem-latest foi feita. Nenhuma transferência real foi executada pela CI.
+
+ATUALIZAÇÃO DO CHECKLIST — FILTRO DE EMULADOR E VALIDAÇÃO DE DOWNLOAD (2026-11-24)
+- [AUDITORIA] RomM 5.4.1 permite restringir a negociação pelo campo `emulators`. A PR #49 agora envia somente `tandem_$coreId`, evitando receber saves de outro emulador para o mesmo ROM/slot.
+- [CORREÇÃO] Upload Device Sync agora informa `emulator=tandem_$coreId` em `POST /api/saves`; sem esse parâmetro, o servidor poderia armazenar o registro com emulador nulo.
+- [CORREÇÃO] Antes de aplicar download, o executor valida extensão `.srm`, slot `autosave` e emulador exato. Divergências são recusadas e o save local permanece preservado.
+- [TESTES ADICIONADOS] Cobertura do filtro de emulador, parâmetro de upload e recusa de arquivo/slot/emulador incompatível.
+- [PENDENTE DE CI] Alterações de código enviadas à branch `feat/stage-e-completion`. CI #1026 estava em andamento no head anterior; aguardar nova CI que cubra o head atual.
+- [PENDENTE DE APARELHO] Validar inspeção e interoperabilidade RomM 5.4.x em PSX e SNES. Não executar transferência real sem autorização explícita e preservar backups.
+- PR #49 segue aberta e não mesclada; `tandem-latest` não foi publicada.
