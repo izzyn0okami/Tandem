@@ -170,8 +170,7 @@ object SaveSync {
     )
 
     /** Descarta SRAM de snapshots antigos: esse tipo agora pertence exclusivamente ao Device Sync. */
-    internal fun stateTransportFiles(snapshotFiles: Map<RemoteFileKind, File>): Map<RemoteFileKind, File> =
-        snapshotFiles.filterKeys { it == RemoteFileKind.State }
+    internal fun stateTransportFiles(snapshotFiles: Map<RemoteFileKind, File>): Map<RemoteFileKind, File> = snapshotFiles.filterKeys { it == RemoteFileKind.State }
 
     private fun appliedHashKey(
         kind: RemoteFileKind,
