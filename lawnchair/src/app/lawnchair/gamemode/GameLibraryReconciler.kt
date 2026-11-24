@@ -27,7 +27,7 @@ internal object GameLibraryReconciler {
         fun key(): String = "$sizeBytes:${sha1Hash.lowercase(Locale.ROOT)}"
     }
 
-    private data class DiscSet(
+    internal data class DiscSet(
         val primary: List<FileFingerprint>,
         val companions: List<FileFingerprint>,
     )
@@ -190,7 +190,7 @@ internal object GameLibraryReconciler {
             .toList()
     }
 
-    private fun fingerprintDiscSet(entry: File, platform: GamePlatform): DiscSet? {
+    internal fun fingerprintDiscSet(entry: File, platform: GamePlatform): DiscSet? {
         val playlistEntries = if (entry.extension.equals("m3u", ignoreCase = true)) {
             entry.readLines().map(String::trim).filter { it.isNotEmpty() && !it.startsWith("#") }
                 .map { File(entry.parentFile, it.replace('\\', '/')) }
