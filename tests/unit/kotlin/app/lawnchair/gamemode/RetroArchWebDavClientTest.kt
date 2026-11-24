@@ -9,6 +9,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import kotlin.io.path.createTempDirectory
 
 class RetroArchWebDavClientTest {
 
@@ -17,8 +18,8 @@ class RetroArchWebDavClientTest {
         val server = MockWebServer()
         server.start()
         try {
-            server.enqueue(MockResponse(code = 204).addHeader("DAV", "1, 2").addHeader("Allow", "OPTIONS, PROPFIND, GET, PUT"))
-            server.enqueue(MockResponse(code = 207, body = "<multistatus/>"))
+            server.enqueue(MockResponse.Builder().code(204).addHeader("DAV", "1, 2").addHeader("Allow", "OPTIONS, PROPFIND, GET, PUT").build())
+            server.enqueue(MockResponse.Builder().code(207).body("<multistatus/>").build())
             val client = RetroArchWebDavClient(server.url("/webdav/").toString(), http = OkHttpClient())
 
             val capabilities = client.options()
@@ -38,7 +39,7 @@ class RetroArchWebDavClientTest {
     @Test
     fun downloadWritesVerifiedBytesOnlyToStaging() {
         val server = MockWebServer()
-        val directory = createTempDir(prefix = "webdav-staging-")
+        val directory = createTempDirectory("webdav-staging-").toFile()
         val staging = File(directory, "save.srm.part")
         val payload = "webdav-save-payload"
         val expected = MessageDigest.getInstance("SHA-256")
@@ -46,7 +47,7 @@ class RetroArchWebDavClientTest {
             .joinToString("") { "%02x".format(it) }
         server.start()
         try {
-            server.enqueue(MockResponse(body = payload))
+            server.enqueue(MockResponse.Builder().body(payload).build())
             val client = RetroArchWebDavClient(server.url("/webdav/").toString(), http = OkHttpClient())
 
             val actual = client.downloadToStaging("saves/game.srm", staging, expected)
@@ -68,7 +69,7 @@ class RetroArchWebDavClientTest {
         source.writeText("local-save")
         server.start()
         try {
-            server.enqueue(MockResponse(code = 201))
+            server.enqueue(MockResponse.Builder().code(201).build())
             val client = RetroArchWebDavClient(server.url("/webdav/").toString(), http = OkHttpClient())
 
             client.uploadNewFile("saves/new-game.srm", source)
@@ -90,7 +91,7 @@ class RetroArchWebDavClientTest {
         source.writeText("local-save")
         server.start()
         try {
-            server.enqueue(MockResponse(code = 412))
+            server.enqueue(MockResponse.Builder().code(412).build())
             val client = RetroArchWebDavClient(server.url("/webdav/").toString(), http = OkHttpClient())
 
             val result = runCatching { client.uploadNewFile("saves/existing.srm", source) }
@@ -108,14 +109,14 @@ class RetroArchWebDavClientTest {
     @Test
     fun rejectsTraversalAndNeverCreatesStagingOnFailedDownload() {
         val server = MockWebServer()
-        val directory = createTempDir(prefix = "webdav-invalid-")
+        val directory = createTempDirectory("webdav-invalid-").toFile()
         val staging = File(directory, "invalid.part")
         server.start()
         try {
             val client = RetroArchWebDavClient(server.url("/webdav/").toString(), http = OkHttpClient())
             assertTrue(runCatching { client.propfind("../outside") }.isFailure)
             assertTrue(runCatching { client.propfind("%2e%2e/outside") }.isFailure)
-            server.enqueue(MockResponse(code = 404))
+            server.enqueue(MockResponse.Builder().code(404).build())
             assertTrue(runCatching { client.downloadToStaging("missing.srm", staging) }.isFailure)
             assertFalse(staging.exists())
             assertEquals(1, server.requestCount)
