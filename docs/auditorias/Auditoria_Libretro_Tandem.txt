@@ -4967,3 +4967,11 @@ AJUSTE DE IDENTIDADE DO ARQUIVO NO UPLOAD DEVICE SYNC (2026-11-24)
 - [CORREÇÃO NA PR #49] O cliente agora recebe separadamente o nome original do arquivo (`SaveStore.sramFile.name`), valida a extensão `.srm` e o usa no multipart; o arquivo temporário continua sendo apenas a fonte dos bytes.
 - [TESTE ADICIONADO] Upload verifica que o nome multipart enviado é o nome original informado, não o nome temporário da captura.
 - [PENDENTE] CI do head atualizado e teste controlado no aparelho. Nenhuma transferência real foi realizada.
+
+
+DIAGNÓSTICO PASSIVO DO MOTIVO DE PULL PSX NÃO APLICADO (2026-11-24)
+- [IMPLEMENTADO NA PR #49] SaveSync agora registra metadados suficientes para explicar a decisão de pull: ID/slot/emulador remoto, timestamps remoto/anterior, presença e prefixos curtos dos hashes do servidor/anterior/local/aplicado/legado, necessidade de GET de verificação, hash comparado e flags remoteChanged/aplicar.
+- Os logs não registram conteúdo do save nem hashes completos. O fluxo de pull permanece com a mesma lógica; a mudança é somente observabilidade.
+- Objetivo: diferenciar hash remoto igual ao conhecido, timestamp/ID divergente, ausência de hash e conteúdo baixado diferente. Isso investiga o caso PSX em que o save remoto mais recente não gerou GET de conteúdo.
+- [PENDENTE] CI do head atual e novo game_log.txt de teste no telefone. Não presumir causa raiz antes de comparar os metadados observados.
+- Nenhum save real foi baixado, enviado, movido, sobrescrito ou apagado por esta instrumentação.
