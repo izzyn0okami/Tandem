@@ -4999,3 +4999,11 @@ ATUALIZAÇÃO DA AUDITORIA — CORREÇÃO E CI #1051 APROVADAS (2026-11-24)
 - [STATUS] A falha de sintaxe apontada na CI #1045 foi corrigida e a CI integral passou. O APK é artefato de CI, não uma publicação tandem-latest.
 - [PENDENTE NO APARELHO] Instalar/testar o APK em ambiente controlado; executar inspeção somente leitura e validar interoperabilidade real PSX/SNES com RomM 5.4.x; exportar game_log.txt para diagnóstico do pull PSX. Preservar backups. Não realizar transferências reais sem autorização explícita.
 - PR #49 permanece aberta e sem merge; nenhuma publicação tandem-latest foi feita. Nenhum save real foi transferido, alterado ou removido nesta correção.
+
+
+ATUALIZAÇÃO — VALIDAÇÃO DE BUILD #1056 E PRESSÃO DE MEMÓRIA (2026-11-24)
+- [PR/CI] PR #49 foi mesclada em game-mode-m2-dev no commit bbbfd8a93ad2d48119af4de2954a048f3d89b63b. CI pós-merge #1056 / run 45329482688: check-style, testes unitários, build Debug APK, upload do artefato, final-status e tandem-release concluídos com sucesso.
+- [PUBLICAÇÃO] tandem-latest aponta para Tandem (build 1056), commit bbbfd8a93ad2d48119af4de2954a048f3d89b63b. APK: https://github.com/izzyn0okami/Tandem/releases/download/tandem-latest/Tandem.apk. SHA-256: 20a37243d7f6e530e3a55415cd94b8fc7285886a5fe9cd0b7e29c4464b6858a5.
+- [TESTE NO APARELHO] O log tandem-log (7).txt registra encerramento do processo por pouca memória no início da sessão; o app posteriormente retomou e carregou a biblioteca RomM. Investigar pressão de heap nativo e ciclo de vida. Não há prova de que o evento seja causado pelo núcleo Libretro.
+- [SECUNDÁRIO] Scraper de capas retornou HTTP 404 ao consultar o índice Nintendo - Game Boy Advance.
+- [PENDENTE] Testes reais de núcleos e sessões continuam separados da aprovação da CI. Nenhum save foi concluído em transferência neste registro; preservar dados do usuário.
