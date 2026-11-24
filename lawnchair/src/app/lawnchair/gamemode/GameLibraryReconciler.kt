@@ -38,13 +38,25 @@ internal object GameLibraryReconciler {
             }
             val file = File(local.path)
             if (!file.isFile) continue
+            // Tamanho e extensão reduzem leituras desnecessárias; nunca confirmam o vínculo.
+            val possibleGames = remote.filter { game ->
+                game.platform.slug == local.platform.slug &&
+                    game.associatedFiles.any { associated ->
+                        associated.sizeBytes == file.length() &&
+                            File(associated.fileName).extension.equals(file.extension, ignoreCase = true)
+                    }
+            }
+            if (possibleGames.isEmpty()) {
+                withoutVerifiedHash++
+                continue
+            }
             val localHash = runCatching { sha1(file) }.getOrNull()
             if (localHash.isNullOrBlank()) {
                 withoutVerifiedHash++
                 continue
             }
 
-            val matchingRomIds = matchingRomIds(localHash, local.platform.slug, remote)
+            val matchingRomIds = matchingRomIds(localHash, local.platform.slug, possibleGames)
 
             when (matchingRomIds.size) {
                 0 -> {
