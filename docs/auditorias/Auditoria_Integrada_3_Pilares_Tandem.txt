@@ -325,3 +325,10 @@ AUDITORIA DO RECONCILIADOR DE ROMS LOCAIS/ROMM — CORREÇÃO INICIAL — 2026-1
 - [PENDENTE] Confirmar no contrato real do RomM que associatedFiles inclui hashes SHA-1 e tamanhos de todos os arquivos principais/companheiros de cada jogo multidisco; testar M3U/CUE com conjunto completo e incompleto. Se o servidor não publicar hashes suficientes, manter o vínculo em espera, sem heurística por nome.
 - [PENDENTE] Teste funcional no telefone com uma ROM local já existente, sem apagá-la nem baixá-la novamente: verificar vínculo automático, identidade RomM usada pelo SaveStore e continuidade dos saves. Reavaliar as 16 ROMs sem hash correspondente após a correção.
 - [STATUS] Correção inicial enviada para a PR #50; aguardando CI. PR continua aberta em draft e sem merge. O ciclo completo de upload/retorno de save states e os erros HTTP 500 permanecem pendentes.
+
+
+ADENDO — BLOQUEIO DE HASH AUSENTE EM DISCOS REMOTOS — 2026-11-24
+- [REVISÃO DE SEGURANÇA] A comparação multidisco foi endurecida: se qualquer arquivo principal de disco associado ao registro RomM não tiver SHA-1 válido, o conjunto remoto não pode ser considerado completo e não será associado. Quando o conjunto local depende de arquivos companion de CUE, hashes ausentes entre esses companions remotos também impedem o vínculo.
+- [TESTE ADICIONAL] Incluído caso em que um disco remoto tem hash e outro não; o registro inteiro deve ser rejeitado, evitando falso positivo por comparação parcial.
+- [COMMITS ADICIONAIS] Reconciliador: 2e2b94b7d05ae9efe275e1e7ae0c72d5bbce8439. Teste: ed5b4ea1adcf81fc76dbcfdc01311c1f9dfd8538.
+- [CI] A run #1121 / 45505236662 foi iniciada para o commit anterior ca693f9946dacafc881b6b3bc1a60adaa47d3934 e ainda estava em andamento na última consulta. Ela não valida os commits adicionais acima. Aguardar a execução no head mais recente; a automação de estilo pode também formatar e criar novo commit.
