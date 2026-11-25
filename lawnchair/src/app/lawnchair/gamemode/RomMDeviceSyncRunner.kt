@@ -474,6 +474,7 @@ object RomMDeviceSyncRunner {
                 )
                 client.complete(negotiation.sessionId, operationsCompleted = 1, operationsFailed = 0)
                 completed = true
+                clearPendingConflict(app, identity, connection.accountFingerprint)
                 GameLog.log(
                     "Device Sync",
                     "usuário escolheu manter a versão local; nova versão ativa publicada no RomM, " +
@@ -654,6 +655,7 @@ object RomMDeviceSyncRunner {
                 }
                 client.complete(negotiation.sessionId, operationsCompleted = 1, operationsFailed = 0)
                 sessionCompleted = true
+                clearPendingConflict(app, identity, connection.accountFingerprint)
                 val message = if (restoringOlder) {
                     "Versão histórica restaurada e publicada como nova versão ativa no RomM."
                 } else {
@@ -708,6 +710,16 @@ object RomMDeviceSyncRunner {
                 "nenhuma versão foi escolhida automaticamente",
         )
         return null
+    }
+
+    private fun clearPendingConflict(context: Context, identity: String, accountFingerprint: String) {
+        val preferences = context.getSharedPreferences("romm_sync", Context.MODE_PRIVATE)
+        val key = GameSessionCoordinator.pendingConflictKey(identity, accountFingerprint)
+        val pendingJobId = preferences.getString(key, null)
+        if (pendingJobId != null) {
+            SaveSnapshotStore(File(context.filesDir, "device-sync-queue")).delete(pendingJobId)
+        }
+        preferences.edit().remove(key).apply()
     }
 
     private fun romSaveFileName(romFile: File): String = "${romFile.nameWithoutExtension}.srm"
