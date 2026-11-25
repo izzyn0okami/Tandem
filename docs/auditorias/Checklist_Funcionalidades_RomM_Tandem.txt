@@ -1356,3 +1356,14 @@ MERGE — PR #51 / FECHAMENTO E3-E4 (2026-11-25)
 - Nenhuma transferência, sobrescrita, movimentação ou exclusão de save real foi realizada pelo merge.
 - Não há PR aberta no repositório imediatamente após o merge.
 - [ARTEFATO DA CI #1295] assembleLawnWithQuickstepGithubDebug, ID 15027628621, 46.460.578 bytes, SHA-256 b3321fe0e93bac39e76aff3c5aa3339eff486f51d1e9ef28023e06d94377825e; disponível até 2027-02-23.
+
+AUDITORIA COMPLEMENTAR — RECUPERAÇÃO DO DEVICE SYNC (2026-11-25)
+Base: game-mode-m2-dev após merge da PR #51.
+- [AUDITADO] O worker WorkManager retorna retry para falhas operacionais; o snapshot persistente não é apagado no caminho de erro e é carregado novamente pelo ID do trabalho.
+- [AUDITADO] A fila usa rede conectada e backoff exponencial; cancelamento de coroutine é propagado para o WorkManager, sem converter cancelamento em sucesso.
+- [AUDITADO] HTTP 409 é classificado como conflito preservado, não como falha transitória; o snapshot permanece associado à resolução explícita. Falhas HTTP/IO diferentes de 409 são contabilizadas como falhas e solicitam retry.
+- [AUDITADO] Downloads são feitos em staging, validados por MD5 e só confirmados após promoção; falha de download remove o staging. Upload continua com overwrite=false e autocleanup=false.
+- [TESTES ADICIONADOS — PR EM PREPARAÇÃO] Simulação de reinício: nova instância de SaveSnapshotStore recupera os mesmos bytes capturados mesmo após alteração do save ativo. Política de retry: falha operacional solicita nova tentativa; conflito fica estacionado e bloqueia início de sessão até resolução.
+- [PENDENTE E5] Teste controlado de perda real de rede/encerramento do processo com WorkManager e interoperabilidade ampliada com RomM real; testes unitários não substituem essa validação.
+- [PENDENTE E9] Matriz ampliada de formatos e slots de cartões de memória por núcleo; não ampliar compatibilidade sem evidência de formato idêntico e testes negativos.
+- Segurança mantida: nenhuma transferência real executada por esta auditoria; states continuam locais; sem DELETE automático ou sobrescrita forçada.
