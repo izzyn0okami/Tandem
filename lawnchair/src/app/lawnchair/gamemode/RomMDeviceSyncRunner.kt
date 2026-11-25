@@ -738,22 +738,26 @@ object RomMDeviceSyncRunner {
     private fun clearPendingConflict(context: Context, identity: String, accountFingerprint: String) {
         val preferences = context.getSharedPreferences("romm_sync", Context.MODE_PRIVATE)
         val key = GameSessionCoordinator.pendingConflictKey(identity, accountFingerprint)
-        val pendingJobId = preferences.getString(key, null)
-        if (pendingJobId != null) {
-            val snapshots = SaveSnapshotStore(File(context.filesDir, "device-sync-queue")).load(pendingJobId)
+        val pendingJobIds = preferences.getStringSet(key, emptySet()).orEmpty()
+        val queue = SaveSnapshotStore(File(context.filesDir, "device-sync-queue"))
+        pendingJobIds.forEach { pendingJobId ->
+            val snapshots = queue.load(pendingJobId)
             snapshots[RemoteFileKind.Save]?.takeIf { it.isFile && it.length() > 0L }?.let { queuedSave ->
                 val archive = File(context.filesDir, "device-sync-conflict-archive")
                 if (!archive.exists() && !archive.mkdirs()) {
                     throw IOException("Não foi possível preservar a captura pendente do conflito.")
                 }
-                val preserved = File(archive, "pending-conflict-${System.currentTimeMillis()}-${queuedSave.name}")
+                val preserved = File(
+                    archive,
+                    "pending-conflict-$pendingJobId-${System.currentTimeMillis()}-${queuedSave.name}",
+                )
                 queuedSave.copyTo(preserved, overwrite = false)
                 if (sha256(queuedSave) != sha256(preserved)) {
                     preserved.delete()
                     throw IOException("A captura pendente do conflito não passou na verificação de integridade.")
                 }
             }
-            SaveSnapshotStore(File(context.filesDir, "device-sync-queue")).delete(pendingJobId)
+            queue.delete(pendingJobId)
         }
         preferences.edit().remove(key).apply()
     }
