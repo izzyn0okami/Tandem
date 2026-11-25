@@ -50,7 +50,7 @@ class GameSessionCoordinatorTest {
     }
 
     @Test
-    fun oldQueuedSnapshotsCannotSendSramThroughTheStateEndpoint() {
+    fun saveStatesAreExcludedFromAllRemoteTransport() {
         val selected = SaveSync.stateTransportFiles(
             mapOf(
                 RemoteFileKind.Save to File("sram.srm"),
@@ -58,7 +58,7 @@ class GameSessionCoordinatorTest {
             ),
         )
 
-        assertEquals(setOf(RemoteFileKind.State), selected.keys)
+        assertTrue(selected.isEmpty())
     }
 
     private fun result(
