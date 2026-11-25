@@ -97,6 +97,7 @@ internal fun RomMInsightsPanel() {
                         StatValue("Capturas", value.screenshots)
                         StatValue("Armazenamento", value.totalFileSizeBytes, bytes = true)
                     }
+                    Text("Jogos, plataformas e armazenamento respeitam a visibilidade da sua conta. As contagens de saves, states e capturas são totais gerais do servidor.", color = GameColors.textDim, fontSize = 10.sp)
                     GameButton("Atualizar estatísticas", onClick = { load("stats") }, enabled = !loading)
                 }
             }
