@@ -39,6 +39,24 @@ internal fun RomMInsightsPanel() {
     var error by remember { mutableStateOf("") }
     var pendingDismiss by remember { mutableStateOf<RemoteNotification?>(null) }
 
+    fun performNotificationAction(action: () -> Unit, onSuccess: () -> Unit) {
+        loading = true
+        error = ""
+        scope.launch {
+            val result = runCatching { withContext(Dispatchers.IO) { action() } }
+            result.onSuccess { onSuccess() }.onFailure { failure ->
+                error = when (failure) {
+                    is RomMHttpException -> when (failure.statusCode) {
+                        401 -> "A sessão RomM expirou. Reconecte a conta."
+                        403 -> "O RomM recusou a ação. Desconecte e pareie novamente para conceder a permissão de notificações."
+                        else -> failure.message ?: "Falha ao atualizar a notificação."
+                    }
+                    else -> failure.message ?: "Não foi possível atualizar a notificação."
+                }
+            }
+            loading = false
+        }
+    }
     fun load(target: String) {
         section = target
         loading = true
@@ -75,6 +93,25 @@ internal fun RomMInsightsPanel() {
         }
     }
 
+    pendingDismiss?.let { notification ->
+        AlertDialog(
+            onDismissRequest = { if (!loading) pendingDismiss = null },
+            title = { Text("Dispensar notificação?") },
+            text = { Text("“${notification.title.ifBlank { notification.kind }}” será removida da caixa de entrada do RomM. Esta ação não pode ser desfeita.") },
+            confirmButton = {
+                TextButton(enabled = !loading, onClick = {
+                    performNotificationAction(
+                        action = { RomMClient(RomMSettings.url(context).orEmpty(), RomMSettings.token(context)).dismissNotification(notification.id) },
+                        onSuccess = {
+                            notifications = notifications?.filterNot { it.id == notification.id }
+                            pendingDismiss = null
+                        },
+                    )
+                }) { Text("Dispensar") }
+            },
+            dismissButton = { TextButton(enabled = !loading, onClick = { pendingDismiss = null }) { Text("Cancelar") } },
+        )
+    }
     Column(verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
         Text("Painel RomM", color = GameColors.text, fontSize = 18.sp, fontWeight = FontWeight.Bold)
         Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -138,11 +175,28 @@ internal fun RomMInsightsPanel() {
                 } else {
                     val unread = values.count { !it.read }
                     Text("${values.size} notificações · $unread não lidas", color = GameColors.textDim, fontSize = 11.sp)
+                    if (unread > 0) {
+                        GameButton("Marcar todas como lidas", onClick = {
+                            performNotificationAction(
+                                action = { RomMClient(RomMSettings.url(context).orEmpty(), RomMSettings.token(context)).markAllNotificationsRead() },
+                                onSuccess = { notifications = values.map { it.copy(read = true) } },
+                            )
+                        }, enabled = !loading)
+                    }
                     values.take(10).forEach { item ->
                         Column(verticalArrangement = Arrangement.spacedBy(2.dp), modifier = Modifier.padding(vertical = 3.dp)) {
                             Text(item.title.ifBlank { item.kind.replace('_', ' ') }, color = GameColors.text, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
                             if (item.body.isNotBlank()) Text(item.body, color = GameColors.textDim, fontSize = 11.sp)
                             Text("${if (item.read) "Lida" else "Não lida"} · ${item.level} · ${DateFormat.getDateTimeInstance(DateFormat.MEDIUM, DateFormat.SHORT).format(Date(item.createdAtMs))}${item.actor?.let { " · $it" } ?: ""}", color = GameColors.textDim, fontSize = 10.sp)
+                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                if (!item.read) GameButton("Marcar como lida", onClick = {
+                                    performNotificationAction(
+                                        action = { RomMClient(RomMSettings.url(context).orEmpty(), RomMSettings.token(context)).markNotificationsRead(listOf(item.id)) },
+                                        onSuccess = { notifications = notifications?.map { current -> if (current.id == item.id) current.copy(read = true) else current } },
+                                    )
+                                }, enabled = !loading)
+                                GameButton("Dispensar", onClick = { pendingDismiss = item }, enabled = !loading)
+                            }
                         }
                     }
                     GameButton("Atualizar notificações", onClick = { load("notifications") }, enabled = !loading)
