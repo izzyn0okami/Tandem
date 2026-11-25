@@ -1177,7 +1177,7 @@ internal fun GameDetailScreen(
                             text = "Conflitos preservados: ${result.conflictsPreserved} · " +
                                 "exclusões recusadas: ${result.deletesIgnored} · " +
                                 "operações desconhecidas: ${result.unknownIgnored} · falhas: ${result.failed}. " +
-                                "Save states e memory cards não foram incluídos.",
+                                "Save states e artefatos não elegíveis não foram incluídos.",
                             color = GameColors.textDim,
                             fontSize = 12.sp,
                         )
