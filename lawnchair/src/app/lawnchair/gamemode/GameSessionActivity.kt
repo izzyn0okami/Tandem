@@ -486,8 +486,13 @@ class GameSessionActivity : ComponentActivity() {
         runCatching {
             val bytes = view.serializeSRAM()
             if (bytes.isNotEmpty()) {
-                store.writeSram(bytes)
-                romPath?.let { path -> coreIdOf()?.let { GameSessionCoordinator.markPending(this, path, it, intent.getStringExtra(EXTRA_PLATFORM), gameIdentity) } }
+                val changed = store.writeSramIfChanged(bytes)
+                if (changed) {
+                    romPath?.let { path -> coreIdOf()?.let { GameSessionCoordinator.markPending(this, path, it, intent.getStringExtra(EXTRA_PLATFORM), gameIdentity) } }
+                    GameLog.log("saves", "SRAM alterado pelo núcleo e persistido; sincronização agendada")
+                } else {
+                    GameLog.log("saves", "SRAM inalterado após serialização do núcleo; gravação e upload desnecessários ignorados")
+                }
             }
         }
         val user = RaSettings.user(this) ?: return
