@@ -112,14 +112,30 @@ internal object GameSessionCoordinator {
         if (!SaveSyncPolicy.isSameSyncAccount(expectedAccountFingerprint, connection.accountFingerprint)) return false
         val activeRomPath = GameIdentityResolver.findRomPath(app, gameIdentity, romPath, platformSlug) ?: return false
         val activeRom = File(activeRomPath)
-        if (!GameIdentityResolver.hasRomMLink(app, activeRom)) return true
+        if (!GameIdentityResolver.hasRomMLink(app, activeRom)) {
+            SaveSnapshotStore(File(app.filesDir, "device-sync-queue")).delete(snapshotJobId)
+            return true
+        }
 
         var saveRetry = false
         var saveResult: DeviceSyncExecutionResult? = null
         try {
             ensureDeviceRegistered(app, connection.url, connection.token)
-            saveResult = RomMDeviceSyncRunner.synchronizeLocalSave(app, activeRomPath, coreId, platformSlug)
+            val snapshot = SaveSnapshotStore(File(app.filesDir, "device-sync-queue"))
+                .load(snapshotJobId)[RemoteFileKind.Save]
+            saveResult = RomMDeviceSyncRunner.synchronizeLocalSave(
+                app,
+                activeRomPath,
+                coreId,
+                platformSlug,
+                snapshotOverride = snapshot,
+            )
             saveRetry = GameSessionSyncPolicy.shouldRetryBackground(saveResult)
+            if (!saveRetry && saveResult.conflictsPreserved == 0 &&
+                saveResult.deletesIgnored == 0 && saveResult.unknownIgnored == 0
+            ) {
+                SaveSnapshotStore(File(app.filesDir, "device-sync-queue")).delete(snapshotJobId)
+            }
         } catch (cancelled: CancellationException) {
             throw cancelled
         } catch (error: Exception) {
