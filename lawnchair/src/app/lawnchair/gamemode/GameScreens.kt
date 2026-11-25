@@ -55,6 +55,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
 import com.android.launcher3.R
 import java.io.File
 import java.text.DateFormat
@@ -815,6 +816,12 @@ internal fun GameDetailScreen(
         }
     }
     val chosenCoreId = remember(entry.platform.slug) { CoreRegistry.chosen(context, entry.platform) }
+    var remoteSaveVersions by remember(entry.key) { mutableStateOf<List<RemoteFile>?>(null) }
+    var remoteSaveVersionsLoading by remember(entry.key) { mutableStateOf(false) }
+    var remoteSaveVersionsError by remember(entry.key) { mutableStateOf<String?>(null) }
+    var pendingSaveVersionRestore by remember(entry.key) { mutableStateOf<RemoteFile?>(null) }
+    var saveVersionRestoreLoading by remember(entry.key) { mutableStateOf(false) }
+    var saveVersionRestoreMessage by remember(entry.key) { mutableStateOf<String?>(null) }
     var deviceSyncInspection by remember(entry.key) { mutableStateOf<DeviceSyncSaveInspection?>(null) }
     var deviceSyncInspectionLoading by remember(entry.key) { mutableStateOf(false) }
     var deviceSyncInspectionError by remember(entry.key) { mutableStateOf<String?>(null) }
@@ -962,6 +969,79 @@ internal fun GameDetailScreen(
                     }
                 }
                 if (canInspectDeviceSyncSave) {
+                    GameButton(
+                        label = if (remoteSaveVersionsLoading) "Carregando histórico…" else "Histórico de SRAM",
+                        onClick = {
+                            if (!remoteSaveVersionsLoading && local != null) {
+                                remoteSaveVersionsLoading = true
+                                remoteSaveVersionsError = null
+                                saveVersionRestoreMessage = null
+                                detailScope.launch {
+                                    try {
+                                        val versions = withContext(Dispatchers.IO) {
+                                            val connection = GameIdentityResolver.connectionSnapshot(context)
+                                                ?: throw IllegalStateException("Conecte a conta RomM vinculada a este jogo.")
+                                            val romId = GameIdentityResolver.linkedRomId(context, File(local.path), connection)
+                                                ?: throw IllegalStateException("O vínculo RomM deste jogo não está disponível.")
+                                            val slot = DeviceSyncArtifactPolicy.remoteSlotForCore(chosenCoreId)
+                                            RomMClient(connection.url, connection.token)
+                                                .listRemoteFiles(RemoteFileKind.Save, romId, slot)
+                                                .filter { it.slot == slot }
+                                                .sortedByDescending { it.updatedAtMs }
+                                        }
+                                        remoteSaveVersions = versions
+                                        if (versions.isEmpty()) saveVersionRestoreMessage = "Nenhuma versão de SRAM foi encontrada neste slot."
+                                    } catch (error: CancellationException) {
+                                        throw error
+                                    } catch (error: Exception) {
+                                        remoteSaveVersionsError = error.message ?: "Não foi possível carregar o histórico do RomM."
+                                        GameLog.error("Device Sync", "falha ao consultar histórico SRAM de ${entry.title}", error)
+                                    } finally {
+                                        remoteSaveVersionsLoading = false
+                                    }
+                                }
+                            }
+                        },
+                        enabled = !remoteSaveVersionsLoading && !deviceSyncExecutionLoading && !busy,
+                        modifier = Modifier.width(210.dp),
+                    )
+                    remoteSaveVersions?.let { versions ->
+                        Text(
+                            text = "Histórico de SRAM no RomM — ${versions.size} versão(ões). A mais recente aparece primeiro.",
+                            color = GameColors.text,
+                            fontSize = 13.sp,
+                        )
+                        versions.forEachIndexed { index, version ->
+                            val timestamp = if (version.updatedAtMs > 0L) {
+                                DateFormat.getDateTimeInstance().format(Date(version.updatedAtMs))
+                            } else {
+                                "Data não informada"
+                            }
+                            Text(
+                                text = buildString {
+                                    append(if (index == 0) "Mais recente • " else "Versão histórica • ")
+                                    append(timestamp)
+                                    version.emulator?.let { append(" • Núcleo: $it") }
+                                    version.sizeBytes?.let { append(" • $it bytes") }
+                                    version.contentHash?.let { append(" • MD5 ${it.take(8)}") }
+                                },
+                                color = GameColors.textDim,
+                                fontSize = 12.sp,
+                            )
+                            GameButton(
+                                label = "Restaurar esta versão (ID ${version.id})",
+                                onClick = { pendingSaveVersionRestore = version },
+                                enabled = !saveVersionRestoreLoading && !busy,
+                                modifier = Modifier.width(260.dp),
+                            )
+                        }
+                    }
+                    remoteSaveVersionsError?.let { error ->
+                        Text("Falha ao consultar histórico: $error", color = GameColors.danger, fontSize = 12.sp)
+                    }
+                    saveVersionRestoreMessage?.let { message ->
+                        Text(message, color = GameColors.accent, fontSize = 12.sp)
+                    }
                     GameButton(
                         label = if (deviceSyncInspectionLoading) "Inspecionando save…" else "Inspecionar save no RomM",
                         onClick = {
@@ -1261,6 +1341,69 @@ internal fun GameDetailScreen(
     }
     // Fecha com o mesmo botão de voltar do controle (B) ou do Android, sem fechar a tela de detalhes junto.
     BackHandler(enabled = showAchievements) { showAchievements = false }
+    pendingSaveVersionRestore?.let { selectedVersion ->
+        Dialog(onDismissRequest = { if (!saveVersionRestoreLoading) pendingSaveVersionRestore = null }) {
+            Column(
+                modifier = Modifier
+                    .width(440.dp)
+                    .background(GameColors.backgroundTop, RoundedCornerShape(14.dp))
+                    .padding(24.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                Text("Restaurar versão de SRAM?", color = GameColors.text, fontSize = 20.sp, fontWeight = FontWeight.Bold)
+                Text(
+                    "A versão escolhida será baixada e verificada. A SRAM atual será preservada em backup. Se for uma versão antiga, ela será publicada como uma nova versão ativa no RomM, sem apagar o histórico.",
+                    color = GameColors.textDim,
+                    fontSize = 14.sp,
+                )
+                Text(
+                    "ID ${selectedVersion.id} • " +
+                        (if (selectedVersion.updatedAtMs > 0L) DateFormat.getDateTimeInstance().format(Date(selectedVersion.updatedAtMs)) else "data não informada"),
+                    color = GameColors.text,
+                    fontSize = 13.sp,
+                )
+                GameButton(
+                    label = if (saveVersionRestoreLoading) "Restaurando…" else "Confirmar restauração",
+                    onClick = {
+                        if (!saveVersionRestoreLoading && local != null) {
+                            saveVersionRestoreLoading = true
+                            detailScope.launch {
+                                try {
+                                    val result = withContext(Dispatchers.IO) {
+                                        RomMDeviceSyncRunner.restoreRemoteSaveVersion(
+                                            context = context,
+                                            romPath = local.path,
+                                            coreId = chosenCoreId,
+                                            platformSlug = entry.platform.slug,
+                                            saveId = selectedVersion.id,
+                                        )
+                                    }
+                                    saveVersionRestoreMessage = result
+                                    remoteSaveVersions = null
+                                    pendingSaveVersionRestore = null
+                                    GameLog.log("Device Sync", "usuário restaurou versão SRAM ID ${selectedVersion.id} de ${entry.title}")
+                                } catch (error: CancellationException) {
+                                    throw error
+                                } catch (error: Exception) {
+                                    saveVersionRestoreMessage = error.message ?: "Não foi possível restaurar a versão escolhida."
+                                    GameLog.error("Device Sync", "falha ao restaurar SRAM ID ${selectedVersion.id} de ${entry.title}", error)
+                                } finally {
+                                    saveVersionRestoreLoading = false
+                                }
+                            }
+                        }
+                    },
+                    enabled = !saveVersionRestoreLoading && !busy,
+                    primary = true,
+                )
+                GameButton(
+                    label = "Cancelar",
+                    onClick = { pendingSaveVersionRestore = null },
+                    enabled = !saveVersionRestoreLoading,
+                )
+            }
+        }
+    }
 }
 
 /** Resuminho de conquistas na tela de detalhes: "X de Y" + alguns ícones, com botão pra ver a lista toda. */
