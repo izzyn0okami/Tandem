@@ -375,4 +375,26 @@ class RomMInsightsTest {
             server.close()
         }
     }
+
+    @Test
+    fun pairingCodeNotFoundKeepsInvalidOrExpiredCodeGuidance() {
+        val message = romMUserFacingError(
+            RomMHttpException(404, "Código inválido ou expirado", endpoint = "/api/client-tokens/exchange"),
+            "conectar a conta",
+        )
+
+        assertTrue(message.contains("código de pareamento é inválido ou expirou"))
+        assertTrue(message.contains("/api/client-tokens/exchange"))
+    }
+
+    @Test
+    fun unavailableDevicePairingRouteOffersManualCodeFlow() {
+        val message = romMUserFacingError(
+            RomMHttpException(404, "Endpoint ausente", endpoint = "/api/auth/device/init"),
+            "iniciar o pareamento",
+        )
+
+        assertTrue(message.contains("Use o fluxo de código manual"))
+        assertTrue(message.contains("HTTP 404"))
+    }
 }
