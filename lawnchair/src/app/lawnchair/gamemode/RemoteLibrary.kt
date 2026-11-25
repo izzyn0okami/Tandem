@@ -99,7 +99,7 @@ internal class RemoteLibrary(private val context: Context, private val scope: Co
         } catch (e: Exception) {
             GameLog.error("romm", "falha ao listar", e)
             if (games == null) games = emptyList()
-            error = context.getString(R.string.game_romm_list_error, e.message ?: e.toString())
+            error = romMUserFacingError(e, "carregar a biblioteca RomM")
         } finally {
             refreshing = false
         }
@@ -118,7 +118,7 @@ internal class RemoteLibrary(private val context: Context, private val scope: Co
                 }
             }.onFailure {
                 GameLog.error("romm", "falha ao baixar ${game.title}", it)
-                error = context.getString(R.string.game_romm_download_error, game.title, it.message ?: it.toString())
+                error = "$" + "{romMUserFacingError(it, \"baixar ${game.title}\")}"
             }
             progress.remove(game.id)
             onDone()
