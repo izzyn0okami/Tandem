@@ -540,3 +540,18 @@ CORREÇÃO — POLÍTICA DE RESTAURAÇÃO DE SAVE STATES PERSISTIDOS — 2026-11
 - [CI] O commit 40c439a895d89ecafe0712f4633289b661c705e6, com os novos logs de upload, foi validado pelas CIs #1187, #1188 e #1189 com sucesso. A CI #1186 também passou no commit documental anterior f79a9962a0274398b416fa7a50a12db11cc00b87. A CI #1185 falhou no Spotless; a correção posterior passou nas CIs seguintes.
 - [PR] #50 permanece aberta, em draft, head 40c439a895d89ecafe0712f4633289b661c705e6, sem merge. Nenhuma PR concorrente foi criada.
 - [SEGURANÇA] Esta auditoria foi somente leitura; nenhum ROM, save, save state ou registro remoto foi modificado.
+
+
+## DECISÃO ARQUITETURAL — SAVE STATES EXCLUSIVAMENTE LOCAIS (2026-11-24)
+
+- [DECISÃO DO USUÁRIO] Save states não serão sincronizados entre dispositivos. Permanecem exclusivamente no armazenamento local do aparelho. A sincronização entre dispositivos continuará usando SRAM e cartões de memória pelo RomM Device Sync, considerados suficientes para continuar partidas em outros dispositivos.
+- [MOTIVAÇÃO] Os testes reais demonstraram que o mesmo identificador de núcleo não garante que um save state seja restaurável em outro dispositivo/build. A identificação de compatibilidade exigiria manutenção adicional e ainda não ofereceria garantia confiável diante de atualizações frequentes dos núcleos. O custo e o risco não se justificam.
+- [IMPLEMENTADO NA PR #50] GameSessionCoordinator não executa mais pull remoto de save states ao preparar uma sessão e não chama o transporte /api/states no trabalho pós-sessão. O transporte de SRAM/cartões pelo RomMDeviceSyncRunner permanece ativo.
+- [IMPLEMENTADO NA PR #50] SaveSync.stateTransportFiles agora exclui todos os tipos de arquivo do transporte remoto, impedindo que snapshots antigos enfileirados enviem save states.
+- [PRESERVAÇÃO] Save states continuam sendo criados, carregados e mantidos localmente pelo SaveStore/LibretroDroid. Nenhum arquivo local é removido ou migrado por esta decisão.
+- [PRESERVAÇÃO REMOTA] Save states já existentes no RomM não serão apagados, atualizados ou migrados. A alteração apenas interrompe novas operações de leitura/escrita de states pelo Tandem.
+- [VALIDAÇÃO AUTOMATIZADA] Teste GameSessionCoordinatorTest atualizado para garantir que save states sejam excluídos do transporte remoto. CI após os commits desta mudança ainda pendente.
+- [COMMITS] GameSessionCoordinator: 9f97d40110e2f4a07b1eb49d6384ef52e33b86e2; SaveSync: e3a95c9f74b65e4112296e8c38fc115ee51cbfc9; teste: 3782a8539b22ae7b97ac179251516cc6ee8e74d6.
+- [PENDENTE] Confirmar CI completa no head final, revisar referências restantes a SaveSync.pull/push de states e validar no telefone que SRAM/cartões continuam sincronizando e save states continuam funcionando localmente.
+- [CI ANTERIOR] CI #1190 / run 45529584514 estava em execução no head documental anterior 8328eb3e56307cce2bfb69b36ca4288850bde9d2; não valida os commits desta decisão.
+- [SEGURANÇA] Nenhum save state, SRAM, cartão, ROM ou registro remoto foi apagado, movido, sobrescrito ou migrado por esta alteração.
