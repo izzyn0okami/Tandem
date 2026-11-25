@@ -59,12 +59,12 @@ E. SAVES, STATES E SINCRONIZAÇÃO
 [CONCLUÍDO] E2. Identidade estável por conta/jogo e isolamento por conta.
 [CONCLUÍDO] E3. Snapshots imutáveis integrados à fila persistente Device Sync; CI #1291 aprovada e fluxo novo validado no aparelho pelo usuário.
 [CONCLUÍDO] E4. Resolução explícita de conflitos Device Sync: arbitragem por timestamp removida; escolha local explícita e restauração remota pelo histórico integradas; CI #1291 aprovada e fluxo validado no aparelho pelo usuário.
-[EM ANDAMENTO] E5. Device Sync Protocol oficial: cliente, registro/negotiate/complete, persistência isolada do device_id, transporte SRAM e inspeção local somente leitura implementados com testes automatizados; CIs #893 e #896 aprovadas. Falta ação explícita de registro na interface, integração segura/limitada, interoperabilidade com RomM real e validação no telefone. Save states permanecem fora do transporte.
+[CONCLUÍDO] E5. Recuperação do Device Sync: fila persistente, retomada por snapshot imutável e política de retry/conflito; testes de recuperação no aparelho confirmados pelo usuário; testes automatizados na PR #52 e CI #1308 aprovados.
 [PENDENTE] E6. Prova de conceito RetroArch Cloud Sync/WebDAV em modo somente leitura.
 [PENDENTE] E7. Testes controlados de upload/download WebDAV sem DELETE automático.
-[PENDENTE] E8. Comparar Device Sync e WebDAV para decidir arquitetura por tipo de asset.
-[PENDENTE] E9. Manter save states separados de SRAM e memory cards.
-[AGUARDANDO DECISÃO] E10. Definir se e quando substituir partes do sincronizador atual pelo protocolo oficial.
+[CONCLUÍDO] E8. Comparação Device Sync × WebDAV documentada; Device Sync permanece como transporte ativo para SRAM/cartões elegíveis; WebDAV não o substitui nesta etapa.
+[CONCLUÍDO] E9. Save states permanecem exclusivamente locais; Device Sync sincroniza somente o slot primário memory-card-0 nos adaptadores atualmente suportados. Slot 1, modos compartilhados e formatos alternativos não são inferidos nem sincronizados.
+[CONCLUÍDO — DECISÃO DE ESCOPO] E10. Device Sync permanece responsável por SRAM/cartões elegíveis; save states ficam locais; WebDAV não substitui o transporte nesta etapa. Expansões exigem etapa e validação próprias.
 
 F. ESTATÍSTICAS, RECOMENDAÇÕES E NOTIFICAÇÕES
 [PENDENTE] F1. Consultar estatísticas do RomM sem duplicar os cálculos do servidor.
@@ -87,7 +87,7 @@ G. RECURSOS ESPECIALIZADOS
 H. AUTENTICAÇÃO, PERMISSÕES E COMPATIBILIDADE DA API
 [CONCLUÍDO] H1. Inventário dos endpoints RomM usados atualmente.
 [CONCLUÍDO] H2. Identificação dos scopes necessários para os fluxos atuais.
-[CONCLUÍDO] H3. Identificação de scopes solicitados sem uso atual (roms.user.read/write e devices.read/write).
+[CONCLUÍDO] H3. Inventário de scopes e usos; roms.user.read/write e devices.read/write já são solicitados para funções existentes. F1/F2 usam roms.read e F3 usa me.read, ambos já incluídos no token atual.
 [PENDENTE] H4. Implementar detecção clara de permissões ausentes e instruções de reconexão.
 [PENDENTE] H5. Revisar expiração, revogação e renovação de tokens; não há renovação automática identificada.
 [PENDENTE] H6. Revisar diferenças entre token manual e token do fluxo de dispositivo.
@@ -1432,3 +1432,34 @@ MERGE — PR #52 / FECHAMENTO E5 + E9 (2026-11-25)
 - Nenhuma transferência, sobrescrita, movimentação ou exclusão de save real foi realizada pelo merge.
 - [PRÓXIMO ESTÁGIO] Estágio F liberado para auditoria e implementação: F1 estatísticas, F2 recomendações e F3 notificações em modo de leitura primeiro; F4 ações de leitura/dispensa e F5 canais ficam condicionados a escopo de permissões e decisão de interface.
 - Nenhuma outra PR estava aberta imediatamente após o merge.
+
+
+AUDITORIA DE ENTRADA — ESTÁGIO F (2026-11-25)
+Base: game-mode-m2-dev após PR #52 (merge 32c1d5fba78fc61ffa18bff136af0d50a4fb0c4c).
+Branch de trabalho: feat/romm-stage-f-dashboard.
+
+ESCOPO E CONTRATO ROMM 5.4.1 — CONFIRMADOS NA DOCUMENTAÇÃO E NO CÓDIGO DO SERVIDOR
+- F1 — ESTATÍSTICAS: GET /api/stats; aceita include_platform_stats=true. Retorna PLATFORMS, ROMS, SAVES, STATES, SCREENSHOTS e TOTAL_FILESIZE_BYTES; com a opção, também METADATA_COVERAGE e REGION_BREAKDOWN por plataforma. Requer roms.read. No RomM 5.4.1, os totais respeitam a visibilidade do usuário e excluem ROMs/assets ocultos; o Tandem deve exibir os valores do servidor sem recalcular ou somar dados locais.
+- F2 — RECOMENDAÇÕES: GET /api/recommendations?limit=20 (máximo 50) fornece ROM, score, reasons e seed_rom_id/seed_rom_name quando houver. GET /api/roms/{id}/similar fornece jogos similares para um registro. Requer roms.read. A lista pode depender do índice de recomendações do servidor; resultado vazio não deve ser tratado como erro.
+- F3 — NOTIFICAÇÕES: GET /api/notifications retorna as notificações da conta em ordem mais recente, até 200 registros. Campos incluem id, kind, level, title, body, link, icon, data, actor, read_at e created_at. Requer me.read.
+- F4 — MARCAR COMO LIDA/DISPENSAR: POST /api/notifications/read e DELETE /api/notifications/{id} ou DELETE /api/notifications exigem me.write. O token de pareamento atual não solicita me.write; portanto, nenhuma ação de escrita será implementada antes de ampliar o escopo e obter autorização renovada.
+- F5 — CANAIS: GET /api/notification-channels usa me.read; criar, editar, testar, confirmar e remover canais usam me.write. Endpoints de catálogo/configuração Apprise são administrativos e não devem ser expostos como editor genérico no Tandem. Primeira fase deve ser somente leitura ou permanecer pendente até decisão de interface/permissões.
+- F6 — painel administrativo, logs e auditoria do servidor continuam fora do escopo inicial.
+
+ESTADO DO CÓDIGO TANDEM
+- Já existe o método listActivity() para atividade atualmente ativa e painel de dados pessoais por jogo; isso não equivale ao histórico de notificações nem às recomendações/estatísticas.
+- O cliente atual já solicita roms.read e me.read no pareamento; não é necessário ampliar scopes para F1, F2 ou F3.
+- Não há ainda cliente/modelos/tela específicos para stats, recommendations ou notifications.
+- Nenhuma escrita em notificações/canais será feita no primeiro incremento.
+
+ORDEM DE IMPLEMENTAÇÃO DEFINIDA PARA O ESTÁGIO F
+1. F1 estatísticas oficiais em modo somente leitura.
+2. F2 recomendações oficiais em modo somente leitura.
+3. F3 caixa de notificações em modo somente leitura.
+4. Depois, reavaliar F4/F5 separadamente, com me.write, UX de confirmação e decisão explícita antes de qualquer ação mutável.
+
+VALIDAÇÃO E LIMITES
+- Auditoria documental/API concluída; implementação funcional F1–F3 ainda pendente.
+- Não foram feitas chamadas a endpoints do servidor RomM do usuário nem alterados dados remotos.
+- Nenhuma notificação foi marcada como lida ou dispensada; nenhum canal foi criado, editado, testado ou removido.
+- E6/E7 (PoC e interoperabilidade WebDAV) permanecem pendentes, mas são independentes das APIs de estatísticas, recomendações e notificações; a solicitação do usuário autoriza avançar ao Estágio F sem substituir Device Sync por WebDAV.
