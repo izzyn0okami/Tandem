@@ -448,3 +448,32 @@ IMPLEMENTAÇÃO — TESTES HTTP E DIAGNÓSTICO DE SAVE STATES — 2026-11-25
 - [PENDÊNCIA DE RETRY] RomMSaveSyncWorker ainda converte qualquer exceção HTTP em Result.retry(). Revisar especificamente HTTP 409 para estacionar o snapshot e não repetir indefinidamente um conflito remoto. Não resolver conflito nem sobrescrever dados automaticamente.
 - [PENDENTE] Executar teste funcional no telefone com save state real em ida e volta entre dispositivos; confirmar também se a instância 5.4.x devolve os metadados esperados e se o token tem scopes assets.read/assets.write.
 - [SEGURANÇA/PR] Nenhum save, ROM ou dado remoto foi apagado, movido ou sobrescrito. PR #50 permanece aberta, em draft, mergeable=true e sem merge. Nenhuma PR concorrente foi aberta.
+
+## ATUALIZAÇÃO — IDENTIFICADORES CANÔNICOS DOS NÚCLEOS ROMM (2026-11-25)
+
+### Achado confirmado
+- O catálogo CoreRegistry usa identificadores canônicos Libretro; para SNES, o núcleo padrão é snes9x.
+- RomMDeviceSyncRunner e SaveSync acrescentavam o prefixo tandem_ antes de enviar o campo emulator ao RomM. Isso fazia novos registros aparecerem como tandem_snes9x, em vez de snes9x.
+- A política antiga de SRAM aceitava qualquer identificador iniciado por tandem_, sem limitar a compatibilidade aos grupos de núcleos declarados. Essa regra era ampla demais.
+
+### Correção implementada na PR #50
+- CoreSaveAdapterRegistry agora centraliza a conversão para o ID canônico Libretro e a lista de aliases legados aceitos na leitura.
+- Novos uploads pelo Device Sync e pelo transporte de quick states enviam o ID canônico (snes9x, por exemplo), sem prefixo tandem_.
+- A leitura continua aceitando registros antigos tandem_*, normalizando-os apenas para comparação; não há renomeação nem atualização automática dos registros remotos.
+- SRAM/cartões só são considerados compatíveis entre núcleos explicitamente declarados no mesmo adaptador. Núcleos desconhecidos permanecem restritos ao próprio ID.
+- Save states continuam restritos ao mesmo núcleo de origem, aceitando somente a forma canônica ou o alias legado daquele mesmo núcleo.
+- Não foram alterados caminhos locais, nomes de arquivos ou conteúdo de saves. Nenhum save, ROM ou registro remoto foi apagado, movido, sobrescrito ou migrado.
+
+### Testes adicionados
+- ID de saída canônico para snes9x e pcsx_rearmed.
+- Leitura compatível de snes9x e tandem_snes9x.
+- Compatibilidade cruzada de SRAM somente dentro do grupo SNES declarado.
+- Rejeição de núcleos de famílias diferentes.
+- Save states aceitam o alias legado somente para o mesmo núcleo.
+- Verificação da política do Device Sync para envio canônico e leitura legada.
+
+### Estado de validação
+- Alterações enviadas à branch feat/unified-session-artifacts, dentro da PR #50.
+- [PENDENTE] CI completa no head atualizado, incluindo Spotless, testes unitários e build Debug APK.
+- [PENDENTE] Teste funcional no telefone e inspeção do valor emulator gravado no RomM após um novo upload.
+- A PR permanece em draft e não deve ser mesclada sem autorização explícita.
