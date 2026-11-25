@@ -312,6 +312,7 @@ private fun ServerManage(remote: RemoteLibrary) {
         Text(stringResource(R.string.game_romm_title), color = GameColors.text, fontSize = 24.sp, fontWeight = FontWeight.Bold)
         Text(stringResource(R.string.game_romm_connected, remote.url), color = GameColors.textDim, fontSize = 14.sp)
         if (count != null) Text(stringResource(R.string.game_romm_games_count, count), color = GameColors.text, fontSize = 14.sp)
+        RomMInsightsPanel()
         if (remote.refreshing) Text(stringResource(R.string.game_romm_updating), color = GameColors.textDim, fontSize = 12.sp)
         if (remote.error.isNotEmpty()) Text(remote.error, color = GameColors.danger, fontSize = 12.sp, maxLines = 3)
         if (count == 0 && remote.error.isEmpty()) {

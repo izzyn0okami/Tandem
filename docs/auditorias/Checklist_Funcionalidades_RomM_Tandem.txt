@@ -59,19 +59,19 @@ E. SAVES, STATES E SINCRONIZAÇÃO
 [CONCLUÍDO] E2. Identidade estável por conta/jogo e isolamento por conta.
 [CONCLUÍDO] E3. Snapshots imutáveis integrados à fila persistente Device Sync; CI #1291 aprovada e fluxo novo validado no aparelho pelo usuário.
 [CONCLUÍDO] E4. Resolução explícita de conflitos Device Sync: arbitragem por timestamp removida; escolha local explícita e restauração remota pelo histórico integradas; CI #1291 aprovada e fluxo validado no aparelho pelo usuário.
-[EM ANDAMENTO] E5. Device Sync Protocol oficial: cliente, registro/negotiate/complete, persistência isolada do device_id, transporte SRAM e inspeção local somente leitura implementados com testes automatizados; CIs #893 e #896 aprovadas. Falta ação explícita de registro na interface, integração segura/limitada, interoperabilidade com RomM real e validação no telefone. Save states permanecem fora do transporte.
+[CONCLUÍDO] E5. Recuperação do Device Sync: fila persistente, retomada por snapshot imutável e política de retry/conflito; testes de recuperação no aparelho confirmados pelo usuário; testes automatizados na PR #52 e CI #1308 aprovados.
 [PENDENTE] E6. Prova de conceito RetroArch Cloud Sync/WebDAV em modo somente leitura.
 [PENDENTE] E7. Testes controlados de upload/download WebDAV sem DELETE automático.
-[PENDENTE] E8. Comparar Device Sync e WebDAV para decidir arquitetura por tipo de asset.
-[PENDENTE] E9. Manter save states separados de SRAM e memory cards.
-[AGUARDANDO DECISÃO] E10. Definir se e quando substituir partes do sincronizador atual pelo protocolo oficial.
+[CONCLUÍDO] E8. Comparação Device Sync × WebDAV documentada; Device Sync permanece como transporte ativo para SRAM/cartões elegíveis; WebDAV não o substitui nesta etapa.
+[CONCLUÍDO] E9. Save states permanecem exclusivamente locais; Device Sync sincroniza somente o slot primário memory-card-0 nos adaptadores atualmente suportados. Slot 1, modos compartilhados e formatos alternativos não são inferidos nem sincronizados.
+[CONCLUÍDO — DECISÃO DE ESCOPO] E10. Device Sync permanece responsável por SRAM/cartões elegíveis; save states ficam locais; WebDAV não substitui o transporte nesta etapa. Expansões exigem etapa e validação próprias.
 
 F. ESTATÍSTICAS, RECOMENDAÇÕES E NOTIFICAÇÕES
-[PENDENTE] F1. Consultar estatísticas do RomM sem duplicar os cálculos do servidor.
-[PENDENTE] F2. Consultar recomendações personalizadas do RomM.
-[PENDENTE] F3. Consultar notificações do RomM.
-[PENDENTE] F4. Avaliar atualização/dispensa de notificações.
-[PENDENTE] F5. Avaliar canais de notificação e Apprise; sem editor administrativo inicialmente.
+[CONCLUÍDO] F1. Endpoint GET /api/stats integrado em modo somente leitura; painel exibe totais oficiais do RomM sem recalcular. CI aprovada e teste funcional no aparelho confirmado pelo usuário.
+[CONCLUÍDO] F2. GET /api/recommendations integrado; painel exibe até 10 sugestões, motivos e jogo-semente quando disponível. Lista vazia é tratada como resultado válido. CI aprovada e teste funcional no aparelho confirmado pelo usuário.
+[CONCLUÍDO] F3. GET /api/notifications integrado; painel exibe as 10 mais recentes e contagem de não lidas. CI aprovada e teste funcional no aparelho confirmado pelo usuário; as ações de escrita estão rastreadas em F4.
+[CONCLUÍDO] F4. Ações de notificação: marcar individual como lida, marcar todas como lidas e dispensar individualmente com confirmação. Escopo me.write solicitado no pareamento; chamadas limitadas aos endpoints F4. CI #1346 aprovada e três ações confirmadas pelo usuário no aparelho.
+[FORA DO ESCOPO — DECISÃO DO USUÁRIO] F5. Gestão de canais webhook, email e Apprise foi descartada por não oferecer utilidade prática ao usuário. Auditoria técnica mantida apenas como histórico; nenhuma implementação planejada.
 [FORA DO ESCOPO INICIAL] F6. Replicar painel administrativo, logs e auditoria do RomM.
 
 G. RECURSOS ESPECIALIZADOS
@@ -87,7 +87,7 @@ G. RECURSOS ESPECIALIZADOS
 H. AUTENTICAÇÃO, PERMISSÕES E COMPATIBILIDADE DA API
 [CONCLUÍDO] H1. Inventário dos endpoints RomM usados atualmente.
 [CONCLUÍDO] H2. Identificação dos scopes necessários para os fluxos atuais.
-[CONCLUÍDO] H3. Identificação de scopes solicitados sem uso atual (roms.user.read/write e devices.read/write).
+[CONCLUÍDO] H3. Inventário de scopes e usos; roms.user.read/write e devices.read/write já são solicitados para funções existentes. F1/F2 usam roms.read e F3 usa me.read, ambos já incluídos no token atual.
 [PENDENTE] H4. Implementar detecção clara de permissões ausentes e instruções de reconexão.
 [PENDENTE] H5. Revisar expiração, revogação e renovação de tokens; não há renovação automática identificada.
 [PENDENTE] H6. Revisar diferenças entre token manual e token do fluxo de dispositivo.
@@ -1432,3 +1432,228 @@ MERGE — PR #52 / FECHAMENTO E5 + E9 (2026-11-25)
 - Nenhuma transferência, sobrescrita, movimentação ou exclusão de save real foi realizada pelo merge.
 - [PRÓXIMO ESTÁGIO] Estágio F liberado para auditoria e implementação: F1 estatísticas, F2 recomendações e F3 notificações em modo de leitura primeiro; F4 ações de leitura/dispensa e F5 canais ficam condicionados a escopo de permissões e decisão de interface.
 - Nenhuma outra PR estava aberta imediatamente após o merge.
+
+
+AUDITORIA DE ENTRADA — ESTÁGIO F (2026-11-25)
+Base: game-mode-m2-dev após PR #52 (merge 32c1d5fba78fc61ffa18bff136af0d50a4fb0c4c).
+Branch de trabalho: feat/romm-stage-f-dashboard.
+
+ESCOPO E CONTRATO ROMM 5.4.1 — CONFIRMADOS NA DOCUMENTAÇÃO E NO CÓDIGO DO SERVIDOR
+- F1 — ESTATÍSTICAS: GET /api/stats; aceita include_platform_stats=true. Retorna PLATFORMS, ROMS, SAVES, STATES, SCREENSHOTS e TOTAL_FILESIZE_BYTES; com a opção, também METADATA_COVERAGE e REGION_BREAKDOWN por plataforma. Requer roms.read. No RomM 5.4.1, os totais respeitam a visibilidade do usuário e excluem ROMs/assets ocultos; o Tandem deve exibir os valores do servidor sem recalcular ou somar dados locais.
+- F2 — RECOMENDAÇÕES: GET /api/recommendations?limit=20 (máximo 50) fornece ROM, score, reasons e seed_rom_id/seed_rom_name quando houver. GET /api/roms/{id}/similar fornece jogos similares para um registro. Requer roms.read. A lista pode depender do índice de recomendações do servidor; resultado vazio não deve ser tratado como erro.
+- F3 — NOTIFICAÇÕES: GET /api/notifications retorna as notificações da conta em ordem mais recente, até 200 registros. Campos incluem id, kind, level, title, body, link, icon, data, actor, read_at e created_at. Requer me.read.
+- F4 — MARCAR COMO LIDA/DISPENSAR: POST /api/notifications/read e DELETE /api/notifications/{id} ou DELETE /api/notifications exigem me.write. O token de pareamento atual não solicita me.write; portanto, nenhuma ação de escrita será implementada antes de ampliar o escopo e obter autorização renovada.
+- F5 — CANAIS: GET /api/notification-channels usa me.read; criar, editar, testar, confirmar e remover canais usam me.write. Endpoints de catálogo/configuração Apprise são administrativos e não devem ser expostos como editor genérico no Tandem. Primeira fase deve ser somente leitura ou permanecer pendente até decisão de interface/permissões.
+- F6 — painel administrativo, logs e auditoria do servidor continuam fora do escopo inicial.
+
+ESTADO DO CÓDIGO TANDEM
+- Já existe o método listActivity() para atividade atualmente ativa e painel de dados pessoais por jogo; isso não equivale ao histórico de notificações nem às recomendações/estatísticas.
+- O cliente atual já solicita roms.read e me.read no pareamento; não é necessário ampliar scopes para F1, F2 ou F3.
+- Não há ainda cliente/modelos/tela específicos para stats, recommendations ou notifications.
+- Nenhuma escrita em notificações/canais será feita no primeiro incremento.
+
+ORDEM DE IMPLEMENTAÇÃO DEFINIDA PARA O ESTÁGIO F
+1. F1 estatísticas oficiais em modo somente leitura.
+2. F2 recomendações oficiais em modo somente leitura.
+3. F3 caixa de notificações em modo somente leitura.
+4. Depois, reavaliar F4/F5 separadamente, com me.write, UX de confirmação e decisão explícita antes de qualquer ação mutável.
+
+VALIDAÇÃO E LIMITES
+- Auditoria documental/API concluída; implementação funcional F1–F3 ainda pendente.
+- Não foram feitas chamadas a endpoints do servidor RomM do usuário nem alterados dados remotos.
+- Nenhuma notificação foi marcada como lida ou dispensada; nenhum canal foi criado, editado, testado ou removido.
+- E6/E7 (PoC e interoperabilidade WebDAV) permanecem pendentes, mas são independentes das APIs de estatísticas, recomendações e notificações; a solicitação do usuário autoriza avançar ao Estágio F sem substituir Device Sync por WebDAV.
+
+
+IMPLEMENTAÇÃO INICIAL — ESTÁGIO F1–F3 (2026-11-25)
+Branch: feat/romm-stage-f-dashboard.
+- RomMClient.kt: adicionadas consultas GET /api/stats?include_platform_stats=true, GET /api/recommendations?limit=20 e GET /api/notifications.
+- RomMInsights.kt: modelos tipados para estatísticas, recomendações e notificações.
+- RomMInsightsPanel.kt: painel com seções de Estatísticas, Recomendações e Notificações na tela de conexão RomM.
+- RomMScreen.kt: painel integrado à tela de gerenciamento do servidor.
+- F1 mostra totais de plataformas, jogos, saves, states, screenshots e espaço total informados pelo RomM; não duplica nem recalcula métricas locais.
+- F2 mostra até 10 recomendações, plataforma, motivos e jogo-semente; não gera recomendações localmente.
+- F3 mostra até 10 notificações recentes e quantidade não lida; não modifica estado remoto.
+- Todas as chamadas são GET e usam somente scopes já solicitados pelo fluxo de pareamento: roms.read e me.read. Nenhum novo escopo OAuth é solicitado.
+- F4 e F5 permanecem sem implementação mutável: me.write não está solicitado no token atual. Nenhuma notificação é marcada como lida/dispensada e nenhum canal é criado/editado/testado/removido.
+- [CONCLUÍDO — CÓDIGO] Testes específicos F1–F3 adicionados em `tests/unit/kotlin/app/lawnchair/gamemode/RomMInsightsTest.kt`, cobrindo endpoints, autenticação, parâmetros, feeds vazios e limite de recomendações. A validação da nova suíte aguarda CI #1317/#1318.
+- [CONCLUÍDO — UI] Navegação do painel empilhada verticalmente para evitar overflow em telas estreitas; a distinção de visibilidade das métricas gerais foi explicada junto aos números.
+- [PENDENTE] CI final do head atual e validação funcional do painel no aparelho.
+- [SEGURANÇA] Não foram feitas chamadas ao RomM pessoal do usuário nem alterados dados remotos.
+
+
+ATUALIZAÇÃO DE AUDITORIA — F1–F3 (2026-11-25)
+- Revisão do servidor RomM 5.4.1 confirmou o contrato de GET /api/stats, /api/recommendations e /api/notifications.
+- Atenção semântica de F1: SAVES, STATES e SCREENSHOTS são contagens gerais do banco; PLATFORMS, ROMS, TOTAL_FILESIZE_BYTES e as estatísticas opcionais por plataforma recebem filtro de visibilidade. A UI e a documentação agora explicitam essa diferença.
+- CI #1313 (run 45638448471) aprovou unit tests, build Debug APK e Spotless no head 20ee3fec4f209a1755e4457908009ea030066431; artefato ID 15033752882, SHA-256 93ce82be84f2c31bb2004504b224eb8167aab9c4c04c744fb201320c2afa9f61.
+- Após esse CI, foram adicionados testes próprios F1–F3, explicação de escopo das estatísticas e ajuste de navegação para telas estreitas. O head atual é e2aaa85a967eeb71cfc636848d82d78972f303ee; CIs #1317/#1318 estão em andamento. O artefato de #1313 não inclui esses últimos ajustes/testes.
+- PR #53 continua em rascunho, não mesclada; nenhuma PR concorrente foi aberta.
+
+
+VALIDAÇÃO FUNCIONAL — F1–F3 APROVADAS PELO USUÁRIO (2026-11-25)
+- [CONCLUÍDO — TESTE NO APARELHO] O usuário confirmou que Estatísticas (F1), Recomendações (F2) e Notificações (F3) estão todas funcionando corretamente na versão de teste da PR #53.
+- [CONCLUÍDO — CI] CI #1323 / run 45648223059, no head 7a4930c0dd5c707e566f34bb634096986aee21b4: SUCCESS.
+- Job build-debug-apk: testes unitários, compilação do APK e upload do artefato concluídos com sucesso.
+- Job check-style: Spotless automático, commit de formatação e verificação final concluídos com sucesso.
+- Job final-status: SUCCESS. Jobs opcionais de notificações e releases foram ignorados; nenhuma release foi publicada.
+- [APK DE VALIDAÇÃO] Artefato assembleLawnWithQuickstepGithubDebug, ID 15037893589, 46.485.683 bytes, SHA-256 do arquivo de artefato: c5c7d2534a507c37cc68a81805a2b845df75aa269e72bfdd66b37f2329d86b4f; disponível até 2027-02-23.
+- [CONCLUÍDO] F1, F2 e F3 passam a [CONCLUÍDO] no escopo de consulta somente leitura e foram validadas pelo usuário no aparelho.
+- [PENDENTE] F4 — avaliar marcação/dispensa de notificações; exige me.write e decisão explícita sobre permissões e confirmação na interface.
+- [PENDENTE] F5 — avaliar canais de notificação/Apprise; operações mutáveis exigem me.write e decisão de interface. Não ampliar escopos sem autorização.
+- PR #53 permanece aberta, em rascunho (draft), sem merge. Não mesclar sem autorização explícita do usuário.
+- Nenhuma alteração foi feita em dados remotos do RomM; F1–F3 continuam somente leitura.
+
+
+AUDITORIA F4 — AÇÕES SOBRE NOTIFICAÇÕES (2026-11-25)
+Base de trabalho: PR #53, branch feat/romm-stage-f-dashboard.
+- [AUDITADO — CONTRATO ROMM 5.4.x] GET /api/notifications exige me.read; POST /api/notifications/read exige me.write e aceita uma lista de ids (ou ids=null para marcar todas); DELETE /api/notifications/{notification_id} exige me.write e dispensa uma notificação; DELETE /api/notifications exige me.write e dispensa todas.
+- [CONFIRMADO NO TANDEM] O fluxo de pareamento por dispositivo envia DEVICE_SCOPES em RomMClient.kt. A lista atual inclui me.read, roms.read, collections.read, devices.read/write, roms.user.read/write e outros scopes de leitura/ativos, mas NÃO inclui me.write.
+- [IMPLICAÇÃO DE SEGURANÇA] me.write é um escopo amplo do perfil do usuário no RomM; não é limitado às notificações. Também habilita outras operações de escrita do grupo me, incluindo canais de notificação. Não solicitar esse escopo sem autorização expressa e sem limitar as chamadas implementadas pelo Tandem aos endpoints estritamente necessários.
+- [RECOMENDAÇÃO DE UX — AGUARDANDO DECISÃO] F4 mínimo e seguro: ação individual “Marcar como lida”; ação “Marcar todas como lidas”; ação individual “Dispensar” com confirmação explícita. Não oferecer “Dispensar todas” nesta primeira versão, pois é uma exclusão em lote sem necessidade demonstrada. Atualizar a interface somente após confirmação de sucesso do servidor; em 401/403 manter o estado e orientar reconexão/autorização, sem retry de escrita automático.
+- [AGUARDANDO DECISÃO DO USUÁRIO] Autorizar incluir me.write em requested_scopes no pareamento e reautorizar a conexão RomM para liberar as ações F4 acima. Até autorização, manter F4 sem chamadas mutáveis.
+- [PENDENTE] Implementar testes MockWebServer para método, rota, payload de IDs, autenticação, sucesso, 401/403, falha de rede e preservação do estado local em erro; CI e teste funcional no aparelho.
+- [FORA DO ESCOPO DESTA FASE] Criar/editar/testar/remover canais de notificação, envio de notificações e endpoints administrativos/Apprise (F5 e escopos relacionados).
+- Nenhuma chamada de escrita foi feita ao servidor RomM; nenhum estado de notificação foi alterado nesta auditoria.
+
+
+IMPLEMENTAÇÃO F4 — AÇÕES DE NOTIFICAÇÃO AUTORIZADAS (2026-11-25)
+Decisão do usuário: AUTORIZADO incluir me.write no pareamento para implementar as ações F4 descritas nesta auditoria.
+Branch: feat/romm-stage-f-dashboard; PR #53 permanece draft e sem merge.
+- [IMPLEMENTADO] DEVICE_SCOPES agora solicita me.write. O escopo é amplo no RomM; o Tandem limita as chamadas desta implementação a POST /api/notifications/read e DELETE /api/notifications/{id}. Nenhuma operação de canais (F5) foi adicionada.
+- [IMPLEMENTADO] Marcar uma notificação individual como lida envia POST /api/notifications/read com ids contendo apenas o ID selecionado.
+- [IMPLEMENTADO] Marcar todas como lidas envia POST /api/notifications/read com ids=null; não exclui notificações.
+- [IMPLEMENTADO] Dispensar remove apenas uma notificação por DELETE /api/notifications/{id}, após confirmação explícita em AlertDialog.
+- [SEGURANÇA] Não existe ação “Dispensar todas”. A interface altera o estado local somente após resposta HTTP bem-sucedida; 401/403 e falhas de rede mantêm o estado anterior e exibem erro. Não há retry automático de escrita.
+- [REAUTORIZAÇÃO NECESSÁRIA] Tokens existentes não recebem escopos novos automaticamente. Para usar F4, o usuário deverá desconectar e parear novamente a conta RomM após instalar a versão com me.write.
+- [TESTES ADICIONADOS] MockWebServer verifica POST individual com IDs exatos, POST em lote com ids=null, DELETE individual, autenticação, rejeição de IDs inválidos, resposta 403 preservando status e inclusão de me.write no payload de pareamento.
+- [CI #1328] Run 45702965058 concluiu SUCCESS no head anterior 914faf93a15028418c4478aa545c4c514b0ee9ab; Spotless, testes, build Debug APK e final-status passaram. Não valida as alterações F4.
+- [CI F4] Execuções automáticas iniciadas para commits intermediários #1332 (run 45704058215) e #1333 (run 45704088167). A validação definitiva depende da CI no head final após esta atualização do checklist.
+- [PENDENTE] Aguardar CI final, revisar eventuais correções de Spotless, confirmar artefato APK do head final e validar as três ações no aparelho após novo pareamento.
+- [PENDENTE] F5 (canais de notificação/Apprise) permanece fora do escopo.
+- Nenhuma notificação real foi marcada como lida ou dispensada durante desenvolvimento/testes automatizados; nenhuma chamada foi feita à conta RomM do usuário.
+- PR #53 continua aberta, draft e sem merge. Não mesclar sem autorização explícita.
+
+- [TESTES COMPLEMENTARES] Também foram adicionados casos de 401 (não autorizado) e falha de rede sem retry, além do caso 403. Commit de testes complementares: ffc91eda8cc7c6167bf7e0348441d0deaca86a66.
+- [CI ATUALIZADA] A alteração dos testes ocorreu enquanto a CI #1335 ainda executava no head anterior a2b7335c5ce581b78d38f39e51b39d47fdfd61b0. Essa execução não cobre o commit complementar; aguardar execução CI vinculada ao head ffc91eda8cc7c6167bf7e0348441d0deaca86a66 antes de declarar F4 validada.
+- [REVISÃO] PR #53 permanece aberta e draft. O campo mergeable foi reportado temporariamente como false após atualização do head; não iniciar merge. Reavaliar após atualização de checks e estado do GitHub.
+
+- [CI #1339 — FALHA IDENTIFICADA E CORRIGIDA] Spotless e formatação passaram; a compilação dos testes unitários falhou por uso incorreto da API MockWebServer 3 nos testes novos (ByteString nullable, verificação de JSON null e encerramento do servidor). Não foi falha na implementação de produção.
+- [CORREÇÃO] Commit cf0dd066fc0d0d2de8872d2422dd8ea253821d8d ajusta leitura do corpo via ByteString.utf8(), comparação explícita com JSONObject.NULL e simulação de falha de rede encerrando o servidor após capturar a URL.
+- [PENDENTE] Aguardar CI do commit cf0dd066fc0d0d2de8872d2422dd8ea253821d8d. APK não foi gerado na CI #1339 porque os testes não compilaram.
+- [ESTADO] F4 continua implementada em código, mas não validada. PR #53 permanece aberta e draft, sem merge; validação em aparelho ainda pendente.
+
+
+ATUALIZAÇÃO — F4 / CI DEFINITIVA E APK (2026-11-25)
+- [CONCLUÍDO — CI] CI #1343, run 45705972144, evento pull_request, validou o head final a4e8f5b79ceb6f3844aeb0beb145470d2876747c: SUCCESS.
+- Jobs obrigatórios check-style, build-debug-apk (assembleLawnWithQuickstepGithubDebug) e final-status concluíram com sucesso. Jobs opcionais de publicação/notificação foram ignorados; nenhuma release foi publicada.
+- [APK DE TESTE] Artefato assembleLawnWithQuickstepGithubDebug, ID 15065488057, tamanho 46.496.121 bytes, disponível até 2027-02-23T21:37:00Z. Foi gerado pela CI #1343 vinculada à PR e ao head acima.
+- [CONFIRMAÇÃO] CI #1344 e #1345 também passaram no mesmo head, mas são execuções manuais; CI #1343 é a validação de pull_request usada como referência.
+- [CORREÇÃO DE TESTES] O problema de compilação MockWebServer identificado na CI #1339 foi corrigido; a CI #1343 confirma que testes unitários, compilação do APK e estilo passaram.
+- [PENDENTE — APARELHO] Usuário ainda precisa validar no dispositivo: marcar uma notificação individual como lida; marcar todas como lidas; dispensar uma notificação individual após confirmação. É necessário desconectar e parear novamente o RomM para conceder me.write.
+- [PENDENTE — DECISÃO FUTURA] F5 (canais/Apprise) permanece fora do escopo e não foi implementado.
+- [ESTADO DA PR] PR #53 continua aberta, draft, sem merge; base game-mode-m2-dev; head a4e8f5b79ceb6f3844aeb0beb145470d2876747c. Não mesclar sem autorização explícita.
+- Nenhuma notificação ou dado remoto da conta RomM do usuário foi alterado durante a implementação ou os testes automatizados.
+
+
+ATUALIZAÇÃO — CI #1346 / HEAD COM LOG FINAL (2026-11-25)
+- [CONCLUÍDO — CI] CI #1346, run 45708328099, evento pull_request, validou o commit 2bc806a778c0bed7f4e60b0c1c5d3b0630de57ef: SUCCESS.
+- Jobs obrigatórios check-style, build-debug-apk (assembleLawnWithQuickstepGithubDebug) e final-status passaram. Jobs opcionais de publicação/notificações foram ignorados; nenhuma release foi publicada.
+- [APK DE TESTE ATUAL] Artefato assembleLawnWithQuickstepGithubDebug, ID 15067435302, tamanho 46.496.121 bytes, disponível no run até a expiração padrão do GitHub Actions. Esse APK corresponde ao head 2bc806a.
+- [PENDENTE — VALIDAÇÃO NO APARELHO] Marcar notificação individual como lida; marcar todas como lidas; dispensar individual após confirmação. Requer desconectar e parear novamente para autorizar me.write.
+- [ESTADO] PR #53 aberta, draft, mergeable=true, sem merge; head 2bc806a778c0bed7f4e60b0c1c5d3b0630de57ef; base game-mode-m2-dev.
+- Nenhuma alteração em notificações reais da conta RomM foi realizada. F5 permanece fora do escopo.
+
+VALIDAÇÃO FINAL F4 — TESTES NO APARELHO APROVADOS (2026-11-25)
+- [CONCLUÍDO — TESTE NO APARELHO] O usuário confirmou: “tudo funcionou”, aprovando as três ações F4 na versão de teste da PR #53 após reautorização do RomM com me.write.
+- Marcar uma notificação individual como lida: aprovado.
+- Marcar todas as notificações como lidas: aprovado.
+- Dispensar uma notificação individual após confirmação: aprovado.
+- [CONCLUÍDO] F4 está funcionalmente validada no aparelho. F1, F2 e F3 também permanecem aprovadas conforme confirmação anterior do usuário.
+- [CI] CI #1346 (run 45708328099) passou no commit 2bc806a778c0bed7f4e60b0c1c5d3b0630de57ef, cobrindo implementação e testes automatizados F4. O head documental atual é 17dce11dd53caf0864058acb0946d263180a4772; a execução #45709991124 estava em andamento durante esta atualização.
+- [ESTADO DA PR] PR #53 permanece aberta, draft, sem merge; branch feat/romm-stage-f-dashboard; base game-mode-m2-dev. Merge não autorizado nem executado.
+- [PENDENTE] F5 — auditoria separada de canais de notificação/Apprise; não implementado e não autorizado nesta etapa.
+- [PENDENTE] E6/E7 — PoC e testes WebDAV, independentes do estágio F.
+
+AUDITORIA F5 — CANAIS DE NOTIFICAÇÃO ROMM (2026-11-25)
+Base: documentação oficial RomM 5.4.x (guia Notifications 5.4.0-alpha/5.4.0, endpoints e escopos) e código atual da PR #53.
+
+CAPACIDADES CONFIRMADAS
+- [AUDITADO] GET /api/notification-channels — lista os canais do usuário; scope me.read.
+- [AUDITADO] POST /api/notification-channels — cria canal; scope me.write.
+- [AUDITADO] PATCH /api/notification-channels/{channel_id} — altera canal; scope me.write.
+- [AUDITADO] DELETE /api/notification-channels/{channel_id} — remove canal; scope me.write.
+- [AUDITADO] POST /api/notification-channels/{channel_id}/test — dispara envio de teste real ao destino; scope me.write. É uma operação com efeito externo e não deve ocorrer automaticamente ao abrir/editar tela.
+- [AUDITADO] POST /api/notification-channels/{channel_id}/confirm — confirma endereço de email com código; scope me.write.
+- [AUDITADO] POST /api/notification-channels/{channel_id}/resend-code — solicita novo código de email; scope me.write.
+- [AUDITADO — ADMIN] GET /api/notification-channels/apprise-services e POST /api/notification-channels/apprise-services/parse — catálogo e interpretação de URLs Apprise; scope me.read, mas ambos são restritos a administradores.
+
+TIPOS E COMPORTAMENTO
+- [AUDITADO] Webhook: envia JSON RomM para URL configurada; suporta segredo opcional com assinatura HMAC-SHA256. Destinos privados/locais são permitidos somente para administradores; usuários comuns ficam limitados a hosts públicos.
+- [AUDITADO] Email: envia mensagem de texto simples; só aparece se SMTP estiver configurado no servidor. Novo endereço exige código de 6 dígitos; validade de 30 minutos, até 5 tentativas e reenvio sujeito a intervalo de 1 minuto. Alterar endereço exige nova confirmação.
+- [AUDITADO — ADMIN] Apprise: integra serviços compatíveis, incluindo Discord, Telegram, Slack, ntfy, Gotify, Matrix, Pushover e Microsoft Teams. Restrito a administradores porque o backend abre conexões externas e precisa proteger a rede local (SSRF). Serviços locais como D-Bus/syslog/notificações desktop não são oferecidos.
+- [AUDITADO] Cada usuário pode manter até 20 canais. Filtros por nível mínimo (info, warning, error) e tópicos (scans, tasks, streaming, devices, account, custom).
+- [AUDITADO] Entrega ocorre em background; falhas têm retries após 30 s, 2 min e 10 min. Após 10 falhas consecutivas, o canal é desativado e o usuário recebe notificação; último erro fica registrado no canal. Envio de teste reporta falha imediatamente e não é repetido.
+- [AUDITADO — SEGURANÇA] Configurações, URLs, segredos e tokens são armazenados criptografados pelo RomM com ROMM_AUTH_SECRET_KEY. O Tandem não deve registrar credenciais/segredos em logs, persistir segredos fora do armazenamento remoto nem incluir conteúdo sensível em mensagens de erro.
+
+PERMISSÕES E IMPACTO NO TANDEM
+- [CONFIRMADO NO CÓDIGO] DEVICE_SCOPES na PR #53 já inclui me.read e me.write. Portanto, F5 não exige novo scope OAuth além do consentimento já solicitado para F4; tokens antigos ainda precisam ter sido reautorizados para receber me.write.
+- [IMPORTANTE] me.write é amplo no RomM e habilita outras operações de perfil; o Tandem deve restringir as chamadas às rotas de canais explicitamente aprovadas. Não usar POST /api/notifications para enviar mensagens a terceiros; isso não é necessário para gerenciar canais e pode exigir users.write.
+- [IMPORTANTE — ADMIN] O acesso ao catálogo/parse Apprise depende do papel de administrador, não apenas do scope. O Tandem deve tratar 403 como recurso indisponível para a conta, sem tentar contornar a restrição.
+- [IMPORTANTE — EFEITOS EXTERNOS] Criar/editar/remover canal altera configuração remota; testar envia uma mensagem real; criar/alterar email pode enviar código. Cada ação deve ser explícita, com confirmação adequada para exclusão e teste; nunca testar automaticamente.
+
+RECOMENDAÇÃO DE ESCOPO PARA UMA IMPLEMENTAÇÃO MÍNIMA
+- [RECOMENDADO — AGUARDANDO DECISÃO] Tela “Canais de notificação” separada da caixa de entrada: listar canais existentes, criar/editar/remover webhook e email, configurar filtros, iniciar teste somente por ação explícita e completar confirmação de email.
+- [RECOMENDADO — AGUARDANDO DECISÃO] Apprise pode ser incluído somente se a conta for administradora; catálogo dinâmico e parser oficial, sem catálogo codificado manualmente. Se a conta não for admin, ocultar opção e manter o restante funcional.
+- [RECOMENDADO — AGUARDANDO DECISÃO] Não implementar envio de notificações a usuários, administração de canais de terceiros, configurações do servidor SMTP, nem ferramentas administrativas.
+- [PENDENTE] Decisão do usuário sobre implementar gestão de canais (webhook/email) e se deseja incluir Apprise quando a conta for administradora.
+- [NÃO EXECUTADO] Nenhum canal foi listado, criado, editado, testado ou removido durante esta auditoria; nenhum email/código foi enviado; nenhum dado remoto foi alterado.
+
+CI / ESTADO DO TRABALHO
+- [CONCLUÍDO — CI] CI #1348, run 45709991124, evento pull_request, validou o head 17dce11dd53caf0864058acb0946d263180a4772: SUCCESS. check-style, build-debug-apk e final-status passaram. O artefato de CI corresponde ao commit anterior à atualização documental F5.
+- PR #53 permanece aberta, draft, sem merge; branch feat/romm-stage-f-dashboard; base game-mode-m2-dev. Nenhuma PR concorrente criada.
+- F5 permanece auditada, mas não implementada. F6 continua fora do escopo inicial.
+
+DECISÃO DE ESCOPO — F5 DESCARTADO (2026-11-25)
+- [FORA DO ESCOPO — DECISÃO DO USUÁRIO] F5 — gestão de canais de notificação (webhook, email e Apprise) foi descartado. O usuário não vê utilidade prática nessas funções no Tandem.
+- A auditoria técnica permanece como registro histórico de capacidades do RomM, mas não constitui plano de implementação nem pendência.
+- Não implementar listagem, criação, edição, exclusão, teste ou confirmação de canais; não integrar catálogo/parser Apprise.
+- F1, F2, F3 e F4 permanecem concluídos e preservados. A caixa de entrada e as ações de notificação existentes não serão removidas.
+- Nenhuma configuração ou canal remoto foi alterado como consequência desta decisão.
+- F5 não exige nova PR, alteração funcional ou CI; a PR #53 permanece dedicada ao trabalho já aprovado em F1–F4 e não deve receber implementação F5.
+- PR #53: https://github.com/izzyn0okami/Tandem/pull/53; estado consultado: open, draft=true, merged=false. Nenhum merge executado.
+
+
+AUDITORIA H4–H7 — AUTENTICAÇÃO, PERMISSÕES E COMPATIBILIDADE (2026-11-25)
+Escopo: leitura do RomMClient.kt, RomMScreen.kt, fluxo de pareamento e documentação oficial RomM 5.4.0/5.4.1.
+
+H4 — DETECÇÃO DE PERMISSÕES E RECUPERAÇÃO
+- [AUDITADO — MELHORIA NECESSÁRIA] O cliente já possui RomMHttpException com status HTTP e extração limitada de detalhes; a tela de registro Device Sync traduz especificamente HTTP 403 para uma orientação sobre devices.write.
+- [PENDENTE] O tratamento ainda é fragmentado: algumas chamadas lançam RomMHttpException, outras IOException genérica com apenas o código HTTP; a tela de conexão não oferece uma orientação uniforme para 401 (token inválido/revogado/expirado) e 403 (scope insuficiente).
+- [RECOMENDADO] Centralizar a tradução de 401/403/404 em mensagens claras, sem afirmar que todo 403 é erro de pareamento: 403 significa credencial válida sem permissão suficiente; 401 indica credencial ausente/inválida/expirada. Para 401, oferecer reconexão explícita; para 403, indicar o scope/área quando conhecido e orientar revisar permissões do token/conta.
+- [SEGURANÇA] Não tentar repetir automaticamente operações de escrita após 401/403 e não apagar dados locais ou filas pendentes ao detectar falha de autenticação.
+
+H5 — EXPIRAÇÃO, REVOGAÇÃO E RENOVAÇÃO
+- [CONCLUÍDO — AUDITORIA] Tandem usa Client API Tokens do RomM, não OAuth2 password-grant access/refresh tokens. Client API Tokens são credenciais de longa duração e não expiram por padrão; o administrador/usuário pode definir expiração opcional ou revogar o token.
+- [CONCLUÍDO — DECISÃO TÉCNICA] Não implementar refresh token: não há refresh token para o Client API Token utilizado pelo Tandem. Se o token for expirado/revogado, a recuperação correta é novo pareamento/reconexão explícita.
+- [FONTE] RomM 5.4.0 API Authentication e Client API Tokens.
+
+H6 — TOKEN MANUAL × PAREAMENTO POR DISPOSITIVO
+- [CONCLUÍDO — AUDITORIA] O fluxo manual usa POST /api/client-tokens/exchange após o usuário gerar um código para um Client API Token no RomM. O token resultante é um Client API Token normal; o pareamento só transporta a credencial e não o vincula ao dispositivo.
+- [CONCLUÍDO — AUDITORIA] O fluxo de dispositivo usa POST /api/auth/device/init e POST /api/auth/device/token; o RomM emite token vinculado ao dispositivo registrado. Esse vínculo é relevante para endpoints/recursos de Device Sync e identificação do dispositivo.
+- [CONFIRMADO NO CÓDIGO] O fluxo de dispositivo solicita scopes explícitos: me.read, me.write, platforms.read, collections.read, roms.read, roms.user.read/write, assets.read/write, firmware.read e devices.read/write.
+- [RECOMENDADO] Preservar ambos os fluxos. Explicar que o fluxo manual é uma credencial genérica de Client API Token e que o fluxo de dispositivo fornece identidade vinculada ao aparelho; não tratar os dois como equivalentes em capacidades de Device Sync.
+- [FONTE] RomM 5.4.0 Client API Tokens.
+
+H7 — COMPATIBILIDADE E CÓDIGOS HTTP
+- [AUDITADO — MELHORIA NECESSÁRIA] A implementação já trata casos específicos de 404 em troca de código/pareamento e em consulta opcional de dispositivo; o cliente também preserva status em RomMHttpException em várias rotas.
+- [PENDENTE] Não existe uma política uniforme para 401/403/404 em todos os endpoints. Algumas chamadas perdem o tipo/status ao lançar IOException genérica; outras propagam RomMHttpException. A UI, portanto, não consegue sempre oferecer orientação consistente.
+- [RECOMENDADO] Uniformizar erros sem transformar 404 em sucesso genérico: distinguir recurso opcional ausente de rota inexistente/versão incompatível; manter o status e o endpoint no diagnóstico; não duplicar registros nem repetir escritas automaticamente.
+- [AUDITADO] RomM 5.4.0 define 401 como credencial ausente/inválida/expirada; 403 como identidade autenticada sem scope; 404 como recurso inexistente ou oculto por privacidade. Não inferir falta de permissão a partir de 404.
+- [PENDENTE] Testes automatizados de matriz 401/403/404 por fluxo principal e regressão contra RomM 5.4.1.
+
+RESULTADO DA AUDITORIA H
+- H1–H3 permanecem concluídos.
+- H5 e H6 estão tecnicamente esclarecidos; não exigem implementação de refresh token nem remoção de qualquer fluxo.
+- H4 e H7 precisam de melhoria de tratamento de erros e orientação de reconexão/permissões.
+- Nenhuma chamada foi feita ao servidor RomM do usuário; nenhum token foi lido, alterado, revogado ou reemitido.
+- PR #53 permanece aberta e draft; não foi mesclada. Como H4/H7 tocarão RomMClient.kt e RomMScreen.kt, arquivos já modificados pela PR #53, não iniciar alterações concorrentes nesses arquivos antes de resolver a PR #53.
