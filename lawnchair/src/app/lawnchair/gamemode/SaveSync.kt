@@ -150,7 +150,7 @@ object SaveSync {
         GameIdentityResolver.link(context, File(romPath), romId)
     }
 
-    private fun emulatorTag(coreId: String) = "tandem_$coreId"
+    private fun emulatorTag(coreId: String) = CoreSaveAdapterRegistry.romMEmulatorId(coreId)
 
     private fun hash(file: File): String {
         val digest = MessageDigest.getInstance("SHA-1")
