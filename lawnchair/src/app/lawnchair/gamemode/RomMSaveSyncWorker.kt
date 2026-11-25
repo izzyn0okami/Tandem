@@ -19,6 +19,7 @@ class RomMSaveSyncWorker(
         // Keep them queued rather than adopting whichever RomM account is currently connected.
         val gameIdentity = inputData.getString(KEY_GAME_IDENTITY) ?: return Result.retry()
         val accountFingerprint = inputData.getString(KEY_ACCOUNT_FINGERPRINT) ?: return Result.retry()
+        val snapshotJobId = inputData.getString(KEY_SNAPSHOT_JOB_ID) ?: return Result.failure()
         return try {
             val completed = GameSessionCoordinator.pushFromWorker(
                 applicationContext,
@@ -27,7 +28,7 @@ class RomMSaveSyncWorker(
                 platformSlug,
                 gameIdentity,
                 accountFingerprint,
-                id.toString(),
+                snapshotJobId,
             )
             if (SaveSyncPolicy.shouldRetryWorker(completed)) Result.retry() else Result.success()
         } catch (cancelled: CancellationException) {
