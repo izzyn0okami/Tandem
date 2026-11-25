@@ -28,8 +28,7 @@ internal object DeviceSyncArtifactPolicy {
     /** Leitura aceita os IDs canônicos e os registros antigos tandem_* já existentes. */
     fun compatibleEmulators(coreId: String): Set<String> = CoreSaveAdapterRegistry.romMEmulatorAliases(coreId)
 
-    fun isCompatibleRemote(coreId: String, remoteEmulator: String?): Boolean =
-        CoreSaveAdapterRegistry.isCompatibleRomMEmulator(coreId, remoteEmulator)
+    fun isCompatibleRemote(coreId: String, remoteEmulator: String?): Boolean = CoreSaveAdapterRegistry.isCompatibleRomMEmulator(coreId, remoteEmulator)
 
     /** RomM 5.4.1 reports this reason when a newer client save has no device baseline yet. */
     fun isUnbasedUpload(operation: DeviceSyncOperation): Boolean = operation.action == DeviceSyncAction.Upload &&

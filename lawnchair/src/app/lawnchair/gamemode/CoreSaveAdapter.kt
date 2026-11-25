@@ -44,8 +44,7 @@ internal object CoreSaveAdapterRegistry {
         return resolve(coreId).compatibleCoreIds.any { it.equals(canonicalRemote, ignoreCase = true) }
     }
 
-    private fun String.removePrefixIgnoreCase(prefix: String): String =
-        if (startsWith(prefix, ignoreCase = true)) drop(prefix.length) else this
+    private fun String.removePrefixIgnoreCase(prefix: String): String = if (startsWith(prefix, ignoreCase = true)) drop(prefix.length) else this
 
     fun resolve(coreId: String): CoreSaveAdapter {
         val normalized = coreId.lowercase()

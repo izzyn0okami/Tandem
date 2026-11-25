@@ -84,9 +84,13 @@ internal object SaveSyncPolicy {
     /** SRAM usa grupos declarados; estados rápidos exigem o mesmo núcleo. IDs antigos tandem_* seguem legíveis. */
     fun isCompatibleRemote(kind: RemoteFileKind, emulator: String?, coreId: String): Boolean = when (kind) {
         RemoteFileKind.Save -> CoreSaveAdapterRegistry.isCompatibleRomMEmulator(coreId, emulator)
+
         RemoteFileKind.State -> {
-            if (emulator.isNullOrBlank()) false
-            else CoreSaveAdapterRegistry.romMEmulatorId(emulator) == CoreSaveAdapterRegistry.romMEmulatorId(coreId)
+            if (emulator.isNullOrBlank()) {
+                false
+            } else {
+                CoreSaveAdapterRegistry.romMEmulatorId(emulator) == CoreSaveAdapterRegistry.romMEmulatorId(coreId)
+            }
         }
     }
 
