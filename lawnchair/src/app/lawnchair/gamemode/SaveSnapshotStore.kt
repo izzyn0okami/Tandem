@@ -14,7 +14,7 @@ internal class SaveSnapshotStore(private val root: File) {
         val key = digest(jobId)
         val destination = File(root, key)
         val manifest = File(destination, "snapshot.manifest")
-        if (manifest.isFile) return loadAndVerify(destination, manifest)
+        if (manifest.isFile) return loadAndVerify(destination, File(destination, "snapshot.manifest"))
 
         if (!root.exists() && !root.mkdirs()) throw IOException("Não foi possível criar a fila local de saves")
         val staging = File(root, ".$key.capture")
@@ -46,11 +46,16 @@ internal class SaveSnapshotStore(private val root: File) {
             if (!staging.renameTo(destination)) {
                 throw IOException("Não foi possível confirmar a captura imutável do save")
             }
-            return loadAndVerify(destination, manifest)
+            return loadAndVerify(destination, File(destination, "snapshot.manifest"))
         } catch (error: Exception) {
             staging.deleteRecursively()
             throw error
         }
+    }
+
+    fun load(jobId: String): Map<RemoteFileKind, File> {
+        val directory = File(root, digest(jobId))
+        return loadAndVerify(directory, File(directory, "snapshot.manifest"))
     }
 
     fun delete(jobId: String): Boolean {

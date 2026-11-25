@@ -112,14 +112,29 @@ internal object GameSessionCoordinator {
         if (!SaveSyncPolicy.isSameSyncAccount(expectedAccountFingerprint, connection.accountFingerprint)) return false
         val activeRomPath = GameIdentityResolver.findRomPath(app, gameIdentity, romPath, platformSlug) ?: return false
         val activeRom = File(activeRomPath)
-        if (!GameIdentityResolver.hasRomMLink(app, activeRom)) return true
+        if (!GameIdentityResolver.hasRomMLink(app, activeRom)) {
+            SaveSnapshotStore(File(app.filesDir, "device-sync-queue")).delete(snapshotJobId)
+            return true
+        }
 
         var saveRetry = false
         var saveResult: DeviceSyncExecutionResult? = null
         try {
             ensureDeviceRegistered(app, connection.url, connection.token)
-            saveResult = RomMDeviceSyncRunner.synchronizeLocalSave(app, activeRomPath, coreId, platformSlug)
+            val snapshot = SaveSnapshotStore(File(app.filesDir, "device-sync-queue"))
+                .load(snapshotJobId)[RemoteFileKind.Save]
+            saveResult = RomMDeviceSyncRunner.synchronizeLocalSave(
+                app,
+                activeRomPath,
+                coreId,
+                platformSlug,
+                snapshotOverride = snapshot,
+                useSnapshotOnly = true,
+            )
             saveRetry = GameSessionSyncPolicy.shouldRetryBackground(saveResult)
+            if (!saveRetry && saveResult.conflictsPreserved == 0) {
+                SaveSnapshotStore(File(app.filesDir, "device-sync-queue")).delete(snapshotJobId)
+            }
         } catch (cancelled: CancellationException) {
             throw cancelled
         } catch (error: Exception) {
@@ -129,8 +144,14 @@ internal object GameSessionCoordinator {
         // Save states permanecem locais; nenhum transporte remoto de states é executado.
         val unresolved = saveRetry || saveResult?.let { GameSessionSyncPolicy.blocksSessionStart(it) } == true
         if (unresolved) {
-            app.getSharedPreferences("romm_sync", Context.MODE_PRIVATE).edit {
+            val preferences = app.getSharedPreferences("romm_sync", Context.MODE_PRIVATE)
+            preferences.edit {
                 putString(statusKey(gameIdentity, expectedAccountFingerprint), "pending")
+            }
+            if ((saveResult?.conflictsPreserved ?: 0) > 0) {
+                val key = pendingConflictKey(gameIdentity, expectedAccountFingerprint)
+                val pendingIds = preferences.getStringSet(key, emptySet()).orEmpty() + snapshotJobId
+                preferences.edit { putStringSet(key, pendingIds) }
             }
         }
         return !saveRetry
@@ -164,6 +185,8 @@ internal object GameSessionCoordinator {
             GameLog.log("Device Sync", "dispositivo registrado automaticamente para a conta RomM atual")
         }
     }
+
+    internal fun pendingConflictKey(gameIdentity: String, accountFingerprint: String) = "pending_device_sync_conflict:$gameIdentity:$accountFingerprint"
 
     private fun statusKey(gameIdentity: String, accountFingerprint: String) = "sync_status:$gameIdentity:$accountFingerprint"
 }

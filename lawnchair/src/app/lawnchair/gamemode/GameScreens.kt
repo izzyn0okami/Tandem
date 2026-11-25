@@ -1177,10 +1177,50 @@ internal fun GameDetailScreen(
                             text = "Conflitos preservados: ${result.conflictsPreserved} · " +
                                 "exclusões recusadas: ${result.deletesIgnored} · " +
                                 "operações desconhecidas: ${result.unknownIgnored} · falhas: ${result.failed}. " +
-                                "Save states e memory cards não foram incluídos.",
+                                "Save states e artefatos não elegíveis não foram incluídos.",
                             color = GameColors.textDim,
                             fontSize = 12.sp,
                         )
+                        if (result.conflictsPreserved > 0 && local != null) {
+                            Text(
+                                "As versões local e remota foram preservadas. Escolha manter a versão local abaixo ou use o Histórico de SRAM para restaurar uma versão do RomM.",
+                                color = GameColors.accent,
+                                fontSize = 12.sp,
+                            )
+                            GameButton(
+                                label = if (deviceSyncExecutionLoading) "Resolvendo conflito…" else "Manter versão local e publicar no RomM",
+                                onClick = {
+                                    if (!deviceSyncExecutionLoading) {
+                                        deviceSyncExecutionLoading = true
+                                        detailScope.launch {
+                                            try {
+                                                val message = RomMDeviceSyncRunner.resolveConflictKeepLocal(
+                                                    context = context,
+                                                    romPath = local.path,
+                                                    coreId = chosenCoreId,
+                                                    platformSlug = entry.platform.slug,
+                                                )
+                                                saveVersionRestoreMessage = message
+                                                deviceSyncExecution = result.copy(
+                                                    conflictsPreserved = 0,
+                                                    uploaded = result.uploaded + 1,
+                                                )
+                                            } catch (error: CancellationException) {
+                                                throw error
+                                            } catch (error: Exception) {
+                                                saveVersionRestoreMessage = error.message ?: "Não foi possível resolver o conflito."
+                                                GameLog.error("Device Sync", "falha na resolução explícita do conflito de ${entry.title}", error)
+                                            } finally {
+                                                deviceSyncExecutionLoading = false
+                                            }
+                                        }
+                                    }
+                                },
+                                enabled = !deviceSyncExecutionLoading && !busy,
+                                primary = true,
+                                modifier = Modifier.width(300.dp),
+                            )
+                        }
                     }
                     deviceSyncExecutionError?.let { error ->
                         Text(

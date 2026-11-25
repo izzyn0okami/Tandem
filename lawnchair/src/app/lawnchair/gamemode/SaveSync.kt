@@ -12,6 +12,7 @@ import androidx.work.workDataOf
 import java.io.File
 import java.io.IOException
 import java.security.MessageDigest
+import java.util.UUID
 import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.sync.Mutex
@@ -514,7 +515,9 @@ object SaveSync {
         val constraints = Constraints.Builder()
             .setRequiredNetworkType(NetworkType.CONNECTED)
             .build()
+        val jobId = UUID.randomUUID()
         val request = OneTimeWorkRequestBuilder<RomMSaveSyncWorker>()
+            .setId(jobId)
             .setInputData(
                 workDataOf(
                     RomMSaveSyncWorker.KEY_ROM_PATH to romPath,
@@ -522,6 +525,7 @@ object SaveSync {
                     RomMSaveSyncWorker.KEY_PLATFORM to platformSlug,
                     RomMSaveSyncWorker.KEY_GAME_IDENTITY to gameIdentity,
                     RomMSaveSyncWorker.KEY_ACCOUNT_FINGERPRINT to accountFingerprint,
+                    RomMSaveSyncWorker.KEY_SNAPSHOT_JOB_ID to jobId.toString(),
                 ),
             )
             .setConstraints(constraints)
@@ -529,6 +533,26 @@ object SaveSync {
             .addTag(WORK_TAG)
             .build()
         val statusKey = statusKey(gameIdentity, accountFingerprint)
+        val snapshotStore = SaveSnapshotStore(File(app.filesDir, "device-sync-queue"))
+        try {
+            val saveStore = SaveStore(
+                app,
+                coreId,
+                gameFile,
+                platformSlug = platformSlug,
+                gameIdentity = gameIdentity,
+                migrationSourcesOverride = emptyMap(),
+            )
+            val selected = DeviceSyncArtifactPolicy.selectForRomM(saveStore.inventory())
+            snapshotStore.capture(
+                jobId.toString(),
+                selected?.let { mapOf(RemoteFileKind.Save to it.file) }.orEmpty(),
+            )
+        } catch (error: Exception) {
+            GameLog.error("Device Sync", "não foi possível capturar o save antes de enfileirar a sincronização", error)
+            prefs(app).edit { putString(statusKey, "pending") }
+            return
+        }
         prefs(app).edit {
             putString(statusKey, "pending")
             remove("$statusKey:started")
