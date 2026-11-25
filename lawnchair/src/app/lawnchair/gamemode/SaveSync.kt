@@ -19,11 +19,10 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 
 /**
- * Transporte RomM dos estados rápidos. SRAM e cartões de memória usam o Device Sync
- * e são coordenados com este transporte por GameSessionCoordinator.
- *
- * Antes de jogar, aplica o estado remoto quando a política confirma que ele é a versão nova;
- * ao sair, envia o estado local quando mudou. Conflitos preservam cópias de segurança.
+ * Fachada legada de sincronização. O transporte remoto de save states está desativado:
+ * SRAM e cartões de memória são sincronizados exclusivamente pelo RomM Device Sync.
+ * Os métodos antigos de pull/push permanecem como no-op para impedir operações remotas
+ * de states caso algum chamador legado ainda exista.
  */
 enum class SaveSyncStatus { PENDING, SYNCING, SYNCED }
 
@@ -322,7 +321,7 @@ object SaveSync {
         }
     }
 
-    /** Antes de jogar: aguarda o pull terminar e restaura os saves locais se qualquer etapa falhar. */
+    /** No-op legado: save states não são baixados do RomM. */
     suspend fun pull(
         context: Context,
         romPath: String,
@@ -331,6 +330,9 @@ object SaveSync {
         gameIdentityOverride: String? = null,
         migrationSources: Map<String, File>? = null,
     ) {
+        // Decisão arquitetural: save states são locais; nunca consultar /api/states.
+        return
+        @Suppress("UNREACHABLE_CODE")
         val connection = GameIdentityResolver.connectionSnapshot(context)
         if (connection == null) {
             if (
@@ -662,7 +664,7 @@ object SaveSync {
         )
     }
 
-    /** Chamado somente pelo Worker; o mesmo Mutex protege pull e push contra concorrência. */
+    /** No-op legado: save states não são enviados ao RomM. */
     internal suspend fun pushFromWorker(
         context: Context,
         romPath: String,
@@ -672,6 +674,9 @@ object SaveSync {
         expectedAccountFingerprint: String?,
         snapshotJobId: String,
     ): Boolean {
+        // Decisão arquitetural: impedir também uploads por chamadores legados.
+        return true
+        @Suppress("UNREACHABLE_CODE")
         val app = context.applicationContext
         if (expectedAccountFingerprint.isNullOrBlank()) return false
         val connection = GameIdentityResolver.connectionSnapshot(app) ?: return false
