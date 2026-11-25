@@ -56,7 +56,9 @@ internal class SaveSnapshotStore(private val root: File) {
     fun load(jobId: String): Map<RemoteFileKind, File> {
         val directory = File(root, digest(jobId))
         return loadAndVerify(directory, File(directory, "snapshot.manifest"))
-    }\n\n    fun delete(jobId: String): Boolean {
+    }
+
+    fun delete(jobId: String): Boolean {
         val directory = File(root, digest(jobId))
         return !directory.exists() || directory.deleteRecursively()
     }
