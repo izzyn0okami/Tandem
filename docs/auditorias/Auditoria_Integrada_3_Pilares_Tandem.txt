@@ -695,3 +695,15 @@ CORREÇÃO — POLÍTICA DE RESTAURAÇÃO DE SAVE STATES PERSISTIDOS — 2026-11
 - [RESULTADO] Correção de persistência e supressão de upload por conteúdo idêntico validadas por teste funcional no aparelho e pela CI completa. A alteração real de SRAM continua sendo o gatilho esperado para persistência e sincronização.
 - [PENDENTE] Manter validação em outros núcleos/plataformas, especialmente cartão PSX e SRAM tradicional, para ampliar a cobertura funcional. Isso não invalida o teste aprovado informado pelo usuário.
 - [PR] PR #50 permanece aberta em draft e sem merge. Nenhum save local ou remoto foi apagado, movido ou sobrescrito durante esta validação.
+
+
+### Auditoria complementar — cobertura do mesmo controle para cartões PSX (25/11/2026)
+
+- [VERIFICADO NO CÓDIGO] O controle de persistência por comparação de bytes não é específico de um console: `GameSessionActivity.persistSram()` chama `SaveStore.writeSramIfChanged()` para a saída serializada do núcleo, e o método grava o mesmo arquivo local `sram.srm` usado pelo inventário.
+- [VERIFICADO NO CÓDIGO] Para `pcsx_rearmed`, `swanstation` e `mednafen_psx`, `CoreSaveAdapterRegistry` classifica esse arquivo como `MEMORY_CARD` no slot `memory-card-0`. Para núcleos SNES declarados, classifica como `CORE_SAVE` no slot remoto `autosave`.
+- [VERIFICADO NO CÓDIGO] `SaveArtifactCatalog` usa o adaptador do núcleo para classificar o mesmo `sram.srm`; o executor Device Sync recebe o artefato/slot selecionado e a supressão de upload por hash ocorre no ramo comum `DeviceSyncAction.Upload`, sem condição exclusiva de SNES.
+- [CONCLUSÃO] Não é necessário duplicar a lógica de persistência nem criar um teste redundante apenas para PSX: o caminho é comum e a semântica PSX é determinada pelo adaptador. O risco residual é de validação funcional real do cartão PSX no aparelho, não de um caminho de código separado identificado nesta inspeção.
+- [PENDENTE — TESTE NO TELEFONE] Em um jogo PSX, carregar o cartão, abrir/pausar/fechar sem salvar progresso e confirmar que não surge nova versão em `memory-card-0`; depois realizar uma gravação real no jogo e confirmar que a alteração aparece como nova versão. Não forçar resolução de conflitos nem apagar versões.
+- [ESCOPO] Inspeção estática direcionada aos arquivos `GameSessionActivity.kt`, `SaveStore.kt`, `CoreSaveAdapter.kt`, `SaveArtifactCatalog.kt` e `RomMDeviceSyncRunner.kt`. Não equivale a teste funcional PSX nem a auditoria integral do repositório.
+- [PRESERVAÇÃO] Nenhum save local ou remoto foi alterado durante esta auditoria.
+- [PR] Mantida a PR #50 existente; nenhuma PR concorrente criada e nenhum merge executado.
