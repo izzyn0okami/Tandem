@@ -86,7 +86,7 @@ object RomMDeviceSyncRunner {
                     if (before != captured) throw IOException("O artefato mudou durante a captura; tente novamente.")
                     DeviceSyncProtocolJson.localSave(
                         romId = romId,
-                        fileName = artifact.file.name,
+                        fileName = romSaveFileName(romFile),
                         emulator = emulator,
                         file = snapshot,
                         updatedAt = Instant.ofEpochMilli(artifact.modifiedAtEpochMs).toString(),
@@ -139,21 +139,13 @@ object RomMDeviceSyncRunner {
                     )
                     if (
                         operation.saveId != null &&
-                        operation.action in setOf(DeviceSyncAction.Upload, DeviceSyncAction.Download) &&
+                        operation.action in setOf(DeviceSyncAction.Upload, DeviceSyncAction.Download, DeviceSyncAction.Conflict) &&
                         !DeviceSyncArtifactPolicy.isCompatibleRemote(coreId, operation.emulator)
                     ) {
                         conflicts++
                         GameLog.log(
                             "Device Sync",
                             "save remoto de emulador sem compatibilidade declarada preservado; remoto=${operation.emulator ?: "—"}, local=$emulator",
-                        )
-                        return@forEach
-                    }
-                    if (DeviceSyncArtifactPolicy.isUnbasedUpload(operation)) {
-                        conflicts++
-                        GameLog.log(
-                            "Device Sync",
-                            "upload bloqueado: o RomM indica ausência de histórico Device Sync para o save remoto; ambos os lados preservados",
                         )
                         return@forEach
                     }
@@ -165,23 +157,38 @@ object RomMDeviceSyncRunner {
                                 if (localSave == null || operation.slot != remoteSlot) {
                                     throw IOException("Upload sem save local compatível ou fora do slot $remoteSlot.")
                                 }
-                                if (!originalSave.matchesMd5(initialLocalHash)) {
-                                    throw IOException("O save local mudou após a negociação; upload cancelado.")
+                                if (DeviceSyncArtifactPolicy.isUnbasedUpload(operation)) {
+                                    val reconciled = reconcileDivergentSave(
+                                        client, operation, deviceId, negotiation.sessionId, romId,
+                                        remoteSlot, emulator, romFile, store, originalSave,
+                                        localSave, initialLocalHash, snapshot,
+                                    )
+                                    if (reconciled == null) {
+                                        conflicts++
+                                        GameLog.log("Device Sync", "reconciliação adiada: timestamps ou hash remoto ausentes; ambos os lados preservados")
+                                    } else {
+                                        uploaded += reconciled.uploaded
+                                        downloaded += reconciled.downloaded
+                                    }
+                                } else {
+                                    if (!originalSave.matchesMd5(initialLocalHash)) {
+                                        throw IOException("O save local mudou após a negociação; upload cancelado.")
+                                    }
+                                    val uploadedSave = client.uploadSave(
+                                        romId = romId,
+                                        deviceId = deviceId,
+                                        sessionId = negotiation.sessionId,
+                                        slot = remoteSlot,
+                                        emulator = emulator,
+                                        fileName = romSaveFileName(romFile),
+                                        file = snapshot,
+                                    )
+                                    uploaded++
+                                    GameLog.log(
+                                        "Device Sync",
+                                        "save enviada para ROM #$romId; save_id=${uploadedSave.optLong("id", -1L)}, bytes=${snapshot.length()}",
+                                    )
                                 }
-                                val uploadedSave = client.uploadSave(
-                                    romId = romId,
-                                    deviceId = deviceId,
-                                    sessionId = negotiation.sessionId,
-                                    slot = remoteSlot,
-                                    emulator = emulator,
-                                    fileName = originalSave.name,
-                                    file = snapshot,
-                                )
-                                uploaded++
-                                GameLog.log(
-                                    "Device Sync",
-                                    "save enviada para ROM #$romId; save_id=${uploadedSave.optLong("id", -1L)}, bytes=${snapshot.length()}",
-                                )
                             }
 
                             DeviceSyncAction.Download -> {
@@ -194,6 +201,25 @@ object RomMDeviceSyncRunner {
                                     ?: throw IOException("O RomM não informou o ID do save para download.")
                                 val expectedHash = operation.serverContentHash
                                     ?: throw IOException("O RomM não informou o hash do save para download.")
+                                if (localSave != null && initialLocalHash != null &&
+                                    !initialLocalHash.equals(expectedHash, ignoreCase = true)
+                                ) {
+                                    if (!originalSave.matchesMd5(initialLocalHash)) {
+                                        throw IOException("O save local mudou após a negociação; arquivamento cancelado.")
+                                    }
+                                    val localTimestamp = Instant.ofEpochMilli(originalSave.lastModified())
+                                    client.uploadSave(
+                                        romId = romId,
+                                        deviceId = deviceId,
+                                        sessionId = negotiation.sessionId,
+                                        slot = null,
+                                        emulator = emulator,
+                                        fileName = archiveSaveFileName(romFile, localTimestamp),
+                                        file = snapshot,
+                                    )
+                                    uploaded++
+                                    GameLog.log("Device Sync", "versão local anterior preservada no RomM como arquivo de arquivo (slot nulo)")
+                                }
                                 if (!originalSave.matchesMd5(initialLocalHash)) {
                                     throw IOException("O save local mudou após a negociação; download cancelado.")
                                 }
@@ -239,8 +265,18 @@ object RomMDeviceSyncRunner {
                             }
 
                             DeviceSyncAction.Conflict -> {
-                                conflicts++
-                                GameLog.log("Device Sync", "conflito preservado para resolução explícita; nenhum lado foi sobrescrito")
+                                val reconciled = reconcileDivergentSave(
+                                    client, operation, deviceId, negotiation.sessionId, romId,
+                                    remoteSlot, emulator, romFile, store, originalSave,
+                                    localSave, initialLocalHash, snapshot,
+                                )
+                                if (reconciled == null) {
+                                    conflicts++
+                                    GameLog.log("Device Sync", "conflito preservado: não foi possível determinar a versão mais recente com segurança")
+                                } else {
+                                    uploaded += reconciled.uploaded
+                                    downloaded += reconciled.downloaded
+                                }
                             }
 
                             DeviceSyncAction.Delete -> {
@@ -295,6 +331,110 @@ object RomMDeviceSyncRunner {
                 snapshot.delete()
             }
         }
+    }
+
+    private data class ReconciliationCounts(val uploaded: Int, val downloaded: Int)
+
+    /**
+     * Resolves a divergent first-sync/conflict by timestamps. RomM remains the tie-breaker:
+     * equal or unreadable timestamps are not enough to claim that the local file is newer.
+     * The losing bytes are retained as an unpaired archival save; the active slot receives
+     * the newest version. A remote download is confirmed before uploading local bytes, which
+     * establishes this device's baseline without overwriting the server's current save.
+     */
+    private suspend fun reconcileDivergentSave(
+        client: RomMDeviceSyncClient,
+        operation: DeviceSyncOperation,
+        deviceId: String,
+        sessionId: Long,
+        romId: Long,
+        remoteSlot: String,
+        emulator: String,
+        romFile: File,
+        store: SaveStore,
+        originalSave: File,
+        localSave: DeviceSyncSave?,
+        initialLocalHash: String?,
+        snapshot: File,
+    ): ReconciliationCounts? {
+        val saveId = operation.saveId ?: return null
+        val expectedHash = operation.serverContentHash ?: return null
+        val localTimestamp = localSave?.updatedAt?.let { runCatching { Instant.parse(it) }.getOrNull() } ?: return null
+        val serverTimestamp = operation.serverUpdatedAt?.let { runCatching { Instant.parse(it) }.getOrNull() } ?: return null
+        if (!originalSave.matchesMd5(initialLocalHash)) {
+            throw IOException("O save local mudou durante a reconciliação; nenhuma versão foi aplicada.")
+        }
+
+        val staging = File(snapshot.parentFile, "remote-$sessionId-$saveId.srm")
+        try {
+            val downloadedHash = client.downloadSaveToStaging(
+                saveId = saveId,
+                deviceId = deviceId,
+                sessionId = sessionId,
+                expectedContentHash = expectedHash,
+                stagingFile = staging,
+            )
+            if (!originalSave.matchesMd5(initialLocalHash)) {
+                throw IOException("O save local mudou durante o download de reconciliação.")
+            }
+
+            if (localTimestamp.isAfter(serverTimestamp)) {
+                client.confirmDownloaded(saveId, deviceId, downloadedHash)
+                val uploadedSave = client.uploadSave(
+                    romId = romId,
+                    deviceId = deviceId,
+                    sessionId = sessionId,
+                    slot = remoteSlot,
+                    emulator = emulator,
+                    fileName = romSaveFileName(romFile),
+                    file = snapshot,
+                )
+                GameLog.log(
+                    "Device Sync",
+                    "reconciliação: versão local mais recente; baseline remoto save_id=$saveId confirmado e versão local publicada como save_id=${uploadedSave.optLong("id", -1L)}",
+                )
+                return ReconciliationCounts(uploaded = 1, downloaded = 0)
+            }
+
+            // RomM wins ties. Keep the losing local bytes as a separate, non-paired save.
+            client.uploadSave(
+                romId = romId,
+                deviceId = deviceId,
+                sessionId = sessionId,
+                slot = null,
+                emulator = emulator,
+                fileName = archiveSaveFileName(romFile, localTimestamp),
+                file = snapshot,
+            )
+            if (!originalSave.matchesMd5(initialLocalHash)) {
+                throw IOException("O save local mudou antes da aplicação da versão RomM.")
+            }
+            store.backupDir.mkdirs()
+            val backup = File(store.backupDir, "device-sync-conflict-${System.currentTimeMillis()}-${originalSave.name}")
+            originalSave.copyTo(backup, overwrite = false)
+            if (sha256(originalSave) != sha256(backup)) {
+                backup.delete()
+                throw IOException("Não foi possível verificar o backup local do conflito.")
+            }
+            RomMFileReplacement.replaceFile(staging, originalSave)
+            client.confirmDownloaded(saveId, deviceId, downloadedHash)
+            GameLog.log(
+                "Device Sync",
+                "reconciliação: versão RomM mais recente (ou empate); versão local arquivada e save_id=$saveId aplicado",
+            )
+            return ReconciliationCounts(uploaded = 1, downloaded = 1)
+        } finally {
+            staging.delete()
+        }
+    }
+
+    private fun romSaveFileName(romFile: File): String = "${romFile.nameWithoutExtension}.srm"
+
+    private fun archiveSaveFileName(romFile: File, timestamp: Instant): String {
+        val tag = java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss")
+            .withZone(java.time.ZoneId.systemDefault())
+            .format(timestamp)
+        return "${romFile.nameWithoutExtension} [$tag].srm"
     }
 
     private fun File.matchesMd5(expected: String?): Boolean {
