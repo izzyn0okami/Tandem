@@ -1502,3 +1502,15 @@ VALIDAÇÃO FUNCIONAL — F1–F3 APROVADAS PELO USUÁRIO (2026-11-25)
 - [PENDENTE] F5 — avaliar canais de notificação/Apprise; operações mutáveis exigem me.write e decisão de interface. Não ampliar escopos sem autorização.
 - PR #53 permanece aberta, em rascunho (draft), sem merge. Não mesclar sem autorização explícita do usuário.
 - Nenhuma alteração foi feita em dados remotos do RomM; F1–F3 continuam somente leitura.
+
+
+AUDITORIA F4 — AÇÕES SOBRE NOTIFICAÇÕES (2026-11-25)
+Base de trabalho: PR #53, branch feat/romm-stage-f-dashboard.
+- [AUDITADO — CONTRATO ROMM 5.4.x] GET /api/notifications exige me.read; POST /api/notifications/read exige me.write e aceita uma lista de ids (ou ids=null para marcar todas); DELETE /api/notifications/{notification_id} exige me.write e dispensa uma notificação; DELETE /api/notifications exige me.write e dispensa todas.
+- [CONFIRMADO NO TANDEM] O fluxo de pareamento por dispositivo envia DEVICE_SCOPES em RomMClient.kt. A lista atual inclui me.read, roms.read, collections.read, devices.read/write, roms.user.read/write e outros scopes de leitura/ativos, mas NÃO inclui me.write.
+- [IMPLICAÇÃO DE SEGURANÇA] me.write é um escopo amplo do perfil do usuário no RomM; não é limitado às notificações. Também habilita outras operações de escrita do grupo me, incluindo canais de notificação. Não solicitar esse escopo sem autorização expressa e sem limitar as chamadas implementadas pelo Tandem aos endpoints estritamente necessários.
+- [RECOMENDAÇÃO DE UX — AGUARDANDO DECISÃO] F4 mínimo e seguro: ação individual “Marcar como lida”; ação “Marcar todas como lidas”; ação individual “Dispensar” com confirmação explícita. Não oferecer “Dispensar todas” nesta primeira versão, pois é uma exclusão em lote sem necessidade demonstrada. Atualizar a interface somente após confirmação de sucesso do servidor; em 401/403 manter o estado e orientar reconexão/autorização, sem retry de escrita automático.
+- [AGUARDANDO DECISÃO DO USUÁRIO] Autorizar incluir me.write em requested_scopes no pareamento e reautorizar a conexão RomM para liberar as ações F4 acima. Até autorização, manter F4 sem chamadas mutáveis.
+- [PENDENTE] Implementar testes MockWebServer para método, rota, payload de IDs, autenticação, sucesso, 401/403, falha de rede e preservação do estado local em erro; CI e teste funcional no aparelho.
+- [FORA DO ESCOPO DESTA FASE] Criar/editar/testar/remover canais de notificação, envio de notificações e endpoints administrativos/Apprise (F5 e escopos relacionados).
+- Nenhuma chamada de escrita foi feita ao servidor RomM; nenhum estado de notificação foi alterado nesta auditoria.
