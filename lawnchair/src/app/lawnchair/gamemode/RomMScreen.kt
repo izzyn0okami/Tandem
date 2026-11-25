@@ -162,7 +162,7 @@ private fun ConnectForm(onConnect: () -> Unit) {
                             result.onSuccess { (url, token, accountId) ->
                                 RomMSettings.save(context, url, token, accountId)
                                 onConnect()
-                            }.onFailure { message = it.message ?: it.toString() }
+                            }.onFailure { message = romMUserFacingError(it, "conectar a conta RomM") }
                         } else {
                             val result = withContext(Dispatchers.IO) { beginPairing(context, address) }
                             result.onSuccess {
@@ -203,7 +203,7 @@ private fun PairingWait(pairing: DevicePairing, onApprove: (String, Long) -> Uni
                             RomMClient(pairing.baseUrl, result.token).currentUserId()
                         }
                     }.getOrElse {
-                        latestFail(it.message ?: "Não foi possível identificar a conta RomM")
+                        latestFail(romMUserFacingError(it, "identificar a conta RomM"))
                         return@LaunchedEffect
                     }
                     return@LaunchedEffect latestApprove(result.token, accountId)
