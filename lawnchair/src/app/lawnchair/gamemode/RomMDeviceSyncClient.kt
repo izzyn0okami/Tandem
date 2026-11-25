@@ -346,26 +346,28 @@ class RomMDeviceSyncClient(
         romId: Long,
         deviceId: String,
         sessionId: Long,
-        slot: String,
+        slot: String?,
         emulator: String,
         fileName: String,
         file: File,
     ): JSONObject {
         require(romId > 0L && sessionId > 0L)
-        require(deviceId.isNotBlank() && slot.isNotBlank() && emulator.isNotBlank())
+        require(deviceId.isNotBlank() && emulator.isNotBlank())
+        require(slot == null || slot.isNotBlank())
         require(fileName.endsWith(".srm", ignoreCase = true)) { "O upload Device Sync aceita somente arquivos .srm." }
         require(file.isFile && file.length() > 0L) { "O save local está ausente ou vazio." }
         val contentHash = md5(file)
-        val url = base.resolve("api/saves")!!.newBuilder()
+        val urlBuilder = base.resolve("api/saves")!!.newBuilder()
             .addQueryParameter("rom_id", romId.toString())
-            .addQueryParameter("slot", slot)
             .addQueryParameter("emulator", emulator)
             .addQueryParameter("device_id", deviceId)
             .addQueryParameter("session_id", sessionId.toString())
             .addQueryParameter("content_hash", contentHash)
             .addQueryParameter("overwrite", "false")
             .addQueryParameter("autocleanup", "false")
-            .build()
+        // A null slot is an archival save: RomM never pairs it with the active slot.
+        slot?.let { urlBuilder.addQueryParameter("slot", it) }
+        val url = urlBuilder.build()
         val body = MultipartBody.Builder()
             .setType(MultipartBody.FORM)
             .addFormDataPart(
