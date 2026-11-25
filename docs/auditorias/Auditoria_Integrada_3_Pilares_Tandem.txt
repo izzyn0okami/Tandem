@@ -662,3 +662,14 @@ CORREÇÃO — POLÍTICA DE RESTAURAÇÃO DE SAVE STATES PERSISTIDOS — 2026-11
 - [CORREÇÃO] `SaveSync.withExclusiveSyncLock` agora aceita bloco suspensivo e adquire/libera o Mutex explicitamente com `lock()`/`unlock()` em `try/finally`, mantendo a exclusão mútua durante as operações de rede.
 - [VALIDAÇÃO PENDENTE] CI #1236 (run 45543865924) e CI #1237 (run 45543857981) foram disparadas após a correção; ambas ainda estavam em execução na última consulta. A CI #1238 (run 45543865924 no head documental posterior) também está pendente.
 - [SEM MERGE] PR #50 continua draft. A reconciliação e a restauração manual não devem ser consideradas validadas até compilação, testes e build Debug APK passarem no head final.
+
+
+## Correção — upload automático somente quando o conteúdo local diverge (25/11/2026)
+
+- [PROBLEMA] A negociação RomM pode retornar a ação Upload por recência/metadados mesmo quando o conteúdo SRAM local é idêntico ao save ativo no servidor. Isso fazia um simples carregamento/abertura do jogo poder gerar uma nova versão sem progresso efetivamente alterado.
+- [CORREÇÃO NA PR #50] Antes de qualquer upload automático, o Tandem compara MD5 local com `server_content_hash`. Quando ambos são válidos e iguais, o upload é suprimido; o cliente baixa o conteúdo remoto apenas para validar o hash e confirmar o baseline Device Sync, sem substituir o arquivo local nem criar versão nova.
+- [REGRA] Uma ação Upload com conteúdo idêntico vira NoOp confirmado. Uploads de conteúdo diferente continuam sujeitos às regras Device Sync, compatibilidade, baseline, conflitos e `overwrite=false`. A restauração manual de versão escolhida pelo usuário permanece uma ação explícita separada.
+- [TESTE ADICIONADO] Igualdade de hash, comparação sem distinção de maiúsculas/minúsculas, hashes diferentes, ausentes e inválidos.
+- [PRESERVAÇÃO] Nenhum save local ou remoto foi apagado, movido ou sobrescrito por esta alteração. O conteúdo remoto idêntico é apenas baixado para staging e validado para confirmar o baseline.
+- [VALIDAÇÃO PENDENTE] Executar Spotless, testes unitários e build Debug APK no novo head da PR #50; depois validar no telefone que abrir/carregar sem alterar SRAM não cria nova versão no RomM e que uma alteração real durante a partida continua sendo sincronizada.
+- [PR] Alteração feita na PR #50 existente. Continua draft e sem merge.
