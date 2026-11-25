@@ -673,3 +673,14 @@ CORREÇÃO — POLÍTICA DE RESTAURAÇÃO DE SAVE STATES PERSISTIDOS — 2026-11
 - [PRESERVAÇÃO] Nenhum save local ou remoto foi apagado, movido ou sobrescrito por esta alteração. O conteúdo remoto idêntico é apenas baixado para staging e validado para confirmar o baseline.
 - [VALIDAÇÃO PENDENTE] Executar Spotless, testes unitários e build Debug APK no novo head da PR #50; depois validar no telefone que abrir/carregar sem alterar SRAM não cria nova versão no RomM e que uma alteração real durante a partida continua sendo sincronizada.
 - [PR] Alteração feita na PR #50 existente. Continua draft e sem merge.
+
+
+### Complemento — persistência SRAM só quando o núcleo altera os bytes (25/11/2026)
+
+- [CAUSA LOCAL IDENTIFICADA] `GameSessionActivity.persistSram()` serializava e regravava o SRAM em toda pausa/saída, mesmo quando o conteúdo era idêntico. Isso renovava o timestamp e marcava sincronização pendente, podendo levar o RomM a propor Upload sem progresso novo.
+- [CORREÇÃO NA PR #50] `SaveStore.writeSramIfChanged()` compara os bytes serializados pelo núcleo com o arquivo existente. Se forem idênticos, não regrava o arquivo e não agenda sincronização. Se forem diferentes ou se o arquivo ainda não existir, grava atomicamente e agenda o Device Sync.
+- [DEFESA DUPLA] O executor também suprime Upload quando o hash local já coincide com o hash remoto, confirmando o baseline sem publicar uma nova versão.
+- [TESTE ADICIONADO] Verifica que a mesma saída serializada não regrava nem altera timestamp; uma saída com bytes diferentes é persistida.
+- [INTERPRETAÇÃO] O gatilho é uma mudança real nos bytes serializados pelo núcleo, não apenas abrir/pausar/carregar. Não há callback Libretro padronizado de "save escrito" nesta integração; a comparação ocorre no ponto em que o Tandem persiste o SRAM do núcleo.
+- [VALIDAÇÃO] CI #1256 do commit anterior estava em execução quando esta correção adicional foi enviada; as novas alterações dispararão nova CI. Teste no telefone ainda pendente.
+- Nenhum arquivo de save local ou remoto foi removido, movido ou substituído por esta correção.
