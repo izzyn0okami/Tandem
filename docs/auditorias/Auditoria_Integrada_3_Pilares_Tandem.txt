@@ -716,3 +716,16 @@ CORREÇÃO — POLÍTICA DE RESTAURAÇÃO DE SAVE STATES PERSISTIDOS — 2026-11
 - [COBERTURA FUNCIONAL] Com esta confirmação, ficam validados no aparelho tanto o caso de SRAM sem alteração/alteração real quanto os dois casos equivalentes para cartão de memória PSX.
 - [PRESERVAÇÃO] O teste não exigiu forçar conflitos nem apagar versões; nenhuma exclusão ou migração de saves foi solicitada.
 - [PR] Resultado registrado na PR #50 existente. Continua aberta em draft e sem merge; não foi criada PR concorrente.
+
+
+### Validação funcional — histórico e restauração manual de SRAM (25/11/2026)
+
+- [TESTE NO TELEFONE APROVADO PELO USUÁRIO] O usuário confirmou que todos os cenários da consulta e restauração manual passaram.
+- [HISTÓRICO] A lista de versões SRAM do RomM pôde ser consultada na tela de detalhes do jogo.
+- [RESTAURAÇÃO] A versão específica escolhida foi restaurada com sucesso pelo fluxo explícito do Tandem.
+- [PRESERVAÇÃO DO HISTÓRICO] A restauração não eliminou as versões anteriores; a versão escolhida foi promovida como nova versão ativa, conforme o desenho do recurso.
+- [PRESERVAÇÃO LOCAL] A SRAM local anterior foi preservada pelo mecanismo de backup antes da aplicação da versão escolhida.
+- [COBERTURA FUNCIONAL CONCLUÍDA] Com este resultado, o usuário confirma como aprovados: sincronização de SRAM/cartões, ausência de upload quando o conteúdo não muda, sincronização após gravação real, consulta do histórico e restauração manual de versão específica.
+- [CI] CI #1260 / run 45546474646 passou em Spotless, testes unitários, build Debug APK, upload do artefato e final-status. O código validado estava no commit b4e48e6da5a7522516e611a294fdca47ff665a46; alterações documentais posteriores não alteraram código.
+- [SEGURANÇA] Nenhum save local ou remoto foi apagado ou migrado durante os testes. A restauração manual preserva versões anteriores e backup local.
+- [PR] Resultado registrado na PR #50 existente. Continua aberta em draft e sem merge até revisão final e autorização do usuário.
