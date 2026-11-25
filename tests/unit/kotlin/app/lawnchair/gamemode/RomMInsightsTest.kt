@@ -146,7 +146,7 @@ class RomMInsightsTest {
             assertEquals("POST", request.method)
             assertEquals("/api/notifications/read", request.url.encodedPath)
             assertEquals("Bearer test-token", request.headers["Authorization"])
-            assertEquals("[9,12]", org.json.JSONObject(request.body.readUtf8()).getJSONArray("ids").toString())
+            assertEquals("[9,12]", org.json.JSONObject(requireNotNull(request.body).utf8()).getJSONArray("ids").toString())
         } finally {
             server.close()
         }
@@ -162,11 +162,11 @@ class RomMInsightsTest {
 
             client.markAllNotificationsRead()
             val request = server.takeRequest()
-            val payload = org.json.JSONObject(request.body.readUtf8())
+            val payload = org.json.JSONObject(requireNotNull(request.body).utf8())
 
             assertEquals("POST", request.method)
             assertEquals("/api/notifications/read", request.url.encodedPath)
-            assertTrue(payload.isNull("ids"))
+            assertTrue(payload.get("ids") === org.json.JSONObject.NULL)
         } finally {
             server.close()
         }
@@ -234,7 +234,7 @@ class RomMInsightsTest {
 
             client.beginDevicePairing("device-id", "Tandem", "1.0")
             val request = server.takeRequest()
-            val scopes = org.json.JSONObject(request.body.readUtf8()).getJSONArray("requested_scopes")
+            val scopes = org.json.JSONObject(requireNotNull(request.body).utf8()).getJSONArray("requested_scopes")
 
             assertEquals("POST", request.method)
             assertEquals("/api/auth/device/init", request.url.encodedPath)
@@ -268,8 +268,9 @@ class RomMInsightsTest {
         val server = MockWebServer()
         server.start()
         try {
-            server.shutdown()
-            val client = RomMClient(server.url("/").toString(), "test-token")
+            val baseUrl = server.url("/").toString()
+            server.close()
+            val client = RomMClient(baseUrl, "test-token")
 
             assertTrue(runCatching { client.dismissNotification(27L) }.isFailure)
         } finally {
