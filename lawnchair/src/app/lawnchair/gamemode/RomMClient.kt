@@ -276,6 +276,8 @@ data class RemoteFile(
     val updatedAtMs: Long,
     val contentHash: String? = null,
     val slot: String? = null,
+    val fileName: String? = null,
+    val sizeBytes: Long? = null,
 )
 
 /** Pedido de aprovação do aparelho: o usuário confirma o código no RomM, pelo navegador. */
@@ -2023,6 +2025,8 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
         slot = json.optString("slot").takeIf { it.isNotBlank() && it != "null" },
         updatedAtMs = parseTime(json.optString("updated_at")),
         contentHash = json.optString("content_hash").takeIf { it.isNotBlank() && it != "null" },
+        fileName = json.optString("file_name").takeIf { it.isNotBlank() && it != "null" },
+        sizeBytes = json.optLong("file_size_bytes", -1L).takeIf { it >= 0L },
     )
 
     private fun parseTime(text: String): Long = runCatching { java.time.OffsetDateTime.parse(text).toInstant().toEpochMilli() }
