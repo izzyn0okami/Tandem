@@ -67,9 +67,9 @@ E. SAVES, STATES E SINCRONIZAÇÃO
 [CONCLUÍDO — DECISÃO DE ESCOPO] E10. Device Sync permanece responsável por SRAM/cartões elegíveis; save states ficam locais; WebDAV não substitui o transporte nesta etapa. Expansões exigem etapa e validação próprias.
 
 F. ESTATÍSTICAS, RECOMENDAÇÕES E NOTIFICAÇÕES
-[PENDENTE] F1. Consultar estatísticas do RomM sem duplicar os cálculos do servidor.
-[PENDENTE] F2. Consultar recomendações personalizadas do RomM.
-[PENDENTE] F3. Consultar notificações do RomM.
+[EM ANDAMENTO] F1. Endpoint GET /api/stats integrado em modo somente leitura; painel exibe totais oficiais do RomM sem recalcular. CI e validação funcional pendentes.
+[EM ANDAMENTO] F2. GET /api/recommendations integrado; painel exibe até 10 sugestões, motivos e jogo-semente quando disponível. Lista vazia é tratada como resultado válido. CI e validação funcional pendentes.
+[EM ANDAMENTO] F3. GET /api/notifications integrado; painel exibe as 10 mais recentes e contagem de não lidas, sem marcar como lidas nem dispensar. CI e validação funcional pendentes.
 [PENDENTE] F4. Avaliar atualização/dispensa de notificações.
 [PENDENTE] F5. Avaliar canais de notificação e Apprise; sem editor administrativo inicialmente.
 [FORA DO ESCOPO INICIAL] F6. Replicar painel administrativo, logs e auditoria do RomM.
@@ -1463,3 +1463,18 @@ VALIDAÇÃO E LIMITES
 - Não foram feitas chamadas a endpoints do servidor RomM do usuário nem alterados dados remotos.
 - Nenhuma notificação foi marcada como lida ou dispensada; nenhum canal foi criado, editado, testado ou removido.
 - E6/E7 (PoC e interoperabilidade WebDAV) permanecem pendentes, mas são independentes das APIs de estatísticas, recomendações e notificações; a solicitação do usuário autoriza avançar ao Estágio F sem substituir Device Sync por WebDAV.
+
+
+IMPLEMENTAÇÃO INICIAL — ESTÁGIO F1–F3 (2026-11-25)
+Branch: feat/romm-stage-f-dashboard.
+- RomMClient.kt: adicionadas consultas GET /api/stats?include_platform_stats=true, GET /api/recommendations?limit=20 e GET /api/notifications.
+- RomMInsights.kt: modelos tipados para estatísticas, recomendações e notificações.
+- RomMInsightsPanel.kt: painel com seções de Estatísticas, Recomendações e Notificações na tela de conexão RomM.
+- RomMScreen.kt: painel integrado à tela de gerenciamento do servidor.
+- F1 mostra totais de plataformas, jogos, saves, states, screenshots e espaço total informados pelo RomM; não duplica nem recalcula métricas locais.
+- F2 mostra até 10 recomendações, plataforma, motivos e jogo-semente; não gera recomendações localmente.
+- F3 mostra até 10 notificações recentes e quantidade não lida; não modifica estado remoto.
+- Todas as chamadas são GET e usam somente scopes já solicitados pelo fluxo de pareamento: roms.read e me.read. Nenhum novo escopo OAuth é solicitado.
+- F4 e F5 permanecem sem implementação mutável: me.write não está solicitado no token atual. Nenhuma notificação é marcada como lida/dispensada e nenhum canal é criado/editado/testado/removido.
+- [PENDENTE] CI/compilação, testes automatizados específicos e validação funcional do painel no aparelho.
+- [SEGURANÇA] Não foram feitas chamadas ao RomM pessoal do usuário nem alterados dados remotos.
