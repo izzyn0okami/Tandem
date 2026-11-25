@@ -381,9 +381,9 @@ object RomMDeviceSyncRunner {
             if (!snapshotRoot.exists() && !snapshotRoot.mkdirs()) {
                 throw IOException("Não foi possível preparar a área temporária de restauração.")
             }
-            val snapshot = File(snapshotRoot, "history-current-\${UUID.randomUUID()}.srm")
-            val latestStage = File(snapshotRoot, "history-latest-\${UUID.randomUUID()}.srm")
-            val selectedStage = File(snapshotRoot, "history-selected-\${UUID.randomUUID()}.srm")
+            val snapshot = File(snapshotRoot, "history-current-${UUID.randomUUID()}.srm")
+            val latestStage = File(snapshotRoot, "history-latest-${UUID.randomUUID()}.srm")
+            val selectedStage = File(snapshotRoot, "history-selected-${UUID.randomUUID()}.srm")
             var sessionId: Long? = null
             var sessionCompleted = false
             try {
@@ -477,7 +477,7 @@ object RomMDeviceSyncRunner {
 
                 if (beforeHash != null) {
                     store.backupDir.mkdirs()
-                    val backup = File(store.backupDir, "manual-history-\${System.currentTimeMillis()}-\${target.name}")
+                    val backup = File(store.backupDir, "manual-history-${System.currentTimeMillis()}-${target.name}")
                     target.copyTo(backup, overwrite = false)
                     if (sha256(target) != sha256(backup)) {
                         backup.delete()
@@ -502,7 +502,7 @@ object RomMDeviceSyncRunner {
                 GameLog.log(
                     "Device Sync",
                     "restauração manual concluída: ROM #$romId, slot=$remoteSlot, save_id=$saveId, " +
-                        "nova versão ativa=$restoringOlder; backup local preservado=\${beforeHash != null}",
+                        "nova versão ativa=$restoringOlder; backup local preservado=${beforeHash != null}",
                 )
                 message
             } finally {
