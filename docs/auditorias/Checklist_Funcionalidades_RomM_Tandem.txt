@@ -1532,3 +1532,7 @@ Branch: feat/romm-stage-f-dashboard; PR #53 permanece draft e sem merge.
 - [PENDENTE] F5 (canais de notificação/Apprise) permanece fora do escopo.
 - Nenhuma notificação real foi marcada como lida ou dispensada durante desenvolvimento/testes automatizados; nenhuma chamada foi feita à conta RomM do usuário.
 - PR #53 continua aberta, draft e sem merge. Não mesclar sem autorização explícita.
+
+- [TESTES COMPLEMENTARES] Também foram adicionados casos de 401 (não autorizado) e falha de rede sem retry, além do caso 403. Commit de testes complementares: ffc91eda8cc7c6167bf7e0348441d0deaca86a66.
+- [CI ATUALIZADA] A alteração dos testes ocorreu enquanto a CI #1335 ainda executava no head anterior a2b7335c5ce581b78d38f39e51b39d47fdfd61b0. Essa execução não cobre o commit complementar; aguardar execução CI vinculada ao head ffc91eda8cc7c6167bf7e0348441d0deaca86a66 antes de declarar F4 validada.
+- [REVISÃO] PR #53 permanece aberta e draft. O campo mergeable foi reportado temporariamente como false após atualização do head; não iniciar merge. Reavaliar após atualização de checks e estado do GitHub.
