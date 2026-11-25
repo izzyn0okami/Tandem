@@ -365,11 +365,7 @@ private fun ServerManage(remote: RemoteLibrary) {
                                     }
                             }.onFailure { error ->
                                 deviceSyncMessage = when (error) {
-                                    is RomMHttpException -> if (error.statusCode == 403) {
-                                        "O RomM recusou o registro (HTTP 403). Verifique se a autorização da conta inclui a permissão devices.write."
-                                    } else {
-                                        "Falha no registro do dispositivo (HTTP ${error.statusCode})."
-                                    }
+                                    is RomMHttpException -> romMUserFacingError(error, "registrar o dispositivo no Device Sync")
 
                                     else -> error.message ?: "Não foi possível registrar o dispositivo no RomM."
                                 }
