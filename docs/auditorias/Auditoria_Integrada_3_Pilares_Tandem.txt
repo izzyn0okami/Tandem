@@ -629,3 +629,15 @@ CORREÇÃO — POLÍTICA DE RESTAURAÇÃO DE SAVE STATES PERSISTIDOS — 2026-11
 - [CI] Commits de implementação: 72748bf2600991c2c40fe7a7fc2ff3742265a9bc, 9c135e861d6a8798c01d167d44978702d2735c75, 0ec6dc27e539719808a52362800511386c08b41c, 2e5c11e143bb6f86550618b2d5081a02836be6bf, e8ae7a8e45cc7dd7fb263f56dc722e596ec915e9 e 1b830c998857727c8b916ef0eb0a336cf5ce0fde. CIs #1221–#1226 foram disparadas; resultado final pendente no momento deste registro.
 - [PENDENTE] Confirmar os resultados das CIs, validar o nome gerado pelo RomM na versão efetivamente instalada pelo usuário e executar teste real de primeiro sync PSX entre PC e telefone. Não fazer merge sem autorização.
 - [PRESERVAÇÃO] Nenhum save local ou remoto foi apagado, movido ou alterado durante a auditoria/implementação; os arquivos só serão arquivados ou substituídos no fluxo novo depois de backup e validação de hash.
+
+
+## REQUISITO FUNCIONAL — HISTÓRICO E SELEÇÃO MANUAL DE VERSÕES SRAM (2026-11-24)
+
+- [SOLICITAÇÃO DO USUÁRIO] Além da reconciliação automática pela versão mais recente, o Tandem deve permitir consultar o histórico de versões SRAM preservadas no RomM e escolher uma versão específica para carregar.
+- [COMPORTAMENTO PRETENDIDO] Tela de histórico por jogo/slot, ordenada por data/hora decrescente, com metadados disponíveis (data, tamanho e dispositivo/origem quando o servidor fornecer). Identificar claramente a versão ativa local e as versões remotas.
+- [AÇÃO EXPLÍCITA] O usuário seleciona uma versão e confirma a restauração. Antes de aplicar, criar backup local verificável da SRAM ativa; baixar para staging, validar integridade e compatibilidade, e somente então aplicar. Falha mantém o arquivo ativo intacto.
+- [PRECEDÊNCIA] A escolha manual explícita prevalece sobre a seleção automática da versão mais recente. A sincronização automática continua adotando a regra de recência já aprovada quando não houver escolha manual.
+- [PRESERVAÇÃO] Não excluir versões do RomM. Não alterar outros slots/jogos. Não sobrescrever SRAM ativa sem backup validado. Save states permanecem exclusivamente locais e fora desta funcionalidade.
+- [PENDENTE — AUDITORIA TÉCNICA] Verificar endpoints RomM 5.4.x para listar versões por ROM/slot e obter metadados completos; confirmar paginação, autorização e semântica de download/confirmDownloaded. A negociação atual fornece somente a operação escolhida e não constitui, por si só, um navegador de histórico.
+- [PENDENTE — UI] Definir acesso pelo detalhe do jogo ou gerenciamento de saves, com ação clara “Histórico de SRAM” e confirmação antes de restaurar versão antiga.
+- [PR] Incorporar o requisito à PR #50 existente; não abrir PR concorrente. Nenhuma alteração de código implementada nesta etapa de registro. PR permanece draft e sem merge.
