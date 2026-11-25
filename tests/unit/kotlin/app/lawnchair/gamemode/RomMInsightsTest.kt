@@ -277,4 +277,59 @@ class RomMInsightsTest {
             runCatching { server.close() }
         }
     }
+
+    @Test
+    fun translatesUnauthorizedAsExplicitReconnectGuidance() {
+        val message = romMUserFacingError(
+            RomMHttpException(401, "Unauthorized", endpoint = "/api/users/me"),
+            "identificar a conta",
+        )
+
+        assertTrue(message.contains("Reconecte a conta RomM"))
+        assertTrue(message.contains("HTTP 401"))
+        assertTrue(message.contains("/api/users/me"))
+    }
+
+    @Test
+    fun translatesForbiddenAsMissingPermissionNotInvalidCredentials() {
+        val message = romMUserFacingError(
+            RomMHttpException(403, "Forbidden", endpoint = "/api/devices"),
+            "listar dispositivos",
+        )
+
+        assertTrue(message.contains("não possui a permissão necessária"))
+        assertTrue(message.contains("HTTP 403"))
+        assertTrue(message.contains("/api/devices"))
+        assertFalse(message.contains("token inválido"))
+    }
+
+    @Test
+    fun translatesNotFoundWithoutInferringMissingPermission() {
+        val message = romMUserFacingError(
+            RomMHttpException(404, "Not found", endpoint = "/api/optional-resource"),
+            "consultar recurso opcional",
+        )
+
+        assertTrue(message.contains("recurso inexistente/oculto"))
+        assertTrue(message.contains("não confirma falta de permissão"))
+        assertTrue(message.contains("HTTP 404"))
+    }
+
+    @Test
+    fun httpErrorsKeepStatusAndEndpointFromRomMResponse() {
+        val server = MockWebServer()
+        server.start()
+        try {
+            server.enqueue(MockResponse(code = 403, body = """{"detail":"forbidden"}"""))
+            val client = RomMClient(server.url("/").toString(), "test-token")
+
+            val failure = runCatching { client.getServerStats() }.exceptionOrNull()
+
+            assertTrue(failure is RomMHttpException)
+            assertEquals(403, (failure as RomMHttpException).statusCode)
+            assertEquals("/api/stats", failure.endpoint)
+        } finally {
+            server.close()
+        }
+    }
 }
