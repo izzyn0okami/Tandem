@@ -583,3 +583,6 @@ CORREÇÃO — POLÍTICA DE RESTAURAÇÃO DE SAVE STATES PERSISTIDOS — 2026-11
 - [PENDÊNCIA] Identificar como o PC publicou o save_id 39 (Device Sync do Tandem, upload manual/API ou outro cliente) e definir fluxo seguro de adoção/reconciliação inicial quando há save remoto sem baseline e save local mais novo. Não relaxar a proteção nem executar upload/download automático até resolver a origem e a escolha da versão.
 - [CI] CI #1207 / run 45533540190 aprovada no head a8e208be0fd1af46e0dfb47c69089e47930ec584. CI #1205 / run 45533422683 falhou em head anterior 070c5b80b4c6dcc39c53d844dcb752c588f3cff8; correção de formatação aplicada em a8e208b e validada pela CI #1207.
 - [PR] PR #50 permanece aberta, em draft, sem merge. Nenhuma alteração de código de sincronização foi feita em resposta ao log #13.
+
+- [ESCLARECIMENTO CI #1205] A falha não foi causada por regra de estilo ou teste: o job Spotless gerou commit automático 90f9d75 e falhou ao enviar porque a branch já havia avançado em paralelo. O commit manual a8e208be0fd1af46e0dfb47c69089e47930ec584 aplicou a formatação e CI #1207 passou integralmente.
+- [CI PÓS-LOG #13] A atualização documental deste achado foi commitada em 17e3bdc2c11cd8a11755ac3bf0c805dc30096666; verificar a CI disparada por este commit antes de considerar a atualização encerrada.
