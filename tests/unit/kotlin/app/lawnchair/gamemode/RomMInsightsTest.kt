@@ -206,4 +206,41 @@ class RomMInsightsTest {
             server.close()
         }
     }
+    @Test
+    fun notificationWriteFailurePreservesHttpStatusForUiRecovery() {
+        val server = MockWebServer()
+        server.start()
+        try {
+            server.enqueue(MockResponse(code = 403, body = """{"detail":"forbidden"}"""))
+            val client = RomMClient(server.url("/").toString(), "test-token")
+
+            val failure = runCatching { client.markAllNotificationsRead() }.exceptionOrNull()
+
+            assertTrue(failure is RomMHttpException)
+            assertEquals(403, (failure as RomMHttpException).statusCode)
+            assertEquals("POST", server.takeRequest().method)
+        } finally {
+            server.close()
+        }
+    }
+
+    @Test
+    fun devicePairingRequestsMeWriteForNotificationActions() {
+        val server = MockWebServer()
+        server.start()
+        try {
+            server.enqueue(MockResponse(body = """{"verification_path_complete":"/device","device_code":"device","user_code":"ABCD","expires_in":600,"interval":5}"""))
+            val client = RomMClient(server.url("/").toString(), null)
+
+            client.beginDevicePairing("device-id", "Tandem", "1.0")
+            val request = server.takeRequest()
+            val scopes = org.json.JSONObject(request.body.readUtf8()).getJSONArray("requested_scopes")
+
+            assertEquals("POST", request.method)
+            assertEquals("/api/auth/device/init", request.url.encodedPath)
+            assertTrue((0 until scopes.length()).any { scopes.getString(it) == "me.write" })
+        } finally {
+            server.close()
+        }
+    }
 }
