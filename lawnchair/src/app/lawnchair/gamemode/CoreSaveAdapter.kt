@@ -29,6 +29,24 @@ internal object CoreSaveAdapterRegistry {
         "bsnes",
     )
 
+    /** O identificador público do núcleo Libretro; o namespace Tandem nunca é enviado ao RomM. */
+    fun romMEmulatorId(coreId: String): String = coreId.removePrefixIgnoreCase("tandem_").lowercase()
+
+    /** Aceita nomes canônicos novos e o namespace legado já gravado no RomM. */
+    fun romMEmulatorAliases(coreId: String): Set<String> = resolve(coreId).compatibleCoreIds.flatMap { compatible ->
+        val canonical = romMEmulatorId(compatible)
+        listOf(canonical, "tandem_$canonical")
+    }.toSet()
+
+    fun isCompatibleRomMEmulator(coreId: String, remoteEmulator: String?): Boolean {
+        if (remoteEmulator.isNullOrBlank()) return false
+        val canonicalRemote = remoteEmulator.removePrefixIgnoreCase("tandem_").lowercase()
+        return resolve(coreId).compatibleCoreIds.any { it.equals(canonicalRemote, ignoreCase = true) }
+    }
+
+    private fun String.removePrefixIgnoreCase(prefix: String): String =
+        if (startsWith(prefix, ignoreCase = true)) drop(prefix.length) else this
+
     fun resolve(coreId: String): CoreSaveAdapter {
         val normalized = coreId.lowercase()
         return when (normalized) {
