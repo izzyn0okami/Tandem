@@ -432,7 +432,7 @@ class DeviceSyncProtocolTest {
             assertEquals("/api/saves", request.url.encodedPath)
             assertNull(request.url.queryParameter("slot"))
             assertEquals("false", request.url.queryParameter("overwrite"))
-            assertTrue(request.body!!.utf8().contains("filename=\\"Castlevania [2026-11-25_03-00-00].srm\\""))
+            assertTrue(request.body!!.utf8().contains("filename=\"Castlevania [2026-11-25_03-00-00].srm\""))
         } finally {
             server.close()
             file.delete()
