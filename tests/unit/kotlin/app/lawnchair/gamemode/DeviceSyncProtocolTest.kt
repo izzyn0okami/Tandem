@@ -410,6 +410,36 @@ class DeviceSyncProtocolTest {
     }
 
     @Test
+    fun uploadSaveWithoutSlotCreatesAnUnpairedArchive() {
+        val server = MockWebServer()
+        val file = java.io.File.createTempFile("device-sync-archive-", ".srm")
+        file.writeBytes(byteArrayOf(3, 2, 1))
+        server.start()
+        try {
+            server.enqueue(MockResponse(body = """{"id":92}"""))
+            val client = RomMDeviceSyncClient(server.url("/").toString(), "test-token")
+            client.uploadSave(
+                42L,
+                "device-123",
+                8L,
+                null,
+                "tandem_pcsx_rearmed",
+                "Castlevania [2026-11-25_03-00-00].srm",
+                file,
+            )
+            val request = server.takeRequest()
+
+            assertEquals("/api/saves", request.url.encodedPath)
+            assertNull(request.url.queryParameter("slot"))
+            assertEquals("false", request.url.queryParameter("overwrite"))
+            assertTrue(request.body!!.utf8().contains("filename=\\"Castlevania [2026-11-25_03-00-00].srm\\""))
+        } finally {
+            server.close()
+            file.delete()
+        }
+    }
+
+    @Test
     fun uploadSaveSurfacesConflictWithoutRetryingAsOverwrite() {
         val server = MockWebServer()
         val file = java.io.File.createTempFile("device-sync-conflict-", ".srm")
