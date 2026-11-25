@@ -428,3 +428,23 @@ TESTE ADICIONAL — ISOLAMENTO DO TRANSPORTE DE SAVE STATES — 2026-11-24
 - [COMMIT] 1e4e36067e76469188b386f10534d3fd4fcfdf02 — test(sync): keep legacy SRAM out of quick-state transport.
 - [CI] A CI #1151 / run 45511949873 ainda estava em andamento e foi iniciada antes deste commit de teste. Nenhuma execução de workflow foi retornada ainda para o novo head; obter validação específica do commit 1e4e36067e76469188b386f10534d3fd4fcfdf02 antes de considerar o teste aprovado.
 - [PR] #50 permanece aberta em draft e sem merge. Não mesclar; continuar somente nesta PR.
+
+
+ATUALIZAÇÃO — CI #1151–#1160 E CONTRATO HTTP DE SAVE STATES — 2026-11-24
+- [CI #1151 / RUN 45511949873] Concluída com sucesso no head 4a477f4df9971aa360df2101eb103ce6dbc60e7e: check-style, testes unitários, build Debug APK e final-status aprovados. Jobs de publicação foram ignorados.
+- [CI #1157 / RUN 45512953352] Concluída com sucesso no head 353d77c66fb7d1884d432ead79d9eadc5c067672: estilo, testes unitários, build Debug APK e final-status aprovados.
+- [CI #1158 / RUN 45513081821], [#1159 / RUN 45513124216] e [#1160 / RUN 45513153818]: execuções manuais adicionais no mesmo head 353d77c66fb7d1884d432ead79d9eadc5c067672; todas concluídas com sucesso nos jobs de estilo, testes unitários, build Debug APK e final-status. Nenhuma delas publicou tandem-latest.
+- [CONTRATO ROMM 5.4.0 CONFERIDO] A especificação OpenAPI 5.4.0 declara GET /api/states com filtro rom_id; POST /api/states com rom_id obrigatório, emulator opcional e multipart stateFile obrigatório (screenshotFile opcional); PUT /api/states/{id} com multipart stateFile/screenshotFile; e GET /api/states/{id}/content. O cliente Tandem usa esses caminhos, métodos e nomes de campo para save states. A instância RomM também disponibiliza sua especificação em /openapi.json.
+- [FONTE DO CONTRATO] https://apis.io/apis/romm/romm-states-api/ (snapshot OpenAPI 5.4.0); https://docs.romm.app/5.4.0/developers/api-reference/ (documentação oficial que aponta para o OpenAPI da instância).
+- [LIMITE] A confirmação do contrato público não substitui teste real contra a instância RomM 5.4.x do usuário; ainda é necessário validar autenticação/permissões e comportamento do servidor real.
+
+IMPLEMENTAÇÃO — TESTES HTTP E DIAGNÓSTICO DE SAVE STATES — 2026-11-25
+- [IMPLEMENTADO NA PR #50] RomMClient agora preserva erros HTTP estruturados dos endpoints de listagem, upload e download de saves/estados como RomMHttpException, incluindo status e somente campos conhecidos detail/message/error.
+- [SEGURANÇA] A leitura do corpo de erro é limitada a 8 KiB; o detalhe é limitado a 300 caracteres, normaliza caracteres de controle e mascara valores de token/access_token/authorization/password/secret/api_key. Corpos arbitrários não são registrados.
+- [TESTES ADICIONADOS] RomMSaveTransportTest cobre GET /api/states com rom_id e Bearer token; POST multipart /api/states com stateFile; GET /api/states/{id}/content; propagação de HTTP 500/503 com detalhe; redaction de segredos; e preservação de arquivo local existente quando o download falha.
+- [TESTABILIDADE] A medição de duração do download usa System.nanoTime; a verificação de espaço mantém StatFs no Android e usa File.usableSpace como fallback para testes JVM quando a API Android não está disponível.
+- [COMMITS] Diagnóstico HTTP: 645deffa4d1199478a5e4a777ba6b4787ee9ae55; correção da regex de redaction: b795d9a30d8edffa9bd91998fb7d16ca55362168; testes HTTP: f60ff28bfb870ecbdfb322d1d88cf945f544e26e; compatibilidade de teste JVM: 810daea1f168691701f3c3aacca5c6446eca75bf.
+- [CI EM ANDAMENTO] CI #1161 / run 45516648856, #1162 / run 45516697537, #1163 / run 45516746694 e #1167 / run 45517020200 ainda não tinham resultado final no momento deste registro. As execuções #1164–#1166 são revalidações workflow_dispatch dos heads anteriores. Não declarar o novo código aprovado até CI #1167 (head 810daea1f168691701f3c3aacca5c6446eca75bf) concluir com sucesso.
+- [PENDÊNCIA DE RETRY] RomMSaveSyncWorker ainda converte qualquer exceção HTTP em Result.retry(). Revisar especificamente HTTP 409 para estacionar o snapshot e não repetir indefinidamente um conflito remoto. Não resolver conflito nem sobrescrever dados automaticamente.
+- [PENDENTE] Executar teste funcional no telefone com save state real em ida e volta entre dispositivos; confirmar também se a instância 5.4.x devolve os metadados esperados e se o token tem scopes assets.read/assets.write.
+- [SEGURANÇA/PR] Nenhum save, ROM ou dado remoto foi apagado, movido ou sobrescrito. PR #50 permanece aberta, em draft, mergeable=true e sem merge. Nenhuma PR concorrente foi aberta.
