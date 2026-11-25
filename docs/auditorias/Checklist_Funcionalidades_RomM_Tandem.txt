@@ -88,10 +88,10 @@ H. AUTENTICAÇÃO, PERMISSÕES E COMPATIBILIDADE DA API
 [CONCLUÍDO] H1. Inventário dos endpoints RomM usados atualmente.
 [CONCLUÍDO] H2. Identificação dos scopes necessários para os fluxos atuais.
 [CONCLUÍDO] H3. Inventário de scopes e usos; roms.user.read/write e devices.read/write já são solicitados para funções existentes. F1/F2 usam roms.read e F3 usa me.read, ambos já incluídos no token atual.
-[PENDENTE] H4. Implementar detecção clara de permissões ausentes e instruções de reconexão.
+[CONCLUÍDO — IMPLEMENTAÇÃO/CI; TESTE NO APARELHO PENDENTE] H4. Tratamento centralizado de 401/403 com orientação de reconexão explícita e distinção entre credencial recusada e scope insuficiente; PR #54, CI #1380 aprovada.
 [PENDENTE] H5. Revisar expiração, revogação e renovação de tokens; não há renovação automática identificada.
 [PENDENTE] H6. Revisar diferenças entre token manual e token do fluxo de dispositivo.
-[PENDENTE] H7. Manter compatibilidade com RomM 5.4.1 e tratar respostas 401/403/404 sem duplicar registros.
+[CONCLUÍDO — IMPLEMENTAÇÃO/CI; TESTE NO APARELHO PENDENTE] H7. Status HTTP e endpoint preservados; 401/403/404 diferenciados, 404 opcional isolado, sem retry de escrita nem perda de dados locais; testes automatizados e CI #1380 aprovada.
 
 I. LIBRETRO E EXECUÇÃO LOCAL
 [CONCLUÍDO] I1. Integração LibretroDroid no mesmo processo do launcher.
@@ -1654,7 +1654,7 @@ H7 — COMPATIBILIDADE E CÓDIGOS HTTP
 RESULTADO DA AUDITORIA H
 - H1–H3 permanecem concluídos.
 - H5 e H6 estão tecnicamente esclarecidos; não exigem implementação de refresh token nem remoção de qualquer fluxo.
-- H4 e H7 precisam de melhoria de tratamento de erros e orientação de reconexão/permissões.
+- H4 e H7 implementados na PR #54; CI aprovada. A validação funcional no aparelho permanece pendente.
 - Nenhuma chamada foi feita ao servidor RomM do usuário; nenhum token foi lido, alterado, revogado ou reemitido.
 - PR #53 permanece aberta e draft; não foi mesclada. Como H4/H7 tocarão RomMClient.kt e RomMScreen.kt, arquivos já modificados pela PR #53, não iniciar alterações concorrentes nesses arquivos antes de resolver a PR #53.
 
@@ -1691,9 +1691,16 @@ Branch: feat/romm-stage-h-auth-errors; base game-mode-m2-dev.
 - [IMPLEMENTADO] 404 do endpoint opcional de presença online continua sendo tratado como ausência dessa capacidade opcional; demais 404 mantêm status/endpoint para diagnóstico.
 - [SEGURANÇA] Nenhum retry de escrita foi adicionado; nenhuma fila, snapshot, SRAM, memory card ou save local é removido em caso de falha HTTP. Detalhes do corpo são limitados e sanitizados; tokens/segredos não são exibidos.
 - [TESTES ADICIONADOS] Casos para mensagens 401/403/404, preservação de endpoint/status, 401 em identificação de usuário e 404 em estatísticas; a suíte existente cobre também 403.
-- [PENDENTE] Executar CI final, revisar resultados/Spotless e ampliar a matriz automatizada se a CI apontar fluxos HTTP ainda não cobertos.
-- [PENDENTE] Validar no aparelho mensagens de reconexão e permissões, sem exigir alteração dos testes de saves já aprovados.
+- [CONCLUÍDO — CI] CI #1380 (run 45716179179), head 0905a29725076988c2ccf17cf16f0e2676daef0a: check-style SUCCESS, build-debug-apk SUCCESS (incluindo testes unitários, compilação e upload de APK), final-status SUCCESS. CI anterior #1379 ficou action_required sem jobs e não é a execução de validação usada.
+- [PENDENTE — USUÁRIO] Validar no aparelho mensagens de 401 (reconexão), 403 (permissão insuficiente) e 404 (recurso/rota ausente), além dos fluxos manual e por dispositivo. Não é necessário repetir testes de saves.
 - Nenhuma chamada foi feita à conta RomM pessoal do usuário.
+
+FECHAMENTO DE IMPLEMENTAÇÃO E CI — PR #54 (2026-11-25)
+- [CONCLUÍDO — CI] Head validado: 0905a29725076988c2ccf17cf16f0e2676daef0a.
+- CI #1380: https://github.com/izzyn0okami/Tandem/actions/runs/45716179179 — check-style SUCCESS; build-debug-apk SUCCESS; testes unitários e compilação aprovados; final-status SUCCESS.
+- [PENDENTE — TESTE NO APARELHO] Confirmar as mensagens de autenticação/permissões nos fluxos reais; CI não substitui validação funcional.
+- PR #54 permanece aberta e não mesclada. Nenhuma autorização de merge foi dada.
+- O log acompanha a branch da PR; após merge, registrar novamente no branch base.
 
 - [REFINAMENTO] Erros 404 dos endpoints de troca de código e início de pareamento por dispositivo mantêm mensagens específicas (código inválido/expirado ou uso do fluxo manual); HTTP 429 preserva a orientação de aguardar antes de tentar novamente.
 - [TESTES ADICIONAIS] Cobertura de 404 específico de pareamento, além da matriz geral 401/403/404.
