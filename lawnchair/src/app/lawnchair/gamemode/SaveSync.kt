@@ -322,7 +322,8 @@ object SaveSync {
     }
 
     /** No-op legado: save states não são baixados do RomM. */
-    suspend fun pull(
+@Suppress("UNUSED_PARAMETER")
+        suspend fun pull(
         context: Context,
         romPath: String,
         coreId: String,
@@ -330,138 +331,7 @@ object SaveSync {
         gameIdentityOverride: String? = null,
         migrationSources: Map<String, File>? = null,
     ) {
-        // Decisão arquitetural: save states são locais; nunca consultar /api/states.
-        return
-        @Suppress("UNREACHABLE_CODE")
-        val connection = GameIdentityResolver.connectionSnapshot(context)
-        if (connection == null) {
-            if (
-                GameIdentityResolver.hasRomMLink(context, File(romPath)) ||
-                GameIdentityResolver.hasAmbiguousContentLink(context, File(romPath))
-            ) {
-                throw IOException(INVALID_LINK_MESSAGE)
-            }
-            return
-        }
-        val linkedRomId = GameIdentityResolver.linkedRomId(context, File(romPath), connection)
-        if (linkedRomId == null) {
-            if (
-                GameIdentityResolver.hasRomMLink(context, File(romPath)) ||
-                GameIdentityResolver.hasAmbiguousContentLink(context, File(romPath))
-            ) {
-                throw IOException(INVALID_LINK_MESSAGE)
-            }
-            return
-        }
-        val gameIdentity = gameIdentityOverride ?: GameIdentityResolver.resolve(context, File(romPath), platformSlug)
-        val client = RomMClient(connection.url, connection.token)
-        val store = SaveStore(
-            context,
-            coreId,
-            File(romPath),
-            platformSlug = platformSlug,
-            gameIdentity = gameIdentity,
-            migrationSourcesOverride = migrationSources,
-        )
-        // Compartilha o mesmo bloqueio do push: nunca permita pull e push simultâneos.
-        lock.withLock {
-            val prefs = prefs(context)
-            val snapshots = files(store).map { (kind, file) ->
-                val existed = file.isFile
-                val backup = if (existed) {
-                    File(file.parentFile, "${file.name}.pre-pull-${System.nanoTime()}").also {
-                        file.copyTo(it, overwrite = true)
-                    }
-                } else {
-                    null
-                }
-                val key = SaveSyncPolicy.metadataKey(kind, gameIdentity, coreId)
-                SaveFileSnapshot(
-                    file = file,
-                    backup = backup,
-                    existed = existed,
-                    kind = kind,
-                    key = key,
-                    hash = prefs.getString("$key:hash", null),
-                    remote = prefs.getLong("$key:remote", Long.MIN_VALUE),
-                    id = prefs.getLong("$key:id", Long.MIN_VALUE),
-                    appliedHashKey = appliedHashKey(kind, gameIdentity, coreId),
-                    appliedHash = prefs.getString(appliedHashKey(kind, gameIdentity, coreId), null),
-                    remoteHash = prefs.getString(SaveSyncPolicy.remoteHashKey(kind, gameIdentity, coreId), null),
-                )
-            }
-            var preserveSnapshots = false
-            try {
-                for ((kind, file) in files(store)) {
-                    val remotes = listRemoteFilesForSync(client, kind, linkedRomId, coreId)
-                    migrateLegacyMetadata(context, romPath, gameIdentity, coreId, kind, remotes, linkedRomId, connection)
-                    val remote = newestRemoteFile(kind, remotes, coreId) ?: continue
-                    val compatibleCount = remotes.count {
-                        SaveSyncPolicy.isCompatibleRemote(kind, it.emulator, coreId)
-                    }
-                    GameLog.log(
-                        "saves",
-                        "save remoto selecionado: tipo=${kind.path}, id=${remote.id}, núcleo=${remote.emulator}, " +
-                            "slot=${remote.slot ?: "legado-sem-slot"}, updatedAt=${remote.updatedAtMs}, " +
-                            "candidatos compatíveis=$compatibleCount",
-                    )
-                    pullOne(context, client, store, kind, file, remote, romPath, coreId, gameIdentity)
-                }
-            } catch (error: Exception) {
-                var restoreFailure: Throwable? = null
-                snapshots.forEach { snapshot ->
-                    runCatching {
-                        if (snapshot.backup != null && snapshot.backup.isFile) {
-                            RomMFileReplacement.replaceFile(snapshot.backup, snapshot.file)
-                        } else if (!snapshot.existed) {
-                            snapshot.file.delete()
-                        }
-                        prefs.edit {
-                            if (snapshot.hash == null) {
-                                remove("${snapshot.key}:hash")
-                            } else {
-                                putString("${snapshot.key}:hash", snapshot.hash)
-                            }
-                            if (snapshot.remote == Long.MIN_VALUE) {
-                                remove("${snapshot.key}:remote")
-                            } else {
-                                putLong("${snapshot.key}:remote", snapshot.remote)
-                            }
-                            if (snapshot.id == Long.MIN_VALUE) {
-                                remove("${snapshot.key}:id")
-                            } else {
-                                putLong("${snapshot.key}:id", snapshot.id)
-                            }
-                            if (snapshot.appliedHash == null) {
-                                remove(snapshot.appliedHashKey)
-                            } else {
-                                putString(snapshot.appliedHashKey, snapshot.appliedHash)
-                            }
-                            val remoteKey = SaveSyncPolicy.remoteHashKey(snapshot.kind, gameIdentity, coreId)
-                            if (snapshot.remoteHash == null) {
-                                remove(remoteKey)
-                            } else {
-                                putString(remoteKey, snapshot.remoteHash)
-                            }
-                        }
-                    }.onFailure {
-                        restoreFailure = it
-                        GameLog.error("saves", "falha ao restaurar save local após erro no pull", it)
-                    }
-                }
-                if (restoreFailure != null) {
-                    // Keep any remaining snapshot files as recovery copies if rollback was incomplete.
-                    preserveSnapshots = true
-                    throw SaveRollbackException(
-                        "A sincronização falhou e não foi possível confirmar a restauração do save local. Não inicie com o save local.",
-                        restoreFailure!!,
-                    )
-                }
-                throw error
-            } finally {
-                if (!preserveSnapshots) snapshots.forEach { it.backup?.delete() }
-            }
-        }
+        // Save states são locais; não consultar nem baixar estados do RomM.
     }
 
     private fun pullOne(
@@ -665,7 +535,8 @@ object SaveSync {
     }
 
     /** No-op legado: save states não são enviados ao RomM. */
-    internal suspend fun pushFromWorker(
+@Suppress("UNUSED_PARAMETER")
+        internal suspend fun pushFromWorker(
         context: Context,
         romPath: String,
         coreId: String,
@@ -674,86 +545,8 @@ object SaveSync {
         expectedAccountFingerprint: String?,
         snapshotJobId: String,
     ): Boolean {
-        // Decisão arquitetural: impedir também uploads por chamadores legados.
+        // Save states são locais; não enviar nem atualizar estados no RomM.
         return true
-        @Suppress("UNREACHABLE_CODE")
-        val app = context.applicationContext
-        if (expectedAccountFingerprint.isNullOrBlank()) return false
-        val connection = GameIdentityResolver.connectionSnapshot(app) ?: return false
-        if (!SaveSyncPolicy.isSameSyncAccount(expectedAccountFingerprint, connection.accountFingerprint)) return false
-        val activeRomPath = GameIdentityResolver.findRomPath(app, gameIdentity, romPath, platformSlug) ?: return false
-        val activeRom = File(activeRomPath)
-        val siblingCores = platformSlug
-            ?.let(GamePlatforms::bySlug)
-            ?.let { CoreRegistry.cores(it) }
-            .orEmpty()
-            .map { it.id }
-        val migrationPlan = GameIdentityResolver.planLegacyMigration(
-            app,
-            GameFolders.dir(app, FolderKind.Saves),
-            activeRom,
-            platformSlug,
-            listOf(coreId) + siblingCores,
-            gameIdentity,
-        )
-        // A pending ownership decision must block background uploads as well as game launch.
-        // Only an explicit user confirmation may copy these legacy bytes into the account namespace.
-        if (migrationPlan.ambiguous || migrationPlan.confirmationSources.isNotEmpty()) return false
-        val linkedRomId = GameIdentityResolver.linkedRomId(app, activeRom, connection) ?: return false
-        val syncClient = RomMClient(connection.url, connection.token)
-        lock.withLock {
-            // A sessão pode ter sido reaberta, inclusive depois de mover a ROM.
-            // Não envie arquivos enquanto o núcleo puder estar atualizando o save.
-            if (isSessionActive(app, gameIdentity)) return false
-            val statusKey = statusKey(gameIdentity, expectedAccountFingerprint)
-            prefs(app).edit {
-                putString(statusKey, "syncing")
-                putLong("$statusKey:started", System.currentTimeMillis())
-            }
-            try {
-                val snapshotFiles = withContext(Dispatchers.IO) {
-                    val store = SaveStore(
-                        app,
-                        coreId,
-                        activeRom,
-                        siblingCores,
-                        platformSlug,
-                        gameIdentity,
-                        migrationPlan.sources,
-                    )
-                    stateTransportFiles(
-                        SaveSnapshotStore(File(app.filesDir, "romm-save-queue")).capture(
-                            snapshotJobId,
-                            files(store).associate { (kind, file) -> kind to file },
-                        ),
-                    )
-                }
-                withContext(Dispatchers.IO) {
-                    push(
-                        app,
-                        syncClient,
-                        activeRomPath,
-                        coreId,
-                        gameIdentity,
-                        linkedRomId,
-                        connection,
-                        snapshotFiles,
-                    )
-                }
-                prefs(app).edit {
-                    putString(statusKey, "synced")
-                    remove("$statusKey:started")
-                }
-                SaveSnapshotStore(File(app.filesDir, "romm-save-queue")).delete(snapshotJobId)
-                return true
-            } catch (error: Exception) {
-                prefs(app).edit {
-                    putString(statusKey, "pending")
-                    remove("$statusKey:started")
-                }
-                throw error
-            }
-        }
     }
 
     private fun workName(gameIdentity: String, coreId: String, accountFingerprint: String): String {
