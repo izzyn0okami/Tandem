@@ -144,12 +144,14 @@ internal object GameSessionCoordinator {
         // Save states permanecem locais; nenhum transporte remoto de states é executado.
         val unresolved = saveRetry || saveResult?.let { GameSessionSyncPolicy.blocksSessionStart(it) } == true
         if (unresolved) {
-            app.getSharedPreferences("romm_sync", Context.MODE_PRIVATE).edit {
+            val preferences = app.getSharedPreferences("romm_sync", Context.MODE_PRIVATE)
+            preferences.edit {
                 putString(statusKey(gameIdentity, expectedAccountFingerprint), "pending")
-                if ((saveResult?.conflictsPreserved ?: 0) > 0) {
-                    val key = pendingConflictKey(gameIdentity, expectedAccountFingerprint)
-                    putStringSet(key, getStringSet(key, emptySet()).orEmpty() + snapshotJobId)
-                }
+            }
+            if ((saveResult?.conflictsPreserved ?: 0) > 0) {
+                val key = pendingConflictKey(gameIdentity, expectedAccountFingerprint)
+                val pendingIds = preferences.getStringSet(key, emptySet()).orEmpty() + snapshotJobId
+                preferences.edit { putStringSet(key, pendingIds) }
             }
         }
         return !saveRetry
