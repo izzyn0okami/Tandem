@@ -567,7 +567,7 @@ class GameSessionActivity : ComponentActivity() {
             raProgress = payload.copyOfRange(8, 8 + len)
             emuState = payload.copyOfRange(8 + len, payload.size)
         }
-        val loaded = runCatching { view.unserializeStateWithAchievements(emuState, raProgress) }.getOrDefault(false)
+        val loaded = runCatching { view.unserializePersistedStateWithAchievements(emuState, raProgress) }.getOrDefault(false)
         toast(if (loaded) R.string.game_session_state_loaded else R.string.game_session_state_load_failed)
         setMenu(false)
     }
