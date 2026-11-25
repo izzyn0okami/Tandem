@@ -658,7 +658,7 @@ CORREÇÃO — POLÍTICA DE RESTAURAÇÃO DE SAVE STATES PERSISTIDOS — 2026-11
 
 ### CI — correção do bloqueio de compilação na restauração manual (25/11/2026)
 
-- [FALHA IDENTIFICADA] CIs #1234/#1235 (runs 45542884336 e 45543045176) passaram no Spotless, mas falharam na compilação Kotlin porque `reconcileDivergentSave` é suspend e estava sendo chamado dentro de um bloco de exclusão mútua declarado como não suspensivo.
+- [FALHA IDENTIFICADA] CIs #1235/#1236 (runs 45542884336 e 45543045176) passaram no Spotless, mas falharam na compilação Kotlin porque `reconcileDivergentSave` é suspend e estava sendo chamado dentro de um bloco de exclusão mútua declarado como não suspensivo.
 - [CORREÇÃO] `SaveSync.withExclusiveSyncLock` agora aceita bloco suspensivo e adquire/libera o Mutex explicitamente com `lock()`/`unlock()` em `try/finally`, mantendo a exclusão mútua durante as operações de rede.
 - [VALIDAÇÃO PENDENTE] CI #1236 (run 45543865924) e CI #1237 (run 45543857981) foram disparadas após a correção; ambas ainda estavam em execução na última consulta. A CI #1238 (run 45543865924 no head documental posterior) também está pendente.
 - [SEM MERGE] PR #50 continua draft. A reconciliação e a restauração manual não devem ser consideradas validadas até compilação, testes e build Debug APK passarem no head final.
