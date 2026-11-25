@@ -41,6 +41,10 @@ internal fun romMErrorDetail(body: String?): String? {
         ?: return null
     return raw
         .replace(Regex("[\\r\\n\\t\\p{Cntrl}]"), " ")
+        .replace(
+            Regex("""(?i)\\b(token|access_token|authorization|password|secret|api[_-]?key)\\b(\\s*[:=]\\s*)(?:"[^"]*"|'[^']*'|Bearer\\s+\\S+|\\S+)"""),
+            "$1$2[redacted]",
+        )
         .replace(Regex("\\s+"), " ")
         .take(300)
         .takeIf { it.isNotBlank() }
@@ -431,6 +435,17 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
         .writeTimeout(15, TimeUnit.MINUTES)
         .build()
     private val base: HttpUrl = baseUrl.trimEnd('/').plus("/").toHttpUrl()
+
+    private fun httpException(response: Response, action: String): RomMHttpException {
+        val detail = runCatching {
+            romMErrorDetail(response.peekBody(MAX_HTTP_ERROR_BODY_BYTES).string())
+        }.getOrNull()
+        return RomMHttpException(
+            response.code,
+            "Servidor respondeu HTTP ${response.code} ao $action",
+            detail,
+        )
+    }
 
     private fun request(url: HttpUrl): Request.Builder {
         val builder = Request.Builder().url(url)
@@ -1344,15 +1359,12 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
                         "bytes=${response.body.contentLength()}; caminho=${response.request.url.encodedPath}",
                 )
                 if (!response.isSuccessful) {
-                    val errorBody = runCatching { response.peekBody(2048).string() }.getOrDefault("")
-                    val safeError = errorBody
-                        .replace(Regex("""(?i)(token|authorization|password)(\\s*[:=]\\s*)[^",\\s}]+"""), "\\$1\\$2[redacted]")
-                        .take(240)
+                    val error = httpException(response, "baixar $description")
                     GameLog.log(
                         "romm",
-                        "detalhe HTTP: status=${response.code}; corpo=${safeError.ifBlank { "<vazio>" }}",
+                        "detalhe HTTP: status=${error.statusCode}; detalhe=${error.detail ?: "<não fornecido>"}",
                     )
-                    throw RomMHttpException(response.code, "Servidor respondeu ${response.code} ao baixar $description")
+                    throw error
                 }
                 consume(response)
             }
@@ -1997,7 +2009,7 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
         }
         val url = urlBuilder.build()
         val text = http.newCall(request(url).build()).execute().use { response ->
-            if (!response.isSuccessful) throw IOException("Servidor respondeu ${response.code}")
+            if (!response.isSuccessful) throw httpException(response, "listar ${kind.path}")
             response.body.string()
         }
         val array = org.json.JSONArray(text)
@@ -2050,7 +2062,7 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
         }
         longHttp.newCall(builder.build()).execute().use { response ->
             if (!response.isSuccessful) {
-                throw RomMHttpException(response.code, "Servidor respondeu ${response.code}")
+                throw httpException(response, "enviar ${kind.path}")
             }
             return parseRemoteFile(JSONObject(response.body.string()))
         }
@@ -2060,6 +2072,7 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
         const val PAGE_SIZE = 100
         const val MINIMUM_FREE_SPACE_BYTES = 32L * 1024L * 1024L
         const val MAX_COVER_FAILURE_LOGS = 8
+        const val MAX_HTTP_ERROR_BODY_BYTES = 8_192L
         const val MAX_ROMM_MEDIA_DOWNLOAD_BYTES = 1024L * 1024L * 1024L
         const val MAX_ROMM_PATCH_RESULT_BYTES = 4L * 1024L * 1024L * 1024L
         val coverFailuresLogged = AtomicInteger()
