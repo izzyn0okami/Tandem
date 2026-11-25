@@ -729,3 +729,13 @@ CORREÇÃO — POLÍTICA DE RESTAURAÇÃO DE SAVE STATES PERSISTIDOS — 2026-11
 - [CI] CI #1260 / run 45546474646 passou em Spotless, testes unitários, build Debug APK, upload do artefato e final-status. O código validado estava no commit b4e48e6da5a7522516e611a294fdca47ff665a46; alterações documentais posteriores não alteraram código.
 - [SEGURANÇA] Nenhum save local ou remoto foi apagado ou migrado durante os testes. A restauração manual preserva versões anteriores e backup local.
 - [PR] Resultado registrado na PR #50 existente. Continua aberta em draft e sem merge até revisão final e autorização do usuário.
+
+
+### Revisão final — endurecimento da restauração manual SRAM (25/11/2026)
+
+- [REVISÃO ESTÁTICA] A revisão do fluxo de restauração identificou dois pontos de robustez: a criação da pasta de backup não verificava o retorno de `mkdirs()`; e, ao restaurar a versão mais recente, o baseline Device Sync era confirmado antes da aplicação local.
+- [CORREÇÃO] A criação da pasta de backup agora é validada. Se não puder ser preparada, a restauração é cancelada antes de alterar o arquivo local.
+- [CORREÇÃO] Quando a versão mais recente é selecionada, `confirmDownloaded` fica somente depois da substituição local e da verificação final do hash. Ao escolher uma versão histórica, o baseline da versão ativa atual continua sendo confirmado antes de publicar a escolha explícita como nova versão ativa.
+- [PRESERVAÇÃO] A cópia local continua sendo protegida e verificada antes da substituição. A publicação de versão histórica mantém `overwrite=false` e `autocleanup=false`.
+- [VALIDAÇÃO PENDENTE] Commit de código `9b2fbe6f1d262e71f918b173a5884b488347e4ad`. A CI específica deste commit ainda não apareceu na consulta; não considerar esta correção validada até Spotless, testes e build Debug APK concluírem com sucesso.
+- [PR] Alteração feita na PR #50 existente; sem PR concorrente e sem merge.
