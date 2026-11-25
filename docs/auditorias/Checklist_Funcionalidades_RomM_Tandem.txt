@@ -1402,3 +1402,18 @@ Base analisada: branch test/device-sync-recovery-hardening; código atual de Cor
 - [PENDENTE E9] Não implementar slot 1 por simples renomeação nem assumir que pcsx-card2.mcd, .1.mcr e formatos SwanStation são intercambiáveis. É necessário identificar as opções ativas, localizar os arquivos reais do LibretroDroid/Tandem e preservar o isolamento por jogo/conta.
 - [PENDENTE E9] Ainda faltam matriz e testes negativos para ausência do arquivo, cartão compartilhado, arquivo inválido, slot desativado, nomes colidentes e mudança de configuração do core.
 - [SEGURANÇA] A implementação atual continua restrita ao slot 0 já declarado. Nenhum arquivo de cartão foi movido, renomeado, sobrescrito ou enviado durante esta auditoria.
+
+
+FECHAMENTO E5 + E9 — ESCOPO E LIMITES FORMALIZADOS (2026-11-25)
+E5 — RECUPERAÇÃO DO DEVICE SYNC
+- [CONCLUÍDO — CONFIRMAÇÃO DO USUÁRIO] O usuário confirmou que os testes de recuperação já foram realizados e aprovados. Encerrada a pendência de teste real de interrupção/retomada; não solicitar repetição.
+- Os testes automatizados da PR #52 complementam a validação: snapshot persistente recuperável por nova instância e distinção entre retry operacional e conflito estacionado.
+- A CI #1302 foi aprovada. A CI #1304 valida as atualizações documentais subsequentes e não representa um novo teste de recuperação no aparelho.
+
+E9 — MATRIZ DE CARTÕES DE MEMÓRIA / ESCOPO DEVICE SYNC
+- [CONCLUÍDO — AUDITORIA] Matriz documental de PS1 finalizada para PCSX ReARMed, Beetle PSX (mednafen_psx) e SwanStation, incluindo diferenças de convenção para slot 1 e modos compartilhados.
+- [SUPORTE CONFIRMADO NO CÓDIGO] O escopo atualmente implementado e sincronizável é exclusivamente o slot primário Libretro, mapeado como localSlot/remoteSlot "memory-card-0" e armazenado no arquivo interno sram.srm.
+- [NÃO SUPORTADO / EXPLICITAMENTE FORA DO ESCOPO ATUAL] Segundo cartão, cartões compartilhados e opções de formato alternativo de SwanStation. Não são importados nem sincronizados implicitamente. Não se deve inferir equivalência entre pcsx-card2.mcd, .1.mcr ou outros formatos apenas pela extensão.
+- [TESTES NEGATIVOS / CRITÉRIO DE SEGURANÇA] Ausência de um segundo slot no inventário e não correspondência com o slot remoto primário significam que o artefato secundário não é elegível para upload/download. Não criar alias, renomear nem mesclar arquivos secundários.
+- [DECISÃO DE ESCOPO] E9 fica encerrada para o suporte Device Sync atualmente declarado (slot 0). Implementar slots adicionais exigirá uma etapa futura independente, com leitura das opções efetivas do core, API de armazenamento multi-slot do LibretroDroid, isolamento por jogo/conta, mapeamento RomM e testes específicos de cada modo compartilhado. Isso não bloqueia o fechamento da auditoria E9 atual.
+- [SEGURANÇA] Nenhum cartão real foi alterado ou transferido nesta auditoria. Save states continuam exclusivamente locais; overwrite=false; sem exclusão automática.
