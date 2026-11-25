@@ -158,7 +158,30 @@ object RomMDeviceSyncRunner {
                                 if (localSave == null || operation.slot != remoteSlot) {
                                     throw IOException("Upload sem save local compatível ou fora do slot $remoteSlot.")
                                 }
-                                if (DeviceSyncArtifactPolicy.isUnbasedUpload(operation)) {
+                                if (DeviceSyncArtifactPolicy.hasSameContent(initialLocalHash, operation.serverContentHash)) {
+                                    val saveId = operation.saveId
+                                        ?: throw IOException("O RomM não informou o ID do save para confirmar o baseline.")
+                                    val expectedHash = operation.serverContentHash
+                                        ?: throw IOException("O RomM não informou o hash do save para confirmar o baseline.")
+                                    val baselineStage = File(snapshot.parentFile, "baseline-$saveId-${UUID.randomUUID()}.srm")
+                                    try {
+                                        val confirmedHash = client.downloadSaveToStaging(
+                                            saveId = saveId,
+                                            deviceId = deviceId,
+                                            sessionId = negotiation.sessionId,
+                                            expectedContentHash = expectedHash,
+                                            stagingFile = baselineStage,
+                                        )
+                                        client.confirmDownloaded(saveId, deviceId, confirmedHash)
+                                        noOp++
+                                        GameLog.log(
+                                            "Device Sync",
+                                            "upload suprimido: SRAM local e remoto têm o mesmo conteúdo; baseline confirmado sem substituir a versão ativa",
+                                        )
+                                    } finally {
+                                        baselineStage.delete()
+                                    }
+                                } else if (DeviceSyncArtifactPolicy.isUnbasedUpload(operation)) {
                                     val reconciled = reconcileDivergentSave(
                                         client, operation, deviceId, negotiation.sessionId, romId,
                                         remoteSlot, emulator, romFile, store, originalSave,
