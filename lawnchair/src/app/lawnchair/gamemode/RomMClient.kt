@@ -211,6 +211,37 @@ data class RemoteSoundtrackTrack(
  * Categorias que representam conteúdo de jogo executável/instalável.
  * Categorias auxiliares e categorias futuras desconhecidas ficam fora da ROM.
  */
+/** Faixa do catálogo global de música do RomM (jukebox), não limitada a um jogo aberto. */
+data class RemoteMusicTrack(
+    val romFileId: Long,
+    val romId: Long,
+    val fileName: String,
+    val title: String?,
+    val artist: String?,
+    val album: String?,
+    val genre: String?,
+    val year: Int?,
+    val trackNumber: Int?,
+    val discNumber: Int?,
+    val durationSeconds: Double?,
+    val hasEmbeddedCover: Boolean,
+    val isFavorite: Boolean,
+    val gameName: String?,
+    val platformName: String,
+    val streamUrl: String,
+)
+
+data class RemoteMusicFacet(val value: String, val count: Int)
+data class RemoteMusicPlaylist(
+    val id: Long,
+    val name: String,
+    val description: String?,
+    val isPublic: Boolean,
+    val ownerUsername: String,
+    val trackCount: Int,
+)
+data class RemoteMusicPage<T>(val items: List<T>, val total: Int, val limit: Int, val offset: Int)
+
 internal fun isRomMPlayableFileCategory(category: String?): Boolean {
     if (category.isNullOrBlank()) return true
     return category.lowercase() in setOf(
