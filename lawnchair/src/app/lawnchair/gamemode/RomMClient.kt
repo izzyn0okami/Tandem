@@ -1079,7 +1079,37 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
         }
     }
 
-    /** Caixa de entrada do usuário; leitura apenas, sem marcar ou dispensar notificações. */
+    /** Marca notificações específicas como lidas. A lista vazia é rejeitada para evitar ações ambíguas. */
+    fun markNotificationsRead(ids: List<Long>) {
+        require(ids.isNotEmpty() && ids.all { it > 0L }) { "IDs de notificações inválidos" }
+        val payload = JSONObject().put("ids", org.json.JSONArray(ids)).toString()
+            .toRequestBody("application/json".toMediaType())
+        val url = base.resolve("api/notifications/read")!!
+        http.newCall(request(url).post(payload).build()).execute().use { response ->
+            if (!response.isSuccessful) throw httpException(response, "marcar notificações como lidas")
+        }
+    }
+
+    /** Marca todas as notificações como lidas; não dispensa nem exclui registros. */
+    fun markAllNotificationsRead() {
+        val payload = JSONObject().put("ids", org.json.JSONObject.NULL).toString()
+            .toRequestBody("application/json".toMediaType())
+        val url = base.resolve("api/notifications/read")!!
+        http.newCall(request(url).post(payload).build()).execute().use { response ->
+            if (!response.isSuccessful) throw httpException(response, "marcar todas as notificações como lidas")
+        }
+    }
+
+    /** Dispensa uma única notificação após confirmação explícita na interface. */
+    fun dismissNotification(id: Long) {
+        require(id > 0L) { "ID de notificação inválido" }
+        val url = base.newBuilder().addPathSegments("api/notifications").addPathSegment(id.toString()).build()
+        http.newCall(request(url).delete().build()).execute().use { response ->
+            if (!response.isSuccessful) throw httpException(response, "dispensar notificação")
+        }
+    }
+
+    /** Caixa de entrada do usuário. */
     fun getNotifications(): List<RemoteNotification> {
         val url = base.resolve("api/notifications")!!
         http.newCall(request(url).get().build()).execute().use { response ->
@@ -2163,6 +2193,7 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
         val coverFailuresLogged = AtomicInteger()
         val DEVICE_SCOPES = listOf(
             "me.read",
+            "me.write",
             "platforms.read",
             "collections.read",
             "roms.read",
