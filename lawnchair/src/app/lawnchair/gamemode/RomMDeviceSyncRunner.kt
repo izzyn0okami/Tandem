@@ -120,6 +120,7 @@ object RomMDeviceSyncRunner {
                 var deletesIgnored = 0
                 var unknownIgnored = 0
                 var failed = 0
+                var extraTransfers = 0
 
                 val scopedOperations = negotiation.operations.filter { it.romId == romId && it.slot == remoteSlot }
                 val ignoredOutOfScope = negotiation.operations.size - scopedOperations.size
@@ -169,6 +170,7 @@ object RomMDeviceSyncRunner {
                                     } else {
                                         uploaded += reconciled.uploaded
                                         downloaded += reconciled.downloaded
+                                        if (reconciled.downloaded > 0) extraTransfers++
                                     }
                                 } else {
                                     if (!originalSave.matchesMd5(initialLocalHash)) {
@@ -218,6 +220,7 @@ object RomMDeviceSyncRunner {
                                         file = snapshot,
                                     )
                                     uploaded++
+                                    extraTransfers++
                                     GameLog.log("Device Sync", "versão local anterior preservada no RomM como arquivo de arquivo (slot nulo)")
                                 }
                                 if (!originalSave.matchesMd5(initialLocalHash)) {
@@ -276,6 +279,7 @@ object RomMDeviceSyncRunner {
                                 } else {
                                     uploaded += reconciled.uploaded
                                     downloaded += reconciled.downloaded
+                                    if (reconciled.downloaded > 0) extraTransfers++
                                 }
                             }
 
@@ -310,7 +314,7 @@ object RomMDeviceSyncRunner {
                     }
                 }
 
-                val completed = noOp + uploaded + downloaded
+                val completed = (noOp + uploaded + downloaded - extraTransfers).coerceAtLeast(0)
                 val failedOperations = failed + conflicts + deletesIgnored + unknownIgnored
                 client.complete(negotiation.sessionId, completed, failedOperations)
                 GameLog.log(
