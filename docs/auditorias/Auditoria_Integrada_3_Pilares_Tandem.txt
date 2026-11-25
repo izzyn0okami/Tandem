@@ -502,3 +502,13 @@ CORREÇÃO — POLÍTICA DE RESTAURAÇÃO DE SAVE STATES PERSISTIDOS — 2026-11
 - [CI #1179] Run 45523144336 está em execução no head de código a11d2a5dfde43c881167a5cc4912e8be8319abb0; check-style e build-debug-apk ainda não têm conclusão no momento deste registro. Não considerar a correção validada pela CI até os dois jobs e final-status concluírem com sucesso.
 - [PENDENTE FUNCIONAL] Repetir no telefone o cenário que falhou no Log #10. Se o núcleo aceitar o estado de 823.432 bytes apesar de esperar 823.407, registrar restauração real; se rejeitar, investigar versão/build/configuração do núcleo. O teste precisa ser feito com backup preservado e sem modificar o arquivo remoto.
 - [PR] #50 permanece aberta, em draft e sem merge. Nenhuma PR concorrente foi aberta. Nenhum save, estado, SRAM, cartão ou ROM foi alterado durante a correção.
+
+## VALIDAÇÃO CI — IDENTIFICADORES CANÔNICOS ROMM (2026-11-25)
+
+- A CI #1174 validou o commit inicial 9519985c9665cd6b6826dd6204cd4d7087922cc8 com sucesso: Spotless, testes unitários e build Debug APK.
+- O Spotless aplicou formatação automaticamente e gerou novo head; o head atual da PR #50 é a0f044ee9bf65b3bc602565a842a4f85c8f34c9c.
+- O head atual também foi validado com sucesso pelas CIs #1180, #1181, #1182 e #1183. Todas concluíram com success no mesmo SHA.
+- Artefato Debug APK gerado pela CI #1174: assembleLawnWithQuickstepGithubDebug, 46.424.987 bytes, não expirado no momento do registro (expiração informada: 2027-02-23).
+- PR #50 permanece aberta, em draft, com mergeable=true. Nenhum merge foi executado.
+- [PENDENTE] Teste no telefone: executar um novo upload SNES e confirmar no RomM que o campo emulator foi salvo como snes9x.
+- [PENDENTE] Validar a leitura de um registro antigo tandem_snes9x sem alterar o registro remoto nem o save local.
