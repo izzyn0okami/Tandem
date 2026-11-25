@@ -118,7 +118,7 @@ internal class RemoteLibrary(private val context: Context, private val scope: Co
                 }
             }.onFailure {
                 GameLog.error("romm", "falha ao baixar ${game.title}", it)
-                error = "$" + "{romMUserFacingError(it, \"baixar ${game.title}\")}"
+                error = romMUserFacingError(it, "baixar ${game.title}")
             }
             progress.remove(game.id)
             onDone()
