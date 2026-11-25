@@ -1514,3 +1514,21 @@ Base de trabalho: PR #53, branch feat/romm-stage-f-dashboard.
 - [PENDENTE] Implementar testes MockWebServer para método, rota, payload de IDs, autenticação, sucesso, 401/403, falha de rede e preservação do estado local em erro; CI e teste funcional no aparelho.
 - [FORA DO ESCOPO DESTA FASE] Criar/editar/testar/remover canais de notificação, envio de notificações e endpoints administrativos/Apprise (F5 e escopos relacionados).
 - Nenhuma chamada de escrita foi feita ao servidor RomM; nenhum estado de notificação foi alterado nesta auditoria.
+
+
+IMPLEMENTAÇÃO F4 — AÇÕES DE NOTIFICAÇÃO AUTORIZADAS (2026-11-25)
+Decisão do usuário: AUTORIZADO incluir me.write no pareamento para implementar as ações F4 descritas nesta auditoria.
+Branch: feat/romm-stage-f-dashboard; PR #53 permanece draft e sem merge.
+- [IMPLEMENTADO] DEVICE_SCOPES agora solicita me.write. O escopo é amplo no RomM; o Tandem limita as chamadas desta implementação a POST /api/notifications/read e DELETE /api/notifications/{id}. Nenhuma operação de canais (F5) foi adicionada.
+- [IMPLEMENTADO] Marcar uma notificação individual como lida envia POST /api/notifications/read com ids contendo apenas o ID selecionado.
+- [IMPLEMENTADO] Marcar todas como lidas envia POST /api/notifications/read com ids=null; não exclui notificações.
+- [IMPLEMENTADO] Dispensar remove apenas uma notificação por DELETE /api/notifications/{id}, após confirmação explícita em AlertDialog.
+- [SEGURANÇA] Não existe ação “Dispensar todas”. A interface altera o estado local somente após resposta HTTP bem-sucedida; 401/403 e falhas de rede mantêm o estado anterior e exibem erro. Não há retry automático de escrita.
+- [REAUTORIZAÇÃO NECESSÁRIA] Tokens existentes não recebem escopos novos automaticamente. Para usar F4, o usuário deverá desconectar e parear novamente a conta RomM após instalar a versão com me.write.
+- [TESTES ADICIONADOS] MockWebServer verifica POST individual com IDs exatos, POST em lote com ids=null, DELETE individual, autenticação, rejeição de IDs inválidos, resposta 403 preservando status e inclusão de me.write no payload de pareamento.
+- [CI #1328] Run 45702965058 concluiu SUCCESS no head anterior 914faf93a15028418c4478aa545c4c514b0ee9ab; Spotless, testes, build Debug APK e final-status passaram. Não valida as alterações F4.
+- [CI F4] Execuções automáticas iniciadas para commits intermediários #1332 (run 45704058215) e #1333 (run 45704088167). A validação definitiva depende da CI no head final após esta atualização do checklist.
+- [PENDENTE] Aguardar CI final, revisar eventuais correções de Spotless, confirmar artefato APK do head final e validar as três ações no aparelho após novo pareamento.
+- [PENDENTE] F5 (canais de notificação/Apprise) permanece fora do escopo.
+- Nenhuma notificação real foi marcada como lida ou dispensada durante desenvolvimento/testes automatizados; nenhuma chamada foi feita à conta RomM do usuário.
+- PR #53 continua aberta, draft e sem merge. Não mesclar sem autorização explícita.
