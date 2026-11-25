@@ -641,3 +641,16 @@ CORREÇÃO — POLÍTICA DE RESTAURAÇÃO DE SAVE STATES PERSISTIDOS — 2026-11
 - [PENDENTE — AUDITORIA TÉCNICA] Verificar endpoints RomM 5.4.x para listar versões por ROM/slot e obter metadados completos; confirmar paginação, autorização e semântica de download/confirmDownloaded. A negociação atual fornece somente a operação escolhida e não constitui, por si só, um navegador de histórico.
 - [PENDENTE — UI] Definir acesso pelo detalhe do jogo ou gerenciamento de saves, com ação clara “Histórico de SRAM” e confirmação antes de restaurar versão antiga.
 - [PR] Incorporar o requisito à PR #50 existente; não abrir PR concorrente. Nenhuma alteração de código implementada nesta etapa de registro. PR permanece draft e sem merge.
+
+
+## IMPLEMENTAÇÃO — HISTÓRICO E RESTAURAÇÃO MANUAL DE SRAM (2026-11-25)
+
+- [CONTRATO ROMM 5.4] Confirmado que `GET /api/saves` aceita filtros `rom_id` e `slot`; a resposta contém registros de save com ID, núcleo, slot, data de atualização e hash de conteúdo. A documentação RomM 5.4 descreve o histórico de versões por slot, com versão mais recente primeiro; o slot autosave tem retenção limitada pelo servidor, enquanto saves arquivados sem slot não são podados.
+- [IMPLEMENTADO NA PR #50] O modelo `RemoteFile` agora também lê `file_name` e `file_size_bytes` quando fornecidos pelo servidor. O cliente já existente `listRemoteFiles(Save, romId, slot)` é reutilizado para consultar somente versões do jogo/slot selecionado.
+- [IMPLEMENTADO NA PR #50] A tela de detalhes do jogo ganhou a ação “Histórico de SRAM”, listagem ordenada da versão mais recente para a mais antiga e ação individual de restauração com confirmação explícita.
+- [IMPLEMENTADO NA PR #50] A restauração cria um snapshot local temporário, abre uma sessão Device Sync, confirma primeiro o baseline da versão ativa do servidor, baixa a versão escolhida para staging e valida MD5. A SRAM local existente é copiada para backup e o backup é validado por SHA-256 antes da substituição.
+- [DECISÃO DE CONSISTÊNCIA] Se o usuário escolher uma versão antiga, o Tandem publica o conteúdo escolhido como uma nova versão no slot ativo (com `overwrite=false` e limpeza automática desativada) antes de aplicar localmente. Assim a escolha manual passa a ser a versão atual para os demais dispositivos, sem editar ou apagar versões históricas. Se a versão escolhida já for a mais recente, ela é apenas aplicada localmente e confirmada.
+- [SEGURANÇA] Se o save remoto, hash, compatibilidade do núcleo, baseline, backup ou estado local não puderem ser verificados, a restauração é cancelada. Nenhuma versão remota é excluída. Save states continuam locais e não aparecem neste histórico.
+- [PENDENTE] Validar compilação, Spotless, testes unitários e build Debug APK nas CIs da PR #50; depois executar teste real no telefone com pelo menos duas versões SRAM do mesmo jogo, escolhendo uma antiga e verificando que ela vira uma nova versão ativa no RomM e sincroniza no outro dispositivo.
+- [PENDENTE] Confirmar no RomM instalado pelo usuário se a listagem inclui tamanho do arquivo; esse campo é opcional na interface. A funcionalidade não depende dele.
+- [PR] Alterações feitas na PR #50 existente; nenhuma PR concorrente criada. PR permanece draft e sem merge.
