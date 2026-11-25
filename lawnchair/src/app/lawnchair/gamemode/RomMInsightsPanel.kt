@@ -63,6 +63,7 @@ internal fun RomMInsightsPanel() {
                         403 -> "A autorização atual não permite esta consulta. Reconecte o Tandem com as permissões de leitura necessárias."
                         else -> failure.message ?: "Falha ao consultar o RomM."
                     }
+
                     else -> failure.message ?: "Não foi possível consultar o RomM."
                 }
             }
@@ -99,6 +100,7 @@ internal fun RomMInsightsPanel() {
                     GameButton("Atualizar estatísticas", onClick = { load("stats") }, enabled = !loading)
                 }
             }
+
             "recommendations" -> {
                 val values = recommendations
                 if (values == null) {
@@ -119,6 +121,7 @@ internal fun RomMInsightsPanel() {
                     GameButton("Atualizar recomendações", onClick = { load("recommendations") }, enabled = !loading)
                 }
             }
+
             else -> {
                 val values = notifications
                 if (values == null) {

@@ -1065,7 +1065,13 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
                         val reason = reasons?.optJSONObject(reasonIndex) ?: return@mapNotNull null
                         val facet = reason.optString("facet").replace('_', ' ')
                         val value = reason.optString("value").takeUnless { it == "null" }.orEmpty()
-                        if (facet.isBlank()) null else if (value.isBlank()) facet else "$facet: $value"
+                        if (facet.isBlank()) {
+                            null
+                        } else if (value.isBlank()) {
+                            facet
+                        } else {
+                            "$facet: $value"
+                        }
                     },
                     seedRomName = item.optString("seed_rom_name").takeUnless { it == "null" || it.isBlank() },
                 )
