@@ -51,6 +51,7 @@ internal fun RomMInsightsPanel() {
                         403 -> "O RomM recusou a ação. Desconecte e pareie novamente para conceder a permissão de notificações."
                         else -> failure.message ?: "Falha ao atualizar a notificação."
                     }
+
                     else -> failure.message ?: "Não foi possível atualizar a notificação."
                 }
             }
@@ -189,12 +190,14 @@ internal fun RomMInsightsPanel() {
                             if (item.body.isNotBlank()) Text(item.body, color = GameColors.textDim, fontSize = 11.sp)
                             Text("${if (item.read) "Lida" else "Não lida"} · ${item.level} · ${DateFormat.getDateTimeInstance(DateFormat.MEDIUM, DateFormat.SHORT).format(Date(item.createdAtMs))}${item.actor?.let { " · $it" } ?: ""}", color = GameColors.textDim, fontSize = 10.sp)
                             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                if (!item.read) GameButton("Marcar como lida", onClick = {
-                                    performNotificationAction(
-                                        action = { RomMClient(RomMSettings.url(context).orEmpty(), RomMSettings.token(context)).markNotificationsRead(listOf(item.id)) },
-                                        onSuccess = { notifications = notifications?.map { current -> if (current.id == item.id) current.copy(read = true) else current } },
-                                    )
-                                }, enabled = !loading)
+                                if (!item.read) {
+                                    GameButton("Marcar como lida", onClick = {
+                                        performNotificationAction(
+                                            action = { RomMClient(RomMSettings.url(context).orEmpty(), RomMSettings.token(context)).markNotificationsRead(listOf(item.id)) },
+                                            onSuccess = { notifications = notifications?.map { current -> if (current.id == item.id) current.copy(read = true) else current } },
+                                        )
+                                    }, enabled = !loading)
+                                }
                                 GameButton("Dispensar", onClick = { pendingDismiss = item }, enabled = !loading)
                             }
                         }
