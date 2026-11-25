@@ -65,8 +65,8 @@ internal object GameSessionCoordinator {
     ) = SaveSync.pushAsync(context, romPath, coreId, platformSlug, gameIdentity)
 
     /**
-     * Executa o pull de SRAM/cartão via Device Sync e, depois, o pull de estado rápido.
-     * Nenhum arquivo remoto é aplicado se a negociação retornar conflito ou operação desconhecida.
+     * Executa somente o pull de SRAM/cartão via Device Sync.
+     * Save states são locais e nunca são consultados no RomM.
      */
     suspend fun prepareSession(
         context: Context,
@@ -97,7 +97,7 @@ internal object GameSessionCoordinator {
         // SRAM/cartões já foram tratados pelo Device Sync. Save states não são sincronizados.
     }
 
-    /** Executado pelo único worker persistente após a sessão: Device Sync e, em seguida, estados. */
+    /** Executado pelo único worker persistente após a sessão: sincroniza SRAM/cartões via Device Sync. */
     internal suspend fun pushFromWorker(
         context: Context,
         romPath: String,
@@ -126,15 +126,14 @@ internal object GameSessionCoordinator {
             saveRetry = true
             GameLog.error("Device Sync", "falha no transporte de SRAM/cartão; a fila tentará novamente", error)
         }
-        // Save states permanecem locais; não há upload para /api/states.
-        val statesCompleted = true
+        // Save states permanecem locais; nenhum transporte remoto de states é executado.
         val unresolved = saveRetry || saveResult?.let { GameSessionSyncPolicy.blocksSessionStart(it) } == true
         if (unresolved) {
             app.getSharedPreferences("romm_sync", Context.MODE_PRIVATE).edit {
                 putString(statusKey(gameIdentity, expectedAccountFingerprint), "pending")
             }
         }
-        return !saveRetry && statesCompleted
+        return !saveRetry
     }
 
     private suspend fun ensureDeviceRegistered(
