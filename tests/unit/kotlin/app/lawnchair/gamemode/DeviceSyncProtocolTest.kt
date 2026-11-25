@@ -372,6 +372,17 @@ class DeviceSyncProtocolTest {
         )
     }
     @Test
+    fun identicalLocalAndRemoteSramContentNeverQualifiesForUpload() {
+        val hash = "0123456789abcdef0123456789abcdef"
+        assertTrue(DeviceSyncArtifactPolicy.hasSameContent(hash, hash))
+        assertTrue(DeviceSyncArtifactPolicy.hasSameContent(hash, hash.uppercase()))
+        assertFalse(DeviceSyncArtifactPolicy.hasSameContent(hash, "ffffffffffffffffffffffffffffffff"))
+        assertFalse(DeviceSyncArtifactPolicy.hasSameContent(hash, null))
+        assertFalse(DeviceSyncArtifactPolicy.hasSameContent(null, hash))
+        assertFalse(DeviceSyncArtifactPolicy.hasSameContent("invalid", hash))
+    }
+
+    @Test
     fun uploadSaveUsesSafeQueryParametersAndMultipartSaveFile() {
         val server = MockWebServer()
         val file = java.io.File.createTempFile("device-sync-", ".srm")
