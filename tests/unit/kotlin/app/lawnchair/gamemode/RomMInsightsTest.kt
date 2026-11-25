@@ -326,8 +326,9 @@ class RomMInsightsTest {
             val failure = runCatching { client.getServerStats() }.exceptionOrNull()
 
             assertTrue(failure is RomMHttpException)
-            assertEquals(403, (failure as RomMHttpException).statusCode)
-            assertEquals("/api/stats", failure.endpoint)
+            val httpFailure = failure as RomMHttpException
+            assertEquals(403, httpFailure.statusCode)
+            assertEquals("/api/stats", httpFailure.endpoint)
         } finally {
             server.close()
         }
