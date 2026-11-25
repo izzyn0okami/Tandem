@@ -376,6 +376,121 @@ object RomMDeviceSyncRunner {
     }
 
     /**
+     * User-confirmed conflict choice: publish the current local bytes as a new active RomM version.
+     * The current remote head is first downloaded and confirmed as this device's baseline; upload
+     * then creates a new version without overwriting or deleting the server history.
+     */
+    suspend fun resolveConflictKeepLocal(
+        context: Context,
+        romPath: String,
+        coreId: String,
+        platformSlug: String?,
+    ): String = withContext(Dispatchers.IO) {
+        SaveSync.withExclusiveSyncLock {
+            val app = context.applicationContext
+            val connection = GameIdentityResolver.connectionSnapshot(app)
+                ?: throw IOException("Conecte a conta RomM vinculada a este jogo.")
+            val romFile = File(romPath)
+            if (!romFile.isFile || !GameIdentityResolver.hasRomMLink(app, romFile)) {
+                throw IOException("Este jogo não possui um vínculo RomM confirmado.")
+            }
+            val romId = GameIdentityResolver.linkedRomId(app, romFile, connection)
+                ?: throw IOException("O vínculo RomM não corresponde à conta atual.")
+            val deviceId = RomMSettings.deviceSyncDeviceId(app)
+                ?: throw IOException("Este dispositivo ainda não está registrado no Device Sync.")
+            val identity = GameIdentityResolver.cachedIdentity(app, romFile, platformSlug)
+                ?: GameIdentityResolver.resolve(app, romFile, platformSlug)
+            val store = SaveStore(
+                app,
+                coreId,
+                romFile,
+                platformSlug = platformSlug,
+                gameIdentity = identity,
+                migrationSourcesOverride = emptyMap(),
+            )
+            val artifact = DeviceSyncArtifactPolicy.selectForRomM(store.inventory())
+                ?: throw IOException("Não há SRAM/cartão local elegível para publicar.")
+            val target = artifact.file
+            val snapshotRoot = File(app.filesDir, "device-sync-snapshots")
+            if (!snapshotRoot.exists() && !snapshotRoot.mkdirs()) {
+                throw IOException("Não foi possível preparar a resolução do conflito.")
+            }
+            val localSnapshot = File(snapshotRoot, "resolve-local-" + UUID.randomUUID() + ".srm")
+            val remoteStage = File(snapshotRoot, "resolve-remote-" + UUID.randomUUID() + ".srm")
+            var sessionId: Long? = null
+            var completed = false
+            try {
+                val beforeHash = md5(target)
+                target.copyTo(localSnapshot, overwrite = false)
+                if (md5(localSnapshot) != beforeHash) {
+                    throw IOException("A SRAM local mudou durante a captura da resolução.")
+                }
+                val remoteSlot = DeviceSyncArtifactPolicy.remoteSlot(artifact)
+                val emulator = DeviceSyncArtifactPolicy.canonicalEmulator(coreId)
+                val localSave = DeviceSyncProtocolJson.localSave(
+                    romId = romId,
+                    fileName = romSaveFileName(romFile),
+                    emulator = emulator,
+                    file = localSnapshot,
+                    updatedAt = Instant.ofEpochMilli(artifact.modifiedAtEpochMs).toString(),
+                    remoteSlot = remoteSlot,
+                ) ?: throw IOException("A SRAM local está vazia.")
+                val client = RomMDeviceSyncClient(connection.url, connection.token)
+                val negotiation = client.negotiate(
+                    deviceId = deviceId,
+                    saves = listOf(localSave),
+                    romIds = setOf(romId),
+                    emulators = null,
+                )
+                sessionId = negotiation.sessionId
+                val remoteHead = negotiation.operations.firstOrNull {
+                    it.romId == romId && it.slot == remoteSlot &&
+                        it.saveId != null && !it.serverContentHash.isNullOrBlank() &&
+                        it.action in setOf(DeviceSyncAction.Conflict, DeviceSyncAction.Download, DeviceSyncAction.Upload)
+                }
+                if (remoteHead != null) {
+                    val remoteHash = remoteHead.serverContentHash
+                        ?: throw IOException("O RomM não informou o hash da versão remota.")
+                    val confirmedHash = client.downloadSaveToStaging(
+                        saveId = remoteHead.saveId!!,
+                        deviceId = deviceId,
+                        sessionId = negotiation.sessionId,
+                        expectedContentHash = remoteHash,
+                        stagingFile = remoteStage,
+                    )
+                    client.confirmDownloaded(remoteHead.saveId, deviceId, confirmedHash)
+                }
+                if (!target.isFile || md5(target) != beforeHash) {
+                    throw IOException("A SRAM local mudou durante a resolução; nenhum upload foi feito.")
+                }
+                val uploaded = client.uploadSave(
+                    romId = romId,
+                    deviceId = deviceId,
+                    sessionId = negotiation.sessionId,
+                    slot = remoteSlot,
+                    emulator = emulator,
+                    fileName = romSaveFileName(romFile),
+                    file = localSnapshot,
+                )
+                client.complete(negotiation.sessionId, operationsCompleted = 1, operationsFailed = 0)
+                completed = true
+                GameLog.log(
+                    "Device Sync",
+                    "usuário escolheu manter a versão local; nova versão ativa publicada no RomM, " +
+                        "save_id=${uploaded.optLong("id", -1L)}; histórico preservado",
+                )
+                "Versão local escolhida e publicada como nova versão ativa no RomM."
+            } finally {
+                if (sessionId != null && !completed) {
+                    runCatching { RomMDeviceSyncClient(connection.url, connection.token).complete(sessionId!!, 0, 1) }
+                }
+                localSnapshot.delete()
+                remoteStage.delete()
+            }
+        }
+    }
+
+    /**
      * Restores a specific historical SRAM version. When the selected version is older than the
      * current server version, publish its bytes as a new active-slot snapshot first. This makes
      * the manual choice durable across devices without rewriting or deleting server history.
