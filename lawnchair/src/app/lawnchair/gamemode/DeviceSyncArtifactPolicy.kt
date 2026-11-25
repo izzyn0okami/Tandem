@@ -30,6 +30,12 @@ internal object DeviceSyncArtifactPolicy {
 
     fun isCompatibleRemote(coreId: String, remoteEmulator: String?): Boolean = CoreSaveAdapterRegistry.isCompatibleRomMEmulator(coreId, remoteEmulator)
 
+    /** True only when both sides provide a valid MD5 and the bytes are identical. */
+    fun hasSameContent(localHash: String?, remoteHash: String?): Boolean =
+        localHash?.matches(Regex("[a-fA-F0-9]{32}")) == true &&
+            remoteHash?.matches(Regex("[a-fA-F0-9]{32}")) == true &&
+            localHash.equals(remoteHash, ignoreCase = true)
+
     /** RomM 5.4.1 reports this reason when a newer client save has no device baseline yet. */
     fun isUnbasedUpload(operation: DeviceSyncOperation): Boolean = operation.action == DeviceSyncAction.Upload &&
         operation.saveId != null &&
