@@ -277,4 +277,38 @@ class SaveSyncPolicyTest {
         assertEquals(mapOf(RemoteFileKind.State to quickState), transportFiles)
     }
 
+
+    @Test
+    fun outboundRomMEmulatorIdsUseCanonicalLibretroNames() {
+        assertEquals("snes9x", CoreSaveAdapterRegistry.romMEmulatorId("snes9x"))
+        assertEquals("pcsx_rearmed", CoreSaveAdapterRegistry.romMEmulatorId("pcsx_rearmed"))
+    }
+
+    @Test
+    fun canonicalAndLegacySramIdsAreCompatibleOnlyWithinDeclaredCoreFamily() {
+        assertTrue(SaveSyncPolicy.isCompatibleRemote(RemoteFileKind.Save, "snes9x", "snes9x"))
+        assertTrue(SaveSyncPolicy.isCompatibleRemote(RemoteFileKind.Save, "tandem_snes9x", "snes9x"))
+        assertTrue(SaveSyncPolicy.isCompatibleRemote(RemoteFileKind.Save, "snes9x2010", "snes9x"))
+        assertFalse(SaveSyncPolicy.isCompatibleRemote(RemoteFileKind.Save, "tandem_mgba", "snes9x"))
+        assertFalse(SaveSyncPolicy.isCompatibleRemote(RemoteFileKind.Save, "duckstation", "snes9x"))
+    }
+
+    @Test
+    fun quickStatesAcceptCanonicalAndLegacyIdOnlyForTheSameCore() {
+        assertTrue(SaveSyncPolicy.isCompatibleRemote(RemoteFileKind.State, "snes9x", "snes9x"))
+        assertTrue(SaveSyncPolicy.isCompatibleRemote(RemoteFileKind.State, "tandem_snes9x", "snes9x"))
+        assertFalse(SaveSyncPolicy.isCompatibleRemote(RemoteFileKind.State, "snes9x2010", "snes9x"))
+        assertFalse(SaveSyncPolicy.isCompatibleRemote(RemoteFileKind.State, "tandem_mgba", "snes9x"))
+    }
+
+    @Test
+    fun deviceSyncSendsCanonicalIdAndKeepsLegacyAliasForReads() {
+        assertEquals("snes9x", DeviceSyncArtifactPolicy.canonicalEmulator("snes9x"))
+        assertTrue(DeviceSyncArtifactPolicy.compatibleEmulators("snes9x").contains("snes9x"))
+        assertTrue(DeviceSyncArtifactPolicy.compatibleEmulators("snes9x").contains("tandem_snes9x"))
+        assertTrue(DeviceSyncArtifactPolicy.isCompatibleRemote("snes9x", "snes9x"))
+        assertTrue(DeviceSyncArtifactPolicy.isCompatibleRemote("snes9x", "tandem_snes9x"))
+        assertFalse(DeviceSyncArtifactPolicy.isCompatibleRemote("snes9x", "tandem_mgba"))
+    }
+
 }
