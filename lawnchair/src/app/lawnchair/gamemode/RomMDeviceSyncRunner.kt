@@ -164,6 +164,14 @@ object RomMDeviceSyncRunner {
                             DeviceSyncAction.NoOp -> noOp++
 
                             DeviceSyncAction.Upload -> {
+                                if (localSave == null && initialTargetHash != null) {
+                                    conflicts++
+                                    GameLog.log(
+                                        "Device Sync",
+                                        "upload adiado: um save foi criado após a captura vazia da fila; arquivo ativo preservado",
+                                    )
+                                    return@forEach
+                                }
                                 if (localSave == null || operation.slot != remoteSlot) {
                                     throw IOException("Upload sem save local compatível ou fora do slot $remoteSlot.")
                                 }
@@ -226,6 +234,14 @@ object RomMDeviceSyncRunner {
                             }
 
                             DeviceSyncAction.Download -> {
+                                if (localSave == null && initialTargetHash != null) {
+                                    conflicts++
+                                    GameLog.log(
+                                        "Device Sync",
+                                        "download adiado: um save foi criado após a captura vazia da fila; arquivo ativo preservado",
+                                    )
+                                    return@forEach
+                                }
                                 DeviceSyncProtocolJson.validateDownloadOperation(
                                     operation,
                                     DeviceSyncArtifactPolicy.compatibleEmulators(coreId),
