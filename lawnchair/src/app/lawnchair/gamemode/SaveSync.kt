@@ -769,14 +769,20 @@ object SaveSync {
     ) {
         val prefs = prefs(context)
         for ((kind, file) in snapshotFiles) {
-            if (!file.isFile || file.length() == 0L) continue
+            if (!file.isFile || file.length() == 0L) {
+                GameLog.log("saves", "upload ignorado: tipo=${kind.path}, núcleo=$coreId, motivo=arquivo ausente ou vazio")
+                continue
+            }
             val key = SaveSyncPolicy.metadataKey(kind, gameIdentity, coreId)
             val current = hash(file)
             val confirmedHash = prefs.getString(
                 appliedHashKey(kind, gameIdentity, coreId),
                 prefs.getString("$key:hash", null),
             )
-            if (current == confirmedHash) continue
+            if (current == confirmedHash) {
+                GameLog.log("saves", "upload ignorado: tipo=${kind.path}, núcleo=$coreId, bytes=${file.length()}, motivo=conteúdo já sincronizado")
+                continue
+            }
             val storedId = prefs.getLong("$key:id", -1L).takeIf { it >= 0 }
             val remotes = if (kind == RemoteFileKind.Save || storedId == null) {
                 listRemoteFilesForSync(client, kind, romId, coreId)
@@ -808,11 +814,17 @@ object SaveSync {
             }
             val extension = if (kind == RemoteFileKind.Save) "srm" else "state"
             val uploadName = "${File(romPath).nameWithoutExtension}.$extension"
+            val emulator = emulatorTag(coreId)
+            GameLog.log(
+                "saves",
+                "upload iniciado: tipo=${kind.path}, núcleo=$coreId, emulador=$emulator, " +
+                    "bytes=${file.length()}, registroExistente=${existing ?: "novo"}",
+            )
             val uploaded = try {
                 client.uploadRemoteFile(
                     kind,
                     romId,
-                    emulatorTag(coreId),
+                    emulator,
                     existing,
                     file,
                     uploadName,
@@ -825,13 +837,18 @@ object SaveSync {
                 client.uploadRemoteFile(
                     kind,
                     romId,
-                    emulatorTag(coreId),
+                    emulator,
                     null,
                     file,
                     uploadName,
                     slot = if (kind == RemoteFileKind.Save) SaveSyncPolicy.AUTOSAVE_SLOT else null,
                 )
             }
+            GameLog.log(
+                "saves",
+                "upload concluído: tipo=${kind.path}, núcleo=$coreId, emulador=$emulator, " +
+                    "save_id=${uploaded.id}, bytes=${file.length()}",
+            )
             prefs.edit {
                 putString("$key:hash", current)
                 putString(appliedHashKey(kind, gameIdentity, coreId), current)
