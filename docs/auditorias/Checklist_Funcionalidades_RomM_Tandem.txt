@@ -1355,3 +1355,4 @@ MERGE — PR #51 / FECHAMENTO E3-E4 (2026-11-25)
 - Segurança preservada: save states exclusivamente locais; SRAM/cartões elegíveis via Device Sync; overwrite=false; sem exclusão automática nem sobrescrita forçada em HTTP 409.
 - Nenhuma transferência, sobrescrita, movimentação ou exclusão de save real foi realizada pelo merge.
 - Não há PR aberta no repositório imediatamente após o merge.
+- [ARTEFATO DA CI #1295] assembleLawnWithQuickstepGithubDebug, ID 15027628621, 46.460.578 bytes, SHA-256 b3321fe0e93bac39e76aff3c5aa3339eff486f51d1e9ef28023e06d94377825e; disponível até 2027-02-23.
