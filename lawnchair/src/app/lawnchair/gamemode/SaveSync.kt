@@ -47,7 +47,14 @@ object SaveSync {
     private val lock = Mutex()
 
     /** Serializa Device Sync com os fluxos tradicionais de pull/push. */
-    internal suspend fun <T> withExclusiveSyncLock(block: () -> T): T = lock.withLock { block() }
+    internal suspend fun <T> withExclusiveSyncLock(block: suspend () -> T): T {
+        lock.lock()
+        return try {
+            block()
+        } finally {
+            lock.unlock()
+        }
+    }
 
     private const val INVALID_LINK_MESSAGE =
         "O vínculo salvo deste jogo não pôde ser confirmado com a conta RomM atual. " +
