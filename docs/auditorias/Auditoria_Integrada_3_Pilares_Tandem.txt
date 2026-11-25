@@ -555,3 +555,10 @@ CORREÇÃO — POLÍTICA DE RESTAURAÇÃO DE SAVE STATES PERSISTIDOS — 2026-11
 - [PENDENTE] Confirmar CI completa no head final, revisar referências restantes a SaveSync.pull/push de states e validar no telefone que SRAM/cartões continuam sincronizando e save states continuam funcionando localmente.
 - [CI ANTERIOR] CI #1190 / run 45529584514 estava em execução no head documental anterior 8328eb3e56307cce2bfb69b36ca4288850bde9d2; não valida os commits desta decisão.
 - [SEGURANÇA] Nenhum save state, SRAM, cartão, ROM ou registro remoto foi apagado, movido, sobrescrito ou migrado por esta alteração.
+
+
+### Acompanhamento — CI #1194 e ajuste de teste (2026-11-25)
+- [CI #1194 — FALHOU] Run 45530267787 no head documental 2f4a0841bf179fd6cc130b793fb9193b4a46feb4. O check-style passou; os testes unitários falharam em SaveSyncPolicyTest.legacySnapshotsTransportOnlyQuickStatesThroughTheStatesEndpoint (linha 277), que ainda esperava o comportamento antigo de transportar quick states pelo endpoint /api/states. O build APK foi corretamente interrompido após a falha dos testes.
+- [CAUSA] Expectativa de teste desatualizada, não erro de compilação. O teste contradizia a decisão do usuário de manter states apenas localmente.
+- [CORREÇÃO] Atualizado o teste para afirmar que snapshots legados não transportam nenhum save state para o RomM. Commit 9cecbca2374ff10a131c5f3afb747bdf52f17152.
+- [PENDENTE] CI completa no head final após o registro desta atualização; não considerar o APK validado até testes e build passarem.
