@@ -1667,3 +1667,15 @@ FECHAMENTO — ESTÁGIO F / PR #53 (2026-11-25)
 - F1, F2, F3 e F4 permanecem concluídos; F4 foi validada pelo usuário no aparelho. F5 permanece fora do escopo por decisão do usuário.
 - [PRÓXIMA ETAPA] H4 e H7 serão implementados em PR separada, após a conclusão da PR #53, para evitar alterações concorrentes em RomMClient.kt e RomMScreen.kt.
 - E6/E7 permanecem pendentes e independentes. Nenhuma operação foi realizada na conta RomM do usuário durante o merge.
+
+
+INÍCIO DE IMPLEMENTAÇÃO — ESTÁGIO H4 + H7 (2026-11-25)
+Base: game-mode-m2-dev após merge da PR #53 (76b8d4a4dccd7128008cdfbd49b188f574972b7f).
+Branch dedicada: feat/romm-stage-h-auth-errors.
+- [EM IMPLEMENTAÇÃO] H4 — centralizar o tratamento de 401/403 e orientar reconexão/permissões sem pressupor que todo 403 seja erro de pareamento.
+- [EM IMPLEMENTAÇÃO] H7 — preservar status HTTP e endpoint em todos os fluxos relevantes; distinguir 404 de recurso opcional ausente e rota incompatível/ausente.
+- [REQUISITOS DE SEGURANÇA] Sem retry automático de escritas após 401/403; sem exclusão de saves, snapshots ou fila local; sem logs de tokens ou conteúdo sensível.
+- [TESTES PENDENTES] Matriz 401/403/404 para pareamento, consultas e operações Device Sync, incluindo regressão RomM 5.4.1.
+- H5 e H6 permanecem auditorias concluídas; nenhum refresh token será implementado e ambos os fluxos de autenticação serão preservados.
+- F5 permanece fora do escopo por decisão do usuário.
+- Nenhuma chamada foi feita à conta RomM pessoal do usuário.
