@@ -1553,3 +1553,12 @@ ATUALIZAÇÃO — F4 / CI DEFINITIVA E APK (2026-11-25)
 - [PENDENTE — DECISÃO FUTURA] F5 (canais/Apprise) permanece fora do escopo e não foi implementado.
 - [ESTADO DA PR] PR #53 continua aberta, draft, sem merge; base game-mode-m2-dev; head a4e8f5b79ceb6f3844aeb0beb145470d2876747c. Não mesclar sem autorização explícita.
 - Nenhuma notificação ou dado remoto da conta RomM do usuário foi alterado durante a implementação ou os testes automatizados.
+
+
+ATUALIZAÇÃO — CI #1346 / HEAD COM LOG FINAL (2026-11-25)
+- [CONCLUÍDO — CI] CI #1346, run 45708328099, evento pull_request, validou o commit 2bc806a778c0bed7f4e60b0c1c5d3b0630de57ef: SUCCESS.
+- Jobs obrigatórios check-style, build-debug-apk (assembleLawnWithQuickstepGithubDebug) e final-status passaram. Jobs opcionais de publicação/notificações foram ignorados; nenhuma release foi publicada.
+- [APK DE TESTE ATUAL] Artefato assembleLawnWithQuickstepGithubDebug, ID 15067435302, tamanho 46.496.121 bytes, disponível no run até a expiração padrão do GitHub Actions. Esse APK corresponde ao head 2bc806a.
+- [PENDENTE — VALIDAÇÃO NO APARELHO] Marcar notificação individual como lida; marcar todas como lidas; dispensar individual após confirmação. Requer desconectar e parear novamente para autorizar me.write.
+- [ESTADO] PR #53 aberta, draft, mergeable=true, sem merge; head 2bc806a778c0bed7f4e60b0c1c5d3b0630de57ef; base game-mode-m2-dev.
+- Nenhuma alteração em notificações reais da conta RomM foi realizada. F5 permanece fora do escopo.
