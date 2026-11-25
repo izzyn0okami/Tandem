@@ -1694,3 +1694,7 @@ Branch: feat/romm-stage-h-auth-errors; base game-mode-m2-dev.
 - [PENDENTE] Executar CI final, revisar resultados/Spotless e ampliar a matriz automatizada se a CI apontar fluxos HTTP ainda não cobertos.
 - [PENDENTE] Validar no aparelho mensagens de reconexão e permissões, sem exigir alteração dos testes de saves já aprovados.
 - Nenhuma chamada foi feita à conta RomM pessoal do usuário.
+
+- [REFINAMENTO] Erros 404 dos endpoints de troca de código e início de pareamento por dispositivo mantêm mensagens específicas (código inválido/expirado ou uso do fluxo manual); HTTP 429 preserva a orientação de aguardar antes de tentar novamente.
+- [TESTES ADICIONAIS] Cobertura de 404 específico de pareamento, além da matriz geral 401/403/404.
+- [REVISÃO DE ESCOPO] O 404 de /api/devices/online continua opcional e isolado; 404 em endpoints obrigatórios permanece visível e não é convertido em sucesso.
