@@ -132,9 +132,7 @@ internal object GameSessionCoordinator {
                 useSnapshotOnly = true,
             )
             saveRetry = GameSessionSyncPolicy.shouldRetryBackground(saveResult)
-            if (!saveRetry && saveResult.conflictsPreserved == 0 &&
-                saveResult.deletesIgnored == 0 && saveResult.unknownIgnored == 0
-            ) {
+            if (!saveRetry && saveResult.conflictsPreserved == 0) {
                 SaveSnapshotStore(File(app.filesDir, "device-sync-queue")).delete(snapshotJobId)
             }
         } catch (cancelled: CancellationException) {
