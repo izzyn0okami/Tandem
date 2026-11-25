@@ -333,4 +333,46 @@ class RomMInsightsTest {
             server.close()
         }
     }
+
+    @Test
+    fun currentUserIdPreservesUnauthorizedStatusAndEndpoint() {
+        val server = MockWebServer()
+        server.start()
+        try {
+            server.enqueue(MockResponse(code = 401, body = """{"detail":"unauthorized"}"""))
+            val client = RomMClient(server.url("/").toString(), "expired-token")
+
+            val failure = runCatching { client.currentUserId() }.exceptionOrNull()
+
+            assertTrue(failure is RomMHttpException)
+            val httpFailure = failure as RomMHttpException
+            assertEquals(401, httpFailure.statusCode)
+            assertEquals("/api/users/me", httpFailure.endpoint)
+            assertTrue(romMUserFacingError(httpFailure, "identificar a conta").contains("Reconecte a conta RomM"))
+        } finally {
+            server.close()
+        }
+    }
+
+    @Test
+    fun notFoundPreservesEndpointAndDoesNotBecomePermissionError() {
+        val server = MockWebServer()
+        server.start()
+        try {
+            server.enqueue(MockResponse(code = 404, body = """{"detail":"not found"}"""))
+            val client = RomMClient(server.url("/").toString(), "test-token")
+
+            val failure = runCatching { client.getServerStats() }.exceptionOrNull()
+
+            assertTrue(failure is RomMHttpException)
+            val httpFailure = failure as RomMHttpException
+            assertEquals(404, httpFailure.statusCode)
+            assertEquals("/api/stats", httpFailure.endpoint)
+            val message = romMUserFacingError(httpFailure, "consultar estatísticas")
+            assertTrue(message.contains("não confirma falta de permissão"))
+            assertFalse(message.contains("permissão necessária"))
+        } finally {
+            server.close()
+        }
+    }
 }
