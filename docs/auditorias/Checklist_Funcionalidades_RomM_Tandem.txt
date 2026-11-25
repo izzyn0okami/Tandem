@@ -1286,7 +1286,7 @@ SEGURANÇA E LIMITES DESTA AUDITORIA
 IMPLEMENTAÇÃO — FILA PERSISTENTE E RESOLUÇÃO DE CONFLITOS (2026-11-25)
 Branch: fix/persistent-save-queue-conflict-resolution
 Base: game-mode-m2-dev @ e038d51b556d00b1fa646303bd00fd195f450e50
-PR: ainda não aberta nesta atualização; código em revisão pré-PR.
+PR #51 aberta como draft: https://github.com/izzyn0okami/Tandem/pull/51.
 
 E3 — IMPLEMENTAÇÃO APLICADA
 - SaveSync.pushAsync cria um UUID de trabalho e captura o artefato elegível SRAM/cartão antes de enfileirar o WorkManager.
@@ -1314,9 +1314,20 @@ ARQUIVOS ALTERADOS
 - tests/unit/kotlin/app/lawnchair/gamemode/SaveSnapshotStoreTest.kt
 
 VALIDAÇÃO E LIMITES
-- [PENDENTE] Spotless, testes unitários, Build Debug APK e CI integral no head desta branch.
+- [CI APROVADA — HEAD ANTERIOR] Run #45619087106, commit db1a33c2efa0a27647b1a5621e4cb841c66d9b08: Spotless, testes unitários, Build Debug APK, upload do artefato e final-status aprovados. Artefato assembleLawnWithQuickstepGithubDebug, ID 15024540407, 46.459.912 bytes, SHA-256 1be43c07e24bc59f5b6556a4ae2b49fab61ee1873bd525361727133476894644, disponível até 2027-02-23. Nenhuma release foi publicada.
+- [PENDENTE] Nova CI para o commit 66a88cf6915e4873c49f39df14c38d5a82942f4e, que ajusta apenas o texto de ajuda para refletir corretamente que cartões elegíveis podem ser sincronizados.
 - [CONFIRMADO PELO USUÁRIO] Os testes funcionais já feitos no aparelho cobrem vários núcleos e compatibilidade, com resultados positivos. Não solicitar repetição geral desses testes; após APK aprovado, validar apenas o fluxo novo de fila persistente e as duas escolhas de resolução.
 - CI automatizada não substitui a validação pontual no aparelho.
 - Save states permanecem exclusivamente locais; Device Sync continua limitado a SRAM/cartões elegíveis.
 - overwrite=false, sem DELETE automático e sem sobrescrita automática em HTTP 409.
 - Nenhum merge foi realizado.
+
+
+ATUALIZAÇÃO — CI APROVADA E AJUSTE DE TEXTO NA PR #51 (2026-11-25)
+- PR #51 aberta como draft, sem merge: https://github.com/izzyn0okami/Tandem/pull/51.
+- CI #45619087106 / run 45619087106 aprovada no commit db1a33c2efa0a27647b1a5621e4cb841c66d9b08: Spotless, testes unitários, Build Debug APK, Upload artifact e final-status concluídos com sucesso.
+- Artefato Debug APK: ID 15024540407, 46.459.912 bytes, SHA-256 1be43c07e24bc59f5b6556a4ae2b49fab61ee1873bd525361727133476894644; expira em 2027-02-23. Jobs de release foram ignorados; nenhuma publicação ocorreu.
+- Correção documental de interface no commit 66a88cf6915e4873c49f39df14c38d5a82942f4e: a mensagem de ajuda não afirma mais que memory cards estão excluídos; agora informa que save states e artefatos não elegíveis não são incluídos. Cartões elegíveis continuam no escopo Device Sync.
+- [PENDENTE] CI integral do novo commit 66a88cf6915e4873c49f39df14c38d5a82942f4e.
+- [PENDENTE NO APARELHO] Após CI do head atual, validar somente persistência/retry da fila e as duas escolhas de resolução. Não repetir a matriz geral de núcleos já validada pelo usuário.
+- Nenhum save real foi transferido, sobrescrito, movido ou apagado. Nenhum merge ou release.
