@@ -38,6 +38,7 @@ object RomMDeviceSyncRunner {
         coreId: String,
         platformSlug: String? = null,
         snapshotOverride: File? = null,
+        useSnapshotOnly: Boolean = false,
     ): DeviceSyncExecutionResult = withContext(Dispatchers.IO) {
         SaveSync.withExclusiveSyncLock {
             val app = context.applicationContext
@@ -81,8 +82,12 @@ object RomMDeviceSyncRunner {
                     ?: DeviceSyncArtifactPolicy.remoteSlotForCore(coreId)
                 val originalSave = localArtifact?.file ?: store.sramFile
                 val initialTargetHash = originalSave.takeIf { it.isFile && it.length() > 0L }?.let(::md5)
-                val sourceSnapshot = snapshotOverride?.takeIf { it.isFile && it.length() > 0L }
-                    ?: localArtifact?.file?.takeIf { it.isFile && it.length() > 0L }
+                val sourceSnapshot = if (useSnapshotOnly) {
+                    snapshotOverride?.takeIf { it.isFile && it.length() > 0L }
+                } else {
+                    snapshotOverride?.takeIf { it.isFile && it.length() > 0L }
+                        ?: localArtifact?.file?.takeIf { it.isFile && it.length() > 0L }
+                }
                 val localSave = sourceSnapshot?.let { source ->
                     source.copyTo(snapshot, overwrite = false)
                     val before = md5(source)
@@ -451,14 +456,16 @@ object RomMDeviceSyncRunner {
                 if (remoteHead != null) {
                     val remoteHash = remoteHead.serverContentHash
                         ?: throw IOException("O RomM não informou o hash da versão remota.")
+                    val remoteSaveId = remoteHead.saveId
+                        ?: throw IOException("O RomM não informou o ID da versão remota.")
                     val confirmedHash = client.downloadSaveToStaging(
-                        saveId = remoteHead.saveId!!,
+                        saveId = remoteSaveId,
                         deviceId = deviceId,
                         sessionId = negotiation.sessionId,
                         expectedContentHash = remoteHash,
                         stagingFile = remoteStage,
                     )
-                    client.confirmDownloaded(remoteHead.saveId, deviceId, confirmedHash)
+                    client.confirmDownloaded(remoteSaveId, deviceId, confirmedHash)
                 }
                 if (!target.isFile || md5(target) != beforeHash) {
                     throw IOException("A SRAM local mudou durante a resolução; nenhum upload foi feito.")
