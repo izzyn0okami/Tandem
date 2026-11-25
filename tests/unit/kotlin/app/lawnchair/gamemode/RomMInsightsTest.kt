@@ -243,4 +243,37 @@ class RomMInsightsTest {
             server.close()
         }
     }
+    @Test
+    fun notificationWriteUnauthorizedResponseIsNotTreatedAsSuccess() {
+        val server = MockWebServer()
+        server.start()
+        try {
+            server.enqueue(MockResponse(code = 401, body = """{"detail":"unauthorized"}"""))
+            val client = RomMClient(server.url("/").toString(), "expired-token")
+
+            val failure = runCatching { client.markNotificationsRead(listOf(9L)) }.exceptionOrNull()
+
+            assertTrue(failure is RomMHttpException)
+            assertEquals(401, (failure as RomMHttpException).statusCode)
+            val request = server.takeRequest()
+            assertEquals("POST", request.method)
+            assertEquals("Bearer expired-token", request.headers["Authorization"])
+        } finally {
+            server.close()
+        }
+    }
+
+    @Test
+    fun notificationWriteNetworkFailurePropagatesWithoutRetry() {
+        val server = MockWebServer()
+        server.start()
+        try {
+            server.shutdown()
+            val client = RomMClient(server.url("/").toString(), "test-token")
+
+            assertTrue(runCatching { client.dismissNotification(27L) }.isFailure)
+        } finally {
+            runCatching { server.close() }
+        }
+    }
 }
