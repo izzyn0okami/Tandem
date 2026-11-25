@@ -461,7 +461,12 @@ object RomMDeviceSyncRunner {
                     expectedContentHash = latestHash,
                     stagingFile = latestStage,
                 )
-                client.confirmDownloaded(latest.id, deviceId, latestDownloadedHash)
+                // For an older selection, establish the current server version as this device's
+                // baseline before publishing the explicitly selected historical payload. When the
+                // latest version itself is selected, confirmation is deferred until after local apply.
+                if (selected.id != latest.id) {
+                    client.confirmDownloaded(latest.id, deviceId, latestDownloadedHash)
+                }
 
                 val selectedDownloadedHash = if (selected.id == latest.id) {
                     latestStage.copyTo(selectedStage, overwrite = false)
@@ -499,7 +504,9 @@ object RomMDeviceSyncRunner {
                 }
 
                 if (beforeHash != null) {
-                    store.backupDir.mkdirs()
+                    if (!store.backupDir.exists() && !store.backupDir.mkdirs()) {
+                        throw IOException("Não foi possível preparar a pasta de backup da SRAM; restauração cancelada.")
+                    }
                     val backup = File(store.backupDir, "manual-history-${System.currentTimeMillis()}-${target.name}")
                     target.copyTo(backup, overwrite = false)
                     if (sha256(target) != sha256(backup)) {
