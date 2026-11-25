@@ -366,7 +366,6 @@ private fun ServerManage(remote: RemoteLibrary) {
                             }.onFailure { error ->
                                 deviceSyncMessage = when (error) {
                                     is RomMHttpException -> romMUserFacingError(error, "registrar o dispositivo no Device Sync")
-
                                     else -> error.message ?: "Não foi possível registrar o dispositivo no RomM."
                                 }
                             }
