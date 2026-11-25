@@ -269,6 +269,7 @@ class RomMDeviceSyncClient(
                     response.code,
                     "RomM Device Sync respondeu HTTP ${response.code}",
                     romMErrorDetail(errorBody),
+                    response.request.url.encodedPath,
                 )
             }
             val body = response.body?.string().orEmpty()
