@@ -337,6 +337,185 @@ object RomMDeviceSyncRunner {
         }
     }
 
+    /**
+     * Restores a specific historical SRAM version. When the selected version is older than the
+     * current server version, publish its bytes as a new active-slot snapshot first. This makes
+     * the manual choice durable across devices without rewriting or deleting server history.
+     */
+    suspend fun restoreRemoteSaveVersion(
+        context: Context,
+        romPath: String,
+        coreId: String,
+        platformSlug: String?,
+        saveId: Long,
+    ): String = withContext(Dispatchers.IO) {
+        SaveSync.withExclusiveSyncLock {
+            val app = context.applicationContext
+            val connection = GameIdentityResolver.connectionSnapshot(app)
+                ?: throw IOException("Conecte a conta RomM vinculada a este jogo.")
+            val romFile = File(romPath)
+            if (!romFile.isFile || !GameIdentityResolver.hasRomMLink(app, romFile)) {
+                throw IOException("Este jogo não possui um vínculo RomM confirmado.")
+            }
+            val romId = GameIdentityResolver.linkedRomId(app, romFile, connection)
+                ?: throw IOException("O vínculo RomM não corresponde à conta atual.")
+            val deviceId = RomMSettings.deviceSyncDeviceId(app)
+                ?: throw IOException("Este dispositivo ainda não está registrado no Device Sync.")
+            val identity = GameIdentityResolver.cachedIdentity(app, romFile, platformSlug)
+                ?: GameIdentityResolver.resolve(app, romFile, platformSlug)
+            val store = SaveStore(
+                app,
+                coreId,
+                romFile,
+                platformSlug = platformSlug,
+                gameIdentity = identity,
+                migrationSourcesOverride = emptyMap(),
+            )
+            val artifact = DeviceSyncArtifactPolicy.selectForRomM(store.inventory())
+            val target = artifact?.file ?: store.sramFile
+            val remoteSlot = artifact?.let(DeviceSyncArtifactPolicy::remoteSlot)
+                ?: DeviceSyncArtifactPolicy.remoteSlotForCore(coreId)
+            val emulator = DeviceSyncArtifactPolicy.canonicalEmulator(coreId)
+            val beforeHash = if (target.isFile && target.length() > 0L) md5(target) else null
+            val snapshotRoot = File(app.filesDir, "device-sync-snapshots")
+            if (!snapshotRoot.exists() && !snapshotRoot.mkdirs()) {
+                throw IOException("Não foi possível preparar a área temporária de restauração.")
+            }
+            val snapshot = File(snapshotRoot, "history-current-\${UUID.randomUUID()}.srm")
+            val latestStage = File(snapshotRoot, "history-latest-\${UUID.randomUUID()}.srm")
+            val selectedStage = File(snapshotRoot, "history-selected-\${UUID.randomUUID()}.srm")
+            var sessionId: Long? = null
+            var sessionCompleted = false
+            try {
+                if (beforeHash != null) {
+                    target.copyTo(snapshot, overwrite = false)
+                    if (md5(snapshot) != beforeHash) throw IOException("A captura local não passou na verificação de integridade.")
+                }
+                val localSave = if (beforeHash != null) {
+                    DeviceSyncProtocolJson.localSave(
+                        romId = romId,
+                        fileName = romSaveFileName(romFile),
+                        emulator = emulator,
+                        file = snapshot,
+                        updatedAt = Instant.ofEpochMilli(target.lastModified()).toString(),
+                        remoteSlot = remoteSlot,
+                    )
+                } else {
+                    null
+                }
+                val client = RomMDeviceSyncClient(connection.url, connection.token)
+                val negotiation = client.negotiate(
+                    deviceId = deviceId,
+                    saves = listOfNotNull(localSave),
+                    romIds = setOf(romId),
+                    emulators = null,
+                )
+                sessionId = negotiation.sessionId
+
+                val versions = RomMClient(connection.url, connection.token)
+                    .listRemoteFiles(RemoteFileKind.Save, romId, remoteSlot)
+                    .filter { it.slot == remoteSlot && it.id > 0L }
+                    .sortedByDescending { it.updatedAtMs }
+                val selected = versions.firstOrNull { it.id == saveId }
+                    ?: throw IOException("A versão escolhida não está mais disponível nesse slot.")
+                val latest = versions.firstOrNull()
+                    ?: throw IOException("O RomM não retornou uma versão ativa para este slot.")
+                if (!DeviceSyncArtifactPolicy.isCompatibleRemote(coreId, selected.emulator)) {
+                    throw IOException("A versão escolhida pertence a um núcleo sem compatibilidade declarada.")
+                }
+                if (!DeviceSyncArtifactPolicy.isCompatibleRemote(coreId, latest.emulator)) {
+                    throw IOException("A versão ativa do RomM pertence a um núcleo incompatível; restauração cancelada.")
+                }
+                val latestHash = latest.contentHash?.takeIf { it.matches(Regex("[a-fA-F0-9]{32}")) }
+                    ?: throw IOException("O RomM não informou o hash da versão ativa; não é seguro estabelecer o histórico.")
+                val selectedHash = selected.contentHash?.takeIf { it.matches(Regex("[a-fA-F0-9]{32}")) }
+                    ?: throw IOException("O RomM não informou o hash da versão escolhida; restauração cancelada.")
+
+                val latestDownloadedHash = client.downloadSaveToStaging(
+                    saveId = latest.id,
+                    deviceId = deviceId,
+                    sessionId = negotiation.sessionId,
+                    expectedContentHash = latestHash,
+                    stagingFile = latestStage,
+                )
+                client.confirmDownloaded(latest.id, deviceId, latestDownloadedHash)
+
+                val selectedDownloadedHash = if (selected.id == latest.id) {
+                    latestStage.copyTo(selectedStage, overwrite = false)
+                    latestDownloadedHash
+                } else {
+                    client.downloadSaveToStaging(
+                        saveId = selected.id,
+                        deviceId = deviceId,
+                        sessionId = negotiation.sessionId,
+                        expectedContentHash = selectedHash,
+                        stagingFile = selectedStage,
+                    )
+                }
+                if (!selectedDownloadedHash.equals(selectedHash, ignoreCase = true)) {
+                    throw IOException("O hash da versão escolhida mudou durante o download.")
+                }
+                if (beforeHash != null && (!target.isFile || md5(target) != beforeHash)) {
+                    throw IOException("A SRAM local mudou durante a restauração; arquivo preservado.")
+                }
+                if (beforeHash == null && target.exists()) {
+                    throw IOException("Uma SRAM local foi criada durante a restauração; arquivo preservado.")
+                }
+
+                val restoringOlder = selected.id != latest.id
+                if (restoringOlder) {
+                    client.uploadSave(
+                        romId = romId,
+                        deviceId = deviceId,
+                        sessionId = negotiation.sessionId,
+                        slot = remoteSlot,
+                        emulator = emulator,
+                        fileName = romSaveFileName(romFile),
+                        file = selectedStage,
+                    )
+                }
+
+                if (beforeHash != null) {
+                    store.backupDir.mkdirs()
+                    val backup = File(store.backupDir, "manual-history-\${System.currentTimeMillis()}-\${target.name}")
+                    target.copyTo(backup, overwrite = false)
+                    if (sha256(target) != sha256(backup)) {
+                        backup.delete()
+                        throw IOException("O backup da SRAM atual não passou na verificação; restauração cancelada.")
+                    }
+                }
+                target.parentFile?.let { if (!it.exists() && !it.mkdirs()) throw IOException("Não foi possível preparar a pasta de SRAM.") }
+                RomMFileReplacement.replaceFile(selectedStage, target)
+                if (md5(target) != selectedHash) {
+                    throw IOException("A SRAM restaurada não passou na verificação final.")
+                }
+                if (!restoringOlder) {
+                    client.confirmDownloaded(selected.id, deviceId, selectedDownloadedHash)
+                }
+                client.complete(negotiation.sessionId, operationsCompleted = 1, operationsFailed = 0)
+                sessionCompleted = true
+                val message = if (restoringOlder) {
+                    "Versão histórica restaurada e publicada como nova versão ativa no RomM."
+                } else {
+                    "Versão mais recente restaurada no dispositivo."
+                }
+                GameLog.log(
+                    "Device Sync",
+                    "restauração manual concluída: ROM #$romId, slot=$remoteSlot, save_id=$saveId, " +
+                        "nova versão ativa=$restoringOlder; backup local preservado=\${beforeHash != null}",
+                )
+                message
+            } finally {
+                if (sessionId != null && !sessionCompleted) {
+                    runCatching { RomMDeviceSyncClient(connection.url, connection.token).complete(sessionId!!, 0, 1) }
+                }
+                snapshot.delete()
+                latestStage.delete()
+                selectedStage.delete()
+            }
+        }
+    }
+
     private data class ReconciliationCounts(val uploaded: Int, val downloaded: Int)
 
     /**
