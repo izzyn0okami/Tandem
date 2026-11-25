@@ -71,7 +71,7 @@ F. ESTATÍSTICAS, RECOMENDAÇÕES E NOTIFICAÇÕES
 [CONCLUÍDO] F2. GET /api/recommendations integrado; painel exibe até 10 sugestões, motivos e jogo-semente quando disponível. Lista vazia é tratada como resultado válido. CI aprovada e teste funcional no aparelho confirmado pelo usuário.
 [CONCLUÍDO] F3. GET /api/notifications integrado; painel exibe as 10 mais recentes e contagem de não lidas. CI aprovada e teste funcional no aparelho confirmado pelo usuário; as ações de escrita estão rastreadas em F4.
 [CONCLUÍDO] F4. Ações de notificação: marcar individual como lida, marcar todas como lidas e dispensar individualmente com confirmação. Escopo me.write solicitado no pareamento; chamadas limitadas aos endpoints F4. CI #1346 aprovada e três ações confirmadas pelo usuário no aparelho.
-[PENDENTE] F5. Avaliar canais de notificação e Apprise; sem editor administrativo inicialmente.
+[AUDITADO — AGUARDANDO DECISÃO] F5. RomM oferece canais webhook, email e Apprise; CRUD e teste usam me.write (já solicitado pelo Tandem para F4). Apprise é restrito a administradores; catálogo/parse exigem admin mesmo usando me.read. Auditoria detalhada registrada no histórico abaixo. Implementação não autorizada.
 [FORA DO ESCOPO INICIAL] F6. Replicar painel administrativo, logs e auditoria do RomM.
 
 G. RECURSOS ESPECIALIZADOS
@@ -1573,3 +1573,42 @@ VALIDAÇÃO FINAL F4 — TESTES NO APARELHO APROVADOS (2026-11-25)
 - [ESTADO DA PR] PR #53 permanece aberta, draft, sem merge; branch feat/romm-stage-f-dashboard; base game-mode-m2-dev. Merge não autorizado nem executado.
 - [PENDENTE] F5 — auditoria separada de canais de notificação/Apprise; não implementado e não autorizado nesta etapa.
 - [PENDENTE] E6/E7 — PoC e testes WebDAV, independentes do estágio F.
+
+AUDITORIA F5 — CANAIS DE NOTIFICAÇÃO ROMM (2026-11-25)
+Base: documentação oficial RomM 5.4.x (guia Notifications 5.4.0-alpha/5.4.0, endpoints e escopos) e código atual da PR #53.
+
+CAPACIDADES CONFIRMADAS
+- [AUDITADO] GET /api/notification-channels — lista os canais do usuário; scope me.read.
+- [AUDITADO] POST /api/notification-channels — cria canal; scope me.write.
+- [AUDITADO] PATCH /api/notification-channels/{channel_id} — altera canal; scope me.write.
+- [AUDITADO] DELETE /api/notification-channels/{channel_id} — remove canal; scope me.write.
+- [AUDITADO] POST /api/notification-channels/{channel_id}/test — dispara envio de teste real ao destino; scope me.write. É uma operação com efeito externo e não deve ocorrer automaticamente ao abrir/editar tela.
+- [AUDITADO] POST /api/notification-channels/{channel_id}/confirm — confirma endereço de email com código; scope me.write.
+- [AUDITADO] POST /api/notification-channels/{channel_id}/resend-code — solicita novo código de email; scope me.write.
+- [AUDITADO — ADMIN] GET /api/notification-channels/apprise-services e POST /api/notification-channels/apprise-services/parse — catálogo e interpretação de URLs Apprise; scope me.read, mas ambos são restritos a administradores.
+
+TIPOS E COMPORTAMENTO
+- [AUDITADO] Webhook: envia JSON RomM para URL configurada; suporta segredo opcional com assinatura HMAC-SHA256. Destinos privados/locais são permitidos somente para administradores; usuários comuns ficam limitados a hosts públicos.
+- [AUDITADO] Email: envia mensagem de texto simples; só aparece se SMTP estiver configurado no servidor. Novo endereço exige código de 6 dígitos; validade de 30 minutos, até 5 tentativas e reenvio sujeito a intervalo de 1 minuto. Alterar endereço exige nova confirmação.
+- [AUDITADO — ADMIN] Apprise: integra serviços compatíveis, incluindo Discord, Telegram, Slack, ntfy, Gotify, Matrix, Pushover e Microsoft Teams. Restrito a administradores porque o backend abre conexões externas e precisa proteger a rede local (SSRF). Serviços locais como D-Bus/syslog/notificações desktop não são oferecidos.
+- [AUDITADO] Cada usuário pode manter até 20 canais. Filtros por nível mínimo (info, warning, error) e tópicos (scans, tasks, streaming, devices, account, custom).
+- [AUDITADO] Entrega ocorre em background; falhas têm retries após 30 s, 2 min e 10 min. Após 10 falhas consecutivas, o canal é desativado e o usuário recebe notificação; último erro fica registrado no canal. Envio de teste reporta falha imediatamente e não é repetido.
+- [AUDITADO — SEGURANÇA] Configurações, URLs, segredos e tokens são armazenados criptografados pelo RomM com ROMM_AUTH_SECRET_KEY. O Tandem não deve registrar credenciais/segredos em logs, persistir segredos fora do armazenamento remoto nem incluir conteúdo sensível em mensagens de erro.
+
+PERMISSÕES E IMPACTO NO TANDEM
+- [CONFIRMADO NO CÓDIGO] DEVICE_SCOPES na PR #53 já inclui me.read e me.write. Portanto, F5 não exige novo scope OAuth além do consentimento já solicitado para F4; tokens antigos ainda precisam ter sido reautorizados para receber me.write.
+- [IMPORTANTE] me.write é amplo no RomM e habilita outras operações de perfil; o Tandem deve restringir as chamadas às rotas de canais explicitamente aprovadas. Não usar POST /api/notifications para enviar mensagens a terceiros; isso não é necessário para gerenciar canais e pode exigir users.write.
+- [IMPORTANTE — ADMIN] O acesso ao catálogo/parse Apprise depende do papel de administrador, não apenas do scope. O Tandem deve tratar 403 como recurso indisponível para a conta, sem tentar contornar a restrição.
+- [IMPORTANTE — EFEITOS EXTERNOS] Criar/editar/remover canal altera configuração remota; testar envia uma mensagem real; criar/alterar email pode enviar código. Cada ação deve ser explícita, com confirmação adequada para exclusão e teste; nunca testar automaticamente.
+
+RECOMENDAÇÃO DE ESCOPO PARA UMA IMPLEMENTAÇÃO MÍNIMA
+- [RECOMENDADO — AGUARDANDO DECISÃO] Tela “Canais de notificação” separada da caixa de entrada: listar canais existentes, criar/editar/remover webhook e email, configurar filtros, iniciar teste somente por ação explícita e completar confirmação de email.
+- [RECOMENDADO — AGUARDANDO DECISÃO] Apprise pode ser incluído somente se a conta for administradora; catálogo dinâmico e parser oficial, sem catálogo codificado manualmente. Se a conta não for admin, ocultar opção e manter o restante funcional.
+- [RECOMENDADO — AGUARDANDO DECISÃO] Não implementar envio de notificações a usuários, administração de canais de terceiros, configurações do servidor SMTP, nem ferramentas administrativas.
+- [PENDENTE] Decisão do usuário sobre implementar gestão de canais (webhook/email) e se deseja incluir Apprise quando a conta for administradora.
+- [NÃO EXECUTADO] Nenhum canal foi listado, criado, editado, testado ou removido durante esta auditoria; nenhum email/código foi enviado; nenhum dado remoto foi alterado.
+
+CI / ESTADO DO TRABALHO
+- [CONCLUÍDO — CI] CI #1348, run 45709991124, evento pull_request, validou o head 17dce11dd53caf0864058acb0946d263180a4772: SUCCESS. check-style, build-debug-apk e final-status passaram. O artefato de CI corresponde ao commit anterior à atualização documental F5.
+- PR #53 permanece aberta, draft, sem merge; branch feat/romm-stage-f-dashboard; base game-mode-m2-dev. Nenhuma PR concorrente criada.
+- F5 permanece auditada, mas não implementada. F6 continua fora do escopo inicial.
