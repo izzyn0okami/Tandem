@@ -73,10 +73,10 @@ internal fun RomMInsightsPanel() {
 
     Column(verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
         Text("Painel RomM", color = GameColors.text, fontSize = 18.sp, fontWeight = FontWeight.Bold)
-        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-            GameButton("Estatísticas", onClick = { load("stats") }, primary = section == "stats")
-            GameButton("Recomendações", onClick = { load("recommendations") }, primary = section == "recommendations")
-            GameButton("Notificações", onClick = { load("notifications") }, primary = section == "notifications")
+        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            GameButton("Estatísticas", onClick = { load("stats") }, primary = section == "stats", modifier = Modifier.width(220.dp))
+            GameButton("Recomendações", onClick = { load("recommendations") }, primary = section == "recommendations", modifier = Modifier.width(220.dp))
+            GameButton("Notificações", onClick = { load("notifications") }, primary = section == "notifications", modifier = Modifier.width(220.dp))
         }
         if (loading) Text("Consultando o RomM…", color = GameColors.textDim, fontSize = 12.sp)
         if (error.isNotBlank()) Text(error, color = GameColors.danger, fontSize = 12.sp)
