@@ -724,6 +724,19 @@ object RomMDeviceSyncRunner {
         val key = GameSessionCoordinator.pendingConflictKey(identity, accountFingerprint)
         val pendingJobId = preferences.getString(key, null)
         if (pendingJobId != null) {
+            val snapshots = SaveSnapshotStore(File(context.filesDir, "device-sync-queue")).load(pendingJobId)
+            snapshots[RemoteFileKind.Save]?.takeIf { it.isFile && it.length() > 0L }?.let { queuedSave ->
+                val archive = File(context.filesDir, "device-sync-conflict-archive")
+                if (!archive.exists() && !archive.mkdirs()) {
+                    throw IOException("Não foi possível preservar a captura pendente do conflito.")
+                }
+                val preserved = File(archive, "pending-conflict-${System.currentTimeMillis()}-${queuedSave.name}")
+                queuedSave.copyTo(preserved, overwrite = false)
+                if (sha256(queuedSave) != sha256(preserved)) {
+                    preserved.delete()
+                    throw IOException("A captura pendente do conflito não passou na verificação de integridade.")
+                }
+            }
             SaveSnapshotStore(File(context.filesDir, "device-sync-queue")).delete(pendingJobId)
         }
         preferences.edit().remove(key).apply()
