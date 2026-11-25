@@ -1390,3 +1390,15 @@ ATUALIZAÇÃO — PR #52 / CI #1302 APROVADA (2026-11-25)
 - PR #52 permanece aberta, mergeable e sem merge; nenhuma revisão formal ou thread inline registrada.
 - E5 e E9 continuam pendentes: CI e testes unitários não comprovam perda real de rede/encerramento do processo nem interoperabilidade ampliada de memory cards.
 - Segurança preservada: nenhuma transferência real, sobrescrita ou exclusão de save foi executada; save states permanecem locais; overwrite=false e sem DELETE automático.
+
+
+AUDITORIA E9 — PRIMEIRA MATRIZ DE CARTÕES PS1 (2026-11-25)
+Base analisada: branch test/device-sync-recovery-hardening; código atual de CoreSaveAdapter.kt e SaveStore.kt; documentação oficial Libretro.
+- [CONFIRMADO NO CÓDIGO] CoreSaveAdapterRegistry reconhece pcsx_rearmed, swanstation e mednafen_psx como família de memory cards, mas declara somente localSlot/remoteSlot "memory-card-0".
+- [CONFIRMADO NO CÓDIGO] SaveStore expõe um único sramFile ("sram.srm") por diretório; não há resolução explícita de um segundo cartão em slot independente no armazenamento local.
+- [DOCUMENTADO — PCSX ReARMed] Slot 0 usa <nome-do-jogo>.srm; slot 1, quando habilitado, usa pcsx-card2.mcd, compartilhado pelos jogos na mesma pasta. Fonte: https://docs.libretro.com/library/pcsx_rearmed/
+- [DOCUMENTADO — Beetle PSX / mednafen_psx] Slot 0 usa <nome-do-jogo>.srm por padrão; slot 1 usa <nome-do-jogo>.1.mcr. Há também modo de cartões compartilhados com nomes mednafen_psx_libretro_shared.0.mcr e .1.mcr. Fonte: https://docs.libretro.com/library/beetle_psx/
+- [DOCUMENTADO — SwanStation] O core oferece tipos configuráveis para Card 1 e Card 2, incluindo Libretro (.srm), cartão separado por jogo e opções legadas/compartilhadas; formatos e convenções variam conforme a opção. Fonte: https://github.com/libretro/swanstation/blob/main/src/libretro/libretro_core_options.h
+- [PENDENTE E9] Não implementar slot 1 por simples renomeação nem assumir que pcsx-card2.mcd, .1.mcr e formatos SwanStation são intercambiáveis. É necessário identificar as opções ativas, localizar os arquivos reais do LibretroDroid/Tandem e preservar o isolamento por jogo/conta.
+- [PENDENTE E9] Ainda faltam matriz e testes negativos para ausência do arquivo, cartão compartilhado, arquivo inválido, slot desativado, nomes colidentes e mudança de configuração do core.
+- [SEGURANÇA] A implementação atual continua restrita ao slot 0 já declarado. Nenhum arquivo de cartão foi movido, renomeado, sobrescrito ou enviado durante esta auditoria.
