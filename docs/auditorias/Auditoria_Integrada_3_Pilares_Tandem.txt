@@ -512,3 +512,17 @@ CORREÇÃO — POLÍTICA DE RESTAURAÇÃO DE SAVE STATES PERSISTIDOS — 2026-11
 - PR #50 permanece aberta, em draft, com mergeable=true. Nenhum merge foi executado.
 - [PENDENTE] Teste no telefone: executar um novo upload SNES e confirmar no RomM que o campo emulator foi salvo como snes9x.
 - [PENDENTE] Validar a leitura de um registro antigo tandem_snes9x sem alterar o registro remoto nem o save local.
+
+
+## VALIDAÇÃO FUNCIONAL — UPLOAD DE SAVE STATE PELO mGBA (2026-11-25)
+
+- [CONFIRMAÇÃO DO USUÁRIO — TESTE NO TELEFONE] O único save state existente no servidor RomM para o jogo testado foi criado pelo usuário no mGBA e enviado pelo próprio Tandem. Portanto, o ciclo de upload de save state pelo fluxo tradicional /api/states está funcional para esse cenário.
+- [EVIDÊNCIA NO LOG #11] ROM #835, jogo PKLG Pikachu v8.0 ENG, núcleo mgba. O inventário registra SAVE_STATE/state1 com 528.448 bytes. Na sessão seguinte, o Tandem seleciona o estado remoto states ID 12, faz GET /api/states/12/content, recebe HTTP 200 com 528.448 bytes e aplica o arquivo ao SaveStore do mGBA. O usuário confirmou que esse registro remoto foi originalmente criado pelo upload feito no Tandem.
+- [DISTINÇÃO DE TRANSPORTES] As linhas "selecionado=CORE_SAVE" pertencem ao Device Sync de SRAM/cartão e não demonstram falha no transporte separado de save states. O upload de save state ocorre pelo SaveSync tradicional via /api/states, executado pelo coordenador após o transporte Device Sync.
+- [RESULTADO] Marcar como validado no telefone: criação local do estado no mGBA, envio ao RomM e recuperação/aplicação posterior do mesmo registro. Não generalizar o resultado para SNES, PSX ou todos os núcleos.
+- [PENDENTE] Repetir o ciclo de upload e recuperação de save state em SNES (snes9x) e PSX (núcleo efetivamente utilizado), observando o mesmo jogo, núcleo e build. Comparar a existência/tamanho/hash local, resultado do worker /api/states e registro remoto. Investigar diferenças por núcleo sem alterar estados existentes.
+- [SEGURANÇA] Nenhum save, save state, ROM ou registro remoto foi apagado, movido, sobrescrito ou migrado durante esta validação.
+
+## VALIDAÇÃO CI — DOCUMENTAÇÃO DA AUDITORIA (2026-11-25)
+- [CI #1184] Run 45524982681, commit dd442c043b9862d9429a353308778f76e4580b34: check-style, build Debug APK e final-status concluídos com sucesso. Jobs de publicação/release foram ignorados. Execução: https://github.com/izzyn0okami/Tandem/actions/runs/45524982681.
+- [PR] #50 continua aberta, em draft, mergeable=true, head dd442c043b9862d9429a353308778f76e4580b34. Não houve merge. Nenhuma PR concorrente foi aberta.
