@@ -103,10 +103,13 @@ internal fun RomMMusicScreen() {
                 val page = withContext(Dispatchers.IO) {
                     when (section) {
                         RomMMusicSection.Tracks -> activeClient.listMusicTracks(query, selectedArtist, selectedAlbum, ROMM_MUSIC_PAGE_SIZE, offset)
+
                         RomMMusicSection.Favorites -> activeClient.listMusicFavorites(query, ROMM_MUSIC_PAGE_SIZE, offset)
+
                         RomMMusicSection.Playlists -> selectedPlaylist?.let {
                             activeClient.listMusicPlaylistTracks(it.id, ROMM_MUSIC_PAGE_SIZE, offset)
                         }
+
                         else -> null
                     }
                 }
@@ -143,6 +146,7 @@ internal fun RomMMusicScreen() {
                     offset = page.offset + page.items.size
                     facets = emptyList()
                 }
+
                 RomMMusicSection.Favorites -> {
                     val page = withContext(Dispatchers.IO) { client.listMusicFavorites(query, ROMM_MUSIC_PAGE_SIZE, 0) }
                     tracks = page.items
@@ -150,16 +154,19 @@ internal fun RomMMusicScreen() {
                     offset = page.offset + page.items.size
                     facets = emptyList()
                 }
+
                 RomMMusicSection.Artists -> {
                     val page = withContext(Dispatchers.IO) { client.listMusicArtists(query, 250, 0) }
                     facets = page.items
                     tracks = emptyList()
                 }
+
                 RomMMusicSection.Albums -> {
                     val page = withContext(Dispatchers.IO) { client.listMusicAlbums(query, 250, 0) }
                     facets = page.items
                     tracks = emptyList()
                 }
+
                 RomMMusicSection.Playlists -> {
                     playlists = withContext(Dispatchers.IO) { client.listMusicPlaylists() }
                     val selected = selectedPlaylist?.let { current -> playlists.firstOrNull { it.id == current.id } }
@@ -222,8 +229,9 @@ internal fun RomMMusicScreen() {
                     playing = true
                 },
                 onCompleted = {
-                    if (index + 1 < items.size) playAt(items, index + 1)
-                    else {
+                    if (index + 1 < items.size) {
+                        playAt(items, index + 1)
+                    } else {
                         playing = false
                         preparing = false
                         positionMs = durationMs
@@ -349,7 +357,10 @@ internal fun RomMMusicScreen() {
                 }
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     GameButton("Adicionar faixas", onClick = { section = RomMMusicSection.Tracks }, primary = true, compact = true)
-                    GameButton("Excluir playlist", onClick = { playlistToDelete = selectedPlaylist; confirmDeletePlaylist = true }, danger = true, compact = true)
+                    GameButton("Excluir playlist", onClick = {
+                        playlistToDelete = selectedPlaylist
+                        confirmDeletePlaylist = true
+                    }, danger = true, compact = true)
                 }
                 LazyColumn(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                     items(tracks, key = { it.romFileId }) { track ->
@@ -417,19 +428,23 @@ internal fun RomMMusicScreen() {
                             {
                                 val activeClient = client
                                 val target = selectedPlaylist
-                                if (activeClient != null && target != null) scope.launch {
-                                    busy = true
-                                    try {
-                                        withContext(Dispatchers.IO) { activeClient.addMusicPlaylistTracks(target.id, listOf(track.romFileId)) }
-                                        message = "Faixa adicionada a ${target.name}."
-                                    } catch (exception: Exception) {
-                                        error = romMUserFacingError(exception, "adicionar faixa à playlist")
-                                    } finally {
-                                        busy = false
+                                if (activeClient != null && target != null) {
+                                    scope.launch {
+                                        busy = true
+                                        try {
+                                            withContext(Dispatchers.IO) { activeClient.addMusicPlaylistTracks(target.id, listOf(track.romFileId)) }
+                                            message = "Faixa adicionada a ${target.name}."
+                                        } catch (exception: Exception) {
+                                            error = romMUserFacingError(exception, "adicionar faixa à playlist")
+                                        } finally {
+                                            busy = false
+                                        }
                                     }
                                 }
                             }
-                        } else null,
+                        } else {
+                            null
+                        },
                     )
                 }
                 if (tracks.size < total) item { GameButton("Carregar mais", onClick = { loadMore() }, enabled = !loadingMore, primary = true) }
@@ -485,30 +500,40 @@ internal fun RomMMusicScreen() {
     if (confirmDeletePlaylist) {
         val target = playlistToDelete ?: selectedPlaylist
         AlertDialog(
-            onDismissRequest = { confirmDeletePlaylist = false; playlistToDelete = null },
+            onDismissRequest = {
+                confirmDeletePlaylist = false
+                playlistToDelete = null
+            },
             title = { Text("Excluir playlist?") },
             text = { Text("A playlist \"${target?.name.orEmpty()}\" será removida do RomM. As faixas originais não serão apagadas.") },
             confirmButton = {
                 GameButton("Excluir", onClick = {
                     val activeClient = client
-                    if (activeClient != null && target != null) scope.launch {
-                        busy = true
-                        try {
-                            withContext(Dispatchers.IO) { activeClient.deleteMusicPlaylist(target.id) }
-                            if (selectedPlaylist?.id == target.id) selectedPlaylist = null
-                            playlistToDelete = null
-                            confirmDeletePlaylist = false
-                            message = "Playlist excluída."
-                            refreshCurrent()
-                        } catch (exception: Exception) {
-                            error = romMUserFacingError(exception, "excluir playlist")
-                        } finally {
-                            busy = false
+                    if (activeClient != null && target != null) {
+                        scope.launch {
+                            busy = true
+                            try {
+                                withContext(Dispatchers.IO) { activeClient.deleteMusicPlaylist(target.id) }
+                                if (selectedPlaylist?.id == target.id) selectedPlaylist = null
+                                playlistToDelete = null
+                                confirmDeletePlaylist = false
+                                message = "Playlist excluída."
+                                refreshCurrent()
+                            } catch (exception: Exception) {
+                                error = romMUserFacingError(exception, "excluir playlist")
+                            } finally {
+                                busy = false
+                            }
                         }
                     }
                 }, danger = true, enabled = !busy, compact = true)
             },
-            dismissButton = { GameButton("Cancelar", onClick = { confirmDeletePlaylist = false; playlistToDelete = null }, compact = true) },
+            dismissButton = {
+                GameButton("Cancelar", onClick = {
+                    confirmDeletePlaylist = false
+                    playlistToDelete = null
+                }, compact = true)
+            },
         )
     }
 }
@@ -573,8 +598,11 @@ private fun toggleMusicFavorite(
     scope.launch {
         try {
             withContext(Dispatchers.IO) {
-                if (track.isFavorite) activeClient.removeMusicFavorites(listOf(track.romFileId))
-                else activeClient.addMusicFavorites(listOf(track.romFileId))
+                if (track.isFavorite) {
+                    activeClient.removeMusicFavorites(listOf(track.romFileId))
+                } else {
+                    activeClient.addMusicFavorites(listOf(track.romFileId))
+                }
             }
             refresh()
         } catch (exception: Exception) {
@@ -628,7 +656,10 @@ private class RomMMusicPlayback(context: Context) {
             created.setOnPreparedListener { prepared ->
                 runCatching { prepared.start() }
                     .onSuccess { onPrepared(prepared.duration.coerceAtLeast(0)) }
-                    .onFailure { release(); onError(it.message ?: "Não foi possível iniciar o áudio.") }
+                    .onFailure {
+                        release()
+                        onError(it.message ?: "Não foi possível iniciar o áudio.")
+                    }
             }
             created.setOnCompletionListener {
                 release()
@@ -647,9 +678,15 @@ private class RomMMusicPlayback(context: Context) {
         }
     }
 
-    fun pause() { runCatching { player?.pause() } }
-    fun resume() { runCatching { player?.start() } }
-    fun seekTo(positionMs: Int) { runCatching { player?.seekTo(positionMs.coerceAtLeast(0)) } }
+    fun pause() {
+        runCatching { player?.pause() }
+    }
+    fun resume() {
+        runCatching { player?.start() }
+    }
+    fun seekTo(positionMs: Int) {
+        runCatching { player?.seekTo(positionMs.coerceAtLeast(0)) }
+    }
     fun currentPosition(): Int = runCatching { player?.currentPosition ?: 0 }.getOrDefault(0)
     fun isPlaying(): Boolean = runCatching { player?.isPlaying == true }.getOrDefault(false)
     fun hasPlayer(): Boolean = player != null

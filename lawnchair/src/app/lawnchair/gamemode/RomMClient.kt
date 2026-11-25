@@ -804,7 +804,6 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
         }
     }
 
-
     /** Catálogo musical paginado; filtros são aplicados no servidor para não baixar a biblioteca inteira. */
     fun listMusicTracks(
         search: String? = null,
@@ -813,7 +812,12 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
         limit: Int = 50,
         offset: Int = 0,
     ): RemoteMusicPage<RemoteMusicTrack> = musicTrackPage(
-        "tracks", search, artist, album, limit, offset,
+        "tracks",
+        search,
+        artist,
+        album,
+        limit,
+        offset,
     )
 
     fun listMusicFavorites(
@@ -821,7 +825,12 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
         limit: Int = 50,
         offset: Int = 0,
     ): RemoteMusicPage<RemoteMusicTrack> = musicTrackPage(
-        "favorites", search, null, null, limit, offset,
+        "favorites",
+        search,
+        null,
+        null,
+        limit,
+        offset,
     )
 
     private fun musicTrackPage(
@@ -859,11 +868,9 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
         }
     }
 
-    fun listMusicArtists(search: String? = null, limit: Int = 100, offset: Int = 0): RemoteMusicPage<RemoteMusicFacet> =
-        musicFacetPage("artists", search, limit, offset)
+    fun listMusicArtists(search: String? = null, limit: Int = 100, offset: Int = 0): RemoteMusicPage<RemoteMusicFacet> = musicFacetPage("artists", search, limit, offset)
 
-    fun listMusicAlbums(search: String? = null, limit: Int = 100, offset: Int = 0): RemoteMusicPage<RemoteMusicFacet> =
-        musicFacetPage("albums", search, limit, offset)
+    fun listMusicAlbums(search: String? = null, limit: Int = 100, offset: Int = 0): RemoteMusicPage<RemoteMusicFacet> = musicFacetPage("albums", search, limit, offset)
 
     private fun musicFacetPage(
         endpoint: String,
@@ -946,23 +953,25 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
     fun addMusicFavorites(trackIds: List<Long>) = updateMusicTrackMembership("favorites", trackIds, add = true)
     fun removeMusicFavorites(trackIds: List<Long>) = updateMusicTrackMembership("favorites", trackIds, add = false)
 
-    fun addMusicPlaylistTracks(playlistId: Long, trackIds: List<Long>) =
-        updateMusicTrackMembership("playlists/$playlistId/tracks", trackIds, add = true)
+    fun addMusicPlaylistTracks(playlistId: Long, trackIds: List<Long>) = updateMusicTrackMembership("playlists/$playlistId/tracks", trackIds, add = true)
 
-    fun removeMusicPlaylistTracks(playlistId: Long, trackIds: List<Long>) =
-        updateMusicTrackMembership("playlists/$playlistId/tracks", trackIds, add = false)
+    fun removeMusicPlaylistTracks(playlistId: Long, trackIds: List<Long>) = updateMusicTrackMembership("playlists/$playlistId/tracks", trackIds, add = false)
 
     private fun updateMusicTrackMembership(path: String, trackIds: List<Long>, add: Boolean) {
         require(trackIds.isNotEmpty() && trackIds.all { it > 0L }) { "Selecione pelo menos uma faixa válida" }
-        if (path.startsWith("playlists/")) require(path.substringAfter('/').substringBefore('/').toLongOrNull()?.let { it > 0L } == true) {
-            "ID de playlist inválido"
+        if (path.startsWith("playlists/")) {
+            require(path.substringAfter('/').substringBefore('/').toLongOrNull()?.let { it > 0L } == true) {
+                "ID de playlist inválido"
+            }
         }
         val body = JSONObject().put("rom_file_ids", org.json.JSONArray(trackIds.distinct()))
             .toString().toRequestBody("application/json".toMediaType())
         val url = base.resolve("api/music/$path")!!
-        http.newCall(request(url).apply {
-            if (add) post(body) else delete(body)
-        }.build()).execute().use { response ->
+        http.newCall(
+            request(url).apply {
+                if (add) post(body) else delete(body)
+            }.build(),
+        ).execute().use { response ->
             if (!response.isSuccessful) throw httpException(response, if (add) "adicionar faixas" else "remover faixas")
         }
     }
