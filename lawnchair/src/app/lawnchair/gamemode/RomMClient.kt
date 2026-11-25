@@ -1345,7 +1345,7 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
         headers: Map<String, String> = emptyMap(),
         consume: (Response) -> T,
     ): T {
-        val startedAt = SystemClock.elapsedRealtime()
+        val startedAt = System.nanoTime()
         val path = url.encodedPath + (url.encodedQuery?.let { "?$it" } ?: "")
         GameLog.log("romm", "download início: $description; caminho=$path")
         try {
@@ -1372,12 +1372,12 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
             GameLog.error(
                 "romm",
                 "download falhou: $description; caminho=$path; " +
-                    "duração=${SystemClock.elapsedRealtime() - startedAt}ms",
+                    "duração=${TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startedAt)}ms",
                 e,
             )
             throw e
         } finally {
-            GameLog.log("romm", "download fim: $description; duração=${SystemClock.elapsedRealtime() - startedAt}ms")
+            GameLog.log("romm", "download fim: $description; duração=${TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startedAt)}ms")
         }
     }
 
@@ -1386,7 +1386,8 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
         if (requiredBytes <= 0L) return
         val reserveBytes = maxOf(MINIMUM_FREE_SPACE_BYTES, requiredBytes / 20L)
         val neededBytes = if (Long.MAX_VALUE - requiredBytes < reserveBytes) Long.MAX_VALUE else requiredBytes + reserveBytes
-        val availableBytes = StatFs(directory.absolutePath).availableBytes
+        val availableBytes = runCatching { StatFs(directory.absolutePath).availableBytes }
+            .getOrElse { directory.usableSpace }
         GameLog.log("romm", "espaço para download: $description; disponível=$availableBytes; necessário=$neededBytes")
         if (availableBytes < neededBytes) {
             throw IOException(
