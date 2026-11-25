@@ -246,6 +246,26 @@ class SaveSyncPolicyTest {
         assertFalse(SaveSyncPolicy.shouldRetryWorker(syncCompleted = true))
     }
 
+
+    @Test
+    fun backgroundRetriesOperationalFailuresButParksConflictsForExplicitResolution() {
+        val failedTransfer = DeviceSyncExecutionResult(
+            romId = 42L,
+            uploaded = 0,
+            downloaded = 0,
+            noOp = 0,
+            conflictsPreserved = 0,
+            deletesIgnored = 0,
+            unknownIgnored = 0,
+            failed = 1,
+        )
+        val preservedConflict = failedTransfer.copy(failed = 0, conflictsPreserved = 1)
+
+        assertTrue(GameSessionSyncPolicy.shouldRetryBackground(failedTransfer))
+        assertFalse(GameSessionSyncPolicy.shouldRetryBackground(preservedConflict))
+        assertTrue(GameSessionSyncPolicy.blocksSessionStart(preservedConflict))
+    }
+
     @Test
     fun uploadRequiresExistingNonEmptyChangedFile() {
         assertFalse(SaveSyncPolicy.shouldUpload(false, 10L, "new", "old"))

@@ -1356,3 +1356,64 @@ MERGE — PR #51 / FECHAMENTO E3-E4 (2026-11-25)
 - Nenhuma transferência, sobrescrita, movimentação ou exclusão de save real foi realizada pelo merge.
 - Não há PR aberta no repositório imediatamente após o merge.
 - [ARTEFATO DA CI #1295] assembleLawnWithQuickstepGithubDebug, ID 15027628621, 46.460.578 bytes, SHA-256 b3321fe0e93bac39e76aff3c5aa3339eff486f51d1e9ef28023e06d94377825e; disponível até 2027-02-23.
+
+AUDITORIA COMPLEMENTAR — RECUPERAÇÃO DO DEVICE SYNC (2026-11-25)
+Base: game-mode-m2-dev após merge da PR #51.
+- [AUDITADO] O worker WorkManager retorna retry para falhas operacionais; o snapshot persistente não é apagado no caminho de erro e é carregado novamente pelo ID do trabalho.
+- [AUDITADO] A fila usa rede conectada e backoff exponencial; cancelamento de coroutine é propagado para o WorkManager, sem converter cancelamento em sucesso.
+- [AUDITADO] HTTP 409 é classificado como conflito preservado, não como falha transitória; o snapshot permanece associado à resolução explícita. Falhas HTTP/IO diferentes de 409 são contabilizadas como falhas e solicitam retry.
+- [AUDITADO] Downloads são feitos em staging, validados por MD5 e só confirmados após promoção; falha de download remove o staging. Upload continua com overwrite=false e autocleanup=false.
+- [TESTES ADICIONADOS — PR EM PREPARAÇÃO] Simulação de reinício: nova instância de SaveSnapshotStore recupera os mesmos bytes capturados mesmo após alteração do save ativo. Política de retry: falha operacional solicita nova tentativa; conflito fica estacionado e bloqueia início de sessão até resolução.
+- [PENDENTE E5] Teste controlado de perda real de rede/encerramento do processo com WorkManager e interoperabilidade ampliada com RomM real; testes unitários não substituem essa validação.
+- [PENDENTE E9] Matriz ampliada de formatos e slots de cartões de memória por núcleo; não ampliar compatibilidade sem evidência de formato idêntico e testes negativos.
+- Segurança mantida: nenhuma transferência real executada por esta auditoria; states continuam locais; sem DELETE automático ou sobrescrita forçada.
+
+
+ATUALIZAÇÃO — PR #52 / CI #1300 APROVADA (2026-11-25)
+- [CI APROVADA] GitHub Actions run 45627483572 / CI #1300 no head 3edf0387084d66ebec758b8ba35517f555fdb72b: SUCCESS.
+- Job build-debug-apk: testes unitários, Build APK e upload do artefato concluídos com sucesso.
+- Job check-style: Spotless automático, commit de formatação e verificação final concluídos com sucesso.
+- Job final-status: SUCCESS. Jobs opcionais de release/notificações foram ignorados; nenhuma release foi publicada.
+- [APK GERADO] Artefato assembleLawnWithQuickstepGithubDebug, ID 15028264567, 46.460.793 bytes, SHA-256 4e24e24d15891f4c74d46ce1a6e152eac409c2f6eb7ab2d160692e5c6bf9bc1d; disponível até 2027-02-23.
+- PR #52 permanece aberta, pronta para revisão, sem merge. Nenhuma revisão formal nem thread inline foi registrada na consulta.
+- [PENDENTE E5] Teste controlado de perda real de rede/encerramento do processo com WorkManager e interoperabilidade ampliada com RomM real.
+- [PENDENTE E9] Matriz ampliada de formatos e slots de cartões de memória por núcleo, com testes negativos.
+- CI aprovada não comprova interoperabilidade real nem substitui os testes controlados pendentes. Nenhuma transferência, sobrescrita ou exclusão de save real foi realizada.
+
+
+ATUALIZAÇÃO — PR #52 / CI #1302 APROVADA (2026-11-25)
+- [CI APROVADA] GitHub Actions run 45630500259 / CI #1302 no head cbe8ed1355372dff7dae2829bf27fd68901a8c10: SUCCESS.
+- Job build-debug-apk: testes unitários, Build APK e upload do artefato concluídos com sucesso.
+- Job check-style: Spotless automático, commit de formatação e verificação final concluídos com sucesso.
+- Job final-status: SUCCESS. Jobs opcionais de release/notificações foram ignorados; nenhuma release foi publicada.
+- [APK GERADO] Artefato assembleLawnWithQuickstepGithubDebug, ID 15030338536, 46.460.449 bytes, SHA-256 003582a48965672d40bcfe27428fd217b09e51c184b03a33a3909ea7195ca52a; disponível até 2027-02-23.
+- PR #52 permanece aberta, mergeable e sem merge; nenhuma revisão formal ou thread inline registrada.
+- E5 e E9 continuam pendentes: CI e testes unitários não comprovam perda real de rede/encerramento do processo nem interoperabilidade ampliada de memory cards.
+- Segurança preservada: nenhuma transferência real, sobrescrita ou exclusão de save foi executada; save states permanecem locais; overwrite=false e sem DELETE automático.
+
+
+AUDITORIA E9 — PRIMEIRA MATRIZ DE CARTÕES PS1 (2026-11-25)
+Base analisada: branch test/device-sync-recovery-hardening; código atual de CoreSaveAdapter.kt e SaveStore.kt; documentação oficial Libretro.
+- [CONFIRMADO NO CÓDIGO] CoreSaveAdapterRegistry reconhece pcsx_rearmed, swanstation e mednafen_psx como família de memory cards, mas declara somente localSlot/remoteSlot "memory-card-0".
+- [CONFIRMADO NO CÓDIGO] SaveStore expõe um único sramFile ("sram.srm") por diretório; não há resolução explícita de um segundo cartão em slot independente no armazenamento local.
+- [DOCUMENTADO — PCSX ReARMed] Slot 0 usa <nome-do-jogo>.srm; slot 1, quando habilitado, usa pcsx-card2.mcd, compartilhado pelos jogos na mesma pasta. Fonte: https://docs.libretro.com/library/pcsx_rearmed/
+- [DOCUMENTADO — Beetle PSX / mednafen_psx] Slot 0 usa <nome-do-jogo>.srm por padrão; slot 1 usa <nome-do-jogo>.1.mcr. Há também modo de cartões compartilhados com nomes mednafen_psx_libretro_shared.0.mcr e .1.mcr. Fonte: https://docs.libretro.com/library/beetle_psx/
+- [DOCUMENTADO — SwanStation] O core oferece tipos configuráveis para Card 1 e Card 2, incluindo Libretro (.srm), cartão separado por jogo e opções legadas/compartilhadas; formatos e convenções variam conforme a opção. Fonte: https://github.com/libretro/swanstation/blob/main/src/libretro/libretro_core_options.h
+- [PENDENTE E9] Não implementar slot 1 por simples renomeação nem assumir que pcsx-card2.mcd, .1.mcr e formatos SwanStation são intercambiáveis. É necessário identificar as opções ativas, localizar os arquivos reais do LibretroDroid/Tandem e preservar o isolamento por jogo/conta.
+- [PENDENTE E9] Ainda faltam matriz e testes negativos para ausência do arquivo, cartão compartilhado, arquivo inválido, slot desativado, nomes colidentes e mudança de configuração do core.
+- [SEGURANÇA] A implementação atual continua restrita ao slot 0 já declarado. Nenhum arquivo de cartão foi movido, renomeado, sobrescrito ou enviado durante esta auditoria.
+
+
+FECHAMENTO E5 + E9 — ESCOPO E LIMITES FORMALIZADOS (2026-11-25)
+E5 — RECUPERAÇÃO DO DEVICE SYNC
+- [CONCLUÍDO — CONFIRMAÇÃO DO USUÁRIO] O usuário confirmou que os testes de recuperação já foram realizados e aprovados. Encerrada a pendência de teste real de interrupção/retomada; não solicitar repetição.
+- Os testes automatizados da PR #52 complementam a validação: snapshot persistente recuperável por nova instância e distinção entre retry operacional e conflito estacionado.
+- A CI #1302 foi aprovada. A CI #1304 valida as atualizações documentais subsequentes e não representa um novo teste de recuperação no aparelho.
+
+E9 — MATRIZ DE CARTÕES DE MEMÓRIA / ESCOPO DEVICE SYNC
+- [CONCLUÍDO — AUDITORIA] Matriz documental de PS1 finalizada para PCSX ReARMed, Beetle PSX (mednafen_psx) e SwanStation, incluindo diferenças de convenção para slot 1 e modos compartilhados.
+- [SUPORTE CONFIRMADO NO CÓDIGO] O escopo atualmente implementado e sincronizável é exclusivamente o slot primário Libretro, mapeado como localSlot/remoteSlot "memory-card-0" e armazenado no arquivo interno sram.srm.
+- [NÃO SUPORTADO / EXPLICITAMENTE FORA DO ESCOPO ATUAL] Segundo cartão, cartões compartilhados e opções de formato alternativo de SwanStation. Não são importados nem sincronizados implicitamente. Não se deve inferir equivalência entre pcsx-card2.mcd, .1.mcr ou outros formatos apenas pela extensão.
+- [TESTES NEGATIVOS / CRITÉRIO DE SEGURANÇA] Ausência de um segundo slot no inventário e não correspondência com o slot remoto primário significam que o artefato secundário não é elegível para upload/download. Não criar alias, renomear nem mesclar arquivos secundários.
+- [DECISÃO DE ESCOPO] E9 fica encerrada para o suporte Device Sync atualmente declarado (slot 0). Implementar slots adicionais exigirá uma etapa futura independente, com leitura das opções efetivas do core, API de armazenamento multi-slot do LibretroDroid, isolamento por jogo/conta, mapeamento RomM e testes específicos de cada modo compartilhado. Isso não bloqueia o fechamento da auditoria E9 atual.
+- [SEGURANÇA] Nenhum cartão real foi alterado ou transferido nesta auditoria. Save states continuam exclusivamente locais; overwrite=false; sem exclusão automática.

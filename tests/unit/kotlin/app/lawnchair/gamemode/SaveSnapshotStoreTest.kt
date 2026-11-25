@@ -49,6 +49,30 @@ class SaveSnapshotStoreTest {
         }
     }
 
+
+    @Test
+    fun aNewStoreInstanceCanResumeTheSameSnapshotAfterProcessRestart() {
+        val root = File(System.getProperty("java.io.tmpdir"), "save-snapshot-restart-${System.nanoTime()}")
+        val source = File(root.parentFile, "live-save-restart-${System.nanoTime()}.srm")
+        try {
+            assertTrue(root.mkdirs())
+            source.writeBytes(byteArrayOf(10, 20, 30, 40))
+            SaveSnapshotStore(root).capture(
+                "worker-job-restarted",
+                mapOf(RemoteFileKind.Save to source),
+            )
+
+            source.writeBytes(byteArrayOf(90, 80, 70))
+            val resumed = SaveSnapshotStore(root).load("worker-job-restarted")
+                .getValue(RemoteFileKind.Save)
+
+            assertEquals(listOf<Byte>(10, 20, 30, 40), resumed.readBytes().toList())
+        } finally {
+            root.deleteRecursively()
+            source.delete()
+        }
+    }
+
     @Test
     fun emptySnapshotIsPersistedForJobsWithoutLocalSram() {
         val root = File(System.getProperty("java.io.tmpdir"), "save-snapshot-empty-${System.nanoTime()}")
