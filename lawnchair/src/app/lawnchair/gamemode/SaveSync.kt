@@ -322,8 +322,8 @@ object SaveSync {
     }
 
     /** No-op legado: save states não são baixados do RomM. */
-@Suppress("UNUSED_PARAMETER")
-        suspend fun pull(
+    @Suppress("UNUSED_PARAMETER")
+    suspend fun pull(
         context: Context,
         romPath: String,
         coreId: String,
@@ -535,8 +535,8 @@ object SaveSync {
     }
 
     /** No-op legado: save states não são enviados ao RomM. */
-@Suppress("UNUSED_PARAMETER")
-        internal suspend fun pushFromWorker(
+    @Suppress("UNUSED_PARAMETER")
+    internal suspend fun pushFromWorker(
         context: Context,
         romPath: String,
         coreId: String,
