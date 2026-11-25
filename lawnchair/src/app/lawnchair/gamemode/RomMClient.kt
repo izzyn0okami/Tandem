@@ -1024,6 +1024,80 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
         return parseDeclaredDeviceCapabilities(values)
     }
 
+    /** Estatísticas calculadas pelo RomM, respeitando a visibilidade da conta autenticada. */
+    fun getServerStats(): RemoteRomMStats {
+        val url = base.resolve("api/stats?include_platform_stats=true")!!
+        http.newCall(request(url).get().build()).execute().use { response ->
+            if (!response.isSuccessful) throw httpException(response, "consultar estatísticas")
+            val json = JSONObject(response.body.string())
+            return RemoteRomMStats(
+                platforms = json.optLong("PLATFORMS", 0L),
+                roms = json.optLong("ROMS", 0L),
+                saves = json.optLong("SAVES", 0L),
+                states = json.optLong("STATES", 0L),
+                screenshots = json.optLong("SCREENSHOTS", 0L),
+                totalFileSizeBytes = json.optLong("TOTAL_FILESIZE_BYTES", 0L),
+            )
+        }
+    }
+
+    /** Recomendações oficiais e personalizadas do RomM; lista vazia é um resultado válido. */
+    fun getRecommendations(limit: Int = 20): List<RemoteRecommendation> {
+        require(limit in 1..50) { "Limite de recomendações inválido" }
+        val url = base.newBuilder().addPathSegments("api/recommendations")
+            .addQueryParameter("limit", limit.toString()).build()
+        http.newCall(request(url).get().build()).execute().use { response ->
+            if (!response.isSuccessful) throw httpException(response, "consultar recomendações")
+            val array = org.json.JSONArray(response.body.string())
+            return (0 until array.length()).mapNotNull { index ->
+                val item = array.optJSONObject(index) ?: return@mapNotNull null
+                val rom = item.optJSONObject("rom") ?: return@mapNotNull null
+                val id = rom.optLong("id", -1L)
+                if (id <= 0L) return@mapNotNull null
+                val reasons = item.optJSONArray("reasons")
+                RemoteRecommendation(
+                    romId = id,
+                    title = rom.optString("name").takeUnless { it == "null" }.orEmpty()
+                        .ifBlank { rom.optString("fs_name_no_ext", "Jogo sem título") },
+                    platform = rom.optString("platform_display_name").takeUnless { it == "null" }.orEmpty(),
+                    score = item.optDouble("score", 0.0),
+                    reasons = (0 until (reasons?.length() ?: 0)).mapNotNull { reasonIndex ->
+                        val reason = reasons?.optJSONObject(reasonIndex) ?: return@mapNotNull null
+                        val facet = reason.optString("facet").replace('_', ' ')
+                        val value = reason.optString("value").takeUnless { it == "null" }.orEmpty()
+                        if (facet.isBlank()) null else if (value.isBlank()) facet else "$facet: $value"
+                    },
+                    seedRomName = item.optString("seed_rom_name").takeUnless { it == "null" || it.isBlank() },
+                )
+            }
+        }
+    }
+
+    /** Caixa de entrada do usuário; leitura apenas, sem marcar ou dispensar notificações. */
+    fun getNotifications(): List<RemoteNotification> {
+        val url = base.resolve("api/notifications")!!
+        http.newCall(request(url).get().build()).execute().use { response ->
+            if (!response.isSuccessful) throw httpException(response, "consultar notificações")
+            val array = org.json.JSONArray(response.body.string())
+            return (0 until array.length()).mapNotNull { index ->
+                val item = array.optJSONObject(index) ?: return@mapNotNull null
+                val id = item.optLong("id", -1L)
+                if (id <= 0L) return@mapNotNull null
+                val actor = item.optJSONObject("actor")
+                RemoteNotification(
+                    id = id,
+                    kind = item.optString("kind", "custom"),
+                    level = item.optString("level", "info"),
+                    title = item.optString("title").takeUnless { it == "null" }.orEmpty(),
+                    body = item.optString("body").takeUnless { it == "null" }.orEmpty(),
+                    createdAtMs = parseTime(item.optString("created_at")),
+                    read = !item.isNull("read_at"),
+                    actor = actor?.optString("username")?.takeUnless { it.isNullOrBlank() || it == "null" },
+                )
+            }
+        }
+    }
+
     /** Sessões atualmente ativas no RomM. A API não fornece aqui um histórico encerrado. */
     fun listActivity(): List<RemoteActivity> {
         val url = base.resolve("api/activity")!!
