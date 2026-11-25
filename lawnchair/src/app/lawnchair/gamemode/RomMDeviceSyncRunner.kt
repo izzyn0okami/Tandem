@@ -189,7 +189,7 @@ object RomMDeviceSyncRunner {
                                     val reconciled = reconcileDivergentSave(
                                         client, operation, deviceId, negotiation.sessionId, romId,
                                         remoteSlot, emulator, romFile, store, originalSave,
-                                        localSave, initialLocalHash, snapshot,
+                                        localSave, initialLocalHash, initialTargetHash, snapshot,
                                     )
                                     if (reconciled == null) {
                                         conflicts++
@@ -298,7 +298,7 @@ object RomMDeviceSyncRunner {
                                 val reconciled = reconcileDivergentSave(
                                     client, operation, deviceId, negotiation.sessionId, romId,
                                     remoteSlot, emulator, romFile, store, originalSave,
-                                    localSave, initialLocalHash, snapshot,
+                                    localSave, initialLocalHash, initialTargetHash, snapshot,
                                 )
                                 if (reconciled == null) {
                                     conflicts++
@@ -553,13 +553,6 @@ object RomMDeviceSyncRunner {
     private data class ReconciliationCounts(val uploaded: Int, val downloaded: Int)
 
     /**
-     * Resolves a divergent first-sync/conflict by timestamps. RomM remains the tie-breaker:
-     * equal or unreadable timestamps are not enough to claim that the local file is newer.
-     * The losing bytes are retained as an unpaired archival save; the active slot receives
-     * the newest version. A remote download is confirmed before uploading local bytes, which
-     * establishes this device's baseline without overwriting the server's current save.
-     */
-    /**
      * Divergências sem ancestral comum confirmado nunca são arbitradas por horário.
      * Ambas as versões permanecem intactas no dispositivo e no RomM para escolha explícita.
      */
@@ -575,10 +568,11 @@ object RomMDeviceSyncRunner {
         @Suppress("UNUSED_PARAMETER") store: SaveStore,
         originalSave: File,
         @Suppress("UNUSED_PARAMETER") localSave: DeviceSyncSave?,
-        initialLocalHash: String?,
+        @Suppress("UNUSED_PARAMETER") initialLocalHash: String?,
+        initialTargetHash: String?,
         @Suppress("UNUSED_PARAMETER") snapshot: File,
     ): ReconciliationCounts? {
-        if (!originalSave.matchesMd5(initialLocalHash)) {
+        if (!originalSave.matchesMd5(initialTargetHash)) {
             throw IOException("O save local mudou durante a análise do conflito; nenhuma versão foi aplicada.")
         }
         GameLog.log(
