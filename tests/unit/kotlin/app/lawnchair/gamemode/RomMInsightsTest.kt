@@ -132,4 +132,78 @@ class RomMInsightsTest {
             server.close()
         }
     }
+    @Test
+    fun marksSelectedNotificationsReadWithOnlyRequestedIds() {
+        val server = MockWebServer()
+        server.start()
+        try {
+            server.enqueue(MockResponse(body = "{}"))
+            val client = RomMClient(server.url("/").toString(), "test-token")
+
+            client.markNotificationsRead(listOf(9L, 12L))
+            val request = server.takeRequest()
+
+            assertEquals("POST", request.method)
+            assertEquals("/api/notifications/read", request.url.encodedPath)
+            assertEquals("Bearer test-token", request.headers["Authorization"])
+            assertEquals("[9,12]", org.json.JSONObject(request.body.readUtf8()).getJSONArray("ids").toString())
+        } finally {
+            server.close()
+        }
+    }
+
+    @Test
+    fun marksAllNotificationsReadWithoutDeletingThem() {
+        val server = MockWebServer()
+        server.start()
+        try {
+            server.enqueue(MockResponse(body = "{}"))
+            val client = RomMClient(server.url("/").toString(), "test-token")
+
+            client.markAllNotificationsRead()
+            val request = server.takeRequest()
+            val payload = org.json.JSONObject(request.body.readUtf8())
+
+            assertEquals("POST", request.method)
+            assertEquals("/api/notifications/read", request.url.encodedPath)
+            assertTrue(payload.isNull("ids"))
+        } finally {
+            server.close()
+        }
+    }
+
+    @Test
+    fun dismissesOnlyTheRequestedNotification() {
+        val server = MockWebServer()
+        server.start()
+        try {
+            server.enqueue(MockResponse(body = "{}"))
+            val client = RomMClient(server.url("/").toString(), "test-token")
+
+            client.dismissNotification(27L)
+            val request = server.takeRequest()
+
+            assertEquals("DELETE", request.method)
+            assertEquals("/api/notifications/27", request.url.encodedPath)
+            assertEquals("Bearer test-token", request.headers["Authorization"])
+        } finally {
+            server.close()
+        }
+    }
+
+    @Test
+    fun rejectsInvalidNotificationIdsBeforeSendingRequests() {
+        val server = MockWebServer()
+        server.start()
+        try {
+            val client = RomMClient(server.url("/").toString(), "test-token")
+
+            assertTrue(runCatching { client.markNotificationsRead(emptyList()) }.isFailure)
+            assertTrue(runCatching { client.markNotificationsRead(listOf(0L)) }.isFailure)
+            assertTrue(runCatching { client.dismissNotification(-1L) }.isFailure)
+            assertEquals(0, server.requestCount)
+        } finally {
+            server.close()
+        }
+    }
 }
