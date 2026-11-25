@@ -45,15 +45,7 @@ internal fun RomMInsightsPanel() {
         scope.launch {
             val result = runCatching { withContext(Dispatchers.IO) { action() } }
             result.onSuccess { onSuccess() }.onFailure { failure ->
-                error = when (failure) {
-                    is RomMHttpException -> when (failure.statusCode) {
-                        401 -> "A sessão RomM expirou. Reconecte a conta."
-                        403 -> "O RomM recusou a ação. Desconecte e pareie novamente para conceder a permissão de notificações."
-                        else -> failure.message ?: "Falha ao atualizar a notificação."
-                    }
-
-                    else -> failure.message ?: "Não foi possível atualizar a notificação."
-                }
+                error = romMUserFacingError(failure, "atualizar notificações")
             }
             loading = false
         }
@@ -80,15 +72,12 @@ internal fun RomMInsightsPanel() {
                     else -> notifications = value as List<RemoteNotification>
                 }
             }.onFailure { failure ->
-                error = when (failure) {
-                    is RomMHttpException -> when (failure.statusCode) {
-                        401 -> "A sessão RomM expirou. Reconecte a conta."
-                        403 -> "A autorização atual não permite esta consulta. Reconecte o Tandem com as permissões de leitura necessárias."
-                        else -> failure.message ?: "Falha ao consultar o RomM."
-                    }
-
-                    else -> failure.message ?: "Não foi possível consultar o RomM."
+                val action = when (target) {
+                    "stats" -> "consultar estatísticas"
+                    "recommendations" -> "consultar recomendações"
+                    else -> "consultar notificações"
                 }
+                error = romMUserFacingError(failure, action)
             }
             loading = false
         }
