@@ -277,4 +277,124 @@ class RomMInsightsTest {
             runCatching { server.close() }
         }
     }
+
+    @Test
+    fun translatesUnauthorizedAsExplicitReconnectGuidance() {
+        val message = romMUserFacingError(
+            RomMHttpException(401, "Unauthorized", endpoint = "/api/users/me"),
+            "identificar a conta",
+        )
+
+        assertTrue(message.contains("Reconecte a conta RomM"))
+        assertTrue(message.contains("HTTP 401"))
+        assertTrue(message.contains("/api/users/me"))
+    }
+
+    @Test
+    fun translatesForbiddenAsMissingPermissionNotInvalidCredentials() {
+        val message = romMUserFacingError(
+            RomMHttpException(403, "Forbidden", endpoint = "/api/devices"),
+            "listar dispositivos",
+        )
+
+        assertTrue(message.contains("não possui a permissão necessária"))
+        assertTrue(message.contains("HTTP 403"))
+        assertTrue(message.contains("/api/devices"))
+        assertFalse(message.contains("token inválido"))
+    }
+
+    @Test
+    fun translatesNotFoundWithoutInferringMissingPermission() {
+        val message = romMUserFacingError(
+            RomMHttpException(404, "Not found", endpoint = "/api/optional-resource"),
+            "consultar recurso opcional",
+        )
+
+        assertTrue(message.contains("recurso inexistente/oculto"))
+        assertTrue(message.contains("não confirma falta de permissão"))
+        assertTrue(message.contains("HTTP 404"))
+    }
+
+    @Test
+    fun httpErrorsKeepStatusAndEndpointFromRomMResponse() {
+        val server = MockWebServer()
+        server.start()
+        try {
+            server.enqueue(MockResponse(code = 403, body = """{"detail":"forbidden"}"""))
+            val client = RomMClient(server.url("/").toString(), "test-token")
+
+            val failure = runCatching { client.getServerStats() }.exceptionOrNull()
+
+            assertTrue(failure is RomMHttpException)
+            val httpFailure = failure as RomMHttpException
+            assertEquals(403, httpFailure.statusCode)
+            assertEquals("/api/stats", httpFailure.endpoint)
+        } finally {
+            server.close()
+        }
+    }
+
+    @Test
+    fun currentUserIdPreservesUnauthorizedStatusAndEndpoint() {
+        val server = MockWebServer()
+        server.start()
+        try {
+            server.enqueue(MockResponse(code = 401, body = """{"detail":"unauthorized"}"""))
+            val client = RomMClient(server.url("/").toString(), "expired-token")
+
+            val failure = runCatching { client.currentUserId() }.exceptionOrNull()
+
+            assertTrue(failure is RomMHttpException)
+            val httpFailure = failure as RomMHttpException
+            assertEquals(401, httpFailure.statusCode)
+            assertEquals("/api/users/me", httpFailure.endpoint)
+            assertTrue(romMUserFacingError(httpFailure, "identificar a conta").contains("Reconecte a conta RomM"))
+        } finally {
+            server.close()
+        }
+    }
+
+    @Test
+    fun notFoundPreservesEndpointAndDoesNotBecomePermissionError() {
+        val server = MockWebServer()
+        server.start()
+        try {
+            server.enqueue(MockResponse(code = 404, body = """{"detail":"not found"}"""))
+            val client = RomMClient(server.url("/").toString(), "test-token")
+
+            val failure = runCatching { client.getServerStats() }.exceptionOrNull()
+
+            assertTrue(failure is RomMHttpException)
+            val httpFailure = failure as RomMHttpException
+            assertEquals(404, httpFailure.statusCode)
+            assertEquals("/api/stats", httpFailure.endpoint)
+            val message = romMUserFacingError(httpFailure, "consultar estatísticas")
+            assertTrue(message.contains("não confirma falta de permissão"))
+            assertFalse(message.contains("permissão necessária"))
+        } finally {
+            server.close()
+        }
+    }
+
+    @Test
+    fun pairingCodeNotFoundKeepsInvalidOrExpiredCodeGuidance() {
+        val message = romMUserFacingError(
+            RomMHttpException(404, "Código inválido ou expirado", endpoint = "/api/client-tokens/exchange"),
+            "conectar a conta",
+        )
+
+        assertTrue(message.contains("código de pareamento é inválido ou expirou"))
+        assertTrue(message.contains("/api/client-tokens/exchange"))
+    }
+
+    @Test
+    fun unavailableDevicePairingRouteOffersManualCodeFlow() {
+        val message = romMUserFacingError(
+            RomMHttpException(404, "Endpoint ausente", endpoint = "/api/auth/device/init"),
+            "iniciar o pareamento",
+        )
+
+        assertTrue(message.contains("Use o fluxo de código manual"))
+        assertTrue(message.contains("HTTP 404"))
+    }
 }

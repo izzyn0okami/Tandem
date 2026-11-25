@@ -88,10 +88,10 @@ H. AUTENTICAÇÃO, PERMISSÕES E COMPATIBILIDADE DA API
 [CONCLUÍDO] H1. Inventário dos endpoints RomM usados atualmente.
 [CONCLUÍDO] H2. Identificação dos scopes necessários para os fluxos atuais.
 [CONCLUÍDO] H3. Inventário de scopes e usos; roms.user.read/write e devices.read/write já são solicitados para funções existentes. F1/F2 usam roms.read e F3 usa me.read, ambos já incluídos no token atual.
-[PENDENTE] H4. Implementar detecção clara de permissões ausentes e instruções de reconexão.
+[CONCLUÍDO — IMPLEMENTAÇÃO/CI; TESTE NO APARELHO PENDENTE] H4. Tratamento centralizado de 401/403 com orientação de reconexão explícita e distinção entre credencial recusada e scope insuficiente; PR #54, CI #1380 aprovada.
 [PENDENTE] H5. Revisar expiração, revogação e renovação de tokens; não há renovação automática identificada.
 [PENDENTE] H6. Revisar diferenças entre token manual e token do fluxo de dispositivo.
-[PENDENTE] H7. Manter compatibilidade com RomM 5.4.1 e tratar respostas 401/403/404 sem duplicar registros.
+[CONCLUÍDO — IMPLEMENTAÇÃO/CI; TESTE NO APARELHO PENDENTE] H7. Status HTTP e endpoint preservados; 401/403/404 diferenciados, 404 opcional isolado, sem retry de escrita nem perda de dados locais; testes automatizados e CI #1380 aprovada.
 
 I. LIBRETRO E EXECUÇÃO LOCAL
 [CONCLUÍDO] I1. Integração LibretroDroid no mesmo processo do launcher.
@@ -1654,7 +1654,7 @@ H7 — COMPATIBILIDADE E CÓDIGOS HTTP
 RESULTADO DA AUDITORIA H
 - H1–H3 permanecem concluídos.
 - H5 e H6 estão tecnicamente esclarecidos; não exigem implementação de refresh token nem remoção de qualquer fluxo.
-- H4 e H7 precisam de melhoria de tratamento de erros e orientação de reconexão/permissões.
+- H4 e H7 implementados na PR #54; CI aprovada. A validação funcional no aparelho permanece pendente.
 - Nenhuma chamada foi feita ao servidor RomM do usuário; nenhum token foi lido, alterado, revogado ou reemitido.
 - PR #53 permanece aberta e draft; não foi mesclada. Como H4/H7 tocarão RomMClient.kt e RomMScreen.kt, arquivos já modificados pela PR #53, não iniciar alterações concorrentes nesses arquivos antes de resolver a PR #53.
 
@@ -1667,3 +1667,51 @@ FECHAMENTO — ESTÁGIO F / PR #53 (2026-11-25)
 - F1, F2, F3 e F4 permanecem concluídos; F4 foi validada pelo usuário no aparelho. F5 permanece fora do escopo por decisão do usuário.
 - [PRÓXIMA ETAPA] H4 e H7 serão implementados em PR separada, após a conclusão da PR #53, para evitar alterações concorrentes em RomMClient.kt e RomMScreen.kt.
 - E6/E7 permanecem pendentes e independentes. Nenhuma operação foi realizada na conta RomM do usuário durante o merge.
+
+
+INÍCIO DE IMPLEMENTAÇÃO — ESTÁGIO H4 + H7 (2026-11-25)
+Base: game-mode-m2-dev após merge da PR #53 (76b8d4a4dccd7128008cdfbd49b188f574972b7f).
+Branch dedicada: feat/romm-stage-h-auth-errors.
+- [EM IMPLEMENTAÇÃO] H4 — centralizar o tratamento de 401/403 e orientar reconexão/permissões sem pressupor que todo 403 seja erro de pareamento.
+- [EM IMPLEMENTAÇÃO] H7 — preservar status HTTP e endpoint em todos os fluxos relevantes; distinguir 404 de recurso opcional ausente e rota incompatível/ausente.
+- [REQUISITOS DE SEGURANÇA] Sem retry automático de escritas após 401/403; sem exclusão de saves, snapshots ou fila local; sem logs de tokens ou conteúdo sensível.
+- [TESTES PENDENTES] Matriz 401/403/404 para pareamento, consultas e operações Device Sync, incluindo regressão RomM 5.4.1.
+- H5 e H6 permanecem auditorias concluídas; nenhum refresh token será implementado e ambos os fluxos de autenticação serão preservados.
+- F5 permanece fora do escopo por decisão do usuário.
+- Nenhuma chamada foi feita à conta RomM pessoal do usuário.
+
+
+IMPLEMENTAÇÃO INICIAL — H4 + H7 / PR #54 (2026-11-25)
+PR: https://github.com/izzyn0okami/Tandem/pull/54
+Branch: feat/romm-stage-h-auth-errors; base game-mode-m2-dev.
+- [IMPLEMENTADO] RomMHttpException agora preserva status HTTP, detalhe sanitizado e endpoint da resposta.
+- [IMPLEMENTADO] Tradutor compartilhado para 401/403/404: 401 orienta reconexão explícita; 403 identifica falta de permissão sem presumir token inválido; 404 diferencia recurso/rota ausente ou oculto e não o interpreta como falta de scope.
+- [IMPLEMENTADO] Consultas de biblioteca, plataformas, coleções, firmware, identidade e pareamento preservam exceções HTTP tipadas em vez de descartar status em IOException genérica.
+- [IMPLEMENTADO] Fluxos Device Sync, painel F1–F4, conexão manual/dispositivo e recuperação da biblioteca exibem orientação uniforme quando recebem erros HTTP.
+- [IMPLEMENTADO] 404 do endpoint opcional de presença online continua sendo tratado como ausência dessa capacidade opcional; demais 404 mantêm status/endpoint para diagnóstico.
+- [SEGURANÇA] Nenhum retry de escrita foi adicionado; nenhuma fila, snapshot, SRAM, memory card ou save local é removido em caso de falha HTTP. Detalhes do corpo são limitados e sanitizados; tokens/segredos não são exibidos.
+- [TESTES ADICIONADOS] Casos para mensagens 401/403/404, preservação de endpoint/status, 401 em identificação de usuário e 404 em estatísticas; a suíte existente cobre também 403.
+- [CONCLUÍDO — CI] CI #1380 (run 45716179179), head 0905a29725076988c2ccf17cf16f0e2676daef0a: check-style SUCCESS, build-debug-apk SUCCESS (incluindo testes unitários, compilação e upload de APK), final-status SUCCESS. CI anterior #1379 ficou action_required sem jobs e não é a execução de validação usada.
+- [PENDENTE — USUÁRIO] Validar no aparelho mensagens de 401 (reconexão), 403 (permissão insuficiente) e 404 (recurso/rota ausente), além dos fluxos manual e por dispositivo. Não é necessário repetir testes de saves.
+- Nenhuma chamada foi feita à conta RomM pessoal do usuário.
+
+FECHAMENTO DE IMPLEMENTAÇÃO E CI — PR #54 (2026-11-25)
+- [CONCLUÍDO — CI] Head validado: 0905a29725076988c2ccf17cf16f0e2676daef0a.
+- CI #1380: https://github.com/izzyn0okami/Tandem/actions/runs/45716179179 — check-style SUCCESS; build-debug-apk SUCCESS; testes unitários e compilação aprovados; final-status SUCCESS.
+- [PENDENTE — TESTE NO APARELHO] Confirmar as mensagens de autenticação/permissões nos fluxos reais; CI não substitui validação funcional.
+- PR #54 permanece aberta e não mesclada. Nenhuma autorização de merge foi dada.
+- O log acompanha a branch da PR; após merge, registrar novamente no branch base.
+
+- [REFINAMENTO] Erros 404 dos endpoints de troca de código e início de pareamento por dispositivo mantêm mensagens específicas (código inválido/expirado ou uso do fluxo manual); HTTP 429 preserva a orientação de aguardar antes de tentar novamente.
+- [TESTES ADICIONAIS] Cobertura de 404 específico de pareamento, além da matriz geral 401/403/404.
+- [REVISÃO DE ESCOPO] O 404 de /api/devices/online continua opcional e isolado; 404 em endpoints obrigatórios permanece visível e não é convertido em sucesso.
+
+
+VALIDAÇÃO FUNCIONAL E FECHAMENTO — ESTÁGIO H / PR #54 (2026-11-25)
+- [CONCLUÍDO — TESTE NO APARELHO] O usuário confirmou que os testes funcionais da PR #54 foram concluídos com resultados OK.
+- [CONCLUÍDO] Validação de autenticação/permissões e compatibilidade aprovada pelo usuário; não é necessário repetir testes de saves, pois a PR não altera esse subsistema.
+- [CONCLUÍDO — CI] CI #1381, run 45719649271, validou o head 27ba74d1b2011f2d30a06f8987a1c3c17601e086: check-style SUCCESS; build-debug-apk SUCCESS (testes unitários, compilação e upload do APK); final-status SUCCESS.
+- [APK DE TESTE] Artefato assembleLawnWithQuickstepGithubDebug, ID 15071866800, tamanho 46.498.165 bytes; SHA-256 3f92927490fc705ee64427fee2053f069d0e2c0fb654daff76ba59e2e3139537. Disponível até 2027-02-23, salvo remoção antecipada.
+- [CONCLUÍDO] H4 e H7 implementados, CI aprovada e testes no aparelho aprovados. H1–H3, H5 e H6 permanecem concluídos conforme auditoria anterior.
+- [PENDÊNCIA DE GOVERNANÇA] PR #54 permanece aberta e não mesclada; aguarda autorização explícita do usuário para merge em game-mode-m2-dev.
+- F5 permanece descartado por decisão do usuário. E6/E7 permanecem pendentes e independentes do estágio H.

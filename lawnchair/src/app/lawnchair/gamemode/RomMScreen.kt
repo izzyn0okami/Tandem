@@ -162,13 +162,13 @@ private fun ConnectForm(onConnect: () -> Unit) {
                             result.onSuccess { (url, token, accountId) ->
                                 RomMSettings.save(context, url, token, accountId)
                                 onConnect()
-                            }.onFailure { message = it.message ?: it.toString() }
+                            }.onFailure { message = romMUserFacingError(it, "conectar a conta RomM") }
                         } else {
                             val result = withContext(Dispatchers.IO) { beginPairing(context, address) }
                             result.onSuccess {
                                 pairing = it
                                 message = ""
-                            }.onFailure { message = it.message ?: it.toString() }
+                            }.onFailure { message = romMUserFacingError(it, "iniciar o pareamento por dispositivo") }
                         }
                         busy = false
                     }
@@ -203,7 +203,7 @@ private fun PairingWait(pairing: DevicePairing, onApprove: (String, Long) -> Uni
                             RomMClient(pairing.baseUrl, result.token).currentUserId()
                         }
                     }.getOrElse {
-                        latestFail(it.message ?: "Não foi possível identificar a conta RomM")
+                        latestFail(romMUserFacingError(it, "identificar a conta RomM"))
                         return@LaunchedEffect
                     }
                     return@LaunchedEffect latestApprove(result.token, accountId)
@@ -365,12 +365,7 @@ private fun ServerManage(remote: RemoteLibrary) {
                                     }
                             }.onFailure { error ->
                                 deviceSyncMessage = when (error) {
-                                    is RomMHttpException -> if (error.statusCode == 403) {
-                                        "O RomM recusou o registro (HTTP 403). Verifique se a autorização da conta inclui a permissão devices.write."
-                                    } else {
-                                        "Falha no registro do dispositivo (HTTP ${error.statusCode})."
-                                    }
-
+                                    is RomMHttpException -> romMUserFacingError(error, "registrar o dispositivo no Device Sync")
                                     else -> error.message ?: "Não foi possível registrar o dispositivo no RomM."
                                 }
                             }
