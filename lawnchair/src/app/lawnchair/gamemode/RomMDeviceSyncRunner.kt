@@ -216,7 +216,7 @@ object RomMDeviceSyncRunner {
                                         sessionId = negotiation.sessionId,
                                         slot = null,
                                         emulator = emulator,
-                                        fileName = archiveSaveFileName(romFile, localTimestamp),
+                                        fileName = archiveSaveFileName(romFile, localTimestamp, initialLocalHash ?: md5(snapshot)),
                                         file = snapshot,
                                     )
                                     uploaded++
@@ -407,7 +407,7 @@ object RomMDeviceSyncRunner {
                 sessionId = sessionId,
                 slot = null,
                 emulator = emulator,
-                fileName = archiveSaveFileName(romFile, localTimestamp),
+                fileName = archiveSaveFileName(romFile, localTimestamp, initialLocalHash ?: md5(snapshot)),
                 file = snapshot,
             )
             if (!originalSave.matchesMd5(initialLocalHash)) {
@@ -434,11 +434,13 @@ object RomMDeviceSyncRunner {
 
     private fun romSaveFileName(romFile: File): String = "${romFile.nameWithoutExtension}.srm"
 
-    private fun archiveSaveFileName(romFile: File, timestamp: Instant): String {
+    private fun archiveSaveFileName(romFile: File, timestamp: Instant, contentHash: String): String {
         val tag = java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss")
             .withZone(java.time.ZoneId.systemDefault())
             .format(timestamp)
-        return "${romFile.nameWithoutExtension} [$tag].srm"
+        // The hash suffix prevents a null-slot archive from colliding with a slotted
+        // RomM snapshot that happens to have the same second-level timestamp.
+        return "${romFile.nameWithoutExtension} [$tag] - Tandem-${contentHash.take(8)}.srm"
     }
 
     private fun File.matchesMd5(expected: String?): Boolean {
