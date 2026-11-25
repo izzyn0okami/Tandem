@@ -1105,6 +1105,23 @@ class SaveStore internal constructor(
 
     fun writeSram(bytes: ByteArray) = write(sramFile, bytes)
 
+    /**
+     * Persists core-produced SRAM only when its bytes actually changed. This prevents a routine
+     * serialize-on-pause from refreshing the file timestamp and falsely scheduling a RomM upload.
+     *
+     * @return true when a new/different SRAM payload was written.
+     */
+    @Synchronized
+    fun writeSramIfChanged(bytes: ByteArray): Boolean {
+        if (sramFile.isFile && sramFile.length() == bytes.size.toLong() &&
+            sramFile.readBytes().contentEquals(bytes)
+        ) {
+            return false
+        }
+        write(sramFile, bytes)
+        return true
+    }
+
     fun hasState(): Boolean = stateFile.isFile && stateFile.length() > 0
 
     fun readState(): ByteArray? = stateFile.takeIf { hasState() }?.readBytes()
