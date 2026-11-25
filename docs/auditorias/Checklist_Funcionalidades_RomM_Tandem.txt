@@ -1705,3 +1705,13 @@ FECHAMENTO DE IMPLEMENTAÇÃO E CI — PR #54 (2026-11-25)
 - [REFINAMENTO] Erros 404 dos endpoints de troca de código e início de pareamento por dispositivo mantêm mensagens específicas (código inválido/expirado ou uso do fluxo manual); HTTP 429 preserva a orientação de aguardar antes de tentar novamente.
 - [TESTES ADICIONAIS] Cobertura de 404 específico de pareamento, além da matriz geral 401/403/404.
 - [REVISÃO DE ESCOPO] O 404 de /api/devices/online continua opcional e isolado; 404 em endpoints obrigatórios permanece visível e não é convertido em sucesso.
+
+
+VALIDAÇÃO FUNCIONAL E FECHAMENTO — ESTÁGIO H / PR #54 (2026-11-25)
+- [CONCLUÍDO — TESTE NO APARELHO] O usuário confirmou que os testes funcionais da PR #54 foram concluídos com resultados OK.
+- [CONCLUÍDO] Validação de autenticação/permissões e compatibilidade aprovada pelo usuário; não é necessário repetir testes de saves, pois a PR não altera esse subsistema.
+- [CONCLUÍDO — CI] CI #1381, run 45719649271, validou o head 27ba74d1b2011f2d30a06f8987a1c3c17601e086: check-style SUCCESS; build-debug-apk SUCCESS (testes unitários, compilação e upload do APK); final-status SUCCESS.
+- [APK DE TESTE] Artefato assembleLawnWithQuickstepGithubDebug, ID 15071866800, tamanho 46.498.165 bytes; SHA-256 3f92927490fc705ee64427fee2053f069d0e2c0fb654daff76ba59e2e3139537. Disponível até 2027-02-23, salvo remoção antecipada.
+- [CONCLUÍDO] H4 e H7 implementados, CI aprovada e testes no aparelho aprovados. H1–H3, H5 e H6 permanecem concluídos conforme auditoria anterior.
+- [PENDÊNCIA DE GOVERNANÇA] PR #54 permanece aberta e não mesclada; aguarda autorização explícita do usuário para merge em game-mode-m2-dev.
+- F5 permanece descartado por decisão do usuário. E6/E7 permanecem pendentes e independentes do estágio H.
