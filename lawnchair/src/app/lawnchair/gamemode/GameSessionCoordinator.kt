@@ -129,6 +129,7 @@ internal object GameSessionCoordinator {
                 coreId,
                 platformSlug,
                 snapshotOverride = snapshot,
+                useSnapshotOnly = true,
             )
             saveRetry = GameSessionSyncPolicy.shouldRetryBackground(saveResult)
             if (!saveRetry && saveResult.conflictsPreserved == 0 &&
