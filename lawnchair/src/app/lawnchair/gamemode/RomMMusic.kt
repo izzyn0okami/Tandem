@@ -80,6 +80,7 @@ internal fun RomMMusicScreen() {
     var message by remember { mutableStateOf("") }
     var playlistName by remember { mutableStateOf("") }
     var confirmDeletePlaylist by remember { mutableStateOf(false) }
+    var playlistToDelete by remember { mutableStateOf<RemoteMusicPlaylist?>(null) }
 
     var queue by remember { mutableStateOf<List<RemoteMusicTrack>>(emptyList()) }
     var currentIndex by remember { mutableIntStateOf(-1) }
@@ -332,7 +333,7 @@ internal fun RomMMusicScreen() {
                             GameButton(
                                 "Excluir",
                                 onClick = {
-                                    selectedPlaylist = playlist
+                                    playlistToDelete = playlist
                                     confirmDeletePlaylist = true
                                 },
                                 danger = true,
@@ -348,7 +349,7 @@ internal fun RomMMusicScreen() {
                 }
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     GameButton("Adicionar faixas", onClick = { section = RomMMusicSection.Tracks }, primary = true, compact = true)
-                    GameButton("Excluir playlist", onClick = { confirmDeletePlaylist = true }, danger = true, compact = true)
+                    GameButton("Excluir playlist", onClick = { playlistToDelete = selectedPlaylist; confirmDeletePlaylist = true }, danger = true, compact = true)
                 }
                 LazyColumn(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                     items(tracks, key = { it.romFileId }) { track ->
@@ -482,9 +483,9 @@ internal fun RomMMusicScreen() {
     }
 
     if (confirmDeletePlaylist) {
-        val target = selectedPlaylist
+        val target = playlistToDelete ?: selectedPlaylist
         AlertDialog(
-            onDismissRequest = { confirmDeletePlaylist = false },
+            onDismissRequest = { confirmDeletePlaylist = false; playlistToDelete = null },
             title = { Text("Excluir playlist?") },
             text = { Text("A playlist \"${target?.name.orEmpty()}\" será removida do RomM. As faixas originais não serão apagadas.") },
             confirmButton = {
@@ -494,7 +495,8 @@ internal fun RomMMusicScreen() {
                         busy = true
                         try {
                             withContext(Dispatchers.IO) { activeClient.deleteMusicPlaylist(target.id) }
-                            selectedPlaylist = null
+                            if (selectedPlaylist?.id == target.id) selectedPlaylist = null
+                            playlistToDelete = null
                             confirmDeletePlaylist = false
                             message = "Playlist excluída."
                             refreshCurrent()
@@ -506,7 +508,7 @@ internal fun RomMMusicScreen() {
                     }
                 }, danger = true, enabled = !busy, compact = true)
             },
-            dismissButton = { GameButton("Cancelar", onClick = { confirmDeletePlaylist = false }, compact = true) },
+            dismissButton = { GameButton("Cancelar", onClick = { confirmDeletePlaylist = false; playlistToDelete = null }, compact = true) },
         )
     }
 }
@@ -626,7 +628,7 @@ private class RomMMusicPlayback(context: Context) {
             created.setOnPreparedListener { prepared ->
                 runCatching { prepared.start() }
                     .onSuccess { onPrepared(prepared.duration.coerceAtLeast(0)) }
-                    .onFailure { onError(it.message ?: "Não foi possível iniciar o áudio.") }
+                    .onFailure { release(); onError(it.message ?: "Não foi possível iniciar o áudio.") }
             }
             created.setOnCompletionListener {
                 release()
