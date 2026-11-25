@@ -1814,13 +1814,10 @@ G7 — REAVALIAÇÃO
 - [AUDITADO] O namespace /ws geral requer sessão web para eventos privados; /devices aceita token vinculado a dispositivo com devices.read. Netplay usa endpoint Socket.IO separado.
 - [DECISÃO TÉCNICA] G6 usa endpoints REST para catálogo, favoritos e playlists; não há requisito de push. Manter REST como fonte da verdade e não adicionar socket persistente.
 
-ORDEM PROPOSTA DE IMPLEMENTAÇÃO
-1. G6 — música e playlists: API documentada e player de áudio já existente no Tandem.
-2. G8 — leitura administrativa (usuários/grupos/permissões); escritas apenas em incremento separado com confirmação e scope explícito.
-3. G3 — descoberta de disponibilidade e abertura da sessão de streaming web segura.
-4. G4 — experiência Netplay via RomM/EmulatorJS, sem alegar compatibilidade LibretroDroid.
-5. G1 — suporte somente a feeds compatíveis com um consumidor Android concreto e autenticação segura.
-6. G5/G7 — preservar limites e decisões auditadas; reabrir apenas mediante evidência técnica.
+ORDEM FINAL DE IMPLEMENTAÇÃO
+1. G6 — música, artistas, álbuns, favoritos e playlists; único item aprovado para implementação.
+2. G5/G7 — preservar as auditorias e limitações; sem integração adicional sem requisito concreto.
+3. G1/G2/G3/G4/G8 — fora do escopo por decisão do usuário.
 
 FONTES OFICIAIS CONSULTADAS
 - https://docs.romm.app/5.4.0/ecosystem/feed-clients/
