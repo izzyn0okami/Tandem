@@ -197,8 +197,7 @@ ATUALIZAÇÃO — VALIDAÇÃO DO MAPEAMENTO DE SLOTS REMOTOS (2026-11-24)
 - [PENDENTE] Saves PSX preexistentes no slot remoto autosave permanecem intocados; nenhuma migração para memory-card-0 foi executada ou presumida.
 - [PR] #50 permanece aberta em draft, sem merge. Próxima prioridade: planejar a substituição do SaveSync tradicional e Device Sync por um único motor, com análise de todos os chamadores, workers, filas e política de reconciliação antes de remover o caminho legado.
 - [SEGURANÇA] overwrite=false, delete ignorado e conflitos preservados. Nenhum save, ROM ou dado remoto foi apagado, movido, sobrescrito ou migrado.
-CONTINUAÇÃO DA AUDITORIA — CI #1094 E CICLO DE SESSÃO (2026-11-24)
-- [CI APROVADA] Run #1094 / 45418874071, no commit 610577abb6c5eae584c8c4c454c542c83f9f0bbb: check-style/Spotless, testes unitários, build Debug APK e final-status concluídos com sucesso. Os jobs opcionais de notificações, Crowdin e publicação foram ignorados por condição do workflow; não houve publicação tandem-latest.
+CONTINUAÇÃO DA AUDITORIA — CI #1094 E CICLO DE SESSÃO (2026-11-24)- [CI APROVADA] Run #1094 / 45418874071, no commit 610577abb6c5eae584c8c4c454c542c83f9f0bbb: check-style/Spotless, testes unitários, build Debug APK e final-status concluídos com sucesso. Os jobs opcionais de notificações, Crowdin e publicação foram ignorados por condição do workflow; não houve publicação tandem-latest.
 - [ARTEFATO] assembleLawnWithQuickstepGithubDebug, ID 14932534467, 46.403.478 bytes; SHA-256 3e57c377452bc3987ca6d570cf34c60c3c551e30a4b15d4c57e4f6af18aa87d6; disponível até 2027-02-22.
 - [CONFIRMAÇÃO DE HEAD] A run #1094 pertence à branch feat/unified-session-artifacts e ao head 610577abb6c5eae584c8c4c454c542c83f9f0bbb.
 - [ACHADO DE CICLO] GameSessionActivity ainda chama SaveSync.markSessionActive no início/retomada e durante autosave; SaveSync.markPending é acionado ao persistir SRAM e estado rápido; em onPause, após persistir os dados locais, chama markSessionInactive e pushAsync. SaveSync.pushAsync enfileira RomMSaveSyncWorker no WorkManager com rede conectada e política de trabalho único APPEND_OR_REPLACE. O worker continua chamando SaveSync.pushFromWorker, isto é, o caminho tradicional permanece ativo no ciclo real.
@@ -397,8 +396,7 @@ ATUALIZAÇÃO — CI #1145 APROVADA E APK GERADO — 2026-11-24
 - [ARTEFATO] ID 14975451749, nome assembleLawnWithQuickstepGithubDebug, 46.423.074 bytes, SHA-256 6c0467ce294da99b5552485e8849408e04761b090bcca9356966ecc68f7d2edf. Expiração: 2027-02-22.
 - [PENDÊNCIA FUNCIONAL] A CI não substitui o teste no telefone. Ainda é necessário validar o vínculo de ROM local já existente sem apagar/baixar novamente, a identidade RomM no SaveStore e a preservação dos saves. Save states ainda precisam de teste completo de ida e volta. HTTP 500 em /api/platforms e /api/roms permanecem para investigação.- [SEGURANÇA/DECISÃO] Nenhum dado de jogo foi alterado nesta validação. PR #50 permanece aberta, draft e sem merge; não mesclar sem autorização explícita.
 
-VALIDAÇÃO FUNCIONAL — ROM LOCAL RECONHECIDA SEM RE-DOWNLOAD — 2026-11-24
-- [CONFIRMAÇÃO DO USUÁRIO] Após a correção do reconciliador Local/RomM, o usuário confirmou que o teste funcionou com uma ROM que já estava no aparelho, sem precisar excluí-la nem baixá-la novamente do servidor.
+VALIDAÇÃO FUNCIONAL — ROM LOCAL RECONHECIDA SEM RE-DOWNLOAD — 2026-11-24- [CONFIRMAÇÃO DO USUÁRIO] Após a correção do reconciliador Local/RomM, o usuário confirmou que o teste funcionou com uma ROM que já estava no aparelho, sem precisar excluí-la nem baixá-la novamente do servidor.
 - [RESULTADO] Validação funcional positiva do vínculo de uma ROM local preexistente com o catálogo RomM. Este resultado atende ao cenário que estava pendente desde o log #9 e demonstra que, nesse caso testado, a associação não dependeu de re-download.
 - [ESCOPO DA EVIDÊNCIA] O usuário confirmou o funcionamento, mas não especificou nesta confirmação o título da ROM nem forneceu um novo log técnico. Portanto, registrar como teste funcional reportado pelo usuário, sem inferir quantas das 16 ROMs sem hash correspondente foram resolvidas ou que todos os formatos multidisco estejam cobertos.
 - [SEGURANÇA] O teste confirmado não exigiu exclusão nem novo download da ROM local. Não há indicação de remoção, substituição ou migração de ROMs ou saves nesta validação.
@@ -599,7 +597,6 @@ CORREÇÃO — POLÍTICA DE RESTAURAÇÃO DE SAVE STATES PERSISTIDOS — 2026-11
 - [SEGURANÇA] Nenhum arquivo ou registro foi modificado; nenhuma mudança de código foi feita nesta auditoria. Manter o bloqueio de upload sem histórico e overwrite=false.
 - [ESCOPO] Revisados SaveStore.kt, SaveArtifactCatalog.kt, CoreSaveAdapter.kt, RomMDeviceSyncClient.kt, RomMDeviceSyncRunner.kt e testes DeviceSyncProtocolTest.kt na branch feat/unified-session-artifacts da PR #50.
 
-
 ## AUDITORIA — LOG #14 — BLOQUEIO DE UPLOAD PSX E CONSULTA LEGADA DE STATES (2026-11-25)
 - [FONTE] Dropbox tandem-log (14).txt; app 16.Dev.(#1217), aparelho Motorola Edge 30 Fusion, sessão principal 15c4b78c.
 - [PSX — BLOQUEIO CONFIRMADO] Para Castlevania - Symphony of the Night Ultimate (ROM #830, slot memory-card-0), o cliente local manteve MD5 936b066d e 131.072 bytes; o save remoto save_id 39 permaneceu com MD5 35c9fa65. RomM repetiu a operação Upload com motivo "Client save is newer (no sync history)" e o Tandem recusou antes do envio, registrando "upload bloqueado... ambos os lados preservados". O pré-jogo foi interrompido por conflito. Nenhum upload/download ou sobrescrita de save_id 39 foi confirmado.
@@ -757,3 +754,15 @@ CORREÇÃO — POLÍTICA DE RESTAURAÇÃO DE SAVE STATES PERSISTIDOS — 2026-11
 - [ESTADO] PR #50 permanece aberta, draft, mergeable e 146 commits à frente / 0 atrás da base na última comparação. Nenhuma review formal ou thread de revisão listada.
 - [SEGURANÇA] Nenhum save, ROM ou dado remoto foi apagado, movido ou migrado. Não houve merge.
 - [PENDÊNCIA] Revisão final do conjunto e decisão explícita do usuário sobre merge. A PR permanece sem merge.
+
+### PR #50 mesclada na base game-mode-m2-dev (25/11/2026)
+
+- [MERGE CONCLUÍDO] PR #50 (`feat/unified-session-artifacts` -> `game-mode-m2-dev`) foi mesclada com sucesso em 25/11/2026 às 12:01:34 UTC.
+- [COMMIT DE MERGE] `68e813ca3798fed4ef554b83d3977cc27696be38`.
+- [HEAD INCORPORADO] `ef431273f4fb92be1bbe81d7a36b04401be1e736`.
+- [ESCOPO] Foram incorporadas as alterações de inventário tipado, coordenação de sessão, sincronização segura SRAM/cartões, states exclusivamente locais, restauração/histórico manual SRAM, testes e auditoria.
+- [VALIDAÇÃO DE CÓDIGO] CI #1270 e CI #1274 passaram, incluindo Spotless, testes unitários e build Debug APK. O APK #1274 está disponível no artefato 15017309105.
+- [RESSALVA CI #1276] A execução iniciada para o último commit documental apresentou falha em `spotlessApply` porque o Gradle não conseguiu resolver o plugin `com.google.devtools.ksp:2.3.13` nos repositórios Google/Gradle Plugin Portal. O erro ocorreu durante resolução do plugin, antes da execução do Spotless; não foi reportado erro de formatação ou teste de código. A CI #1276 não foi usada como validação positiva.
+- [SEGURANÇA] Nenhum save, ROM ou dado remoto foi apagado, movido ou migrado pelo merge. SRAM/cartões permanecem no Device Sync; save states permanecem exclusivamente locais. `overwrite=false` e preservação de conflitos continuam conforme implementação aprovada.
+- [ESTADO] PR #50 está fechada e marcada como merged. A comparação final confirmou que a branch de trabalho estava 147 commits à frente e 0 atrás da base antes do merge.
+- [PRÓXIMO PASSO] Verificar o estado da branch base e a CI disparada após o merge. Não abrir nova PR até consultar PRs abertas e este log.
