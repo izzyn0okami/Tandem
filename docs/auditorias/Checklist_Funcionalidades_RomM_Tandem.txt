@@ -71,7 +71,7 @@ F. ESTATÍSTICAS, RECOMENDAÇÕES E NOTIFICAÇÕES
 [CONCLUÍDO] F2. GET /api/recommendations integrado; painel exibe até 10 sugestões, motivos e jogo-semente quando disponível. Lista vazia é tratada como resultado válido. CI aprovada e teste funcional no aparelho confirmado pelo usuário.
 [CONCLUÍDO] F3. GET /api/notifications integrado; painel exibe as 10 mais recentes e contagem de não lidas. CI aprovada e teste funcional no aparelho confirmado pelo usuário; as ações de escrita estão rastreadas em F4.
 [CONCLUÍDO] F4. Ações de notificação: marcar individual como lida, marcar todas como lidas e dispensar individualmente com confirmação. Escopo me.write solicitado no pareamento; chamadas limitadas aos endpoints F4. CI #1346 aprovada e três ações confirmadas pelo usuário no aparelho.
-[AUDITADO — AGUARDANDO DECISÃO] F5. RomM oferece canais webhook, email e Apprise; CRUD e teste usam me.write (já solicitado pelo Tandem para F4). Apprise é restrito a administradores; catálogo/parse exigem admin mesmo usando me.read. Auditoria detalhada registrada no histórico abaixo. Implementação não autorizada.
+[FORA DO ESCOPO — DECISÃO DO USUÁRIO] F5. Gestão de canais webhook, email e Apprise foi descartada por não oferecer utilidade prática ao usuário. Auditoria técnica mantida apenas como histórico; nenhuma implementação planejada.
 [FORA DO ESCOPO INICIAL] F6. Replicar painel administrativo, logs e auditoria do RomM.
 
 G. RECURSOS ESPECIALIZADOS
@@ -1621,3 +1621,39 @@ DECISÃO DE ESCOPO — F5 DESCARTADO (2026-11-25)
 - Nenhuma configuração ou canal remoto foi alterado como consequência desta decisão.
 - F5 não exige nova PR, alteração funcional ou CI; a PR #53 permanece dedicada ao trabalho já aprovado em F1–F4 e não deve receber implementação F5.
 - PR #53: https://github.com/izzyn0okami/Tandem/pull/53; estado consultado: open, draft=true, merged=false. Nenhum merge executado.
+
+
+AUDITORIA H4–H7 — AUTENTICAÇÃO, PERMISSÕES E COMPATIBILIDADE (2026-11-25)
+Escopo: leitura do RomMClient.kt, RomMScreen.kt, fluxo de pareamento e documentação oficial RomM 5.4.0/5.4.1.
+
+H4 — DETECÇÃO DE PERMISSÕES E RECUPERAÇÃO
+- [AUDITADO — MELHORIA NECESSÁRIA] O cliente já possui RomMHttpException com status HTTP e extração limitada de detalhes; a tela de registro Device Sync traduz especificamente HTTP 403 para uma orientação sobre devices.write.
+- [PENDENTE] O tratamento ainda é fragmentado: algumas chamadas lançam RomMHttpException, outras IOException genérica com apenas o código HTTP; a tela de conexão não oferece uma orientação uniforme para 401 (token inválido/revogado/expirado) e 403 (scope insuficiente).
+- [RECOMENDADO] Centralizar a tradução de 401/403/404 em mensagens claras, sem afirmar que todo 403 é erro de pareamento: 403 significa credencial válida sem permissão suficiente; 401 indica credencial ausente/inválida/expirada. Para 401, oferecer reconexão explícita; para 403, indicar o scope/área quando conhecido e orientar revisar permissões do token/conta.
+- [SEGURANÇA] Não tentar repetir automaticamente operações de escrita após 401/403 e não apagar dados locais ou filas pendentes ao detectar falha de autenticação.
+
+H5 — EXPIRAÇÃO, REVOGAÇÃO E RENOVAÇÃO
+- [CONCLUÍDO — AUDITORIA] Tandem usa Client API Tokens do RomM, não OAuth2 password-grant access/refresh tokens. Client API Tokens são credenciais de longa duração e não expiram por padrão; o administrador/usuário pode definir expiração opcional ou revogar o token.
+- [CONCLUÍDO — DECISÃO TÉCNICA] Não implementar refresh token: não há refresh token para o Client API Token utilizado pelo Tandem. Se o token for expirado/revogado, a recuperação correta é novo pareamento/reconexão explícita.
+- [FONTE] RomM 5.4.0 API Authentication e Client API Tokens.
+
+H6 — TOKEN MANUAL × PAREAMENTO POR DISPOSITIVO
+- [CONCLUÍDO — AUDITORIA] O fluxo manual usa POST /api/client-tokens/exchange após o usuário gerar um código para um Client API Token no RomM. O token resultante é um Client API Token normal; o pareamento só transporta a credencial e não o vincula ao dispositivo.
+- [CONCLUÍDO — AUDITORIA] O fluxo de dispositivo usa POST /api/auth/device/init e POST /api/auth/device/token; o RomM emite token vinculado ao dispositivo registrado. Esse vínculo é relevante para endpoints/recursos de Device Sync e identificação do dispositivo.
+- [CONFIRMADO NO CÓDIGO] O fluxo de dispositivo solicita scopes explícitos: me.read, me.write, platforms.read, collections.read, roms.read, roms.user.read/write, assets.read/write, firmware.read e devices.read/write.
+- [RECOMENDADO] Preservar ambos os fluxos. Explicar que o fluxo manual é uma credencial genérica de Client API Token e que o fluxo de dispositivo fornece identidade vinculada ao aparelho; não tratar os dois como equivalentes em capacidades de Device Sync.
+- [FONTE] RomM 5.4.0 Client API Tokens.
+
+H7 — COMPATIBILIDADE E CÓDIGOS HTTP
+- [AUDITADO — MELHORIA NECESSÁRIA] A implementação já trata casos específicos de 404 em troca de código/pareamento e em consulta opcional de dispositivo; o cliente também preserva status em RomMHttpException em várias rotas.
+- [PENDENTE] Não existe uma política uniforme para 401/403/404 em todos os endpoints. Algumas chamadas perdem o tipo/status ao lançar IOException genérica; outras propagam RomMHttpException. A UI, portanto, não consegue sempre oferecer orientação consistente.
+- [RECOMENDADO] Uniformizar erros sem transformar 404 em sucesso genérico: distinguir recurso opcional ausente de rota inexistente/versão incompatível; manter o status e o endpoint no diagnóstico; não duplicar registros nem repetir escritas automaticamente.
+- [AUDITADO] RomM 5.4.0 define 401 como credencial ausente/inválida/expirada; 403 como identidade autenticada sem scope; 404 como recurso inexistente ou oculto por privacidade. Não inferir falta de permissão a partir de 404.
+- [PENDENTE] Testes automatizados de matriz 401/403/404 por fluxo principal e regressão contra RomM 5.4.1.
+
+RESULTADO DA AUDITORIA H
+- H1–H3 permanecem concluídos.
+- H5 e H6 estão tecnicamente esclarecidos; não exigem implementação de refresh token nem remoção de qualquer fluxo.
+- H4 e H7 precisam de melhoria de tratamento de erros e orientação de reconexão/permissões.
+- Nenhuma chamada foi feita ao servidor RomM do usuário; nenhum token foi lido, alterado, revogado ou reemitido.
+- PR #53 permanece aberta e draft; não foi mesclada. Como H4/H7 tocarão RomMClient.kt e RomMScreen.kt, arquivos já modificados pela PR #53, não iniciar alterações concorrentes nesses arquivos antes de resolver a PR #53.
