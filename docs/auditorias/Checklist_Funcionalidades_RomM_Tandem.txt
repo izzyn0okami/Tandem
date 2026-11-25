@@ -67,10 +67,10 @@ E. SAVES, STATES E SINCRONIZAÇÃO
 [CONCLUÍDO — DECISÃO DE ESCOPO] E10. Device Sync permanece responsável por SRAM/cartões elegíveis; save states ficam locais; WebDAV não substitui o transporte nesta etapa. Expansões exigem etapa e validação próprias.
 
 F. ESTATÍSTICAS, RECOMENDAÇÕES E NOTIFICAÇÕES
-[EM ANDAMENTO] F1. Endpoint GET /api/stats integrado em modo somente leitura; painel exibe totais oficiais do RomM sem recalcular. CI e validação funcional pendentes.
-[EM ANDAMENTO] F2. GET /api/recommendations integrado; painel exibe até 10 sugestões, motivos e jogo-semente quando disponível. Lista vazia é tratada como resultado válido. CI e validação funcional pendentes.
-[EM ANDAMENTO] F3. GET /api/notifications integrado; painel exibe as 10 mais recentes e contagem de não lidas, sem marcar como lidas nem dispensar. CI e validação funcional pendentes.
-[PENDENTE] F4. Avaliar atualização/dispensa de notificações.
+[CONCLUÍDO] F1. Endpoint GET /api/stats integrado em modo somente leitura; painel exibe totais oficiais do RomM sem recalcular. CI aprovada e teste funcional no aparelho confirmado pelo usuário.
+[CONCLUÍDO] F2. GET /api/recommendations integrado; painel exibe até 10 sugestões, motivos e jogo-semente quando disponível. Lista vazia é tratada como resultado válido. CI aprovada e teste funcional no aparelho confirmado pelo usuário.
+[CONCLUÍDO] F3. GET /api/notifications integrado; painel exibe as 10 mais recentes e contagem de não lidas. CI aprovada e teste funcional no aparelho confirmado pelo usuário; as ações de escrita estão rastreadas em F4.
+[CONCLUÍDO] F4. Ações de notificação: marcar individual como lida, marcar todas como lidas e dispensar individualmente com confirmação. Escopo me.write solicitado no pareamento; chamadas limitadas aos endpoints F4. CI #1346 aprovada e três ações confirmadas pelo usuário no aparelho.
 [PENDENTE] F5. Avaliar canais de notificação e Apprise; sem editor administrativo inicialmente.
 [FORA DO ESCOPO INICIAL] F6. Replicar painel administrativo, logs e auditoria do RomM.
 
@@ -1562,3 +1562,14 @@ ATUALIZAÇÃO — CI #1346 / HEAD COM LOG FINAL (2026-11-25)
 - [PENDENTE — VALIDAÇÃO NO APARELHO] Marcar notificação individual como lida; marcar todas como lidas; dispensar individual após confirmação. Requer desconectar e parear novamente para autorizar me.write.
 - [ESTADO] PR #53 aberta, draft, mergeable=true, sem merge; head 2bc806a778c0bed7f4e60b0c1c5d3b0630de57ef; base game-mode-m2-dev.
 - Nenhuma alteração em notificações reais da conta RomM foi realizada. F5 permanece fora do escopo.
+
+VALIDAÇÃO FINAL F4 — TESTES NO APARELHO APROVADOS (2026-11-25)
+- [CONCLUÍDO — TESTE NO APARELHO] O usuário confirmou: “tudo funcionou”, aprovando as três ações F4 na versão de teste da PR #53 após reautorização do RomM com me.write.
+- Marcar uma notificação individual como lida: aprovado.
+- Marcar todas as notificações como lidas: aprovado.
+- Dispensar uma notificação individual após confirmação: aprovado.
+- [CONCLUÍDO] F4 está funcionalmente validada no aparelho. F1, F2 e F3 também permanecem aprovadas conforme confirmação anterior do usuário.
+- [CI] CI #1346 (run 45708328099) passou no commit 2bc806a778c0bed7f4e60b0c1c5d3b0630de57ef, cobrindo implementação e testes automatizados F4. O head documental atual é 17dce11dd53caf0864058acb0946d263180a4772; a execução #45709991124 estava em andamento durante esta atualização.
+- [ESTADO DA PR] PR #53 permanece aberta, draft, sem merge; branch feat/romm-stage-f-dashboard; base game-mode-m2-dev. Merge não autorizado nem executado.
+- [PENDENTE] F5 — auditoria separada de canais de notificação/Apprise; não implementado e não autorizado nesta etapa.
+- [PENDENTE] E6/E7 — PoC e testes WebDAV, independentes do estágio F.
