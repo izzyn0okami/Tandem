@@ -499,7 +499,7 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
     fun checkServer(): String? = try {
         http.newCall(request(base.resolve("api/heartbeat")!!).build()).execute().use { response ->
             if (!response.isSuccessful) {
-                "o servidor respondeu ${response.code}"
+                romMUserFacingError(httpException(response, "conectar ao RomM"), "conectar ao RomM")
             } else {
                 val body = response.body.string()
                 val heartbeat = runCatching { JSONObject(body) }.getOrNull()
@@ -740,7 +740,7 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
         val url = base.resolve("api/roms/$romId/soundtracks/metadata")!!
         return http.newCall(request(url).get().build()).execute().use { response ->
             if (!response.isSuccessful) {
-                throw RomMHttpException(response.code, "Não foi possível carregar as trilhas do RomM (HTTP ${response.code})")
+                throw RomMHttpException(response.code, "Não foi possível carregar as trilhas do RomM", romMErrorDetail(response.peekBody(MAX_HTTP_ERROR_BODY_BYTES).string()), response.request.url.encodedPath)
             }
             val array = org.json.JSONArray(response.body.string())
             (0 until array.length()).mapNotNull { index ->
@@ -842,7 +842,7 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
                         404 -> "A ROM base ou o patch não foi encontrado no RomM."
                         else -> "Não foi possível aplicar o patch no RomM (HTTP ${response.code})."
                     }
-                    throw RomMHttpException(response.code, if (details.isBlank()) message else "$message $details")
+                    throw RomMHttpException(response.code, if (details.isBlank()) message else "$message $details", endpoint = response.request.url.encodedPath)
                 }
                 val body = response.body ?: throw IOException("O RomM retornou um arquivo vazio.")
                 val expectedBytes = body.contentLength()
@@ -904,7 +904,7 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
         val url = base.resolve("api/roms/$romId/notes")!!
         return http.newCall(request(url).get().build()).execute().use { response ->
             if (!response.isSuccessful) {
-                throw RomMHttpException(response.code, "Não foi possível carregar as notas do RomM (HTTP ${response.code})")
+                throw RomMHttpException(response.code, "Não foi possível carregar as notas do RomM", romMErrorDetail(response.peekBody(MAX_HTTP_ERROR_BODY_BYTES).string()), response.request.url.encodedPath)
             }
             val array = org.json.JSONArray(response.body.string())
             (0 until array.length()).map { index ->
@@ -945,7 +945,7 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
                 .build()
             val page = http.newCall(request(url).get().build()).execute().use { response ->
                 if (!response.isSuccessful) {
-                    throw RomMHttpException(response.code, "Não foi possível listar dispositivos do RomM (HTTP ${response.code}); confira o escopo devices.read")
+                    throw RomMHttpException(response.code, "Não foi possível listar dispositivos do RomM", romMErrorDetail(response.peekBody(MAX_HTTP_ERROR_BODY_BYTES).string()), response.request.url.encodedPath)
                 }
                 val body = response.body.string()
                 val root = runCatching { JSONObject(body) }.getOrNull()
@@ -977,7 +977,7 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
         val url = base.resolve("api/devices/online")!!
         return http.newCall(request(url).get().build()).execute().use { response ->
             if (!response.isSuccessful) {
-                throw RomMHttpException(response.code, "Não foi possível consultar dispositivos online (HTTP ${response.code}); confira devices.read e a configuração de instalação remota")
+                throw RomMHttpException(response.code, "Não foi possível consultar dispositivos online", romMErrorDetail(response.peekBody(MAX_HTTP_ERROR_BODY_BYTES).string()), response.request.url.encodedPath)
             }
             val array = org.json.JSONArray(response.body.string())
             (0 until array.length()).mapNotNull { index ->
@@ -1003,7 +1003,7 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
         val url = base.resolve("api/devices/${java.net.URLEncoder.encode(deviceId, "UTF-8")}")!!
         return http.newCall(request(url).get().build()).execute().use { response ->
             if (!response.isSuccessful) {
-                throw RomMHttpException(response.code, "Não foi possível consultar o dispositivo no RomM (HTTP ${response.code})")
+                throw RomMHttpException(response.code, "Não foi possível consultar o dispositivo no RomM", romMErrorDetail(response.peekBody(MAX_HTTP_ERROR_BODY_BYTES).string()), response.request.url.encodedPath)
             }
             val item = JSONObject(response.body.string())
             parseRemoteDevice(item, deviceId, onlineIds)
@@ -1152,7 +1152,7 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
         val url = base.resolve("api/activity")!!
         return http.newCall(request(url).get().build()).execute().use { response ->
             if (!response.isSuccessful) {
-                throw RomMHttpException(response.code, "Não foi possível consultar a atividade do RomM (HTTP ${response.code})")
+                throw RomMHttpException(response.code, "Não foi possível consultar a atividade do RomM", romMErrorDetail(response.peekBody(MAX_HTTP_ERROR_BODY_BYTES).string()), response.request.url.encodedPath)
             }
             val array = org.json.JSONArray(response.body.string())
             (0 until array.length()).mapNotNull { index ->
@@ -1187,7 +1187,7 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
                 } else {
                     "Não foi possível atualizar os dados pessoais no RomM (HTTP ${response.code})"
                 }
-                throw RomMHttpException(response.code, reason)
+                throw RomMHttpException(response.code, reason, romMErrorDetail(response.peekBody(MAX_HTTP_ERROR_BODY_BYTES).string()), response.request.url.encodedPath)
             }
         }
     }
@@ -1586,7 +1586,7 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
                             throw IOException("Resposta parcial inválida do RomM: Content-Range não corresponde ao trecho solicitado")
                         }
                     } else if (response.code != 200) {
-                        throw RomMHttpException(response.code, "Resposta inesperada ao continuar download: HTTP ${response.code}")
+                        throw RomMHttpException(response.code, "Resposta inesperada ao continuar download", romMErrorDetail(response.peekBody(MAX_HTTP_ERROR_BODY_BYTES).string()), response.request.url.encodedPath)
                     }
 
                     if (offset > 0L && !append) {
@@ -1947,7 +1947,7 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
     /** Arquivos de firmware (BIOS) que o servidor guarda, de todas as plataformas. */
     fun listFirmware(): List<RemoteFirmware> {
         val text = http.newCall(request(base.resolve("api/platforms")!!).build()).execute().use { response ->
-            if (!response.isSuccessful) throw IOException("Servidor respondeu ${response.code}")
+            if (!response.isSuccessful) throw httpException(response, "listar firmware do RomM")
             response.body.string()
         }
         val platforms = org.json.JSONArray(text)
