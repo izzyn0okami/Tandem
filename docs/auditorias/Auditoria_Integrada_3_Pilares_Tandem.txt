@@ -198,7 +198,6 @@ ATUALIZAÇÃO — VALIDAÇÃO DO MAPEAMENTO DE SLOTS REMOTOS (2026-11-24)
 - [PR] #50 permanece aberta em draft, sem merge. Próxima prioridade: planejar a substituição do SaveSync tradicional e Device Sync por um único motor, com análise de todos os chamadores, workers, filas e política de reconciliação antes de remover o caminho legado.
 - [SEGURANÇA] overwrite=false, delete ignorado e conflitos preservados. Nenhum save, ROM ou dado remoto foi apagado, movido, sobrescrito ou migrado.
 
-
 CONTINUAÇÃO DA AUDITORIA — CI #1094 E CICLO DE SESSÃO (2026-11-24)
 - [CI APROVADA] Run #1094 / 45418874071, no commit 610577abb6c5eae584c8c4c454c542c83f9f0bbb: check-style/Spotless, testes unitários, build Debug APK e final-status concluídos com sucesso. Os jobs opcionais de notificações, Crowdin e publicação foram ignorados por condição do workflow; não houve publicação tandem-latest.
 - [ARTEFATO] assembleLawnWithQuickstepGithubDebug, ID 14932534467, 46.403.478 bytes; SHA-256 3e57c377452bc3987ca6d570cf34c60c3c551e30a4b15d4c57e4f6af18aa87d6; disponível até 2027-02-22.
@@ -397,8 +396,7 @@ ATUALIZAÇÃO — CI #1145 APROVADA E APK GERADO — 2026-11-24
 - [HEAD DE CÓDIGO VALIDADO] f39cf73f6f0054ae248aa4ce3ffa69033811b061 (style: apply Spotless formatting). Os commits posteriores na branch, 68a7466e17a617f0ab7de9c8a0254d39e6e3d740 e 049d207ef2d7ab543208bbf2f1c6740eb5732bcc, atualizam exclusivamente este arquivo de auditoria; o workflow ignora alterações .txt/docs e não houve alteração funcional após o head validado.
 - [JOBS] check-style: success; build-debug-apk / assembleLawnWithQuickstepGithubDebug: success (inclui testLawnWithQuickstepGithubDebugUnitTest e Build APK); final-status: success. Jobs de publicação/notificação foram ignorados conforme condições do workflow; não houve publicação tandem-latest.
 - [ARTEFATO] ID 14975451749, nome assembleLawnWithQuickstepGithubDebug, 46.423.074 bytes, SHA-256 6c0467ce294da99b5552485e8849408e04761b090bcca9356966ecc68f7d2edf. Expiração: 2027-02-22.
-- [PENDÊNCIA FUNCIONAL] A CI não substitui o teste no telefone. Ainda é necessário validar o vínculo de ROM local já existente sem apagar/baixar novamente, a identidade RomM no SaveStore e a preservação dos saves. Save states ainda precisam de teste completo de ida e volta. HTTP 500 em /api/platforms e /api/roms permanecem para investigação.
-- [SEGURANÇA/DECISÃO] Nenhum dado de jogo foi alterado nesta validação. PR #50 permanece aberta, draft e sem merge; não mesclar sem autorização explícita.
+- [PENDÊNCIA FUNCIONAL] A CI não substitui o teste no telefone. Ainda é necessário validar o vínculo de ROM local já existente sem apagar/baixar novamente, a identidade RomM no SaveStore e a preservação dos saves. Save states ainda precisam de teste completo de ida e volta. HTTP 500 em /api/platforms e /api/roms permanecem para investigação.- [SEGURANÇA/DECISÃO] Nenhum dado de jogo foi alterado nesta validação. PR #50 permanece aberta, draft e sem merge; não mesclar sem autorização explícita.
 
 
 VALIDAÇÃO FUNCIONAL — ROM LOCAL RECONHECIDA SEM RE-DOWNLOAD — 2026-11-24
@@ -597,8 +595,7 @@ CORREÇÃO — POLÍTICA DE RESTAURAÇÃO DE SAVE STATES PERSISTIDOS — 2026-11
 
 ### Auditoria — nomes de arquivos SRM de PSX no Device Sync (2026-11-24)
 - [ARQUIVO LOCAL] SaveStore usa o nome físico fixo sram.srm para o save do núcleo; o inventário classifica esse arquivo como MEMORY_CARD/memory-card-0 para pcsx_rearmed, swanstation e mednafen_psx.
-- [MANIFESTO] RomMDeviceSyncRunner passa artifact.file.name ao manifesto, portanto o Tandem informa sram.srm, além de rom_id, slot memory-card-0, emulator canônico, MD5, tamanho e updated_at.
-- [UPLOAD] O multipart POST /api/saves também recebe fileName=originalSave.name (sram.srm). O arquivo temporário tem nome UUID, mas esse nome não é enviado como nome multipart.
+- [MANIFESTO] RomMDeviceSyncRunner passa artifact.file.name ao manifesto, portanto o Tandem informa sram.srm, além de rom_id, slot memory-card-0, emulator canônico, MD5, tamanho e updated_at.- [UPLOAD] O multipart POST /api/saves também recebe fileName=originalSave.name (sram.srm). O arquivo temporário tem nome UUID, mas esse nome não é enviado como nome multipart.
 - [NOME REMOTO] O Tandem não constrói nem calcula o padrão "nome do jogo [data e hora].srm"; esse nome aparenta ser a nomenclatura gerada pelo RomM ao armazenar/listar o save. A implementação do cliente envia sram.srm como nome original.
 - [IDENTIFICAÇÃO] O Tandem não associa saves comparando o nome-base do arquivo. A negociação é delimitada por device_id, rom_id e slot, e fornece emulator, content_hash, updated_at, file_size_bytes e file_name como metadados. As operações retornadas são filtradas por ROM e slot; compatibilidade é validada pelo identificador do núcleo. Para download, file_name é usado apenas para exigir a extensão .srm; não há comparação com sram.srm nem com o nome da ROM.
 - [CONCLUSÃO] A diferença entre sram.srm enviado pelo cliente e nome do jogo com data/hora exibido pelo RomM, por si só, não explica o conflito no log #13. O incidente continua compatível com ausência de baseline/histórico para o device_id do telefone e hashes divergentes. Não alterar nomes ou política de sincronização com base apenas nessa hipótese.
@@ -739,3 +736,16 @@ CORREÇÃO — POLÍTICA DE RESTAURAÇÃO DE SAVE STATES PERSISTIDOS — 2026-11
 - [PRESERVAÇÃO] A cópia local continua sendo protegida e verificada antes da substituição. A publicação de versão histórica mantém `overwrite=false` e `autocleanup=false`.
 - [VALIDAÇÃO PENDENTE] Commit de código `9b2fbe6f1d262e71f918b173a5884b488347e4ad`. A CI específica deste commit ainda não apareceu na consulta; não considerar esta correção validada até Spotless, testes e build Debug APK concluírem com sucesso.
 - [PR] Alteração feita na PR #50 existente; sem PR concorrente e sem merge.
+
+### CI #1270 — endurecimento da restauração manual SRAM aprovado (25/11/2026)
+
+- [CI APROVADA] Workflow run #1270 / 45604027001 concluiu com sucesso no commit de código `9b2fbe6f1d262e71f918b173a5884b488347e4ad`.
+- [ESTILO] Job `check-style`: Spotless automático, commit/etapa de formatação e verificação final concluídos com sucesso.
+- [TESTES E BUILD] Job `build-debug-apk (assembleLawnWithQuickstepGithubDebug)`: testes unitários, compilação do APK Debug e upload do artefato concluídos com sucesso.
+- [STATUS FINAL] Job `final-status` concluído com sucesso. Os jobs de publicação/release foram ignorados; esta CI não publicou uma release.
+- [APK] Artefato `assembleLawnWithQuickstepGithubDebug`, ID `15016193442`, tamanho 46.451.922 bytes, SHA-256 `161f6e9ec38b5ea1268317c8b12559b9b338fe7883b734f02d6c401bd1386ba8`; disponível até 23/02/2027. Execução: https://github.com/izzyn0okami/Tandem/actions/runs/45604027001
+- [CORREÇÕES VALIDADAS] A CI valida a revisão que verifica a criação da pasta de backup e adia a confirmação do download da versão mais recente até depois da aplicação local e da validação final do hash.
+- [TESTES FUNCIONAIS] Permanecem aprovados pelo usuário os testes no aparelho para SRAM/cartões PSX, ausência de nova versão quando o conteúdo não muda, sincronização após gravação real e consulta/restauração manual do histórico SRAM.
+- [ESTADO DA PR] PR #50 continua aberta, em draft, mergeable e sem divergência com a base (145 commits à frente, 0 atrás na última comparação). Não há reviews formais nem threads de revisão listadas. Não foi feito merge.
+- [PRESERVAÇÃO] Nenhum save local/remoto, ROM ou dado de jogo foi apagado, movido ou migrado nesta validação. Save states continuam exclusivamente locais; SRAM/cartões continuam no Device Sync.
+- [PRÓXIMO PASSO] Revisão final de prontidão e decisão do usuário sobre eventual merge. Não mesclar sem autorização explícita.
