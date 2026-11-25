@@ -1679,3 +1679,18 @@ Branch dedicada: feat/romm-stage-h-auth-errors.
 - H5 e H6 permanecem auditorias concluídas; nenhum refresh token será implementado e ambos os fluxos de autenticação serão preservados.
 - F5 permanece fora do escopo por decisão do usuário.
 - Nenhuma chamada foi feita à conta RomM pessoal do usuário.
+
+
+IMPLEMENTAÇÃO INICIAL — H4 + H7 / PR #54 (2026-11-25)
+PR: https://github.com/izzyn0okami/Tandem/pull/54
+Branch: feat/romm-stage-h-auth-errors; base game-mode-m2-dev.
+- [IMPLEMENTADO] RomMHttpException agora preserva status HTTP, detalhe sanitizado e endpoint da resposta.
+- [IMPLEMENTADO] Tradutor compartilhado para 401/403/404: 401 orienta reconexão explícita; 403 identifica falta de permissão sem presumir token inválido; 404 diferencia recurso/rota ausente ou oculto e não o interpreta como falta de scope.
+- [IMPLEMENTADO] Consultas de biblioteca, plataformas, coleções, firmware, identidade e pareamento preservam exceções HTTP tipadas em vez de descartar status em IOException genérica.
+- [IMPLEMENTADO] Fluxos Device Sync, painel F1–F4, conexão manual/dispositivo e recuperação da biblioteca exibem orientação uniforme quando recebem erros HTTP.
+- [IMPLEMENTADO] 404 do endpoint opcional de presença online continua sendo tratado como ausência dessa capacidade opcional; demais 404 mantêm status/endpoint para diagnóstico.
+- [SEGURANÇA] Nenhum retry de escrita foi adicionado; nenhuma fila, snapshot, SRAM, memory card ou save local é removido em caso de falha HTTP. Detalhes do corpo são limitados e sanitizados; tokens/segredos não são exibidos.
+- [TESTES ADICIONADOS] Casos para mensagens 401/403/404, preservação de endpoint/status, 401 em identificação de usuário e 404 em estatísticas; a suíte existente cobre também 403.
+- [PENDENTE] Executar CI final, revisar resultados/Spotless e ampliar a matriz automatizada se a CI apontar fluxos HTTP ainda não cobertos.
+- [PENDENTE] Validar no aparelho mensagens de reconexão e permissões, sem exigir alteração dos testes de saves já aprovados.
+- Nenhuma chamada foi feita à conta RomM pessoal do usuário.
