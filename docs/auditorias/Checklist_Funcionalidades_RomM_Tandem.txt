@@ -1379,3 +1379,14 @@ ATUALIZAÇÃO — PR #52 / CI #1300 APROVADA (2026-11-25)
 - [PENDENTE E5] Teste controlado de perda real de rede/encerramento do processo com WorkManager e interoperabilidade ampliada com RomM real.
 - [PENDENTE E9] Matriz ampliada de formatos e slots de cartões de memória por núcleo, com testes negativos.
 - CI aprovada não comprova interoperabilidade real nem substitui os testes controlados pendentes. Nenhuma transferência, sobrescrita ou exclusão de save real foi realizada.
+
+
+ATUALIZAÇÃO — PR #52 / CI #1302 APROVADA (2026-11-25)
+- [CI APROVADA] GitHub Actions run 45630500259 / CI #1302 no head cbe8ed1355372dff7dae2829bf27fd68901a8c10: SUCCESS.
+- Job build-debug-apk: testes unitários, Build APK e upload do artefato concluídos com sucesso.
+- Job check-style: Spotless automático, commit de formatação e verificação final concluídos com sucesso.
+- Job final-status: SUCCESS. Jobs opcionais de release/notificações foram ignorados; nenhuma release foi publicada.
+- [APK GERADO] Artefato assembleLawnWithQuickstepGithubDebug, ID 15030338536, 46.460.449 bytes, SHA-256 003582a48965672d40bcfe27428fd217b09e51c184b03a33a3909ea7195ca52a; disponível até 2027-02-23.
+- PR #52 permanece aberta, mergeable e sem merge; nenhuma revisão formal ou thread inline registrada.
+- E5 e E9 continuam pendentes: CI e testes unitários não comprovam perda real de rede/encerramento do processo nem interoperabilidade ampliada de memory cards.
+- Segurança preservada: nenhuma transferência real, sobrescrita ou exclusão de save foi executada; save states permanecem locais; overwrite=false e sem DELETE automático.
