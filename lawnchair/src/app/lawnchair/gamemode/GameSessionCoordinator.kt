@@ -147,7 +147,8 @@ internal object GameSessionCoordinator {
             app.getSharedPreferences("romm_sync", Context.MODE_PRIVATE).edit {
                 putString(statusKey(gameIdentity, expectedAccountFingerprint), "pending")
                 if ((saveResult?.conflictsPreserved ?: 0) > 0) {
-                    putString(pendingConflictKey(gameIdentity, expectedAccountFingerprint), snapshotJobId)
+                    val key = pendingConflictKey(gameIdentity, expectedAccountFingerprint)
+                    putStringSet(key, getStringSet(key, emptySet()).orEmpty() + snapshotJobId)
                 }
             }
         }
