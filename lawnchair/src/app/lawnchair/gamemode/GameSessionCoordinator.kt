@@ -16,10 +16,9 @@ import kotlinx.coroutines.withContext
 /**
  * Dono do ciclo de sincronização da sessão.
  *
- * SRAM/cartões usam o protocolo Device Sync; estados rápidos usam os endpoints /api/states.
- * Os dois transportes são executados em sequência, antes da partida e no trabalho persistente
- * posterior à sessão. RetroAchievements continua ligado à mesma sessão Libretro e mantém seu
- * progresso local separado dos arquivos de emulação.
+ * SRAM/cartões usam o protocolo RomM Device Sync para continuidade entre dispositivos.
+ * Save states permanecem exclusivamente locais: não são baixados nem enviados ao RomM.
+ * RetroAchievements continua ligado à mesma sessão Libretro e mantém seu progresso local.
  */
 internal object GameSessionCoordinator {
 
@@ -81,7 +80,7 @@ internal object GameSessionCoordinator {
         if (!RomMSettings.isConnected(app)) return
         val romFile = File(romPath)
         if (!GameIdentityResolver.hasRomMLink(app, romFile)) {
-            SaveSync.pull(app, romPath, coreId, platformSlug, gameIdentity, migrationSources)
+            // Save states são locais; não há pull de /api/states.
             return
         }
         val connection = GameIdentityResolver.connectionSnapshot(app)
@@ -95,7 +94,7 @@ internal object GameSessionCoordinator {
                     "exclusões recusadas: ${result.deletesIgnored}; operações desconhecidas: ${result.unknownIgnored}.",
             )
         }
-        SaveSync.pull(app, romPath, coreId, platformSlug, gameIdentity, migrationSources)
+        // SRAM/cartões já foram tratados pelo Device Sync. Save states não são sincronizados.
     }
 
     /** Executado pelo único worker persistente após a sessão: Device Sync e, em seguida, estados. */
@@ -127,16 +126,8 @@ internal object GameSessionCoordinator {
             saveRetry = true
             GameLog.error("Device Sync", "falha no transporte de SRAM/cartão; a fila tentará novamente", error)
         }
-        // O transporte /api/states é independente: uma falha no Device Sync não impede sua tentativa.
-        val statesCompleted = SaveSync.pushFromWorker(
-            app,
-            activeRomPath,
-            coreId,
-            platformSlug,
-            gameIdentity,
-            expectedAccountFingerprint,
-            snapshotJobId,
-        )
+        // Save states permanecem locais; não há upload para /api/states.
+        val statesCompleted = true
         val unresolved = saveRetry || saveResult?.let { GameSessionSyncPolicy.blocksSessionStart(it) } == true
         if (unresolved) {
             app.getSharedPreferences("romm_sync", Context.MODE_PRIVATE).edit {
