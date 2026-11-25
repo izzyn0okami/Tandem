@@ -1541,3 +1541,15 @@ Branch: feat/romm-stage-f-dashboard; PR #53 permanece draft e sem merge.
 - [CORREÇÃO] Commit cf0dd066fc0d0d2de8872d2422dd8ea253821d8d ajusta leitura do corpo via ByteString.utf8(), comparação explícita com JSONObject.NULL e simulação de falha de rede encerrando o servidor após capturar a URL.
 - [PENDENTE] Aguardar CI do commit cf0dd066fc0d0d2de8872d2422dd8ea253821d8d. APK não foi gerado na CI #1339 porque os testes não compilaram.
 - [ESTADO] F4 continua implementada em código, mas não validada. PR #53 permanece aberta e draft, sem merge; validação em aparelho ainda pendente.
+
+
+ATUALIZAÇÃO — F4 / CI DEFINITIVA E APK (2026-11-25)
+- [CONCLUÍDO — CI] CI #1343, run 45705972144, evento pull_request, validou o head final a4e8f5b79ceb6f3844aeb0beb145470d2876747c: SUCCESS.
+- Jobs obrigatórios check-style, build-debug-apk (assembleLawnWithQuickstepGithubDebug) e final-status concluíram com sucesso. Jobs opcionais de publicação/notificação foram ignorados; nenhuma release foi publicada.
+- [APK DE TESTE] Artefato assembleLawnWithQuickstepGithubDebug, ID 15065488057, tamanho 46.496.121 bytes, disponível até 2027-02-23T21:37:00Z. Foi gerado pela CI #1343 vinculada à PR e ao head acima.
+- [CONFIRMAÇÃO] CI #1344 e #1345 também passaram no mesmo head, mas são execuções manuais; CI #1343 é a validação de pull_request usada como referência.
+- [CORREÇÃO DE TESTES] O problema de compilação MockWebServer identificado na CI #1339 foi corrigido; a CI #1343 confirma que testes unitários, compilação do APK e estilo passaram.
+- [PENDENTE — APARELHO] Usuário ainda precisa validar no dispositivo: marcar uma notificação individual como lida; marcar todas como lidas; dispensar uma notificação individual após confirmação. É necessário desconectar e parear novamente o RomM para conceder me.write.
+- [PENDENTE — DECISÃO FUTURA] F5 (canais/Apprise) permanece fora do escopo e não foi implementado.
+- [ESTADO DA PR] PR #53 continua aberta, draft, sem merge; base game-mode-m2-dev; head a4e8f5b79ceb6f3844aeb0beb145470d2876747c. Não mesclar sem autorização explícita.
+- Nenhuma notificação ou dado remoto da conta RomM do usuário foi alterado durante a implementação ou os testes automatizados.
