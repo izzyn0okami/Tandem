@@ -684,3 +684,14 @@ CORREÇÃO — POLÍTICA DE RESTAURAÇÃO DE SAVE STATES PERSISTIDOS — 2026-11
 - [INTERPRETAÇÃO] O gatilho é uma mudança real nos bytes serializados pelo núcleo, não apenas abrir/pausar/carregar. Não há callback Libretro padronizado de "save escrito" nesta integração; a comparação ocorre no ponto em que o Tandem persiste o SRAM do núcleo.
 - [VALIDAÇÃO] CI #1256 do commit anterior estava em execução quando esta correção adicional foi enviada; as novas alterações dispararão nova CI. Teste no telefone ainda pendente.
 - Nenhum arquivo de save local ou remoto foi removido, movido ou substituído por esta correção.
+
+
+### Validação funcional — SRAM sem alteração não gera nova versão (25/11/2026)
+
+- [TESTE NO TELEFONE APROVADO PELO USUÁRIO] O usuário confirmou que o comportamento corrigido funcionou corretamente: carregar/abrir o save sem produzir alteração real no conteúdo não provoca uma nova versão SRAM no RomM.
+- [REGRA VALIDADA] A persistência local só regrava e agenda Device Sync quando os bytes serializados pelo núcleo mudam; adicionalmente, o executor converte em NoOp confirmado qualquer tentativa de Upload cujo hash local coincida com o hash remoto.
+- [CI #1258] Run 45546334031 falhou apenas no passo de commit automático da formatação Spotless, após aplicar a formatação; testes unitários e build Debug APK passaram. O status final falhou por dependência do job de estilo.
+- [CI #1260 APROVADA] Run 45546474646, no head atualizado da PR, passou em check-style/Spotless, testes unitários, build Debug APK, upload do artefato e final-status.
+- [RESULTADO] Correção de persistência e supressão de upload por conteúdo idêntico validadas por teste funcional no aparelho e pela CI completa. A alteração real de SRAM continua sendo o gatilho esperado para persistência e sincronização.
+- [PENDENTE] Manter validação em outros núcleos/plataformas, especialmente cartão PSX e SRAM tradicional, para ampliar a cobertura funcional. Isso não invalida o teste aprovado informado pelo usuário.
+- [PR] PR #50 permanece aberta em draft e sem merge. Nenhum save local ou remoto foi apagado, movido ou sobrescrito durante esta validação.
