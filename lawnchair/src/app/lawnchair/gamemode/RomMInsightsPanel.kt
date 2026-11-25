@@ -167,7 +167,7 @@ internal fun RomMInsightsPanel() {
             else -> {
                 val values = notifications
                 if (values == null) {
-                    Text("Caixa de entrada da conta RomM. Nesta etapa, as notificações são apenas consultadas.", color = GameColors.textDim, fontSize = 12.sp)
+                    Text("Caixa de entrada da conta RomM. Você pode marcar notificações como lidas ou dispensá-las individualmente.", color = GameColors.textDim, fontSize = 12.sp)
                     GameButton("Carregar notificações", onClick = { load("notifications") }, enabled = !loading)
                 } else if (values.isEmpty()) {
                     Text("A caixa de entrada do RomM está vazia.", color = GameColors.textDim, fontSize = 12.sp)
