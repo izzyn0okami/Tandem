@@ -562,3 +562,11 @@ CORREÇÃO — POLÍTICA DE RESTAURAÇÃO DE SAVE STATES PERSISTIDOS — 2026-11
 - [CAUSA] Expectativa de teste desatualizada, não erro de compilação. O teste contradizia a decisão do usuário de manter states apenas localmente.
 - [CORREÇÃO] Atualizado o teste para afirmar que snapshots legados não transportam nenhum save state para o RomM. Commit 9cecbca2374ff10a131c5f3afb747bdf52f17152.
 - [PENDENTE] CI completa no head final após o registro desta atualização; não considerar o APK validado até testes e build passarem.
+
+### Resultado — CI #1199 (2026-11-25)
+- [CI #1199 — APROVADA] Run 45532035852 no head 15a168ce1f8ae5a8670c971d146b1bab1ee84064: check-style, build-debug-apk (assembleLawnWithQuickstepGithubDebug), testes unitários incluídos no job de build e final-status concluídos com sucesso.
+- [APK DEBUG] A etapa de geração do APK Debug foi concluída com sucesso. Os jobs de publicação/release permaneceram ignorados, conforme esperado para esta execução.
+- [CORREÇÃO CONFIRMADA] A atualização do teste legado no commit 9cecbca2374ff10a131c5f3afb747bdf52f17152 eliminou a falha de expectativa identificada na CI #1194.
+- [PENDENTE — REVISÃO FINAL] Revisar referências residuais e comentários/documentação do transporte antigo de states, confirmar que nenhum caminho normal executa leitura/escrita de /api/states e realizar os testes funcionais no telefone: SRAM SNES entre dispositivos, cartão PSX entre dispositivos e states locais.
+- [ESTADO DA PR] PR #50 segue aberta, em draft, mergeable=true, head 15a168ce1f8ae5a8670c971d146b1bab1ee84064. Não mesclada; aguarda revisão final e autorização explícita.
+- [SEGURANÇA] Nenhum save state local/remoto, SRAM, cartão, ROM ou registro remoto foi apagado, movido, sobrescrito ou migrado por esta validação.
