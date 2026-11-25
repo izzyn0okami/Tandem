@@ -707,3 +707,12 @@ CORREÇÃO — POLÍTICA DE RESTAURAÇÃO DE SAVE STATES PERSISTIDOS — 2026-11
 - [ESCOPO] Inspeção estática direcionada aos arquivos `GameSessionActivity.kt`, `SaveStore.kt`, `CoreSaveAdapter.kt`, `SaveArtifactCatalog.kt` e `RomMDeviceSyncRunner.kt`. Não equivale a teste funcional PSX nem a auditoria integral do repositório.
 - [PRESERVAÇÃO] Nenhum save local ou remoto foi alterado durante esta auditoria.
 - [PR] Mantida a PR #50 existente; nenhuma PR concorrente criada e nenhum merge executado.
+
+
+### Validação funcional — cartões de memória PSX (25/11/2026)
+
+- [TESTE NO TELEFONE APROVADO PELO USUÁRIO] O usuário confirmou que os dois cenários passaram: carregar/abrir o cartão de memória PSX sem realizar gravação não cria uma nova versão no RomM; realizar uma gravação real no jogo gera a alteração que deve ser sincronizada.
+- [RESULTADO] A comparação de bytes em `SaveStore.writeSramIfChanged()` e a supressão de upload por hash idêntico cobrem também o fluxo PSX classificado como `MEMORY_CARD` / `memory-card-0`.
+- [COBERTURA FUNCIONAL] Com esta confirmação, ficam validados no aparelho tanto o caso de SRAM sem alteração/alteração real quanto os dois casos equivalentes para cartão de memória PSX.
+- [PRESERVAÇÃO] O teste não exigiu forçar conflitos nem apagar versões; nenhuma exclusão ou migração de saves foi solicitada.
+- [PR] Resultado registrado na PR #50 existente. Continua aberta em draft e sem merge; não foi criada PR concorrente.
