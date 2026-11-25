@@ -1417,3 +1417,18 @@ E9 — MATRIZ DE CARTÕES DE MEMÓRIA / ESCOPO DEVICE SYNC
 - [TESTES NEGATIVOS / CRITÉRIO DE SEGURANÇA] Ausência de um segundo slot no inventário e não correspondência com o slot remoto primário significam que o artefato secundário não é elegível para upload/download. Não criar alias, renomear nem mesclar arquivos secundários.
 - [DECISÃO DE ESCOPO] E9 fica encerrada para o suporte Device Sync atualmente declarado (slot 0). Implementar slots adicionais exigirá uma etapa futura independente, com leitura das opções efetivas do core, API de armazenamento multi-slot do LibretroDroid, isolamento por jogo/conta, mapeamento RomM e testes específicos de cada modo compartilhado. Isso não bloqueia o fechamento da auditoria E9 atual.
 - [SEGURANÇA] Nenhum cartão real foi alterado ou transferido nesta auditoria. Save states continuam exclusivamente locais; overwrite=false; sem exclusão automática.
+
+
+MERGE — PR #52 / FECHAMENTO E5 + E9 (2026-11-25)
+- [PR MESCLADA] PR #52 — test: harden Device Sync recovery validation.
+- Destino: game-mode-m2-dev.
+- Merge commit: 32c1d5fba78fc61ffa18bff136af0d50a4fb0c4c.
+- Head integrado: 9f730e538f3f6cd8cc553c2967f58664586eb973.
+- [CI APROVADA] GitHub Actions CI #1308 / run 45636335876, no head 9f730e538f3f6cd8cc553c2967f58664586eb973: SUCCESS. check-style/Spotless, testes unitários, Build Debug APK, Upload artifact e final-status concluídos com sucesso.
+- [APK GERADO] assembleLawnWithQuickstepGithubDebug, artefato ID 15034126408, 46.460.459 bytes, SHA-256 6478a2245b85547638d4c613c814c30c0f2d552be743e25827bd09ed702dfafa; disponível até 2027-02-23.
+- [CONCLUÍDO] E5 (recuperação Device Sync) e E9 (matriz de memory cards no escopo slot primário) integrados à game-mode-m2-dev.
+- A auditoria E9 não adiciona suporte ao slot 1, cartões compartilhados ou formatos alternativos; esses continuam fora do escopo.
+- [SEGURANÇA] Save states permanecem exclusivamente locais; SRAM/cartões elegíveis via Device Sync; overwrite=false; sem DELETE automático ou sobrescrita forçada em HTTP 409.
+- Nenhuma transferência, sobrescrita, movimentação ou exclusão de save real foi realizada pelo merge.
+- [PRÓXIMO ESTÁGIO] Estágio F liberado para auditoria e implementação: F1 estatísticas, F2 recomendações e F3 notificações em modo de leitura primeiro; F4 ações de leitura/dispensa e F5 canais ficam condicionados a escopo de permissões e decisão de interface.
+- Nenhuma outra PR estava aberta imediatamente após o merge.
