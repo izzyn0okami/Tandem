@@ -313,11 +313,13 @@ private fun GameModeRoot(refreshKey: Int, onExit: () -> Unit) {
             status = context.getString(R.string.game_mode_status_syncing)
             try {
                 // A partida só começa depois que o pull terminou de verdade.
-                withContext(Dispatchers.IO) { SaveSync.pull(context, romPath, coreId, platform?.slug, gameIdentity, migrationSources) }
+                withContext(Dispatchers.IO) {
+                    GameSessionCoordinator.prepareSession(context, romPath, coreId, platform?.slug, gameIdentity, migrationSources)
+                }
             } catch (error: Exception) {
                 if (error is kotlinx.coroutines.CancellationException) throw error
                 GameLog.error("saves", "falha ao sincronizar antes de abrir ${File(romPath).name}", error)
-                SaveSync.markSyncPending(context, romPath, coreId, platform?.slug, gameIdentity)
+                GameSessionCoordinator.markPending(context, romPath, coreId, platform?.slug, gameIdentity)
                 pendingSaveSync = PendingSaveSync(
                     coreId = coreId,
                     romPath = romPath,

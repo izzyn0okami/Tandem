@@ -13,6 +13,29 @@ import org.junit.Before
 import org.junit.Test
 
 class SaveStoreTest {
+    @Test
+    fun writeSramIfChangedDoesNotRewriteIdenticalCoreOutput() {
+        val root = java.io.File(System.getProperty("java.io.tmpdir"), "save-store-unchanged-${System.nanoTime()}")
+        val rom = java.io.File(root, "game.sfc").apply { parentFile?.mkdirs(); writeBytes(byteArrayOf(1)) }
+        val store = SaveStore(root, "snes9x", rom, gameIdentity = "romm-test-unchanged")
+        val original = byteArrayOf(1, 2, 3, 4)
+        try {
+            assertTrue(store.writeSramIfChanged(original))
+            assertTrue(store.sramFile.setLastModified(1_000L))
+            val originalTimestamp = store.sramFile.lastModified()
+
+            assertFalse(store.writeSramIfChanged(original))
+            assertEquals(originalTimestamp, store.sramFile.lastModified())
+            assertTrue(store.sramFile.readBytes().contentEquals(original))
+
+            val changed = byteArrayOf(1, 2, 3, 5)
+            assertTrue(store.writeSramIfChanged(changed))
+            assertTrue(store.sramFile.readBytes().contentEquals(changed))
+        } finally {
+            root.deleteRecursively()
+        }
+    }
+
     private lateinit var root: File
 
     @Before

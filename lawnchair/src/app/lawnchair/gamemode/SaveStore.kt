@@ -1019,7 +1019,7 @@ class SaveStore internal constructor(
     romFile: File,
     /** Outros núcleos da mesma plataforma: o save de bateria deles serve como ponto de partida. */
     private val siblingCores: List<String> = emptyList(),
-    gameIdentity: String? = null,
+    private val gameIdentity: String? = null,
     private val migrationSources: Map<String, File> = emptyMap(),
 ) {
     constructor(
@@ -1105,11 +1105,45 @@ class SaveStore internal constructor(
 
     fun writeSram(bytes: ByteArray) = write(sramFile, bytes)
 
+    /**
+     * Persists core-produced SRAM only when its bytes actually changed. This prevents a routine
+     * serialize-on-pause from refreshing the file timestamp and falsely scheduling a RomM upload.
+     *
+     * @return true when a new/different SRAM payload was written.
+     */
+    @Synchronized
+    fun writeSramIfChanged(bytes: ByteArray): Boolean {
+        if (sramFile.isFile && sramFile.length() == bytes.size.toLong() &&
+            sramFile.readBytes().contentEquals(bytes)
+        ) {
+            return false
+        }
+        write(sramFile, bytes)
+        return true
+    }
+
     fun hasState(): Boolean = stateFile.isFile && stateFile.length() > 0
 
     fun readState(): ByteArray? = stateFile.takeIf { hasState() }?.readBytes()
 
     fun writeState(bytes: ByteArray) = write(stateFile, bytes)
+
+    /**
+     * Inventário tipado dos artefatos locais desta identidade/núcleo.
+     * O progresso RA só entra quando a conta da sessão é informada e nunca é classificado como save RomM.
+     */
+    internal fun inventory(raUser: String? = null): List<SaveArtifact> {
+        val files = buildList {
+            add(sramFile)
+            add(stateFile)
+            raUser?.let { add(raProgressFile(it)) }
+        }
+        return SaveArtifactCatalog.inspect(
+            gameIdentity = gameIdentity ?: gameDirName,
+            coreId = coreId,
+            files = files,
+        )
+    }
 
     /** Grava por arquivo temporário e renomeia, para um corte de energia não estragar o save. */
     @Synchronized

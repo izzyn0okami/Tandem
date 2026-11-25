@@ -12,6 +12,66 @@ import org.junit.Test
 
 class DeviceSyncProtocolTest {
     @Test
+    fun deviceSyncArtifactPolicySelectsPsxMemoryCardFromTypedInventoryOnly() {
+        val directory = java.io.File(
+            System.getProperty("java.io.tmpdir"),
+            "device-sync-artifacts-${System.nanoTime()}",
+        )
+        assertTrue(directory.mkdirs())
+        try {
+            java.io.File(directory, "sram.srm").writeBytes(byteArrayOf(1, 2, 3))
+            java.io.File(directory, "state0.state").writeBytes(byteArrayOf(4, 5))
+            java.io.File(directory, "ra-progress-a1b2.bin").writeBytes(byteArrayOf(6, 7))
+            val artifacts = SaveArtifactCatalog.inspect(
+                gameIdentity = "romm-test-42",
+                coreId = "pcsx_rearmed",
+                files = directory.listFiles()?.toList().orEmpty(),
+            )
+
+            val selected = DeviceSyncArtifactPolicy.selectForRomM(artifacts)
+
+            assertEquals(SaveArtifactType.MEMORY_CARD, selected?.type)
+            assertEquals("memory-card-0", selected?.slot)
+            assertEquals("srm", selected?.format)
+            assertNull(DeviceSyncArtifactPolicy.selectForRomM(artifacts.filter { it.type != SaveArtifactType.MEMORY_CARD }))
+            assertTrue(
+                runCatching {
+                    DeviceSyncArtifactPolicy.selectForRomM(listOfNotNull(selected, selected?.copy(slot = "memory-card-1")))
+                }.isFailure,
+            )
+        } finally {
+            directory.deleteRecursively()
+        }
+    }
+
+    @Test
+    fun deviceSyncArtifactPolicySelectsGenericCoreSaveButNeverStateOrRaProgress() {
+        val directory = java.io.File(
+            System.getProperty("java.io.tmpdir"),
+            "device-sync-core-save-${System.nanoTime()}",
+        )
+        assertTrue(directory.mkdirs())
+        try {
+            val save = java.io.File(directory, "sram.srm").apply { writeBytes(byteArrayOf(1, 2, 3)) }
+            val state = java.io.File(directory, "state1.state").apply { writeBytes(byteArrayOf(4, 5)) }
+            val progress = java.io.File(directory, "ra-progress-c3d4.bin").apply { writeBytes(byteArrayOf(6, 7)) }
+            val artifacts = SaveArtifactCatalog.inspect(
+                gameIdentity = "romm-test-43",
+                coreId = "snes9x",
+                files = listOf(save, state, progress),
+            )
+
+            val selected = DeviceSyncArtifactPolicy.selectForRomM(artifacts)
+
+            assertEquals(SaveArtifactType.CORE_SAVE, selected?.type)
+            assertEquals("core-save", selected?.slot)
+            assertNull(DeviceSyncArtifactPolicy.selectForRomM(artifacts.filter { it.type != SaveArtifactType.CORE_SAVE }))
+        } finally {
+            directory.deleteRecursively()
+        }
+    }
+
+    @Test
     fun registrationUsesStableHostnameAndApiSyncModeWithoutAssumingMacAddress() {
         val json = DeviceSyncProtocolJson.registration(
             DeviceSyncRegistration(
@@ -110,6 +170,25 @@ class DeviceSyncProtocolTest {
                     }.isFailure,
                 )
             }
+        } finally {
+            file.delete()
+        }
+    }
+
+    @Test
+    fun localSaveManifestPreservesExplicitRemoteSlot() {
+        val file = java.io.File.createTempFile("psx-card-slot-", ".srm")
+        try {
+            file.writeBytes(byteArrayOf(1, 2, 3))
+            val save = DeviceSyncProtocolJson.localSave(
+                42L,
+                "sram.srm",
+                "tandem_pcsx_rearmed",
+                file,
+                "2026-11-24T12:00:00Z",
+                remoteSlot = "memory-card-0",
+            )
+            assertEquals("memory-card-0", save?.slot)
         } finally {
             file.delete()
         }
@@ -273,6 +352,7 @@ class DeviceSyncProtocolTest {
             val error = runCatching { client.registerDevice(DeviceSyncRegistration("Tandem", clientVersion = "1.0", hostname = "tandem")) }.exceptionOrNull()
             assertTrue(error is RomMHttpException)
             assertEquals(403, (error as RomMHttpException).statusCode)
+            assertEquals("forbidden", (error as RomMHttpException).detail)
         } finally {
             server.close()
         }
@@ -291,6 +371,17 @@ class DeviceSyncProtocolTest {
             }.isFailure,
         )
     }
+    @Test
+    fun identicalLocalAndRemoteSramContentNeverQualifiesForUpload() {
+        val hash = "0123456789abcdef0123456789abcdef"
+        assertTrue(DeviceSyncArtifactPolicy.hasSameContent(hash, hash))
+        assertTrue(DeviceSyncArtifactPolicy.hasSameContent(hash, hash.uppercase()))
+        assertFalse(DeviceSyncArtifactPolicy.hasSameContent(hash, "ffffffffffffffffffffffffffffffff"))
+        assertFalse(DeviceSyncArtifactPolicy.hasSameContent(hash, null))
+        assertFalse(DeviceSyncArtifactPolicy.hasSameContent(null, hash))
+        assertFalse(DeviceSyncArtifactPolicy.hasSameContent("invalid", hash))
+    }
+
     @Test
     fun uploadSaveUsesSafeQueryParametersAndMultipartSaveFile() {
         val server = MockWebServer()
@@ -330,6 +421,36 @@ class DeviceSyncProtocolTest {
     }
 
     @Test
+    fun uploadSaveWithoutSlotCreatesAnUnpairedArchive() {
+        val server = MockWebServer()
+        val file = java.io.File.createTempFile("device-sync-archive-", ".srm")
+        file.writeBytes(byteArrayOf(3, 2, 1))
+        server.start()
+        try {
+            server.enqueue(MockResponse(body = """{"id":92}"""))
+            val client = RomMDeviceSyncClient(server.url("/").toString(), "test-token")
+            client.uploadSave(
+                42L,
+                "device-123",
+                8L,
+                null,
+                "tandem_pcsx_rearmed",
+                "Castlevania [2026-11-25_03-00-00].srm",
+                file,
+            )
+            val request = server.takeRequest()
+
+            assertEquals("/api/saves", request.url.encodedPath)
+            assertNull(request.url.queryParameter("slot"))
+            assertEquals("false", request.url.queryParameter("overwrite"))
+            assertTrue(request.body!!.utf8().contains("filename=\"Castlevania [2026-11-25_03-00-00].srm\""))
+        } finally {
+            server.close()
+            file.delete()
+        }
+    }
+
+    @Test
     fun uploadSaveSurfacesConflictWithoutRetryingAsOverwrite() {
         val server = MockWebServer()
         val file = java.io.File.createTempFile("device-sync-conflict-", ".srm")
@@ -343,6 +464,7 @@ class DeviceSyncProtocolTest {
 
             assertTrue(error is RomMHttpException)
             assertEquals(409, (error as RomMHttpException).statusCode)
+            assertEquals("conflict", (error as RomMHttpException).detail)
             assertEquals("false", request.url.queryParameter("overwrite"))
         } finally {
             server.close()
@@ -427,7 +549,7 @@ class DeviceSyncProtocolTest {
 
 
     @Test
-    fun psxSrmUsesGenericSaveEndpointAndPreservesExactBytesInAutosaveSlot() {
+    fun psxSrmUsesGenericSaveEndpointAndPreservesExactBytesInMemoryCardSlot() {
         val server = MockWebServer()
         val file = java.io.File.createTempFile("pcsx-rearmed-card-", ".srm")
         val payload = "PSX-MEMORY-CARD-SLOT-0-TEST-BYTES"
@@ -440,7 +562,7 @@ class DeviceSyncProtocolTest {
                 42L,
                 "device-123",
                 8L,
-                "autosave",
+                "memory-card-0",
                 "tandem_pcsx_rearmed",
                 file.name,
                 file,
@@ -449,7 +571,7 @@ class DeviceSyncProtocolTest {
             val uploadBody = upload.body!!.utf8()
 
             assertEquals("/api/saves", upload.url.encodedPath)
-            assertEquals("autosave", upload.url.queryParameter("slot"))
+            assertEquals("memory-card-0", upload.url.queryParameter("slot"))
             assertEquals("false", upload.url.queryParameter("overwrite"))
             assertTrue(uploadBody.contains("filename=\"${file.name}\""))
             assertTrue(uploadBody.contains(payload))
@@ -489,7 +611,7 @@ class DeviceSyncProtocolTest {
                             "rom_id": 42,
                             "save_id": 314,
                             "file_name": "pcsx-rearmed.srm",
-                            "slot": "autosave",
+                            "slot": "memory-card-0",
                             "emulator": "tandem_pcsx_rearmed",
                             "reason": "server save is newer",
                             "server_updated_at": "2026-11-23T22:10:00Z",
@@ -505,12 +627,12 @@ class DeviceSyncProtocolTest {
         assertEquals(42L, operation.romId)
         assertEquals(314L, operation.saveId)
         assertEquals("pcsx-rearmed.srm", operation.fileName)
-        assertEquals("autosave", operation.slot)
+        assertEquals("memory-card-0", operation.slot)
         assertEquals("tandem_pcsx_rearmed", operation.emulator)
         assertEquals("server save is newer", operation.reason)
         assertEquals("2026-11-23T22:10:00Z", operation.serverUpdatedAt)
         assertEquals("0123456789abcdef0123456789abcdef", operation.serverContentHash)
-        DeviceSyncProtocolJson.validateDownloadOperation(operation, "tandem_pcsx_rearmed")
+        DeviceSyncProtocolJson.validateDownloadOperation(operation, "tandem_pcsx_rearmed", "memory-card-0")
     }
 
     @Test
@@ -536,6 +658,120 @@ class DeviceSyncProtocolTest {
         assertTrue(runCatching {
             DeviceSyncProtocolJson.validateDownloadOperation(valid.copy(emulator = "other_core"), "tandem_pcsx_rearmed")
         }.isFailure)
+    }
+
+    @Test
+    fun negotiationCanOmitEmulatorFilterToExposeExistingSlotConflicts() {
+        val json = DeviceSyncProtocolJson.negotiation(
+            deviceId = "device-uuid",
+            saves = emptyList(),
+            romIds = setOf(42L),
+            emulators = null,
+        )
+
+        assertFalse(json.has("emulators"))
+        assertFalse(json.getBoolean("restore_unlisted"))
+    }
+
+    @Test
+    fun compatibilityRegistryAllowsRomMAndTandemIdentifiersOnlyWithinDeclaredGroups() {
+        assertTrue(DeviceSyncArtifactPolicy.isCompatibleRemote("pcsx_rearmed", "tandem_swanstation"))
+        assertTrue(DeviceSyncArtifactPolicy.isCompatibleRemote("pcsx_rearmed", "swanstation"))
+        assertTrue(DeviceSyncArtifactPolicy.isCompatibleRemote("snes9x", "tandem_snes9x2010"))
+        assertTrue(DeviceSyncArtifactPolicy.isCompatibleRemote("snes9x", "snes9x2010"))
+        assertTrue(DeviceSyncArtifactPolicy.isCompatibleRemote("snes9x", "tandem_bsnes"))
+        assertTrue(DeviceSyncArtifactPolicy.isCompatibleRemote("snes9x", "bsnes"))
+        assertFalse(DeviceSyncArtifactPolicy.isCompatibleRemote("snes9x", "tandem_mgba"))
+        assertFalse(DeviceSyncArtifactPolicy.isCompatibleRemote("snes9x", "mgba"))
+        assertFalse(DeviceSyncArtifactPolicy.isCompatibleRemote("snes9x", null))
+        assertTrue(DeviceSyncArtifactPolicy.compatibleEmulators("snes9x").contains("snes9x"))
+        assertTrue(DeviceSyncArtifactPolicy.compatibleEmulators("snes9x").contains("tandem_snes9x"))
+    }
+
+    @Test
+    fun downloadValidationAcceptsOnlyDeclaredCompatibleCoreGroup() {
+        val operation = DeviceSyncOperation(
+            action = DeviceSyncAction.Download,
+            romId = 42L,
+            saveId = 314L,
+            fileName = "memory-card.srm",
+            slot = "memory-card-0",
+            emulator = "tandem_swanstation",
+            reason = "server save is newer",
+            serverUpdatedAt = null,
+            serverContentHash = "0123456789abcdef0123456789abcdef",
+        )
+
+        DeviceSyncProtocolJson.validateDownloadOperation(
+            operation,
+            DeviceSyncArtifactPolicy.compatibleEmulators("pcsx_rearmed"),
+            "memory-card-0",
+        )
+        assertTrue(
+            runCatching {
+                DeviceSyncProtocolJson.validateDownloadOperation(
+                    operation.copy(emulator = "tandem_snes9x"),
+                    DeviceSyncArtifactPolicy.compatibleEmulators("pcsx_rearmed"),
+                    "memory-card-0",
+                )
+            }.isFailure,
+        )
+    }
+
+    @Test
+    fun unbasedUploadIsClassifiedAsConflictBeforeSendingASecondPost() {
+        val operation = DeviceSyncOperation(
+            action = DeviceSyncAction.Upload,
+            romId = 42L,
+            saveId = 314L,
+            fileName = "game.srm",
+            slot = "autosave",
+            emulator = "tandem_snes9x",
+            reason = "Client save is newer (no sync history)",
+            serverUpdatedAt = "2026-11-24T12:00:00Z",
+            serverContentHash = "0123456789abcdef0123456789abcdef",
+        )
+
+        assertTrue(DeviceSyncArtifactPolicy.isUnbasedUpload(operation))
+        assertFalse(DeviceSyncArtifactPolicy.isUnbasedUpload(operation.copy(reason = "Client save is newer than last sync")))
+    }
+
+    @Test
+    fun readOnlyInspectionCountsOnlyTheManagedRomAndSlot() {
+        val server = MockWebServer()
+        server.start()
+        try {
+            server.enqueue(
+                MockResponse(
+                    body = """{"session_id":19,"operations":[
+                        {"action":"no_op","rom_id":42,"slot":"autosave"},
+                        {"action":"upload","rom_id":42,"slot":"manual"},
+                        {"action":"delete","rom_id":42,"slot":"memory-card-0"},
+                        {"action":"download","rom_id":99,"slot":"autosave"}
+                    ]}""",
+                ),
+            )
+            server.enqueue(MockResponse(body = """{"session":{}}"""))
+            val client = RomMDeviceSyncClient(server.url("/").toString(), "test-token")
+
+            val result = client.inspectNegotiation(
+                deviceId = "device-123",
+                saves = emptyList(),
+                romIds = setOf(42L),
+                emulators = null,
+                managedSlot = "autosave",
+            )
+            val negotiateRequest = server.takeRequest()
+            val completeRequest = server.takeRequest()
+            val completeBody = JSONObject(completeRequest.body!!.utf8())
+
+            assertEquals(4, result.operations.size)
+            assertFalse(JSONObject(negotiateRequest.body!!.utf8()).has("emulators"))
+            assertEquals(1, completeBody.getInt("operations_completed"))
+            assertEquals(0, completeBody.getInt("operations_failed"))
+        } finally {
+            server.close()
+        }
     }
 
 }

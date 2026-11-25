@@ -132,7 +132,7 @@ class GameSessionActivity : ComponentActivity() {
         }
         this.romPath = romPath
         gameIdentity = stableIdentity
-        SaveSync.markSessionActive(this, romPath, intent.getStringExtra(EXTRA_PLATFORM), stableIdentity)
+        GameSessionCoordinator.markSessionActive(this, romPath, intent.getStringExtra(EXTRA_PLATFORM), stableIdentity)
 
         WindowCompat.setDecorFitsSystemWindows(window, false)
         WindowInsetsControllerCompat(window, window.decorView).apply {
@@ -157,6 +157,7 @@ class GameSessionActivity : ComponentActivity() {
         )
         saveStore = store
         coreIdForOptions = coreId
+        logArtifactInventory("início da sessão")
         SessionDiagnostics.sessionStarted(this, coreId, romPath, platformSlug)
         coreLog = SessionDiagnostics.startCoreLog()
 
@@ -401,7 +402,7 @@ class GameSessionActivity : ComponentActivity() {
             repeatOnLifecycle(Lifecycle.State.RESUMED) {
                 while (true) {
                     delay(SRAM_AUTOSAVE_MS)
-                    romPath?.let { SaveSync.markSessionActive(this@GameSessionActivity, it, intent.getStringExtra(EXTRA_PLATFORM), gameIdentity) }
+                    romPath?.let { GameSessionCoordinator.markSessionActive(this@GameSessionActivity, it, intent.getStringExtra(EXTRA_PLATFORM), gameIdentity) }
                     withContext(Dispatchers.Default) { persistSram() }
                 }
             }
@@ -485,8 +486,13 @@ class GameSessionActivity : ComponentActivity() {
         runCatching {
             val bytes = view.serializeSRAM()
             if (bytes.isNotEmpty()) {
-                store.writeSram(bytes)
-                romPath?.let { path -> coreIdOf()?.let { SaveSync.markPending(this, path, it, intent.getStringExtra(EXTRA_PLATFORM), gameIdentity) } }
+                val changed = store.writeSramIfChanged(bytes)
+                if (changed) {
+                    romPath?.let { path -> coreIdOf()?.let { GameSessionCoordinator.markPending(this, path, it, intent.getStringExtra(EXTRA_PLATFORM), gameIdentity) } }
+                    GameLog.log("saves", "SRAM alterado pelo núcleo e persistido; sincronização agendada")
+                } else {
+                    GameLog.log("saves", "SRAM inalterado após serialização do núcleo; gravação e upload desnecessários ignorados")
+                }
             }
         }
         val user = RaSettings.user(this) ?: return
@@ -496,6 +502,21 @@ class GameSessionActivity : ComponentActivity() {
                 if (progress != null && progress.isNotEmpty()) store.writeRaProgress(user, progress)
             }.onFailure { GameLog.error("conquistas", "falha ao salvar progresso local", it) }
         }
+    }
+
+    /** Registra somente metadados do inventário local; nunca registra conteúdo ou credenciais. */
+    private fun logArtifactInventory(trigger: String) {
+        val store = saveStore ?: return
+        runCatching {
+            val artifacts = store.inventory(RaSettings.user(this))
+            val summary = artifacts.joinToString(separator = "; ") { artifact ->
+                "${artifact.type}/${artifact.slot} ${artifact.format} ${artifact.sizeBytes}B sha256=${artifact.sha256.take(12)}"
+            }.ifEmpty { "vazio" }
+            GameLog.log(
+                "inventário",
+                "$trigger: jogo=${gameIdentity ?: "—"}, núcleo=${coreIdOf() ?: "—"}, artefatos=${artifacts.size} [$summary]",
+            )
+        }.onFailure { GameLog.error("inventário", "falha ao inspecionar artefatos locais", it) }
     }
 
     private fun saveQuickState() {
@@ -517,7 +538,8 @@ class GameSessionActivity : ComponentActivity() {
                 emuState
             }
             store.writeState(payload)
-            romPath?.let { path -> coreIdOf()?.let { SaveSync.markPending(this, path, it, intent.getStringExtra(EXTRA_PLATFORM), gameIdentity) } }
+            logArtifactInventory("estado rápido salvo")
+            romPath?.let { path -> coreIdOf()?.let { GameSessionCoordinator.markPending(this, path, it, intent.getStringExtra(EXTRA_PLATFORM), gameIdentity) } }
             true
         }.getOrDefault(false)
         toast(if (saved) R.string.game_session_state_saved else R.string.game_session_state_save_failed)
@@ -550,7 +572,7 @@ class GameSessionActivity : ComponentActivity() {
             raProgress = payload.copyOfRange(8, 8 + len)
             emuState = payload.copyOfRange(8 + len, payload.size)
         }
-        val loaded = runCatching { view.unserializeStateWithAchievements(emuState, raProgress) }.getOrDefault(false)
+        val loaded = runCatching { view.unserializePersistedStateWithAchievements(emuState, raProgress) }.getOrDefault(false)
         toast(if (loaded) R.string.game_session_state_loaded else R.string.game_session_state_load_failed)
         setMenu(false)
     }
@@ -566,7 +588,7 @@ class GameSessionActivity : ComponentActivity() {
     override fun onResume() {
         // A Activity restaura o estado do ciclo de vida automaticamente; preserve o menu pausado
         // antes que o observer do GLRetroView tente retomar a emulação.
-        romPath?.let { SaveSync.markSessionActive(this, it, intent.getStringExtra(EXTRA_PLATFORM), gameIdentity) }
+        romPath?.let { GameSessionCoordinator.markSessionActive(this, it, intent.getStringExtra(EXTRA_PLATFORM), gameIdentity) }
         retroView?.suppressAutoResume = menuOpen
         super.onResume()
         retroView?.suppressAutoResume = false
@@ -633,6 +655,7 @@ class GameSessionActivity : ComponentActivity() {
     override fun onPause() {
         // Antes do super: a superfície de vídeo ainda está ativa e consegue entregar o save.
         persistSram()
+        logArtifactInventory("pausa/encerramento da sessão")
         romPath?.let {
             val elapsed = SystemClock.elapsedRealtime() - resumedAtMs
             if (resumedAtMs > 0) PlayHistory.addSession(this, it, elapsed, System.currentTimeMillis())
@@ -650,8 +673,8 @@ class GameSessionActivity : ComponentActivity() {
         super.onPause()
         // Só libere e agende o upload depois que o GL foi pausado e o save local persistido.
         romPath?.let { path ->
-            SaveSync.markSessionInactive(this, path, intent.getStringExtra(EXTRA_PLATFORM), gameIdentity)
-            coreIdOf()?.let { SaveSync.pushAsync(this, path, it, intent.getStringExtra(EXTRA_PLATFORM), gameIdentity) }
+            GameSessionCoordinator.markSessionInactive(this, path, intent.getStringExtra(EXTRA_PLATFORM), gameIdentity)
+            coreIdOf()?.let { GameSessionCoordinator.enqueuePostSessionSync(this, path, it, intent.getStringExtra(EXTRA_PLATFORM), gameIdentity) }
         }
         // Em uma pausa comum, o idle é retomado em onResume; respostas de rede aguardam o GL.
         stopRaIdleLoop()

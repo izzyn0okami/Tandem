@@ -58,20 +58,26 @@ object RomMDeviceSyncDiagnostics {
                 gameIdentity = identity,
                 migrationSourcesOverride = emptyMap(),
             )
+            val artifact = DeviceSyncArtifactPolicy.selectForRomM(store.inventory())
+            val remoteSlot = artifact?.let(DeviceSyncArtifactPolicy::remoteSlot)
+                ?: DeviceSyncArtifactPolicy.remoteSlotForCore(coreId)
+            val localFile = artifact?.file ?: store.sramFile
             val emulator = "tandem_$coreId"
             val localSave = DeviceSyncProtocolJson.localSave(
                 romId = romId,
-                fileName = store.sramFile.name,
+                fileName = localFile.name,
                 emulator = emulator,
-                file = store.sramFile,
-                updatedAt = Instant.ofEpochMilli(store.sramFile.lastModified()).toString(),
+                file = localFile,
+                updatedAt = Instant.ofEpochMilli(localFile.lastModified()).toString(),
+                remoteSlot = remoteSlot,
             )
             val client = RomMDeviceSyncClient(connection.url, connection.token)
             val negotiation = client.inspectNegotiation(
                 deviceId = deviceId,
                 saves = listOfNotNull(localSave),
                 romIds = setOf(romId),
-                emulators = setOf(emulator),
+                emulators = null,
+                managedSlot = remoteSlot,
             )
             DeviceSyncSaveInspection(
                 romId = romId,

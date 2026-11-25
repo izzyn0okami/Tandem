@@ -86,8 +86,9 @@ data class DeviceSyncNegotiation(
 object DeviceSyncProtocolJson {
     /**
      * Constrói a entrada de negociação a partir do arquivo de save local aceito nesta etapa.
-     * A extensão .srm é exigida nesta etapa; para PSX, o conteúdo pode ser um cartão de memória
-     * transportado como Save comum do RomM, não necessariamente SRAM de bateria.
+     * A extensão .srm é exigida; para PSX, o conteúdo pode ser cartão de memória transportado
+     * como Save comum do RomM. O filtro de emuladores é opcional: null permite ao cliente
+     * detectar saves de outros núcleos no mesmo slot e validar a compatibilidade localmente.
      */
     fun localSave(
         romId: Long,
@@ -95,6 +96,7 @@ object DeviceSyncProtocolJson {
         emulator: String,
         file: File,
         updatedAt: String,
+        remoteSlot: String = "autosave",
     ): DeviceSyncSave? {
         require(romId > 0L)
         require(fileName.endsWith(".srm", ignoreCase = true)) {
@@ -102,6 +104,7 @@ object DeviceSyncProtocolJson {
         }
         require(emulator.isNotBlank())
         require(updatedAt.isNotBlank())
+        require(remoteSlot.isNotBlank())
         if (!file.isFile || file.length() <= 0L) return null
         val digest = MessageDigest.getInstance("MD5")
         file.inputStream().buffered().use { input ->
@@ -116,7 +119,7 @@ object DeviceSyncProtocolJson {
         return DeviceSyncSave(
             romId = romId,
             fileName = fileName,
-            slot = "autosave",
+            slot = remoteSlot,
             emulator = emulator,
             contentHashMd5 = md5,
             updatedAt = updatedAt,
@@ -138,11 +141,11 @@ object DeviceSyncProtocolJson {
         deviceId: String,
         saves: List<DeviceSyncSave>,
         romIds: Set<Long>,
-        emulators: Set<String>,
+        emulators: Set<String>? = null,
     ): JSONObject {
         require(deviceId.isNotBlank())
         require(romIds.isNotEmpty() && romIds.all { it > 0L })
-        require(emulators.isNotEmpty() && emulators.all { it.isNotBlank() })
+        require(emulators == null || (emulators.isNotEmpty() && emulators.all { it.isNotBlank() }))
         require(saves.all { it.romId in romIds }) {
             "A negociação não pode incluir saves fora da lista explícita de jogos."
         }
@@ -161,14 +164,17 @@ object DeviceSyncProtocolJson {
         }
         val romArray = JSONArray()
         romIds.sorted().forEach(romArray::put)
-        val emulatorArray = JSONArray()
-        emulators.sorted().forEach(emulatorArray::put)
-        return JSONObject()
+        val payload = JSONObject()
             .put("device_id", deviceId)
             .put("saves", saveArray)
             .put("rom_ids", romArray)
             .put("restore_unlisted", false)
-            .put("emulators", emulatorArray)
+        if (emulators != null) {
+            val emulatorArray = JSONArray()
+            emulators.sorted().forEach(emulatorArray::put)
+            payload.put("emulators", emulatorArray)
+        }
+        return payload
     }
 
     fun parseRegistration(json: JSONObject): RegisteredSyncDevice {
@@ -177,18 +183,28 @@ object DeviceSyncProtocolJson {
         return RegisteredSyncDevice(id, json.optString("name").ifBlank { "Tandem" })
     }
 
-    fun validateDownloadOperation(operation: DeviceSyncOperation, expectedEmulator: String) {
+    fun validateDownloadOperation(
+        operation: DeviceSyncOperation,
+        expectedEmulator: String,
+        expectedSlot: String = "autosave",
+    ) = validateDownloadOperation(operation, setOf(expectedEmulator), expectedSlot)
+
+    fun validateDownloadOperation(
+        operation: DeviceSyncOperation,
+        compatibleEmulators: Set<String>,
+        expectedSlot: String = "autosave",
+    ) {
         if (operation.action != DeviceSyncAction.Download) {
             throw IOException("A operação recebida não é um download.")
         }
-        if (operation.slot != "autosave") {
-            throw IOException("Download fora do slot autosave foi preservado sem alteração.")
+        if (operation.slot != expectedSlot) {
+            throw IOException("Download fora do slot $expectedSlot foi preservado sem alteração.")
         }
         if (operation.fileName?.endsWith(".srm", ignoreCase = true) != true) {
             throw IOException("O arquivo remoto não é um save .srm compatível; download recusado.")
         }
-        if (operation.emulator != expectedEmulator) {
-            throw IOException("O save remoto pertence a outro emulador ou não informa o emulador; download recusado.")
+        if (operation.emulator == null || compatibleEmulators.none { it.equals(operation.emulator, ignoreCase = true) }) {
+            throw IOException("O save remoto pertence a um núcleo sem compatibilidade declarada; download recusado.")
         }
     }
 
@@ -248,7 +264,12 @@ class RomMDeviceSyncClient(
     private fun executeJson(request: Request): JSONObject {
         http.newCall(request).execute().use { response ->
             if (!response.isSuccessful) {
-                throw RomMHttpException(response.code, "RomM Device Sync respondeu HTTP ${response.code}")
+                val errorBody = response.body?.string().orEmpty()
+                throw RomMHttpException(
+                    response.code,
+                    "RomM Device Sync respondeu HTTP ${response.code}",
+                    romMErrorDetail(errorBody),
+                )
             }
             val body = response.body?.string().orEmpty()
             if (body.isBlank()) return JSONObject()
@@ -276,7 +297,7 @@ class RomMDeviceSyncClient(
         deviceId: String,
         saves: List<DeviceSyncSave>,
         romIds: Set<Long>,
-        emulators: Set<String>,
+        emulators: Set<String>? = null,
     ): DeviceSyncNegotiation {
         val body = DeviceSyncProtocolJson.negotiation(deviceId, saves, romIds, emulators)
             .toString()
@@ -287,17 +308,21 @@ class RomMDeviceSyncClient(
 
     /**
      * Executa apenas a negociação para diagnóstico e encerra a sessão sem transferir arquivos.
-     * Operações no-op contam como concluídas; todas as demais ficam registradas como não executadas.
+     * A contagem considera somente a ROM e, quando informado, o slot administrado pelo adaptador.
      */
     fun inspectNegotiation(
         deviceId: String,
         saves: List<DeviceSyncSave>,
         romIds: Set<Long>,
-        emulators: Set<String>,
+        emulators: Set<String>? = null,
+        managedSlot: String? = null,
     ): DeviceSyncNegotiation {
         val negotiation = negotiate(deviceId, saves, romIds, emulators)
-        val completed = negotiation.operations.count { it.action == DeviceSyncAction.NoOp }
-        val failed = negotiation.operations.size - completed
+        val scoped = negotiation.operations.filter {
+            it.romId in romIds && (managedSlot == null || it.slot == managedSlot)
+        }
+        val completed = scoped.count { it.action == DeviceSyncAction.NoOp }
+        val failed = scoped.size - completed
         complete(negotiation.sessionId, completed, failed)
         return negotiation
     }
@@ -321,26 +346,28 @@ class RomMDeviceSyncClient(
         romId: Long,
         deviceId: String,
         sessionId: Long,
-        slot: String,
+        slot: String?,
         emulator: String,
         fileName: String,
         file: File,
     ): JSONObject {
         require(romId > 0L && sessionId > 0L)
-        require(deviceId.isNotBlank() && slot.isNotBlank() && emulator.isNotBlank())
+        require(deviceId.isNotBlank() && emulator.isNotBlank())
+        require(slot == null || slot.isNotBlank())
         require(fileName.endsWith(".srm", ignoreCase = true)) { "O upload Device Sync aceita somente arquivos .srm." }
         require(file.isFile && file.length() > 0L) { "O save local está ausente ou vazio." }
         val contentHash = md5(file)
-        val url = base.resolve("api/saves")!!.newBuilder()
+        val urlBuilder = base.resolve("api/saves")!!.newBuilder()
             .addQueryParameter("rom_id", romId.toString())
-            .addQueryParameter("slot", slot)
             .addQueryParameter("emulator", emulator)
             .addQueryParameter("device_id", deviceId)
             .addQueryParameter("session_id", sessionId.toString())
             .addQueryParameter("content_hash", contentHash)
             .addQueryParameter("overwrite", "false")
             .addQueryParameter("autocleanup", "false")
-            .build()
+        // A null slot is an archival save: RomM never pairs it with the active slot.
+        slot?.let { urlBuilder.addQueryParameter("slot", it) }
+        val url = urlBuilder.build()
         val body = MultipartBody.Builder()
             .setType(MultipartBody.FORM)
             .addFormDataPart(
@@ -376,7 +403,12 @@ class RomMDeviceSyncClient(
         try {
             http.newCall(request(url.encodedPath).url(url).get().build()).execute().use { response ->
                 if (!response.isSuccessful) {
-                    throw RomMHttpException(response.code, "RomM Device Sync respondeu HTTP ${response.code}")
+                    val errorBody = response.body?.string().orEmpty()
+                    throw RomMHttpException(
+                        response.code,
+                        "RomM Device Sync respondeu HTTP ${response.code}",
+                        romMErrorDetail(errorBody),
+                    )
                 }
                 val body = response.body ?: throw IOException("O RomM retornou um save sem conteúdo.")
                 stagingFile.outputStream().use { output -> body.byteStream().use { input -> input.copyTo(output) } }

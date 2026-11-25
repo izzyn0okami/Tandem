@@ -81,10 +81,17 @@ internal object SaveSyncPolicy {
         return remoteUpdatedAtMs != lastRemoteUpdatedAtMs || remoteId != lastRemoteId
     }
 
-    /** SRAM é compartilhável entre núcleos Tandem; estados rápidos exigem o mesmo núcleo. */
+    /** SRAM usa grupos declarados; estados rápidos exigem o mesmo núcleo. IDs antigos tandem_* seguem legíveis. */
     fun isCompatibleRemote(kind: RemoteFileKind, emulator: String?, coreId: String): Boolean = when (kind) {
-        RemoteFileKind.Save -> emulator?.startsWith("tandem_") == true
-        RemoteFileKind.State -> emulator == "tandem_$coreId"
+        RemoteFileKind.Save -> CoreSaveAdapterRegistry.isCompatibleRomMEmulator(coreId, emulator)
+
+        RemoteFileKind.State -> {
+            if (emulator.isNullOrBlank()) {
+                false
+            } else {
+                CoreSaveAdapterRegistry.romMEmulatorId(emulator) == CoreSaveAdapterRegistry.romMEmulatorId(coreId)
+            }
+        }
     }
 
     const val AUTOSAVE_SLOT = "autosave"

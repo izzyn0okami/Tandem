@@ -131,3 +131,629 @@ ESTADO DESTA AUDITORIA
 [PENDENTE] Implementar arquitetura unificada; nenhuma alteração de código foi feita nesta auditoria.
 [PENDENTE] Executar CI após o commit deste registro e acrescentar o resultado.
 [PENDENTE] Validar a nova arquitetura em APK no telefone; não há validação funcional nova nesta auditoria.
+
+
+IMPLEMENTAÇÃO INICIAL — INVENTÁRIO TIPADO DE ARTEFATOS (2026-11-24)
+- [IMPLEMENTADO NA BRANCH feat/unified-session-artifacts] Criado SaveArtifactCatalog com classificação explícita de CORE_SAVE, SAVE_STATE e RETRO_ACHIEVEMENTS_PROGRESS.
+- [IMPLEMENTADO] SaveStore.inventory() expõe somente arquivos existentes e não vazios associados à identidade do jogo/núcleo; o progresso RA é incluído somente para a conta explicitamente informada.
+- [SEGURANÇA] CORE_SAVE é uma classificação neutra: a extensão .srm não é tratada automaticamente como SRAM, pois em PSX pode representar cartão de memória. Compatibilidade entre núcleos ainda exige adaptadores declarativos.
+- [INTEGRIDADE] O inventário calcula SHA-256 em fluxo, sem carregar arquivos inteiros na memória, e registra apenas metadados/prefixo do hash nos logs da sessão.
+- [TESTES ADICIONADOS] Cobertura para separação dos três tipos, isolamento de progresso por conta, exclusão de arquivos vazios/desconhecidos e deduplicação de caminhos.
+- [PENDENTE] CI desta branch; revisar resultado Spotless/testes/build. Depois integrar o inventário ao motor unificado e aos adaptadores por núcleo.
+- [PENDENTE] Device Sync ainda não transporta SAVE_STATE nem RETRO_ACHIEVEMENTS_PROGRESS; esta entrega apenas inventaria os artefatos e não inicia transferência remota.
+- Nenhum save local ou remoto foi apagado, sobrescrito, transferido ou migrado por esta implementação.
+
+
+ATUALIZAÇÃO — INVENTÁRIO INICIAL E ADAPTADORES POR NÚCLEO (2026-11-24)
+- [CI APROVADA — INVENTÁRIO INICIAL] Run #1062 / 45390900101 concluiu com sucesso no commit 0619bffe74ff6f9cf45f82e1f6c8f473e5ca6689: check-style/Spotless, testes unitários, build Debug APK, upload do artefato e final-status aprovados.
+- [ARTEFATO #1062] assembleLawnWithQuickstepGithubDebug, ID 14918488915, 46.403.031 bytes, SHA-256 0240c38b3b4bd12b94edc0c9bb2ff56b347a98a801e7079ccb6ecad98f891e28; expira em 2027-02-22. Os jobs de publicação foram ignorados; não houve release tandem-latest.
+- [CORREÇÃO ARQUITETURAL NA PR #50] Criado CoreSaveAdapterRegistry. Núcleos PSX PCSXR ReARMed, SwanStation e Beetle PSX classificam o arquivo físico sram.srm como MEMORY_CARD / memory-card-0; demais núcleos ainda não mapeados usam CORE_SAVE / core-save, sem inferir compatibilidade.
+- [TESTES ADICIONADOS] Cobertura para distinguir cartão de memória PSX e save genérico de SNES, além dos testes anteriores de identidade, conta RA, hash, arquivos vazios/desconhecidos e deduplicação.
+- [REVISÃO DO ESCOPO] O inventário local agora diferencia o slot memory-card-0, mas o executor RomM Device Sync ainda usa o slot remoto autosave e o arquivo .srm genérico. Não foi feita integração de transferência desses novos tipos; não declarar sincronização de memory cards/save states concluída.
+- [CI #1067 — FALHA DE AUTOMAÇÃO, NÃO DE CÓDIGO] A etapa Spotless aplicou formatação, mas o push automático falhou por corrida entre execuções concorrentes que tentaram atualizar a mesma branch. O commit de formatação 9e79b4881eee94bbac119d7aad75fb66f9943c9f foi enviado por outra execução; a falha reportada é rejeição non-fast-forward, não erro do compilador nem do Spotless.
+- [CI #1068] Execução manual de revalidação no head formatado 9e79b4881eee94bbac119d7aad75fb66f9943c9f iniciada; aguardar todos os jobs para registrar o resultado.
+- [PENDENTE] Teste real no telefone, implementação do mapeamento entre slots locais e remotos, transporte seguro de outros tipos de artefatos, coordenador de sessão e substituição do sincronizador duplicado.
+- [SEGURANÇA] Nenhum save real, ROM ou dado remoto foi apagado, movido, transferido ou sobrescrito por esta etapa. PR #50 continua aberta em draft e não foi mesclada.
+
+
+ATUALIZAÇÃO — DIAGNÓSTICO DE ERROS DEVICE SYNC (2026-11-24)
+- [CI APROVADA] Run #1070 / 45393575954 e run #1071 / 45393872116 concluíram com sucesso no head c554b47361eae6825a0591737bfbc99c365f2495. A validação cobre o inventário tipado, adaptadores PSX e testes adicionados até aquele commit.
+- [IMPLEMENTADO NA PR #50] RomMHttpException agora preserva status HTTP e detalhe estruturado do servidor (detail/message/error), limitado a 300 caracteres e higienizado contra caracteres de controle.
+- [IMPLEMENTADO] O cliente Device Sync usa o detalhe estruturado em falhas de negociação/upload e download. O corpo HTTP arbitrário não é incluído em logs.
+- [TESTE ADICIONADO] Resposta HTTP 409 com {"detail":"conflict"} deve preservar status 409 e detalhe "conflict"; overwrite permanece false.
+- [PENDENTE DE VALIDAÇÃO] CI #1075, no commit 7c771ba702cb4d9e80282af58b0792b2585f5325, ainda estava em execução na última consulta; também existem execuções concorrentes mais antigas da mesma sequência. Não declarar esta mudança validada até uma CI verde no head atual.
+- [PR] #50 continua aberta em draft, base game-mode-m2-dev. Não houve merge.
+- [SEGURANÇA] Nenhum arquivo local ou remoto foi apagado, sobrescrito ou migrado. Esta mudança é exclusivamente diagnóstica; não tenta contornar 409 nem ativar overwrite.
+
+
+ATUALIZAÇÃO — VALIDAÇÃO FINAL DO DIAGNÓSTICO HTTP (2026-11-24)
+- [FALHAS INICIAIS REGISTRADAS] CI #1072 e #1073 falharam no ktlint por erro de escape na regex do sanitizador em RomMClient.kt. A causa foi corrigida no commit 26435facca4cca5c018925d6b8883aed920c0be7; a expressão atual usa escapes Kotlin válidos para caracteres de controle e espaços em branco.
+- [CI APROVADA NO HEAD CORRIGIDO] CI #1081 / run 45397131590 concluiu com sucesso exatamente no commit 26435facca4cca5c018925d6b8883aed920c0be7. check-style/Spotless, testes unitários, build Debug APK, upload do artefato e final-status passaram.
+- [ARTEFATO #1081] assembleLawnWithQuickstepGithubDebug, ID 14920708978, 46.403.710 bytes, disponível até 2027-02-22. Jobs de release/publicação foram ignorados; nenhum tandem-latest foi publicado.
+- [REVALIDAÇÕES ADICIONAIS] CI #1082 / run 45397293770 e #1083 / run 45397335549 também concluíram com sucesso no mesmo head 26435facca4cca5c018925d6b8883aed920c0be7. A CI #1080 / run 45397077989 (evento pull_request) igualmente passou.
+- [CORREÇÃO DO REGISTRO] A anotação anterior que deixava #1081 pendente está superada. O diagnóstico HTTP e os testes de preservação do detalhe estruturado estão validados por CI no head atual.
+- [PENDENTE] Teste funcional no telefone para capturar o detalhe real do HTTP 409 e confirmar a causa do conflito com RomM 5.4.x. A CI valida o código e testes sintéticos, não a interoperabilidade com o servidor real.
+- [PENDENTE] Integrar o inventário tipado ao RomMDeviceSyncRunner, declarar mapeamento local/remoto de artefatos e substituir a duplicidade de sincronizadores por um motor único. Save states e progresso RA continuam fora do transporte.
+- [SEGURANÇA] Nenhum save local ou remoto foi transferido, sobrescrito, apagado ou migrado por esta mudança. overwrite continua desativado; PR #50 permanece aberta em draft, sem merge.
+
+
+ATUALIZAÇÃO — SLOT REMOTO EXPLÍCITO PARA SRAM E CARTÃO PSX (2026-11-24)
+- [CI #1090 APROVADA] Run 45411164250 concluiu com sucesso no head e7aed57f5b95f5d0c0b7c8129d872f0637945de6: Spotless/formatação, testes unitários, build Debug APK, upload do artefato e final-status aprovados. Jobs de publicação permaneceram ignorados; não houve release tandem-latest.
+- [CORREÇÃO DE ARQUITETURA IMPLEMENTADA NA PR #50] O adaptador por núcleo agora declara também o slot remoto RomM, separado do slot local: CORE_SAVE usa autosave; MEMORY_CARD PSX usa memory-card-0.
+- [PROTOCOLO] DeviceSyncProtocolJson.localSave recebe o slot remoto explicitamente; validateDownloadOperation valida o slot esperado; RomMDeviceSyncRunner usa o mesmo slot no manifesto, na negociação, no filtro de upload e na validação de download.
+- [PRIMEIRO DOWNLOAD] Quando ainda não existe arquivo local, o slot esperado é derivado do adaptador do coreId, permitindo negociar o download PSX em memory-card-0 sem confundi-lo com autosave.
+- [TESTES ADICIONADOS/ATUALIZADOS] Verificação de preservação do slot explícito no manifesto, upload PSX em memory-card-0 e validação de download com slot PSX esperado; SNES mantém autosave por padrão.
+- [PENDENTE] CI desta alteração; teste real no RomM 5.4.x e no telefone ainda necessário. Saves PSX existentes em autosave não são migrados automaticamente para memory-card-0; planejar migração separadamente e sem sobrescrita.
+- [PENDENTE] Save states e progresso RA continuam fora do transporte; unificação do ciclo e substituição do sincronizador tradicional permanecem em aberto.
+- [SEGURANÇA] overwrite=false, delete ignorado e conflitos preservados. Nenhum save local/remoto foi apagado, movido, sobrescrito ou migrado.
+- [PR] #50 permanece aberta em draft, sem merge.
+
+
+ATUALIZAÇÃO — VALIDAÇÃO DO MAPEAMENTO DE SLOTS REMOTOS (2026-11-24)
+- [CI #1092 APROVADA] Run 45416096119 concluiu com sucesso exatamente no commit e150abf7c9bcd267ccc7aead049944e6ee690ee4. Os jobs check-style, build-debug-apk (incluindo testes unitários) e final-status foram aprovados.
+- [ARTEFATO #1092] assembleLawnWithQuickstepGithubDebug, ID 14931944394, 46.403.364 bytes, disponível até 2027-02-22. Jobs de publicação permaneceram ignorados; não houve release tandem-latest.
+- [RESULTADO] Mapeamento CORE_SAVE -> autosave e MEMORY_CARD PSX -> memory-card-0 validado por CI. O protocolo usa o slot esperado de forma consistente na negociação, upload e validação de download.
+- [PENDENTE] Ainda não houve teste real no telefone nem confirmação de interoperabilidade com servidor RomM 5.4.x. A CI não comprova a migração de dados já existentes.
+- [PENDENTE] Saves PSX preexistentes no slot remoto autosave permanecem intocados; nenhuma migração para memory-card-0 foi executada ou presumida.
+- [PR] #50 permanece aberta em draft, sem merge. Próxima prioridade: planejar a substituição do SaveSync tradicional e Device Sync por um único motor, com análise de todos os chamadores, workers, filas e política de reconciliação antes de remover o caminho legado.
+- [SEGURANÇA] overwrite=false, delete ignorado e conflitos preservados. Nenhum save, ROM ou dado remoto foi apagado, movido, sobrescrito ou migrado.
+CONTINUAÇÃO DA AUDITORIA — CI #1094 E CICLO DE SESSÃO (2026-11-24)
+- [CI APROVADA] Run #1094 / 45418874071, no commit 610577abb6c5eae584c8c4c454c542c83f9f0bbb: check-style/Spotless, testes unitários, build Debug APK e final-status concluídos com sucesso. Os jobs opcionais de notificações, Crowdin e publicação foram ignorados por condição do workflow; não houve publicação tandem-latest.
+- [ARTEFATO] assembleLawnWithQuickstepGithubDebug, ID 14932534467, 46.403.478 bytes; SHA-256 3e57c377452bc3987ca6d570cf34c60c3c551e30a4b15d4c57e4f6af18aa87d6; disponível até 2027-02-22.
+- [CONFIRMAÇÃO DE HEAD] A run #1094 pertence à branch feat/unified-session-artifacts e ao head 610577abb6c5eae584c8c4c454c542c83f9f0bbb.
+- [ACHADO DE CICLO] GameSessionActivity ainda chama SaveSync.markSessionActive no início/retomada e durante autosave; SaveSync.markPending é acionado ao persistir SRAM e estado rápido; em onPause, após persistir os dados locais, chama markSessionInactive e pushAsync. SaveSync.pushAsync enfileira RomMSaveSyncWorker no WorkManager com rede conectada e política de trabalho único APPEND_OR_REPLACE. O worker continua chamando SaveSync.pushFromWorker, isto é, o caminho tradicional permanece ativo no ciclo real.
+- [ACHADO DE SEPARAÇÃO] RomMDeviceSyncRunner.synchronizeLocalSave usa o lock compartilhado de SaveSync, verifica sessão ativa e executa negociação Device Sync, mas não foi encontrado acionamento desse método no RomMScreen inspecionado; essa tela, no trecho examinado, oferece registro do dispositivo. O ponto de entrada efetivo do runner em outras telas/call sites ainda precisa ser localizado antes de desenhar a substituição.
+- [ACHADO DE ESCOPO] O runner Device Sync continua limitado a um único artefato SRAM/cartão PSX .srm por execução. Save states e progresso RA não são transportados por ele. A aplicação de download cria backup local antes de substituir o arquivo e confirma o download após a promoção.
+- [DECISÃO DE MIGRAÇÃO] Não desativar SaveSync nem RomMSaveSyncWorker ainda: o caminho tradicional é o que está comprovadamente ligado ao ciclo de sessão. Primeiro implementar e ligar o coordenador/motor substituto ao ciclo completo, depois remover o caminho antigo numa mudança coordenada.
+- [PENDENTE] Localizar todos os call sites de RomMDeviceSyncRunner e do fluxo de registro Device Sync; mapear pull pré-sessão, fila/retry, cancelamento e identidade servidor/conta; projetar GameSessionCoordinator e adaptadores de transporte para save convencional, memory card e save state.
+- [SEGURANÇA] Nenhuma transferência real, exclusão, migração ou sobrescrita de save foi executada nesta auditoria. PR #50 continua aberta em draft; sem merge e sem publicação.
+
+
+ATUALIZAÇÃO — CI #1096 E DESCOBERTAS DO TRANSPORTE DE ESTADOS (2026-11-24)
+- [CI APROVADA] Run #1096 / 45425380420, no commit f8c6b17ec099022eb7f1208a12c04bd354c9d9de: check-style/Spotless, testes unitários, build Debug APK, upload do artefato e final-status concluídos com sucesso. Publicação/notificações/Crowdin foram ignorados por condição do workflow; não houve tandem-latest.
+- [ARTEFATO] assembleLawnWithQuickstepGithubDebug, ID 14936612938, 46.403.320 bytes; SHA-256 ce1debd51821b0e70197e9e8e53604aaefa6c7e936ff1c5b783cd76ce983ba8d; disponível até 2027-02-22.
+- [CORREÇÃO DO MAPA DE CALL SITES] O ponto de entrada manual de RomMDeviceSyncRunner foi localizado em GameScreens.kt: botão “Sincronizar save com RomM” chama synchronizeLocalSave. A tela RomMScreen.kt é responsável pelo registro do dispositivo; não é o chamador do runner. A inspeção continua indicando que o ciclo automático pré/pós-jogo usava SaveSync tradicional.
+- [CONTRATO OFICIAL ROMM 5.4.1 — ESTADOS] A revisão do código do servidor confirmou endpoints separados: GET /api/states?rom_id, POST /api/states?rom_id&emulator, GET /api/states/{id}/content e PUT /api/states/{id}. O objeto de estado contém emulator, file_name, updated_at e content_hash. A implementação de estados não oferece negociação Device Sync nem baseline por dispositivo; portanto estados rápidos precisam de transporte próprio, separado do Device Sync de SRAM/cartões.
+- [HASH OFICIAL] RomM 5.4.1 calcula content_hash de saves/estados em MD5 (incluindo tratamento especial de ZIP); o cliente deve respeitar esse formato e não comparar diretamente com SHA-1/SHA-256 local.
+- [IMPLEMENTAÇÃO EM CURSO] O plano de sessão unificada mantém Device Sync para SRAM/cartões e o endpoint /api/states para estados rápidos, sob um único coordenador e um único worker persistente. A duplicidade de transporte para o mesmo arquivo SRAM será removida; os dois endpoints permanecem separados porque o contrato do servidor também é separado.
+- [PENDENTE] CI da implementação do coordenador, validação automática de registro do dispositivo, pull pré-jogo e push pós-jogo; teste funcional real PSX/SNES e estados no telefone.
+- [SEGURANÇA] Nenhum save real foi transferido, sobrescrito, movido ou apagado nesta revisão.
+
+
+VALIDAÇÃO DA PRIMEIRA IMPLEMENTAÇÃO DO COORDENADOR — 2026-11-24
+- [CI APROVADA] Run #1095 / 45419136744, head 610577abb6c5eae584c8c4c454c542c83f9f0bbb: sucesso. Run #1097 / 45425654124, head f8c6b17ec099022eb7f1208a12c04bd354c9d9de: sucesso.
+- [CI APROVADA] Run #1098 / 45427687654, commit inicial 57393b1eb27bceec9c32327cbb9c470d15315d31: estilo, testes unitários, build Debug APK e final-status concluídos com sucesso.
+- [CI APROVADA] Run #1099 / 45427990647, head formatado aa29eaf1c63f884bcefe8ed211770d8d747973d4: estilo, testes unitários, build Debug APK, upload do artefato e final-status concluídos com sucesso. Artefato ID 14938712006, 46.412.669 bytes, SHA-256 7fd2b5377cd129750b1da10f923cb19d3d405c7781fcb121edfc12e58a7ca8af; disponível até 2027-02-22. Não houve publicação tandem-latest.
+- [AÇÃO REQUERIDA] Run #1100 no evento pull_request foi marcado action_required, não como falha de código; a execução workflow_dispatch #1099 validou o mesmo head com sucesso.
+- [COORDENADOR] GameSessionCoordinator foi conectado ao pré-jogo em GameModeActivity e ao pós-jogo em GameSessionActivity/WorkManager. Um worker executa Device Sync para SRAM/cartões e transporte /api/states para estados rápidos. O registro de dispositivo é criado automaticamente e associado à conta/servidor RomM.
+- [SEPARAÇÃO DE TRANSPORTE] SaveSync foi restringido a RemoteFileKind.State. SRAM/cartões são selecionados pelo inventário tipado e sincronizados somente pelo Device Sync. O status de sincronização continua considerando a existência de SRAM local.
+- [SNAPSHOTS LEGADOS] Capturas antigas de WorkManager podem conter SRAM e estado rápido. O transporte /api/states agora filtra explicitamente snapshots antigos para impedir que SRAM seja reenviada pelo endpoint tradicional.
+- [CONFLITO HTTP] HTTP 409 é classificado como conflito preservado, não como falha transitória que provoque retry infinito. O worker tenta o transporte de estados mesmo se o transporte Device Sync falhar; somente falhas operacionais pedem nova tentativa automática.
+- [PENDENTE] Validação real no telefone para pré-sync, pós-sync, registro automático, conflito HTTP 409, PSX memory-card-0, SNES autosave e estados rápidos específicos do núcleo. Nenhum teste real de servidor/telefone foi executado por CI.
+- [SEGURANÇA] overwrite=false, operações delete ignoradas e conflitos preservados. Nenhum save, ROM ou dado remoto foi apagado, movido ou sobrescrito nesta etapa.
+
+
+
+ANÁLISE DA CAUSA DOS HTTP 409 E PROTEÇÃO DE COMPATIBILIDADE — 2026-11-24
+- [CAUSA CONFIRMADA NO ROMM 5.4.1] O payload Device Sync incluía emulators={tandem_<core>}. O servidor aplica esse filtro ao montar os saves remotos por (rom_id, slot). Quando existe um save no mesmo slot, mas associado a outro emulador, ele fica invisível à negociação. O comparador pode então propor upload como se o slot estivesse vazio; o endpoint POST /api/saves, que verifica todos os saves do slot e o baseline por dispositivo, recusa a operação com HTTP 409 quando não existe histórico de sincronização válido. O comportamento explica a recorrência em slots ocupados e não é causado pela pasta customizável de saves.
+- [CORREÇÃO] A negociação principal deixa de enviar o filtro emulators, permitindo que o servidor revele saves existentes no slot. O cliente filtra localmente apenas a ROM e o slot administrado pelo adaptador, ignorando outros slots sem tentar transferi-los.
+- [COMPATIBILIDADE DECLARATIVA] Foram definidos grupos explícitos para cartões PSX (PCSX ReARMed, SwanStation e Beetle PSX) e SRAM SNES (Snes9x, Snes9x 2010 e bsnes). Núcleos desconhecidos permanecem compatíveis apenas consigo mesmos. Um save remoto de outro grupo é preservado como conflito; nunca é carregado apenas por ter extensão .srm.
+- [BASELINE AUSENTE] Quando RomM 5.4.1 informa “no sync history” em uma operação upload com save remoto existente, o cliente estaciona a operação como conflito antes do POST, evitando o 409 previsível e mantendo os dois lados. HTTP 409 ainda é tratado como conflito caso o servidor retorne a condição por outra razão.
+- [TESTES ADICIONADOS] Payload sem filtro de emuladores; grupos PSX/SNES; rejeição de núcleos não compatíveis; validação de download por grupo; bloqueio de upload sem histórico. A CI ainda precisa validar esta alteração.
+- [PENDENTE] Teste real em PSX e SNES com os saves que antes retornavam 409; verificar se o servidor agora retorna download/no-op ou conflito preservado, e confirmar que slots fora do escopo permanecem intocados.
+- [SEGURANÇA] overwrite continua false. Nenhum upload é forçado, nenhum save remoto é substituído e nenhum slot diferente do adaptador é alterado.
+
+
+
+ATUALIZAÇÃO DE VALIDAÇÃO E DIAGNÓSTICO — 2026-11-24
+- [CI APROVADA] Run #1101 / 45429636145, head d34b5dfac9fbf1c7c66d6841349a7bb37714e0e5: estilo, testes unitários, build Debug APK e final-status aprovados.
+- [CI APROVADA] Run #1102 / 45429934097, head 74d0ec8b888fd3372cf5b059373748cc8a5727c8: estilo, testes unitários, build Debug APK, upload do artefato e final-status aprovados. Publicação foi ignorada.
+- [AÇÃO REQUERIDA] Runs #1103 e #1106, eventos pull_request, foram marcadas action_required; não representam falha de código. As execuções workflow_dispatch #1102 e #1105 validaram seus respectivos heads.
+- [CI APROVADA] Run #1105 / 45432492981, head 87379545636f792ce8109f622470fff0be762d5a: estilo, testes unitários, build Debug APK, upload do artefato e final-status aprovados. Artefato ID 14938399728, 46.416.752 bytes, SHA-256 b17ffce37c34dd1e80625ec95b51b2983fa3baeaa493b90e87e0b367e7aca5e0; expira em 2027-02-22. Nenhuma publicação tandem-latest.
+- [DIAGNÓSTICO ALINHADO] A inspeção manual agora usa o mesmo slot do adaptador e pode observar saves de outros emuladores sem transferi-los; sua contagem de conclusão considera apenas a ROM e o slot administrado.
+- [PENDENTE] Teste funcional no telefone após a última correção de filtro/compatibilidade; resolução explícita de conflitos locais/remotos permanece como etapa futura.
+
+
+
+VALIDAÇÃO FINAL DA ETAPA DE COORDENAÇÃO E NEGOCIAÇÃO — 2026-11-24
+- [CI APROVADA] Run #1104 / 45432189847, head ec65434067d47126bda5cd54c65aaad323cad989: check-style, testes unitários, build Debug APK e final-status aprovados. Foi supersedida pela validação do head posterior.
+- [CI APROVADA] Run #1107 / 45434230023, head 855d3c3f282087f1cf86bc464bd815d54ff37728: check-style, testes unitários, build Debug APK, upload do artefato e final-status aprovados. Artefato ID 14941121359, 46.418.261 bytes, SHA-256 8f361c9f437ca9b95b927716d7e38873491925a2b325af5d2557ba79511c7749; expira em 2027-02-22. Jobs de publicação/notificação/Crowdin foram ignorados por condição do workflow; não houve tandem-latest.
+- [DIAGNÓSTICO] RomM 5.4.1 confirma que o filtro emulators pode ocultar saves existentes de outro núcleo e que o endpoint de upload exige baseline para atualizar slot ocupado. A negociação sem filtro, a validação por grupos compatíveis e o bloqueio de upload “no sync history” estão implementados e cobertos por testes unitários.
+- [STATUS ATUAL] Coordenador pré/pós-sessão, registro automático de dispositivo, worker único, transporte separado de SRAM/cartões e estados rápidos, filtragem de snapshots antigos e diagnóstico alinhado estão implementados na PR #50.
+- [PENDENTE] Testes reais no telefone com PSX/SNES, estados rápidos e sincronização ao sair; observar se os casos antigos de 409 agora resultam em download/no-op ou conflito preservado. A interface para escolher explicitamente entre versão local e versão RomM ainda não foi implementada.
+- [SEGURANÇA] Nenhum save, ROM ou dado remoto foi apagado, movido ou sobrescrito. A PR continua em draft e não foi mesclada.
+
+
+- [CI APROVADA] Run #1108 / 45434510655, head 855d3c3f282087f1cf86bc464bd815d54ff37728: workflow_dispatch também concluiu com sucesso no mesmo código validado por #1107. Artefato ID 14939914369, 46.418.315 bytes, SHA-256 c7bdf7db2b004af588092d29d3dd3920994474e1e30545d509f56a5df2b8b5e0; expira em 2027-02-22. Nenhuma publicação tandem-latest.
+
+
+
+CORREÇÃO DE COMPATIBILIDADE DOS IDENTIFICADORES DE NÚCLEO — 2026-11-24
+- [ACHADO NO TESTE REAL] O log do telefone referente ao APK identificado como #1108 registra save remoto SNES com emulador "snes9x", enquanto o cliente local usa "tandem_snes9x". A validação anterior aceitava somente a forma namespaced "tandem_<core>" e classificava incorretamente o save remoto como incompatível.
+- [CORREÇÃO IMPLEMENTADA NA PR #50] DeviceSyncArtifactPolicy agora reconhece as duas representações do mesmo núcleo: identificador original reportado pelo RomM (ex.: "snes9x") e identificador namespaced do Tandem (ex.: "tandem_snes9x"). A equivalência é aplicada somente aos grupos explicitamente declarados no CoreSaveAdapterRegistry.
+- [SEGURANÇA] A correção não amplia compatibilidade entre famílias distintas; SNES continua incompatível com mGBA e PSX continua restrito ao grupo PSX declarado. Emuladores desconhecidos permanecem incompatíveis, e valores ausentes continuam rejeitados.
+- [TESTES ADICIONADOS] Cobertura para identificadores com e sem prefixo nos grupos PSX/SNES, para a lista usada na validação de download e para rejeição de núcleos fora do grupo.
+- [CI PENDENTE] Alterações enviadas nos commits 351c9d1f7ff69c70ad3b6e03dd3584ade6ab21a3 e ed3ac767e92f02521c1d0073f539f65a0c7a5e38. Aguardar CI verde no head atualizado antes de considerar a correção validada ou orientar novo teste no telefone.
+- [PENDENTE] Repetir teste SNES no telefone e confirmar que o save remoto "snes9x" deixa de ser bloqueado por incompatibilidade. Depois validar upload/download e slot autosave sem sobrescrita. O teste PSX continua pendente de confirmação ponta a ponta.
+- [SEGURANÇA] Nenhum save local/remoto foi alterado, apagado, migrado ou transferido por esta correção. overwrite=false, exclusões ignoradas e conflitos preservados permanecem inalterados.
+- [PR] #50 continua aberta em draft, sem merge e sem publicação tandem-latest.
+
+
+
+VALIDAÇÃO DA CORREÇÃO DE ALIASES DE EMULADOR — CI #1109/#1110 — 2026-11-24
+- [CI #1109 — FALHA PARCIAL] Run 45494955253, commit 351c9d1f7ff69c70ad3b6e03dd3584ade6ab21a3: build Debug APK e testes unitários passaram; check-style falhou na etapa "Commit formatting and rerun CI", e final-status consequentemente falhou. Não foi falha de compilação nem dos testes da correção.
+- [CI #1110 — APROVADA] Run 45494980827, commit  ed3ac767e92f02521c1d0073f539f65a0c7a5e38: check-style, testes unitários, build Debug APK e final-status aprovados.
+- [APK DE TESTE] Artefato ID 14966344934, tamanho 46.417.999 bytes, SHA-256 43f84a2ce6da5397b85bafd07c8abc3a6edc4b1b3a2278a30f260188cc64f06d; expira em 2027-02-22. Execução: https://github.com/izzyn0okami/Tandem/actions/runs/45494980827. Não houve publicação tandem-latest.
+- [STATUS] A correção de compatibilidade está validada automaticamente. Falta teste funcional no telefone para confirmar o download do save SNES remoto identificado como "snes9x", além de upload/retorno PSX e validação dos estados rápidos.
+- [SEGURANÇA] Nenhum save foi apagado, movido, migrado ou sobrescrito. Conflitos continuam preservados e overwrite=false.
+- [PR] #50 permanece aberta em draft e sem merge.
+
+
+VALIDAÇÃO FUNCIONAL NO TELEFONE — LOG #9 — 2026-11-24
+- [RESULTADO POSITIVO — TESTE DO USUÁRIO] O usuário confirmou o fluxo de continuidade entre dispositivos: iniciou uma partida no telefone, continuou no PC e retomou no telefone a partir do progresso feito no computador.
+- [APK IDENTIFICADO] Log do Motorola Edge 30 Fusion / Android 17 registra Tandem 16.Dev.(#1110), correspondente ao APK validado pela CI #1110 (commit ed3ac767e92f02521c1d0073f539f65a0c7a5e38). Servidor RomM configurado na rede local; teste utilizou a raiz padrão interna do aplicativo para saves.
+- [SNES — AUTOSAVE VALIDADO] Para Super Mario World (ROM #650), o cliente inicialmente preservou o save remoto durante as tentativas anteriores por incompatibilidade entre "snes9x" e "tandem_snes9x". Após a correção, a sessão 54 aplicou e confirmou o download remoto de 2.048 bytes; sessão 57 enviou a versão local mais recente, criando save_id 29; sessão terminou com ok=1/falhas=0. Sessões seguintes registraram NoOp por conteúdo idêntico.
+- [PSX — CARTÃO DE MEMÓRIA VALIDADO] Para Castlevania: Symphony of the Night (ROM #829), o cliente enviou o cartão de memória de 131.072 bytes (save_id 31). Mais tarde identificou o save remoto mais recente (save_id 32), preservou o arquivo local em backup antes da aplicação e confirmou o download de 131.072 bytes; a sessão 77 terminou com ok=1/falhas=0. A sessão posterior registrou NoOp por conteúdo idêntico. Isso comprova upload e download do cartão PSX no fluxo real.
+- [SAVE STATE — DOWNLOAD OBSERVADO] O log registra download HTTP 200 do estado RomM #6, 4.456.448 bytes, e o inventário local posterior inclui SAVE_STATE/state1. Este log confirma recebimento e presença local do estado, mas não comprova upload de estado rápido nem ciclo completo PC↔telefone para esse tipo de artefato.
+- [SEGURANÇA] Antes do download PSX, o arquivo local foi preservado em backup. O log registra também resolução explícita de conflito com preferência "atual", mantendo originais em .conflict-backups. Nenhuma exclusão automática ou sobrescrita silenciosa foi observada.
+- [PENDÊNCIAS DE DIAGNÓSTICO] Permanecem HTTP 500 em GET /api/platforms (mais de uma ocorrência) e uma ocorrência em GET /api/roms; houve também falha temporária de conexão ao endpoint /api/auth/device/token, seguida de recuperação da comunicação. Investigar separadamente sem bloquear o resultado positivo do fluxo de saves.
+- [PENDENTE — ESTADOS RÁPIDOS] Testar upload e retorno de save state entre telefone e PC, incluindo encerramento/reabertura e retomada da sessão; o download observado isoladamente não fecha essa matriz.
+- [STATUS DA ETAPA] O teste funcional confirma sincronização real de SRAM SNES (autosave) e cartão de memória PSX, incluindo retomada do progresso entre dispositivos reportada pelo usuário. A etapa ainda não deve ser declarada totalmente concluída enquanto save states, falhas HTTP e os demais cenários de recuperação não forem validados.
+- [PR] PR #50 continua aberta em draft e não foi mesclada. Nenhuma publicação tandem-latest foi realizada.
+
+
+PENDÊNCIA ADICIONAL — ROMS LOCAIS PRECISARAM SER BAIXADAS NOVAMENTE — 2026-11-24
+- [RELATO DO TESTE REAL] O usuário informou que a sincronização e a continuidade da partida entre telefone e PC só funcionaram depois de excluir as ROMs locais e baixá-las novamente do servidor RomM.
+- [EVIDÊNCIA NO LOG #9] O mesmo título Castlevania aparece primeiro com o caminho local "Castlevania - Symphony of the Night (USA).m3u" e identidade "local-5fc36..."; em seguida aparece vinculado ao registro RomM #829 com identidade "romm-15d4dc...". O diagnóstico anterior mostra SaveStore vazio para a identidade local e artefatos associados à identidade RomM distinta. Isso demonstra divergência de identidade/vínculo entre a cópia local anterior e a ROM reconhecida pelo catálogo RomM; ainda não prova, por si só, corrupção dos bytes da ROM.
+- [EVIDÊNCIA DE RECONCILIAÇÃO] O log registra 16 ROMs locais sem hash correspondente e 3 conjuntos multidisco aguardando conjunto completo. É necessário distinguir ROM ausente/variante/arquivo de disco faltante de falha de hash ou de associação do catálogo.
+- [HIPÓTESES A INVESTIGAR] Correspondência de hashes (incluindo arquivos .m3u e discos individuais), variantes regionais/revisões, conjuntos multidisco, identificação por nome/caminho versus fingerprint, e comportamento de re-download ao substituir a cópia local. Verificar se o fluxo de importação/atualização preserva a identidade estável do jogo e reassocia saves sem exigir exclusão manual.
+- [REQUISITO DE SEGURANÇA] Não implementar exclusão automática nem substituição de ROM local para corrigir associação. Antes de qualquer troca, comparar conteúdo/hash, preservar cópia e saves, e solicitar confirmação quando houver risco de perda.
+- [PENDENTE — PRIORIDADE ALTA] Auditar o reconciliador Local/RomM e o fluxo de download/substituição de ROMs; reproduzir com uma ROM já existente localmente, comparando identidade, hash do arquivo principal, hashes dos discos e identidade final usada pelo SaveStore. O comportamento desejado é reconhecer e vincular a ROM existente sem exigir exclusão manual quando o conteúdo for equivalente.
+- [STATUS] O teste confirma a sincronização dos saves após rebaixar as ROMs, mas a experiência de primeira utilização/atualização da biblioteca permanece com uma etapa manual indevida. Estágio E não deve ser declarado concluído até investigar e validar esse fluxo.
+
+
+AUDITORIA DO RECONCILIADOR DE ROMS LOCAIS/ROMM — CORREÇÃO INICIAL — 2026-11-24
+- [CAUSA IDENTIFICADA] GameLibraryReconciler ignorava todas as plataformas discBased e arquivos .m3u, marcando-os como multidisco adiado sem tentar associação por conteúdo. Isso explica diretamente os 3 conjuntos multidisco pendentes observados no log #9 e é compatível com o caso Castlevania .m3u relatado pelo usuário.
+- [BUG ADICIONAL] A correspondência de ROM comum verificava tamanho em qualquer arquivo associado para pré-filtrar candidatos e SHA-1 em qualquer arquivo associado separadamente. Um registro poderia passar mesmo que tamanho e hash pertencessem a arquivos diferentes. A verificação agora exige tamanho e SHA-1 no mesmo arquivo associado.
+- [CORREÇÃO IMPLEMENTADA NA PR #50] O reconciliador agora tenta reconhecer jogos baseados em disco: lê playlists .m3u, verifica cada arquivo de disco referenciado, lê referências FILE dos .cue e calcula fingerprints SHA-1/tamanho dos arquivos. A associação exige o conjunto completo de arquivos principais do jogo em disco, na mesma plataforma e em um único registro RomM; arquivos referenciados por CUE também precisam corresponder.
+- [PROTEÇÃO CONTRA ASSOCIAÇÃO ERRADA] Conjuntos incompletos, arquivos ausentes, hashes ausentes, registros duplicados/ambíguos ou incompatibilidade de conteúdo não são associados automaticamente. Nome e tamanho isolados continuam sem valor probatório. Nenhuma ROM ou save é apagado, substituído, movido ou migrado.
+- [TESTES ADICIONADOS] Correspondência exata por tamanho+SHA-1 no mesmo arquivo; rejeição de mesmo hash com tamanho divergente; conjunto multidisco completo; rejeição de conjunto incompleto; validação de companions de CUE; e preservação de ambiguidade quando mais de um registro RomM contém o mesmo conjunto.
+- [COMMITS] Implementação: 9082f3a978e420e44900572ac626f597bc39f72b. Testes: ca693f9946dacafc881b6b3bc1a60adaa47d3934.
+- [CI PENDENTE] Run #1121 / 45505236662 estava em andamento no momento deste registro, associada ao commit ca693f9946dacafc881b6b3bc1a60adaa47d3934. Não considerar a alteração validada até a CI concluir e os jobs de estilo, testes e build serem conferidos.
+- [PENDENTE] Confirmar no contrato real do RomM que associatedFiles inclui hashes SHA-1 e tamanhos de todos os arquivos principais/companheiros de cada jogo multidisco; testar M3U/CUE com conjunto completo e incompleto. Se o servidor não publicar hashes suficientes, manter o vínculo em espera, sem heurística por nome.
+- [PENDENTE] Teste funcional no telefone com uma ROM local já existente, sem apagá-la nem baixá-la novamente: verificar vínculo automático, identidade RomM usada pelo SaveStore e continuidade dos saves. Reavaliar as 16 ROMs sem hash correspondente após a correção.
+- [STATUS] Correção inicial enviada para a PR #50; aguardando CI. PR continua aberta em draft e sem merge. O ciclo completo de upload/retorno de save states e os erros HTTP 500 permanecem pendentes.
+
+
+ADENDO — BLOQUEIO DE HASH AUSENTE EM DISCOS REMOTOS — 2026-11-24
+- [REVISÃO DE SEGURANÇA] A comparação multidisco foi endurecida: se qualquer arquivo principal de disco associado ao registro RomM não tiver SHA-1 válido, o conjunto remoto não pode ser considerado completo e não será associado. Quando o conjunto local depende de arquivos companion de CUE, hashes ausentes entre esses companions remotos também impedem o vínculo.
+- [TESTE ADICIONAL] Incluído caso em que um disco remoto tem hash e outro não; o registro inteiro deve ser rejeitado, evitando falso positivo por comparação parcial.
+- [COMMITS ADICIONAIS] Reconciliador: 2e2b94b7d05ae9efe275e1e7ae0c72d5bbce8439. Teste: ed5b4ea1adcf81fc76dbcfdc01311c1f9dfd8538.
+- [CI] A run #1121 / 45505236662 foi iniciada para o commit anterior ca693f9946dacafc881b6b3bc1a60adaa47d3934 e ainda estava em andamento na última consulta. Ela não valida os commits adicionais acima. Aguardar a execução no head mais recente; a automação de estilo pode também formatar e criar novo commit.
+
+
+NOTA DE CI — CONCORRÊNCIA DO FORMATADOR — 2026-11-24
+- [CI #1121 / RUN 45505236662] O job check-style executou Spotless, mas falhou ao tentar enviar o commit automático de formatação: o branch já havia recebido commits mais novos durante a execução. A falha foi de atualização concorrente do ref remoto, não uma rejeição dos testes ou compilação.
+- [CI ATUAL] A execução #1123 / run 45505446651 foi iniciada para validar os commits mais recentes. No último estado consultado, check-style e build Debug APK ainda estavam em andamento; aguardar resultado final antes de declarar a alteração validada.
+
+
+ATUALIZAÇÃO — CI #1123, CORREÇÃO DO PARSER M3U/CUE E REVALIDAÇÃO — 2026-11-24
+- [CI #1123 / RUN 45505446651 — FALHOU] O build detectou escapes Kotlin inválidos no parser de playlists/discos em GameLibraryReconciler.kt (linhas 190 e 211 no commit testado). Os testes não chegaram a executar; o build APK foi ignorado. O job check-style também falhou no push automático do Spotless por atualização concorrente do branch.
+- [DIAGNÓSTICO] A falha de compilação foi causada por literais de caractere e regex raw-string com barras invertidas duplicadas. Não é falha da lógica de comparação de hashes.
+- [CORREÇÃO] Literais de separador Windows foram corrigidos para char Kotlin '\\'; a regex CUE FILE foi corrigida para escapes raw-string válidos (\s e \S). Commits: 88393dfd6512a6edf571c9fcc8ed89ddaaae85e4 e 484cccb837e7a4e90ca627419b6baac94ca3cedb.
+- [STATUS DA VALIDAÇÃO] O head atual da PR #50 é 484cccb837e7a4e90ca627419b6baac94ca3cedb. A consulta de execuções associadas a esse commit ainda não retornou CI. É obrigatório obter CI verde no head atual antes de considerar a correção validada.
+- [PENDENTE] Revisar o contrato real de RemoteAssociatedFile/associatedFiles do RomM para confirmar presença de hash e tamanho de cada disco e companion. A associação permanece estrita e conservadora; nenhum arquivo local/remoto é apagado, movido ou substituído.
+- [PR] #50 continua aberta em draft, sem merge. O teste funcional no telefone e o ciclo completo de save states continuam pendentes.
+
+
+REVISÃO ADICIONAL — CONJUNTO EXATO DE ARQUIVOS CUE — 2026-11-24
+- [ACHADO] A primeira versão da correção exigia todos os companions locais referenciados pelo CUE, mas permitia arquivos companions extras no registro RomM. Isso poderia vincular um conjunto com conteúdo adicional/revisão diferente.
+- [CORREÇÃO] A associação agora exige igualdade exata entre o conjunto de fingerprints dos companions locais referenciados e o conjunto remoto de companions associados ao mesmo jogo. Arquivo remoto extra, ausente ou com hash/tamanho divergente impede vínculo.
+- [TESTE] Adicionado caso para rejeitar companion remoto extra.
+- [COMMITS] Reconciliador: 02339bb203dbbe75c1676e561969c44310c1d199. Teste: 2084283023994d66c97a53c32ebd7aa2c69e39c6.
+- [VALIDAÇÃO PENDENTE] As correções de escape e de conjunto exato ainda precisam de CI no head atual. A consulta de workflows para commits criados pela integração GitHub não retornou execuções; não reutilizar CI antiga como prova do novo código. A PR permanece aberta em draft.
+- [CONTRATO ROMM] O modelo local lê a lista de arquivos da API para RemoteAssociatedFile com tamanho e SHA-1, mas ainda falta confirmação empírica no servidor 5.4.x de que todos os arquivos CUE/companions relevantes aparecem com hashes. Sem isso, o reconciliador intencionalmente não associa.
+
+
+REVISÃO DE FORMATOS MULTIDISCO — GDI/CCD E REFERÊNCIAS CUE — 2026-11-24
+- [ACHADO] A primeira implementação interpretava referências FILE de CUE, mas não possuía parser específico para descritores GDI e CCD. Permitir associação nesses formatos sem verificar as imagens/companions poderia aceitar um conjunto incompleto.
+- [CORREÇÃO CONSERVADORA] GDI e CCD agora ficam explicitamente adiados, sem associação automática, até existir parser e testes específicos para suas referências. CUE continua suportado; referências repetidas ao mesmo arquivo no CUE são deduplicadas para comparar arquivos físicos, não quantidade de faixas.
+- [TESTES] Adicionada cobertura para garantir que GDI/CCD sejam adiados e CUE/CHD continuem elegíveis.
+- [COMMITS] Política do reconciliador: 479b9031fe0b803a0c4c73ca2cefc65537240f43. Testes: fcc6a9df40c995575424148d924951d9c01040ab.
+- [VALIDAÇÃO] CI ainda pendente para o head atualizado. Nenhum vínculo automático é feito para formato de descritor não validado; nenhuma ROM ou save é removido ou substituído.
+
+
+TESTES DO PARSER DE DISCOS — 2026-11-24
+- [MELHORIA DE TESTABILIDADE] O parser de fingerprints foi exposto apenas no escopo interno do módulo para permitir testes unitários diretos, sem alterar sua disponibilidade pública.
+- [TESTES ADICIONADOS] CUE calcula fingerprint do arquivo principal e de cada companion físico; múltiplas faixas que referenciam o mesmo arquivo não duplicam o companion. M3U exige todos os CUEs/discos e companions. CUE com arquivo ausente é adiado. GDI e CCD são explicitamente recusados até que seus formatos sejam interpretados por parsers próprios.
+- [COMMITS] Parser: 181a40b58d3056668be5971ee36ba842eb82590e. Testes: cd3db234a0bff4c6f319cf499812bc661f839cf3.
+- [CI PENDENTE] Nenhuma execução de workflow foi retornada para os commits mais recentes; CI #1123 validou um head anterior e falhou por escapes de parser. Não considerar os testes novos aprovados até executar CI no head atual.
+- [SEGURANÇA] A política continua fail-closed: formatos sem parser, companions ausentes, hashes ausentes, conjunto parcial ou conteúdo divergente não recebem vínculo automático.
+
+
+REVALIDAÇÃO DO HEAD DA PR #50 — CI #1145 E REVISÃO DO ESTADO — 2026-11-24
+- [ESTADO DA PR] PR #50 permanece aberta, em draft, com base game-mode-m2-dev, mergeable=true e sem merge. O head atual é f39cf73f6f0054ae248aa4ce3ffa69033811b061.
+- [CONFERÊNCIA DE PRS] A busca por PRs abertas no repositório retornou somente a própria PR #50; não há PR concorrente para o Estágio E.
+- [MUDANÇA DESDE A ÚLTIMA AUDITORIA] O único commit posterior ao registro anterior é f39cf73f6f0054ae248aa4ce3ffa69033811b061 (style: apply Spotless formatting), criado pelo github-actions[bot]. A comparação com 8a0bea557e5eb9222c108455f7c5a9b2155b0a1e mostra somente uma alteração de formatação em GameLibraryReconciler.kt; nenhuma mudança funcional adicional foi introduzida nesse commit.
+- [CI #1145 — BLOQUEADA POR AÇÃO] Run 45507300941, associada ao head f39cf73f6f0054ae248aa4ce3ffa69033811b061, terminou com conclusion=action_required. A consulta de jobs retornou lista vazia; portanto não há evidência de execução de check-style, testes unitários ou build APK nessa run. Não classificar como CI aprovada nem como falha de código.
+- [PENDENTE — AUTORIZAÇÃO/EXECUÇÃO DA CI] Investigar a exigência de aprovação/ação no GitHub Actions e obter execução completa no head atual. Não reutilizar CI #1110 ou #1123 como validação deste código; #1110 antecede o reconciliador e #1123 falhou em um head anterior por erros de compilação já corrigidos.
+- [PENDENTE — VALIDAÇÃO FUNCIONAL] Depois da CI verde, testar no telefone uma ROM já existente sem apagá-la nem baixá-la novamente, confirmando vínculo RomM, identidade estável do SaveStore e preservação dos saves. Permanecem pendentes o ciclo completo de upload/retorno de save states e a investigação dos HTTP 500 em /api/platforms e /api/roms.
+- [SEGURANÇA] Nenhuma ROM, save local/remoto ou dado remoto foi apagado, movido, sobrescrito ou migrado nesta revisão. Não alterar a política fail-closed para M3U/CUE; GDI/CCD continuam adiados até parsers próprios. overwrite=false e exclusões ignoradas permanecem.
+- [DECISÃO] Manter PR #50 em draft e sem merge até CI completa, revisão dos resultados e teste funcional. Não abrir PR concorrente.
+
+
+ADENDO — ESTADO APÓS REGISTRO DA AUDITORIA — 2026-11-24
+- [HEAD DOCUMENTAL] O registro desta auditoria foi gravado no commit 68a7466e17a617f0ab7de9c8a0254d39e6e3d740. Esse commit altera somente este arquivo de auditoria; o código funcional permanece igual ao head validado pelo formatador f39cf73f6f0054ae248aa4ce3ffa69033811b061.
+- [CI #1145] A execução 45507300941 usa o workflow .github/workflows/ci.yml, evento pull_request, e terminou action_required sem criar jobs. A consulta do endpoint de aprovações retornou lista vazia; não foi possível identificar nem liberar a aprovação pela conexão GitHub disponível.
+- [COMPORTAMENTO DO WORKFLOW] O job check-style, após aplicar Spotless e enviar formatação, chama gh workflow run ci.yml --ref "$PR_HEAD_REF". Portanto, a revalidação manual subsequente pode exigir aprovação explícita no GitHub Actions. Alterações apenas no arquivo .txt de auditoria estão em paths-ignore e não disparam nova CI por si só.
+- [ESTADO RECONFIRMADO] PR #50 continua aberta, em draft, não mesclada e mergeable=true após atualização do estado. Nenhuma outra PR aberta foi encontrada no repositório.
+- [PRÓXIMA AÇÃO EXTERNA] É necessário aprovar/liberar a execução pendente na interface GitHub Actions ou iniciar manualmente a workflow CI para a branch feat/unified-session-artifacts. Depois conferir check-style, testes unitários, build Debug APK e final-status no head atual antes de prosseguir.
+
+
+ATUALIZAÇÃO — CI #1145 APROVADA E APK GERADO — 2026-11-24
+- [RESULTADO FINAL] A execução #1145 / run 45507300941, tentativa 2, terminou com conclusion=success. A execução inicialmente observada como action_required foi posteriormente liberada e concluída.
+- [HEAD DE CÓDIGO VALIDADO] f39cf73f6f0054ae248aa4ce3ffa69033811b061 (style: apply Spotless formatting). Os commits posteriores na branch, 68a7466e17a617f0ab7de9c8a0254d39e6e3d740 e 049d207ef2d7ab543208bbf2f1c6740eb5732bcc, atualizam exclusivamente este arquivo de auditoria; o workflow ignora alterações .txt/docs e não houve alteração funcional após o head validado.
+- [JOBS] check-style: success; build-debug-apk / assembleLawnWithQuickstepGithubDebug: success (inclui testLawnWithQuickstepGithubDebugUnitTest e Build APK); final-status: success. Jobs de publicação/notificação foram ignorados conforme condições do workflow; não houve publicação tandem-latest.
+- [ARTEFATO] ID 14975451749, nome assembleLawnWithQuickstepGithubDebug, 46.423.074 bytes, SHA-256 6c0467ce294da99b5552485e8849408e04761b090bcca9356966ecc68f7d2edf. Expiração: 2027-02-22.
+- [PENDÊNCIA FUNCIONAL] A CI não substitui o teste no telefone. Ainda é necessário validar o vínculo de ROM local já existente sem apagar/baixar novamente, a identidade RomM no SaveStore e a preservação dos saves. Save states ainda precisam de teste completo de ida e volta. HTTP 500 em /api/platforms e /api/roms permanecem para investigação.- [SEGURANÇA/DECISÃO] Nenhum dado de jogo foi alterado nesta validação. PR #50 permanece aberta, draft e sem merge; não mesclar sem autorização explícita.
+
+VALIDAÇÃO FUNCIONAL — ROM LOCAL RECONHECIDA SEM RE-DOWNLOAD — 2026-11-24
+- [CONFIRMAÇÃO DO USUÁRIO] Após a correção do reconciliador Local/RomM, o usuário confirmou que o teste funcionou com uma ROM que já estava no aparelho, sem precisar excluí-la nem baixá-la novamente do servidor.
+- [RESULTADO] Validação funcional positiva do vínculo de uma ROM local preexistente com o catálogo RomM. Este resultado atende ao cenário que estava pendente desde o log #9 e demonstra que, nesse caso testado, a associação não dependeu de re-download.
+- [ESCOPO DA EVIDÊNCIA] O usuário confirmou o funcionamento, mas não especificou nesta confirmação o título da ROM nem forneceu um novo log técnico. Portanto, registrar como teste funcional reportado pelo usuário, sem inferir quantas das 16 ROMs sem hash correspondente foram resolvidas ou que todos os formatos multidisco estejam cobertos.
+- [SEGURANÇA] O teste confirmado não exigiu exclusão nem novo download da ROM local. Não há indicação de remoção, substituição ou migração de ROMs ou saves nesta validação.
+- [PENDENTE] Reavaliar a biblioteca completa, incluindo os 16 itens anteriormente sem hash correspondente e os conjuntos multidisco; GDI/CCD continuam adiados até suporte específico. Ainda faltam o ciclo completo de upload/retorno de save states, investigação dos HTTP 500 em /api/platforms e /api/roms e demais cenários de recuperação.
+- [CI] A CI #1151 / run 45511949873 está em andamento no head de código 4a477f4df9971aa360df2101eb103ce6dbc60e7e. A validação funcional reportada não substitui a conclusão dessa CI.
+- [PR] #50 permanece aberta, em draft, sem merge. Não abrir PR concorrente; continuar o trabalho na PR #50.
+
+
+AUDITORIA ESTÁTICA — TRANSPORTE DE SAVE STATES — 2026-11-24
+- [IMPLEMENTAÇÃO IDENTIFICADA] O GameSessionCoordinator executa o transporte de SRAM/cartões pelo Device Sync e, em sequência independente, chama SaveSync.pushFromWorker para estados rápidos. Uma falha no Device Sync não impede a tentativa de sincronizar estados.
+- [UPLOAD] SaveSync captura store.stateFile em snapshot persistente, calcula hash, consulta o registro remoto quando necessário e usa RomMClient.uploadRemoteFile com RemoteFileKind.State; o nome remoto recebe extensão .state. A fila usa WorkManager com rede conectada e backoff exponencial.
+- [DOWNLOAD] SaveSync.pull lista os registros do tipo State, restringe a seleção ao núcleo compatível, baixa para arquivo temporário e só promove o arquivo após validação de conteúdo/estado. O arquivo local anterior é preservado em snapshot/backup e há rollback se o pull falhar.
+- [ISOLAMENTO] A chave de metadados de save state inclui identidade do jogo e núcleo, evitando misturar estados rápidos de núcleos diferentes. O progresso interno do RetroAchievements permanece local e não é enviado neste fluxo.
+- [LACUNA DE TESTES] A revisão de SaveSyncPolicyTest encontrou testes das decisões puras de política, mas não testes de contrato HTTP/integração que exercitem upload, listagem, download, atualização de registro existente, criação após 404 e recuperação de worker para /api/states. A implementação está presente, mas a interoperabilidade ponta a ponta não está comprovada.
+- [DIAGNÓSTICO HTTP] RomMClient.listRemoteFiles e uploadRemoteFile atualmente reduzem respostas não exitosas a mensagens genéricas com código HTTP; isso limita a investigação de falhas 500 em endpoints de saves/states. O diagnóstico estruturado já existente no cliente Device Sync não cobre automaticamente essas chamadas da API tradicional /api/states.
+- [PRÓXIMA PRIORIDADE] Adicionar testes de contrato para o transporte /api/states e melhorar o diagnóstico seguro das respostas HTTP sem registrar tokens, conteúdo de saves ou corpos arbitrários. Depois executar CI e validar no telefone um ciclo real: criar estado em um dispositivo, encerrar a sessão, aguardar o worker e recuperar/carregar o estado no outro dispositivo.
+- [LIMITES] Esta foi uma auditoria estática dos arquivos e testes da branch. Nenhuma alteração de código, save, ROM ou dado remoto foi realizada nesta revisão.
+
+
+TESTE ADICIONAL — ISOLAMENTO DO TRANSPORTE DE SAVE STATES — 2026-11-24
+- [TESTE ADICIONADO] SaveSyncPolicyTest agora verifica que snapshots legados contendo SRAM e save state encaminham somente RemoteFileKind.State ao transporte /api/states. Isso protege contra reenvio acidental de SRAM pelo endpoint tradicional após a separação dos transportes.
+- [ESCOPO] O teste cobre a filtragem local do worker; não substitui testes HTTP do RomM nem o ciclo funcional entre dispositivos.
+- [COMMIT] 1e4e36067e76469188b386f10534d3fd4fcfdf02 — test(sync): keep legacy SRAM out of quick-state transport.
+- [CI] A CI #1151 / run 45511949873 ainda estava em andamento e foi iniciada antes deste commit de teste. Nenhuma execução de workflow foi retornada ainda para o novo head; obter validação específica do commit 1e4e36067e76469188b386f10534d3fd4fcfdf02 antes de considerar o teste aprovado.
+- [PR] #50 permanece aberta em draft e sem merge. Não mesclar; continuar somente nesta PR.
+
+
+ATUALIZAÇÃO — CI #1151–#1160 E CONTRATO HTTP DE SAVE STATES — 2026-11-24
+- [CI #1151 / RUN 45511949873] Concluída com sucesso no head 4a477f4df9971aa360df2101eb103ce6dbc60e7e: check-style, testes unitários, build Debug APK e final-status aprovados. Jobs de publicação foram ignorados.
+- [CI #1157 / RUN 45512953352] Concluída com sucesso no head 353d77c66fb7d1884d432ead79d9eadc5c067672: estilo, testes unitários, build Debug APK e final-status aprovados.
+- [CI #1158 / RUN 45513081821], [#1159 / RUN 45513124216] e [#1160 / RUN 45513153818]: execuções manuais adicionais no mesmo head 353d77c66fb7d1884d432ead79d9eadc5c067672; todas concluídas com sucesso nos jobs de estilo, testes unitários, build Debug APK e final-status. Nenhuma delas publicou tandem-latest.
+- [CONTRATO ROMM 5.4.0 CONFERIDO] A especificação OpenAPI 5.4.0 declara GET /api/states com filtro rom_id; POST /api/states com rom_id obrigatório, emulator opcional e multipart stateFile obrigatório (screenshotFile opcional); PUT /api/states/{id} com multipart stateFile/screenshotFile; e GET /api/states/{id}/content. O cliente Tandem usa esses caminhos, métodos e nomes de campo para save states. A instância RomM também disponibiliza sua especificação em /openapi.json.
+- [FONTE DO CONTRATO] https://apis.io/apis/romm/romm-states-api/ (snapshot OpenAPI 5.4.0); https://docs.romm.app/5.4.0/developers/api-reference/ (documentação oficial que aponta para o OpenAPI da instância).
+- [LIMITE] A confirmação do contrato público não substitui teste real contra a instância RomM 5.4.x do usuário; ainda é necessário validar autenticação/permissões e comportamento do servidor real.
+
+IMPLEMENTAÇÃO — TESTES HTTP E DIAGNÓSTICO DE SAVE STATES — 2026-11-25
+- [IMPLEMENTADO NA PR #50] RomMClient agora preserva erros HTTP estruturados dos endpoints de listagem, upload e download de saves/estados como RomMHttpException, incluindo status e somente campos conhecidos detail/message/error.
+- [SEGURANÇA] A leitura do corpo de erro é limitada a 8 KiB; o detalhe é limitado a 300 caracteres, normaliza caracteres de controle e mascara valores de token/access_token/authorization/password/secret/api_key. Corpos arbitrários não são registrados.
+- [TESTES ADICIONADOS] RomMSaveTransportTest cobre GET /api/states com rom_id e Bearer token; POST multipart /api/states com stateFile; GET /api/states/{id}/content; propagação de HTTP 500/503 com detalhe; redaction de segredos; e preservação de arquivo local existente quando o download falha.
+- [TESTABILIDADE] A medição de duração do download usa System.nanoTime; a verificação de espaço mantém StatFs no Android e usa File.usableSpace como fallback para testes JVM quando a API Android não está disponível.
+- [COMMITS] Diagnóstico HTTP: 645deffa4d1199478a5e4a777ba6b4787ee9ae55; correção da regex de redaction: b795d9a30d8edffa9bd91998fb7d16ca55362168; testes HTTP: f60ff28bfb870ecbdfb322d1d88cf945f544e26e; compatibilidade de teste JVM: 810daea1f168691701f3c3aacca5c6446eca75bf.
+- [CI EM ANDAMENTO] CI #1161 / run 45516648856, #1162 / run 45516697537, #1163 / run 45516746694 e #1167 / run 45517020200 ainda não tinham resultado final no momento deste registro. As execuções #1164–#1166 são revalidações workflow_dispatch dos heads anteriores. Não declarar o novo código aprovado até CI #1167 (head 810daea1f168691701f3c3aacca5c6446eca75bf) concluir com sucesso.
+- [PENDÊNCIA DE RETRY] RomMSaveSyncWorker ainda converte qualquer exceção HTTP em Result.retry(). Revisar especificamente HTTP 409 para estacionar o snapshot e não repetir indefinidamente um conflito remoto. Não resolver conflito nem sobrescrever dados automaticamente.
+- [PENDENTE] Executar teste funcional no telefone com save state real em ida e volta entre dispositivos; confirmar também se a instância 5.4.x devolve os metadados esperados e se o token tem scopes assets.read/assets.write.
+- [SEGURANÇA/PR] Nenhum save, ROM ou dado remoto foi apagado, movido ou sobrescrito. PR #50 permanece aberta, em draft, mergeable=true e sem merge. Nenhuma PR concorrente foi aberta.
+
+## ATUALIZAÇÃO — IDENTIFICADORES CANÔNICOS DOS NÚCLEOS ROMM (2026-11-25)
+
+### Achado confirmado
+- O catálogo CoreRegistry usa identificadores canônicos Libretro; para SNES, o núcleo padrão é snes9x.
+- RomMDeviceSyncRunner e SaveSync acrescentavam o prefixo tandem_ antes de enviar o campo emulator ao RomM. Isso fazia novos registros aparecerem como tandem_snes9x, em vez de snes9x.
+- A política antiga de SRAM aceitava qualquer identificador iniciado por tandem_, sem limitar a compatibilidade aos grupos de núcleos declarados. Essa regra era ampla demais.
+
+### Correção implementada na PR #50
+- CoreSaveAdapterRegistry agora centraliza a conversão para o ID canônico Libretro e a lista de aliases legados aceitos na leitura.
+- Novos uploads pelo Device Sync e pelo transporte de quick states enviam o ID canônico (snes9x, por exemplo), sem prefixo tandem_.
+- A leitura continua aceitando registros antigos tandem_*, normalizando-os apenas para comparação; não há renomeação nem atualização automática dos registros remotos.
+- SRAM/cartões só são considerados compatíveis entre núcleos explicitamente declarados no mesmo adaptador. Núcleos desconhecidos permanecem restritos ao próprio ID.
+- Save states continuam restritos ao mesmo núcleo de origem, aceitando somente a forma canônica ou o alias legado daquele mesmo núcleo.
+- Não foram alterados caminhos locais, nomes de arquivos ou conteúdo de saves. Nenhum save, ROM ou registro remoto foi apagado, movido, sobrescrito ou migrado.
+
+### Testes adicionados
+- ID de saída canônico para snes9x e pcsx_rearmed.
+- Leitura compatível de snes9x e tandem_snes9x.
+- Compatibilidade cruzada de SRAM somente dentro do grupo SNES declarado.
+- Rejeição de núcleos de famílias diferentes.
+- Save states aceitam o alias legado somente para o mesmo núcleo.
+- Verificação da política do Device Sync para envio canônico e leitura legada.
+
+### Estado de validação
+- Alterações enviadas à branch feat/unified-session-artifacts, dentro da PR #50.
+- [PENDENTE] CI completa no head atualizado, incluindo Spotless, testes unitários e build Debug APK.
+- [PENDENTE] Teste funcional no telefone e inspeção do valor emulator gravado no RomM após um novo upload.
+- A PR permanece em draft e não deve ser mesclada sem autorização explícita.
+
+AUDITORIA — COMPARAÇÃO COM RETROARCH CLOUD SYNC (ROMM 5.4) — 2026-11-25
+- [FONTE OFICIAL] Documentação RomM 5.4.0: https://docs.romm.app/5.4.0/ecosystem/retroarch-cloud-sync/ e https://docs.romm.app/5.4.0/using/saves-and-states/.
+- [RECOMENDAÇÃO DO ROMM] RetroArch Cloud Sync usa WebDAV em /api/sync/retroarch/ para espelhar saves, estados e pastas adicionais. Requer RetroArch 1.22+ compilado com Cloud Sync/WebDAV, conta RomM com usuário e senha (Basic Auth), nomes de ROM correspondentes e arquivos de saves/estados separados por núcleo.
+- [COMPORTAMENTO DE ESTADOS] RomM agrupa estados por jogo, núcleo e slot. RetroArch usa nomes de slots numerados e pode receber a versão mais recente de cada slot. O diretório por núcleo é importante para preservar a identidade do emulador.
+- [RISCO DE DELEÇÃO] A documentação declara que exclusões feitas no RetroArch Cloud Sync também são propagadas ao RomM; o modo não destrutivo do RetroArch ainda trata o movimento para deleted/ como exclusão. Isso não atende à política de segurança atual do Tandem, que ignora exclusões e preserva dados por padrão.
+- [COMPATIBILIDADE DE TAMANHO] A FAQ oficial do RomM explica que o mesmo estado pode ter tamanhos diferentes entre instalações por causa da configuração de compressão do RetroArch; RetroArch lê estados comprimidos e não comprimidos. Essa explicação não prova que o LibretroDroid aceite os dois formatos: no Log #10, unserializeState rejeitou explicitamente um arquivo de 823.432 bytes quando o núcleo esperava 823.407 bytes.
+- [DECISÃO TÉCNICA] Não substituir o transporte atual do Tandem por WebDAV neste estágio. O Tandem usa LibretroDroid e autenticação RomM por token; o WebDAV documentado é um fluxo específico do RetroArch, com Basic Auth e sem as mesmas garantias de exclusão. Manter a API oficial /api/states para quick states, com metadados de núcleo/slot e validação antes de aplicar, até que haja uma integração WebDAV segura e compatível comprovada.
+- [IMPLEMENTAÇÃO ATUAL CONFERIDA] RomMClient usa GET /api/states?rom_id=..., GET /api/states/{id}/content, POST /api/states com multipart stateFile e rom_id/emulator; atualização existente usa PUT /api/states/{id}. SaveSync restringe o transporte tradicional a RemoteFileKind.State e seleciona apenas estados do mesmo núcleo (aceitando somente o alias legado daquele núcleo). O fluxo faz download temporário, preserva backup e só promove o arquivo depois da validação de transporte/hash.
+- [LACUNA FUNCIONAL] A API transportar e armazenar o estado não garante que LibretroDroid consiga restaurá-lo. Falta teste controlado que compare: mesmo núcleo/build/configuração; estado criado pelo próprio Tandem; upload; download byte a byte; e restauração no mesmo núcleo. Também falta identificar se os 25 bytes decorrem de compressão, cabeçalho/formato ou diferença de build.
+- [SEGURANÇA] Não truncar, remover bytes, recompactar nem substituir estados incompatíveis automaticamente. Não habilitar exclusão remota pelo WebDAV. Preservar o arquivo local e a cópia remota até a causa ser identificada.
+- [CI #1177] Run 45520711167, head cf3232f88dc4c6459533ee137866e1448f383537: check-style, testes unitários, build Debug APK e final-status concluídos com sucesso. Artefato APK gerado; jobs de publicação/notificação foram ignorados. Execução: https://github.com/izzyn0okami/Tandem/actions/runs/45520711167.
+- [PENDENTE] Teste no telefone de upload/download/restauração de estado com o mesmo núcleo/build; confirmar autenticação e metadados da instância RomM 5.4.x; investigar separadamente HTTP 500 em /api/platforms e /api/roms.
+- [PR] #50 permanece aberta, em draft e sem merge. Nenhuma PR concorrente foi aberta. Nenhuma ROM, SRAM, cartão de memória, save state ou dado remoto foi apagado, movido, sobrescrito ou migrado nesta auditoria.
+
+CORREÇÃO — POLÍTICA DE RESTAURAÇÃO DE SAVE STATES PERSISTIDOS — 2026-11-25
+- [CAUSA NO FLUXO DO TANDEM] GameSessionActivity.loadQuickState() carregava um arquivo persistido usando GLRetroView.unserializeStateWithAchievements(), que chama LibretroDroid.unserializeState() e aplica StrictSize: rejeita o estado antes de consultar o núcleo quando o tamanho difere de retro_serialize_size().
+- [CAPACIDADE NATIVA JÁ EXISTENTE] LibretroDroid também oferece unserializePersistedState(), com política CoreValidated. Ela permite encaminhar o tamanho real do arquivo para retro_unserialize() e deixa o núcleo decidir se consegue restaurar o estado histórico. Não remove bytes, não preenche dados e não força sucesso.
+- [CORREÇÃO IMPLEMENTADA NA PR #50] GLRetroView ganhou unserializePersistedStateWithAchievements(), que preserva a proteção do RetroAchievements Hardcore e restaura o progresso RA somente depois que o núcleo aceita o estado. GameSessionActivity.loadQuickState() passou a usar esse caminho persistido. A API estrita continua disponível para estados transitórios.
+- [SEGURANÇA] O arquivo recebido permanece byte a byte intacto; nenhuma truncagem, padding, recompressão, sobrescrita ou exclusão foi introduzida. Se o núcleo rejeitar o estado, o carregamento continua falhando de forma segura.
+- [TESTES EXISTENTES] stateloadpolicy_test.cpp já cobre StrictSize rejeitando tamanho divergente e CoreValidated encaminhando tamanho histórico ao callback do núcleo, inclusive cenário em que o próprio núcleo rejeita. A CI precisa confirmar compilação e execução da suíte atual.
+- [COMMITS] GLRetroView: e041cbed92da294d6ee0fc104cf29251b77a9d24. GameSessionActivity: a11d2a5dfde43c881167a5cc4912e8be8319abb0.
+- [CI #1179] Run 45523144336 está em execução no head de código a11d2a5dfde43c881167a5cc4912e8be8319abb0; check-style e build-debug-apk ainda não têm conclusão no momento deste registro. Não considerar a correção validada pela CI até os dois jobs e final-status concluírem com sucesso.
+- [PENDENTE FUNCIONAL] Repetir no telefone o cenário que falhou no Log #10. Se o núcleo aceitar o estado de 823.432 bytes apesar de esperar 823.407, registrar restauração real; se rejeitar, investigar versão/build/configuração do núcleo. O teste precisa ser feito com backup preservado e sem modificar o arquivo remoto.
+- [PR] #50 permanece aberta, em draft e sem merge. Nenhuma PR concorrente foi aberta. Nenhum save, estado, SRAM, cartão ou ROM foi alterado durante a correção.
+
+## VALIDAÇÃO CI — IDENTIFICADORES CANÔNICOS ROMM (2026-11-25)
+
+- A CI #1174 validou o commit inicial 9519985c9665cd6b6826dd6204cd4d7087922cc8 com sucesso: Spotless, testes unitários e build Debug APK.
+- O Spotless aplicou formatação automaticamente e gerou novo head; o head atual da PR #50 é a0f044ee9bf65b3bc602565a842a4f85c8f34c9c.
+- O head atual também foi validado com sucesso pelas CIs #1180, #1181, #1182 e #1183. Todas concluíram com success no mesmo SHA.
+- Artefato Debug APK gerado pela CI #1174: assembleLawnWithQuickstepGithubDebug, 46.424.987 bytes, não expirado no momento do registro (expiração informada: 2027-02-23).
+- PR #50 permanece aberta, em draft, com mergeable=true. Nenhum merge foi executado.
+- [PENDENTE] Teste no telefone: executar um novo upload SNES e confirmar no RomM que o campo emulator foi salvo como snes9x.
+- [PENDENTE] Validar a leitura de um registro antigo tandem_snes9x sem alterar o registro remoto nem o save local.
+
+
+## VALIDAÇÃO FUNCIONAL — UPLOAD DE SAVE STATE PELO mGBA (2026-11-25)
+
+- [CONFIRMAÇÃO DO USUÁRIO — TESTE NO TELEFONE] O único save state existente no servidor RomM para o jogo testado foi criado pelo usuário no mGBA e enviado pelo próprio Tandem. Portanto, o ciclo de upload de save state pelo fluxo tradicional /api/states está funcional para esse cenário.
+- [EVIDÊNCIA NO LOG #11] ROM #835, jogo PKLG Pikachu v8.0 ENG, núcleo mgba. O inventário registra SAVE_STATE/state1 com 528.448 bytes. Na sessão seguinte, o Tandem seleciona o estado remoto states ID 12, faz GET /api/states/12/content, recebe HTTP 200 com 528.448 bytes e aplica o arquivo ao SaveStore do mGBA. O usuário confirmou que esse registro remoto foi originalmente criado pelo upload feito no Tandem.
+- [DISTINÇÃO DE TRANSPORTES] As linhas "selecionado=CORE_SAVE" pertencem ao Device Sync de SRAM/cartão e não demonstram falha no transporte separado de save states. O upload de save state ocorre pelo SaveSync tradicional via /api/states, executado pelo coordenador após o transporte Device Sync.
+- [RESULTADO] Marcar como validado no telefone: criação local do estado no mGBA, envio ao RomM e recuperação/aplicação posterior do mesmo registro. Não generalizar o resultado para SNES, PSX ou todos os núcleos.
+- [PENDENTE] Repetir o ciclo de upload e recuperação de save state em SNES (snes9x) e PSX (núcleo efetivamente utilizado), observando o mesmo jogo, núcleo e build. Comparar a existência/tamanho/hash local, resultado do worker /api/states e registro remoto. Investigar diferenças por núcleo sem alterar estados existentes.
+- [SEGURANÇA] Nenhum save, save state, ROM ou registro remoto foi apagado, movido, sobrescrito ou migrado durante esta validação.
+
+## VALIDAÇÃO CI — DOCUMENTAÇÃO DA AUDITORIA (2026-11-25)
+- [CI #1184] Run 45524982681, commit dd442c043b9862d9429a353308778f76e4580b34: check-style, build Debug APK e final-status concluídos com sucesso. Jobs de publicação/release foram ignorados. Execução: https://github.com/izzyn0okami/Tandem/actions/runs/45524982681.
+- [PR] #50 continua aberta, em draft, mergeable=true, head dd442c043b9862d9429a353308778f76e4580b34. Não houve merge. Nenhuma PR concorrente foi aberta.
+
+
+## AUDITORIA — INCOMPATIBILIDADE DE SAVE STATES ENTRE INSTÂNCIAS DO MESMO NÚCLEO (LOG #12, 2026-11-25)
+
+- [RELATO DO USUÁRIO] Os emuladores conseguem carregar os respectivos save states de seus slots, mas os estados não são intercambiáveis entre eles, inclusive quando usam o mesmo núcleo Libretro.
+- [EVIDÊNCIA SNES9X — LOG #12] O Tandem selecionou o estado remoto RomM ID 14, com emulator=snes9x, e baixou HTTP 200 /api/states/14/content (823.432 bytes). O estado foi aplicado ao SaveStore local do SNES9x. Na tentativa real de restauração, o LibretroDroid informou tamanho atual esperado de 823.407 bytes e o núcleo rejeitou o estado recebido de 823.432 bytes (diferença de 25 bytes). A política CoreValidated encaminhou o tamanho real ao núcleo, sem truncar ou completar o arquivo; a rejeição veio do próprio núcleo.
+- [EVIDÊNCIA DE MÚLTIPLOS REGISTROS] O log registra upload do estado local SNES9x de 894.555 bytes: tentativa de atualizar RomM states ID 10 recebeu HTTP 404; fallback seguro criou novo registro ID 13. Mais tarde, a listagem retornou dois candidatos compatíveis com coreId snes9x e o seletor escolheu o ID 14, mais recente, de 823.432 bytes. Portanto, a igualdade do identificador snes9x não prova compatibilidade binária/serialização entre builds ou instâncias do mesmo núcleo.
+- [CAUSA PROVÁVEL / AINDA NÃO PROVADA] SaveSyncPolicy.isCompatibleRemote para RemoteFileKind.State compara apenas o ID canônico do núcleo. newestCompatibleRemote escolhe o registro mais recente entre todos os estados com esse mesmo ID; a identidade não inclui versão/build binária do núcleo, fingerprint do arquivo .so, versão da libretro ou perfil de opções. O log não contém a versão/build do núcleo que criou cada estado, então ainda não é possível afirmar qual dessas diferenças explica os 25 bytes.
+- [CONCLUSÃO] O problema não é o download nem a gravação local. Há uma falsa equivalência na política de compatibilidade: mesmo coreId pode representar builds/instâncias que geram formatos de estado incompatíveis. A seleção atual de “mais recente” pode escolher um estado que o núcleo ativo rejeita.
+- [PENDENTE — PROJETO DE CORREÇÃO] Levantar metadados de versão expostos pelo núcleo (retro_get_system_info/library_version), fingerprint do binário Libretro e, se relevante, opções efetivas do núcleo. Definir uma identidade de compatibilidade para save states separada do ID amigável/emulator RomM. Novos estados devem ser isolados por identidade de build/perfil; estados antigos sem metadados devem ser tratados como legado não verificado, sem assumir compatibilidade apenas pelo nome do núcleo. Não renomear nem apagar registros antigos.
+- [PENDENTE — SEGURANÇA] Não implementar conversão, padding, truncagem ou alteração de bytes. Preservar os arquivos originais e backups. Não sobrescrever estado remoto de outra instância. Antes de aplicar estados legados sem fingerprint, avaliar fallback seguro/seleção explícita.
+- [CI] O commit 40c439a895d89ecafe0712f4633289b661c705e6, com os novos logs de upload, foi validado pelas CIs #1187, #1188 e #1189 com sucesso. A CI #1186 também passou no commit documental anterior f79a9962a0274398b416fa7a50a12db11cc00b87. A CI #1185 falhou no Spotless; a correção posterior passou nas CIs seguintes.
+- [PR] #50 permanece aberta, em draft, head 40c439a895d89ecafe0712f4633289b661c705e6, sem merge. Nenhuma PR concorrente foi criada.
+- [SEGURANÇA] Esta auditoria foi somente leitura; nenhum ROM, save, save state ou registro remoto foi modificado.
+
+
+## DECISÃO ARQUITETURAL — SAVE STATES EXCLUSIVAMENTE LOCAIS (2026-11-24)
+
+- [DECISÃO DO USUÁRIO] Save states não serão sincronizados entre dispositivos. Permanecem exclusivamente no armazenamento local do aparelho. A sincronização entre dispositivos continuará usando SRAM e cartões de memória pelo RomM Device Sync, considerados suficientes para continuar partidas em outros dispositivos.
+- [MOTIVAÇÃO] Os testes reais demonstraram que o mesmo identificador de núcleo não garante que um save state seja restaurável em outro dispositivo/build. A identificação de compatibilidade exigiria manutenção adicional e ainda não ofereceria garantia confiável diante de atualizações frequentes dos núcleos. O custo e o risco não se justificam.
+- [IMPLEMENTADO NA PR #50] GameSessionCoordinator não executa mais pull remoto de save states ao preparar uma sessão e não chama o transporte /api/states no trabalho pós-sessão. O transporte de SRAM/cartões pelo RomMDeviceSyncRunner permanece ativo.
+- [IMPLEMENTADO NA PR #50] SaveSync.stateTransportFiles agora exclui todos os tipos de arquivo do transporte remoto, impedindo que snapshots antigos enfileirados enviem save states.
+- [PRESERVAÇÃO] Save states continuam sendo criados, carregados e mantidos localmente pelo SaveStore/LibretroDroid. Nenhum arquivo local é removido ou migrado por esta decisão.
+- [PRESERVAÇÃO REMOTA] Save states já existentes no RomM não serão apagados, atualizados ou migrados. A alteração apenas interrompe novas operações de leitura/escrita de states pelo Tandem.
+- [VALIDAÇÃO AUTOMATIZADA] Teste GameSessionCoordinatorTest atualizado para garantir que save states sejam excluídos do transporte remoto. CI após os commits desta mudança ainda pendente.
+- [COMMITS] GameSessionCoordinator: 9f97d40110e2f4a07b1eb49d6384ef52e33b86e2; SaveSync: e3a95c9f74b65e4112296e8c38fc115ee51cbfc9; teste: 3782a8539b22ae7b97ac179251516cc6ee8e74d6.
+- [PENDENTE] Confirmar CI completa no head final, revisar referências restantes a SaveSync.pull/push de states e validar no telefone que SRAM/cartões continuam sincronizando e save states continuam funcionando localmente.
+- [CI ANTERIOR] CI #1190 / run 45529584514 estava em execução no head documental anterior 8328eb3e56307cce2bfb69b36ca4288850bde9d2; não valida os commits desta decisão.
+- [SEGURANÇA] Nenhum save state, SRAM, cartão, ROM ou registro remoto foi apagado, movido, sobrescrito ou migrado por esta alteração.
+
+
+### Acompanhamento — CI #1194 e ajuste de teste (2026-11-25)
+- [CI #1194 — FALHOU] Run 45530267787 no head documental 2f4a0841bf179fd6cc130b793fb9193b4a46feb4. O check-style passou; os testes unitários falharam em SaveSyncPolicyTest.legacySnapshotsTransportOnlyQuickStatesThroughTheStatesEndpoint (linha 277), que ainda esperava o comportamento antigo de transportar quick states pelo endpoint /api/states. O build APK foi corretamente interrompido após a falha dos testes.
+- [CAUSA] Expectativa de teste desatualizada, não erro de compilação. O teste contradizia a decisão do usuário de manter states apenas localmente.
+- [CORREÇÃO] Atualizado o teste para afirmar que snapshots legados não transportam nenhum save state para o RomM. Commit 9cecbca2374ff10a131c5f3afb747bdf52f17152.
+- [PENDENTE] CI completa no head final após o registro desta atualização; não considerar o APK validado até testes e build passarem.
+
+### Resultado — CI #1199 (2026-11-25)
+- [CI #1199 — APROVADA] Run 45532035852 no head 15a168ce1f8ae5a8670c971d146b1bab1ee84064: check-style, build-debug-apk (assembleLawnWithQuickstepGithubDebug), testes unitários incluídos no job de build e final-status concluídos com sucesso.
+- [APK DEBUG] A etapa de geração do APK Debug foi concluída com sucesso. Os jobs de publicação/release permaneceram ignorados, conforme esperado para esta execução.
+- [CORREÇÃO CONFIRMADA] A atualização do teste legado no commit 9cecbca2374ff10a131c5f3afb747bdf52f17152 eliminou a falha de expectativa identificada na CI #1194.
+- [PENDENTE — REVISÃO FINAL] Revisar referências residuais e comentários/documentação do transporte antigo de states, confirmar que nenhum caminho normal executa leitura/escrita de /api/states e realizar os testes funcionais no telefone: SRAM SNES entre dispositivos, cartão PSX entre dispositivos e states locais.
+- [ESTADO DA PR] PR #50 segue aberta, em draft, mergeable=true, head 15a168ce1f8ae5a8670c971d146b1bab1ee84064. Não mesclada; aguarda revisão final e autorização explícita.
+- [SEGURANÇA] Nenhum save state local/remoto, SRAM, cartão, ROM ou registro remoto foi apagado, movido, sobrescrito ou migrado por esta validação.
+
+### Resultado — análise do tandem-log (13).txt (2026-11-25)
+- [DISPOSITIVO] Registro gerado pelo Motorola Edge 30 Fusion, Android 17, Tandem 16.Dev.(#1210), sessão 29cf8c1b.
+- [PSX — ROM #830] O inventário identificou corretamente MEMORY_CARD/memory-card-0 como arquivo .srm de 131.072 bytes para pcsx_rearmed. A pasta personalizada não estava configurada; o caminho efetivo era a pasta padrão interna do app. Portanto, este incidente não aponta para a pasta customizada nem para falha de descoberta/leitura do arquivo local.
+- [BASELINE ANTERIOR] Às 22:48, o telefone recebeu NoOp para save_id 30, MD5 remoto 4899f80c, coincidente com o MD5 local registrado naquele momento. Às 22:50, o RomM propôs Upload para save_id 30 por o save do cliente ser mais recente; a sessão terminou ok=1/falhas=0.
+- [NOVO SAVE REMOTO] O log mostra save_id 39, ROM #830, slot memory-card-0, emulator=pcsx_rearmed, criado/atualizado às 22:53:50, MD5 remoto 35c9fa65. O telefone manteve o cartão local com MD5 936b066d, 131.072 bytes.
+- [CAUSA IMEDIATA] A partir das 22:58, o RomM repetidamente negociou ação Upload para save_id 39 com motivo "Client save is newer (no sync history)". O cliente bloqueou o envio pela proteção DeviceSyncArtifactPolicy.isUnbasedUpload, pois não havia baseline/histórico Device Sync para esse registro. Sessões 126–136 e 140 terminaram com conflito; o pré-jogo foi interrompido para preservar ambos os lados. Não ocorreu download nem upload para save_id 39.
+- [INTERPRETAÇÃO] O save_id 39 parece ter sido criado/alterado por uma origem que não estabeleceu histórico Device Sync para este dispositivo (por exemplo, outro dispositivo ou fluxo de upload fora do Device Sync). O log do telefone, isoladamente, não identifica qual origem criou esse registro. A proteção está funcionando como projetado; remover o bloqueio ou forçar upload/download poderia sobrescrever uma das versões.
+- [COMPARAÇÃO] Na mesma execução, o SNES ROM #650 recebeu ação Download para save_id 40 com motivo "Server save is newer (no sync history)" e concluiu com sucesso (sessão 137). Assim, o problema PSX não indica indisponibilidade geral do Device Sync; é o caso específico de save local considerado mais novo sem baseline remoto para a negociação.
+- [PRESERVAÇÃO] O arquivo local PSX e o registro remoto save_id 39 foram preservados. Não houve exclusão, substituição ou confirmação de download para o PSX.
+- [PENDÊNCIA] Identificar como o PC publicou o save_id 39 (Device Sync do Tandem, upload manual/API ou outro cliente) e definir fluxo seguro de adoção/reconciliação inicial quando há save remoto sem baseline e save local mais novo. Não relaxar a proteção nem executar upload/download automático até resolver a origem e a escolha da versão.
+- [CI] CI #1207 / run 45533540190 aprovada no head a8e208be0fd1af46e0dfb47c69089e47930ec584. CI #1205 / run 45533422683 falhou em head anterior 070c5b80b4c6dcc39c53d844dcb752c588f3cff8; correção de formatação aplicada em a8e208b e validada pela CI #1207.
+- [PR] PR #50 permanece aberta, em draft, sem merge. Nenhuma alteração de código de sincronização foi feita em resposta ao log #13.
+
+- [ESCLARECIMENTO CI #1205] A falha não foi causada por regra de estilo ou teste: o job Spotless gerou commit automático 90f9d75 e falhou ao enviar porque a branch já havia avançado em paralelo. O commit manual a8e208be0fd1af46e0dfb47c69089e47930ec584 aplicou a formatação e CI #1207 passou integralmente.
+- [CI PÓS-LOG #13] A atualização documental deste achado foi commitada em 17e3bdc2c11cd8a11755ac3bf0c805dc30096666; verificar a CI disparada por este commit antes de considerar a atualização encerrada.
+
+### Complemento — origem do save_id 39 confirmada pelo usuário (2026-11-24)
+- [ORIGEM CONFIRMADA] O usuário confirmou que o save_id 39 foi enviado ao RomM pelo próprio sistema Device Sync do Tandem no PC, e não por upload manual ou outro programa.
+- [REVISÃO DO CÓDIGO] O Tandem mantém um device_id RomM por instalação/dispositivo, persistido no armazenamento local e associado ao servidor/conta. A negociação do telefone usa o device_id registrado no próprio telefone. Assim, o histórico de sincronização do PC não deve ser presumido como baseline já estabelecido para o telefone.
+- [INTERPRETAÇÃO ATUALIZADA] O cenário é compatível com histórico por dispositivo: o PC pode ter enviado corretamente o cartão e registrado seu próprio histórico; para o telefone, o save remoto continua sem baseline localmente reconhecido. O motivo "Client save is newer (no sync history)" faz o servidor propor Upload, e a proteção do Tandem estaciona a operação como conflito.
+- [PENDÊNCIA TÉCNICA] Confirmar no contrato/implementação da versão RomM usada pelo usuário como device_id e o histórico device_syncs participam da negociação; revisar se a primeira sincronização de um segundo dispositivo deveria adotar o save remoto quando os bytes locais forem idênticos, baixar quando o servidor for a versão escolhida ou apresentar escolha explícita quando os hashes divergirem. O caso do log tem hashes diferentes (local 936b066d, remoto 35c9fa65), portanto não se deve adotar nem sobrescrever automaticamente.
+- [AÇÃO DE SEGURANÇA] Manter isUnbasedUpload e overwrite=false; não forçar upload/download, não apagar registros, e preservar o SRM local e o save_id 39 remoto até existir reconciliação segura.
+- [PR] Continuar a investigação na PR #50 existente; nenhuma PR concorrente criada e nenhum merge autorizado.
+
+### Auditoria — nomes de arquivos SRM de PSX no Device Sync (2026-11-24)
+- [ARQUIVO LOCAL] SaveStore usa o nome físico fixo sram.srm para o save do núcleo; o inventário classifica esse arquivo como MEMORY_CARD/memory-card-0 para pcsx_rearmed, swanstation e mednafen_psx.
+- [MANIFESTO] RomMDeviceSyncRunner passa artifact.file.name ao manifesto, portanto o Tandem informa sram.srm, além de rom_id, slot memory-card-0, emulator canônico, MD5, tamanho e updated_at.- [UPLOAD] O multipart POST /api/saves também recebe fileName=originalSave.name (sram.srm). O arquivo temporário tem nome UUID, mas esse nome não é enviado como nome multipart.
+- [NOME REMOTO] O Tandem não constrói nem calcula o padrão "nome do jogo [data e hora].srm"; esse nome aparenta ser a nomenclatura gerada pelo RomM ao armazenar/listar o save. A implementação do cliente envia sram.srm como nome original.
+- [IDENTIFICAÇÃO] O Tandem não associa saves comparando o nome-base do arquivo. A negociação é delimitada por device_id, rom_id e slot, e fornece emulator, content_hash, updated_at, file_size_bytes e file_name como metadados. As operações retornadas são filtradas por ROM e slot; compatibilidade é validada pelo identificador do núcleo. Para download, file_name é usado apenas para exigir a extensão .srm; não há comparação com sram.srm nem com o nome da ROM.- [CONCLUSÃO] A diferença entre sram.srm enviado pelo cliente e nome do jogo com data/hora exibido pelo RomM, por si só, não explica o conflito no log #13. O incidente continua compatível com ausência de baseline/histórico para o device_id do telefone e hashes divergentes. Não alterar nomes ou política de sincronização com base apenas nessa hipótese.
+- [SEGURANÇA] Nenhum arquivo ou registro foi modificado; nenhuma mudança de código foi feita nesta auditoria. Manter o bloqueio de upload sem histórico e overwrite=false.
+- [ESCOPO] Revisados SaveStore.kt, SaveArtifactCatalog.kt, CoreSaveAdapter.kt, RomMDeviceSyncClient.kt, RomMDeviceSyncRunner.kt e testes DeviceSyncProtocolTest.kt na branch feat/unified-session-artifacts da PR #50.
+
+
+## AUDITORIA — LOG #14 — BLOQUEIO DE UPLOAD PSX E CONSULTA LEGADA DE STATES (2026-11-25)
+- [FONTE] Dropbox tandem-log (14).txt; app 16.Dev.(#1217), aparelho Motorola Edge 30 Fusion, sessão principal 15c4b78c.
+- [PSX — BLOQUEIO CONFIRMADO] Para Castlevania - Symphony of the Night Ultimate (ROM #830, slot memory-card-0), o cliente local manteve MD5 936b066d e 131.072 bytes; o save remoto save_id 39 permaneceu com MD5 35c9fa65. RomM repetiu a operação Upload com motivo "Client save is newer (no sync history)" e o Tandem recusou antes do envio, registrando "upload bloqueado... ambos os lados preservados". O pré-jogo foi interrompido por conflito. Nenhum upload/download ou sobrescrita de save_id 39 foi confirmado.
+- [DECISÃO DE SEGURANÇA REAFIRMADA] A proteção DeviceSyncArtifactPolicy.isUnbasedUpload continua intencionalmente ativa conforme decisão anterior: não remover nem forçar upload automático enquanto os hashes divergem e o dispositivo não tem baseline. O log #14 confirma que essa proteção não foi removida. Não alterar saves locais ou remotos.
+- [REPETIÇÃO] O mesmo conflito foi reapresentado repetidamente em várias sessões; não houve resolução automática. A repetição não muda a decisão de preservar os dois lados.
+- [ACHADO ADICIONAL — STATES] O log também contém consultas/seleções remotas de states em sessões anteriores: mGBA state id 12 foi selecionado e comparado sem download; SNES state id 14 foi selecionado com remoteChanged=true/aplicar=true, mas hashBaixado=não-baixado. Isso indica que o caminho de leitura/seleção de states ainda aparece nos logs do APK #1217, apesar da decisão de manter states exclusivamente locais. O log não comprova que um payload remoto tenha sido baixado ou aplicado nessas ocorrências. Investigar a origem exata dessas mensagens e eliminar qualquer consulta remota residual antes de considerar a decisão local-only plenamente validada.
+- [ESCOPO] Esta auditoria não removeu proteção, não alterou código e não modificou arquivos de save. PR #50 permanece como local de trabalho; nenhuma PR concorrente criada.
+- [PENDÊNCIAS] (1) Confirmar com o usuário se deseja manter a proteção de upload sem histórico — recomendação atual: manter. (2) Rastrear o caminho que ainda registra seleção/comparação de states no APK #1217 e corrigir, se confirmado como código atual. (3) Atualizar este log após a correção e CI correspondente.
+
+
+## IMPLEMENTAÇÃO — RECONCILIAÇÃO POR RECÊNCIA E NOMES DE SAVES ROMM (2026-11-25)
+
+- [DECISÃO DO USUÁRIO] Em caso de divergência entre o save local e o remoto, selecionar automaticamente a versão mais recente. A versão perdedora deve ser preservada como arquivo de arquivo, sem sobrescrita silenciosa.
+- [CONTRATO ROMM 5.4.0] A auditoria do código oficial confirmou que a negociação compara timestamps quando não há histórico para o dispositivo; o endpoint de upload com slot não nulo acrescenta a tag de data/hora no servidor por meio de `reserve_version_name`. Portanto, o Tandem envia o nome-base do jogo com extensão `.srm` (por exemplo, `Castlevania.srm`) e deixa o RomM produzir o nome versionado. O arquivo local do emulador permanece `sram.srm`.
+- [PRIMEIRO SYNC DE OUTRO DISPOSITIVO] Quando RomM retorna Upload com `save_id` e motivo de ausência de histórico, o cliente baixa o conteúdo remoto para staging, verifica o MD5 e confirma o download para registrar o baseline do dispositivo. Se o timestamp local for mais recente, envia a cópia local como nova versão do slot ativo, sem `overwrite=true`.
+- [CONFLITO] Para operação Conflict, compara o timestamp do arquivo local com `server_updated_at`. Se local for mais recente, confirma o baseline remoto e publica a versão local. Se RomM for mais recente ou houver empate, envia a versão local como arquivo de arquivo com slot nulo, faz backup local verificado, aplica a versão remota e confirma o download.
+- [DOWNLOAD REMOTO] Quando o servidor determina Download e os hashes divergem, o Tandem também preserva a versão local em slot nulo antes de aplicar o conteúdo remoto.
+- [ARQUIVOS DE ARQUIVO] Uploads com slot nulo não são pareados com o slot ativo. O nome inclui jogo, timestamp local e prefixo do hash para evitar colisão com snapshots versionados pelo RomM. Os arquivos locais de jogo não são renomeados.
+- [LIMITE DE SEGURANÇA] Se faltar timestamp/hash remoto necessário para decidir, a reconciliação permanece bloqueada e ambos os lados são preservados. Nunca usar `overwrite=true`, nunca apagar saves remotos e nunca substituir o arquivo local antes de verificar o backup.
+- [IMPLEMENTADO NA PR #50] `RomMDeviceSyncClient.uploadSave` aceita slot nulo para arquivos de arquivo; `RomMDeviceSyncRunner` aplica a reconciliação e envia nome-base canônico nos uploads ativos. Teste unitário adicionado para garantir que slot nulo não seja enviado como query parameter e que o multipart preserve o nome de arquivo de arquivo.
+- [CI] Commits de implementação: 72748bf2600991c2c40fe7a7fc2ff3742265a9bc, 9c135e861d6a8798c01d167d44978702d2735c75, 0ec6dc27e539719808a52362800511386c08b41c, 2e5c11e143bb6f86550618b2d5081a02836be6bf, e8ae7a8e45cc7dd7fb263f56dc722e596ec915e9 e 1b830c998857727c8b916ef0eb0a336cf5ce0fde. CIs #1221–#1226 foram disparadas; resultado final pendente no momento deste registro.
+- [PENDENTE] Confirmar os resultados das CIs, validar o nome gerado pelo RomM na versão efetivamente instalada pelo usuário e executar teste real de primeiro sync PSX entre PC e telefone. Não fazer merge sem autorização.
+- [PRESERVAÇÃO] Nenhum save local ou remoto foi apagado, movido ou alterado durante a auditoria/implementação; os arquivos só serão arquivados ou substituídos no fluxo novo depois de backup e validação de hash.
+
+
+## REQUISITO FUNCIONAL — HISTÓRICO E SELEÇÃO MANUAL DE VERSÕES SRAM (2026-11-24)
+
+- [SOLICITAÇÃO DO USUÁRIO] Além da reconciliação automática pela versão mais recente, o Tandem deve permitir consultar o histórico de versões SRAM preservadas no RomM e escolher uma versão específica para carregar.
+- [COMPORTAMENTO PRETENDIDO] Tela de histórico por jogo/slot, ordenada por data/hora decrescente, com metadados disponíveis (data, tamanho e dispositivo/origem quando o servidor fornecer). Identificar claramente a versão ativa local e as versões remotas.
+- [AÇÃO EXPLÍCITA] O usuário seleciona uma versão e confirma a restauração. Antes de aplicar, criar backup local verificável da SRAM ativa; baixar para staging, validar integridade e compatibilidade, e somente então aplicar. Falha mantém o arquivo ativo intacto.
+- [PRECEDÊNCIA] A escolha manual explícita prevalece sobre a seleção automática da versão mais recente. A sincronização automática continua adotando a regra de recência já aprovada quando não houver escolha manual.
+- [PRESERVAÇÃO] Não excluir versões do RomM. Não alterar outros slots/jogos. Não sobrescrever SRAM ativa sem backup validado. Save states permanecem exclusivamente locais e fora desta funcionalidade.
+- [PENDENTE — AUDITORIA TÉCNICA] Verificar endpoints RomM 5.4.x para listar versões por ROM/slot e obter metadados completos; confirmar paginação, autorização e semântica de download/confirmDownloaded. A negociação atual fornece somente a operação escolhida e não constitui, por si só, um navegador de histórico.
+- [PENDENTE — UI] Definir acesso pelo detalhe do jogo ou gerenciamento de saves, com ação clara “Histórico de SRAM” e confirmação antes de restaurar versão antiga.
+- [PR] Incorporar o requisito à PR #50 existente; não abrir PR concorrente. Nenhuma alteração de código implementada nesta etapa de registro. PR permanece draft e sem merge.
+
+
+## IMPLEMENTAÇÃO — HISTÓRICO E RESTAURAÇÃO MANUAL DE SRAM (2026-11-25)
+
+- [CONTRATO ROMM 5.4] Confirmado que `GET /api/saves` aceita filtros `rom_id` e `slot`; a resposta contém registros de save com ID, núcleo, slot, data de atualização e hash de conteúdo. A documentação RomM 5.4 descreve o histórico de versões por slot, com versão mais recente primeiro; o slot autosave tem retenção limitada pelo servidor, enquanto saves arquivados sem slot não são podados.
+- [IMPLEMENTADO NA PR #50] O modelo `RemoteFile` agora também lê `file_name` e `file_size_bytes` quando fornecidos pelo servidor. O cliente já existente `listRemoteFiles(Save, romId, slot)` é reutilizado para consultar somente versões do jogo/slot selecionado.
+- [IMPLEMENTADO NA PR #50] A tela de detalhes do jogo ganhou a ação “Histórico de SRAM”, listagem ordenada da versão mais recente para a mais antiga e ação individual de restauração com confirmação explícita.
+- [IMPLEMENTADO NA PR #50] A restauração cria um snapshot local temporário, abre uma sessão Device Sync, confirma primeiro o baseline da versão ativa do servidor, baixa a versão escolhida para staging e valida MD5. A SRAM local existente é copiada para backup e o backup é validado por SHA-256 antes da substituição.
+- [DECISÃO DE CONSISTÊNCIA] Se o usuário escolher uma versão antiga, o Tandem publica o conteúdo escolhido como uma nova versão no slot ativo (com `overwrite=false` e limpeza automática desativada) antes de aplicar localmente. Assim a escolha manual passa a ser a versão atual para os demais dispositivos, sem editar ou apagar versões históricas. Se a versão escolhida já for a mais recente, ela é apenas aplicada localmente e confirmada.
+- [SEGURANÇA] Se o save remoto, hash, compatibilidade do núcleo, baseline, backup ou estado local não puderem ser verificados, a restauração é cancelada. Nenhuma versão remota é excluída. Save states continuam locais e não aparecem neste histórico.
+- [PENDENTE] Validar compilação, Spotless, testes unitários e build Debug APK nas CIs da PR #50; depois executar teste real no telefone com pelo menos duas versões SRAM do mesmo jogo, escolhendo uma antiga e verificando que ela vira uma nova versão ativa no RomM e sincroniza no outro dispositivo.
+- [PENDENTE] Confirmar no RomM instalado pelo usuário se a listagem inclui tamanho do arquivo; esse campo é opcional na interface. A funcionalidade não depende dele.
+- [PR] Alterações feitas na PR #50 existente; nenhuma PR concorrente criada. PR permanece draft e sem merge.
+
+
+### CI — correção do bloqueio de compilação na restauração manual (25/11/2026)
+
+- [FALHA IDENTIFICADA] CIs #1235/#1236 (runs 45542884336 e 45543045176) passaram no Spotless, mas falharam na compilação Kotlin porque `reconcileDivergentSave` é suspend e estava sendo chamado dentro de um bloco de exclusão mútua declarado como não suspensivo.
+- [CORREÇÃO] `SaveSync.withExclusiveSyncLock` agora aceita bloco suspensivo e adquire/libera o Mutex explicitamente com `lock()`/`unlock()` em `try/finally`, mantendo a exclusão mútua durante as operações de rede.
+- [VALIDAÇÃO PENDENTE] CI #1236 (run 45543865924) e CI #1237 (run 45543857981) foram disparadas após a correção; ambas ainda estavam em execução na última consulta. A CI #1238 (run 45543865924 no head documental posterior) também está pendente.
+- [SEM MERGE] PR #50 continua draft. A reconciliação e a restauração manual não devem ser consideradas validadas até compilação, testes e build Debug APK passarem no head final.
+
+
+## Correção — upload automático somente quando o conteúdo local diverge (25/11/2026)
+
+- [PROBLEMA] A negociação RomM pode retornar a ação Upload por recência/metadados mesmo quando o conteúdo SRAM local é idêntico ao save ativo no servidor. Isso fazia um simples carregamento/abertura do jogo poder gerar uma nova versão sem progresso efetivamente alterado.
+- [CORREÇÃO NA PR #50] Antes de qualquer upload automático, o Tandem compara MD5 local com `server_content_hash`. Quando ambos são válidos e iguais, o upload é suprimido; o cliente baixa o conteúdo remoto apenas para validar o hash e confirmar o baseline Device Sync, sem substituir o arquivo local nem criar versão nova.
+- [REGRA] Uma ação Upload com conteúdo idêntico vira NoOp confirmado. Uploads de conteúdo diferente continuam sujeitos às regras Device Sync, compatibilidade, baseline, conflitos e `overwrite=false`. A restauração manual de versão escolhida pelo usuário permanece uma ação explícita separada.
+- [TESTE ADICIONADO] Igualdade de hash, comparação sem distinção de maiúsculas/minúsculas, hashes diferentes, ausentes e inválidos.
+- [PRESERVAÇÃO] Nenhum save local ou remoto foi apagado, movido ou sobrescrito por esta alteração. O conteúdo remoto idêntico é apenas baixado para staging e validado para confirmar o baseline.
+- [VALIDAÇÃO PENDENTE] Executar Spotless, testes unitários e build Debug APK no novo head da PR #50; depois validar no telefone que abrir/carregar sem alterar SRAM não cria nova versão no RomM e que uma alteração real durante a partida continua sendo sincronizada.
+- [PR] Alteração feita na PR #50 existente. Continua draft e sem merge.
+
+
+### Complemento — persistência SRAM só quando o núcleo altera os bytes (25/11/2026)
+
+- [CAUSA LOCAL IDENTIFICADA] `GameSessionActivity.persistSram()` serializava e regravava o SRAM em toda pausa/saída, mesmo quando o conteúdo era idêntico. Isso renovava o timestamp e marcava sincronização pendente, podendo levar o RomM a propor Upload sem progresso novo.
+- [CORREÇÃO NA PR #50] `SaveStore.writeSramIfChanged()` compara os bytes serializados pelo núcleo com o arquivo existente. Se forem idênticos, não regrava o arquivo e não agenda sincronização. Se forem diferentes ou se o arquivo ainda não existir, grava atomicamente e agenda o Device Sync.
+- [DEFESA DUPLA] O executor também suprime Upload quando o hash local já coincide com o hash remoto, confirmando o baseline sem publicar uma nova versão.
+- [TESTE ADICIONADO] Verifica que a mesma saída serializada não regrava nem altera timestamp; uma saída com bytes diferentes é persistida.
+- [INTERPRETAÇÃO] O gatilho é uma mudança real nos bytes serializados pelo núcleo, não apenas abrir/pausar/carregar. Não há callback Libretro padronizado de "save escrito" nesta integração; a comparação ocorre no ponto em que o Tandem persiste o SRAM do núcleo.
+- [VALIDAÇÃO] CI #1256 do commit anterior estava em execução quando esta correção adicional foi enviada; as novas alterações dispararão nova CI. Teste no telefone ainda pendente.
+- Nenhum arquivo de save local ou remoto foi removido, movido ou substituído por esta correção.
+
+
+### Validação funcional — SRAM sem alteração não gera nova versão (25/11/2026)
+
+- [TESTE NO TELEFONE APROVADO PELO USUÁRIO] O usuário confirmou que o comportamento corrigido funcionou corretamente: carregar/abrir o save sem produzir alteração real no conteúdo não provoca uma nova versão SRAM no RomM.
+- [REGRA VALIDADA] A persistência local só regrava e agenda Device Sync quando os bytes serializados pelo núcleo mudam; adicionalmente, o executor converte em NoOp confirmado qualquer tentativa de Upload cujo hash local coincida com o hash remoto.
+- [CI #1258] Run 45546334031 falhou apenas no passo de commit automático da formatação Spotless, após aplicar a formatação; testes unitários e build Debug APK passaram. O status final falhou por dependência do job de estilo.
+- [CI #1260 APROVADA] Run 45546474646, no head atualizado da PR, passou em check-style/Spotless, testes unitários, build Debug APK, upload do artefato e final-status.
+- [RESULTADO] Correção de persistência e supressão de upload por conteúdo idêntico validadas por teste funcional no aparelho e pela CI completa. A alteração real de SRAM continua sendo o gatilho esperado para persistência e sincronização.
+- [PENDENTE] Manter validação em outros núcleos/plataformas, especialmente cartão PSX e SRAM tradicional, para ampliar a cobertura funcional. Isso não invalida o teste aprovado informado pelo usuário.
+- [PR] PR #50 permanece aberta em draft e sem merge. Nenhum save local ou remoto foi apagado, movido ou sobrescrito durante esta validação.
+
+
+### Auditoria complementar — cobertura do mesmo controle para cartões PSX (25/11/2026)
+
+- [VERIFICADO NO CÓDIGO] O controle de persistência por comparação de bytes não é específico de um console: `GameSessionActivity.persistSram()` chama `SaveStore.writeSramIfChanged()` para a saída serializada do núcleo, e o método grava o mesmo arquivo local `sram.srm` usado pelo inventário.
+- [VERIFICADO NO CÓDIGO] Para `pcsx_rearmed`, `swanstation` e `mednafen_psx`, `CoreSaveAdapterRegistry` classifica esse arquivo como `MEMORY_CARD` no slot `memory-card-0`. Para núcleos SNES declarados, classifica como `CORE_SAVE` no slot remoto `autosave`.
+- [VERIFICADO NO CÓDIGO] `SaveArtifactCatalog` usa o adaptador do núcleo para classificar o mesmo `sram.srm`; o executor Device Sync recebe o artefato/slot selecionado e a supressão de upload por hash ocorre no ramo comum `DeviceSyncAction.Upload`, sem condição exclusiva de SNES.
+- [CONCLUSÃO] Não é necessário duplicar a lógica de persistência nem criar um teste redundante apenas para PSX: o caminho é comum e a semântica PSX é determinada pelo adaptador. O risco residual é de validação funcional real do cartão PSX no aparelho, não de um caminho de código separado identificado nesta inspeção.
+- [PENDENTE — TESTE NO TELEFONE] Em um jogo PSX, carregar o cartão, abrir/pausar/fechar sem salvar progresso e confirmar que não surge nova versão em `memory-card-0`; depois realizar uma gravação real no jogo e confirmar que a alteração aparece como nova versão. Não forçar resolução de conflitos nem apagar versões.
+- [ESCOPO] Inspeção estática direcionada aos arquivos `GameSessionActivity.kt`, `SaveStore.kt`, `CoreSaveAdapter.kt`, `SaveArtifactCatalog.kt` e `RomMDeviceSyncRunner.kt`. Não equivale a teste funcional PSX nem a auditoria integral do repositório.
+- [PRESERVAÇÃO] Nenhum save local ou remoto foi alterado durante esta auditoria.
+- [PR] Mantida a PR #50 existente; nenhuma PR concorrente criada e nenhum merge executado.
+
+
+### Validação funcional — cartões de memória PSX (25/11/2026)
+
+- [TESTE NO TELEFONE APROVADO PELO USUÁRIO] O usuário confirmou que os dois cenários passaram: carregar/abrir o cartão de memória PSX sem realizar gravação não cria uma nova versão no RomM; realizar uma gravação real no jogo gera a alteração que deve ser sincronizada.
+- [RESULTADO] A comparação de bytes em `SaveStore.writeSramIfChanged()` e a supressão de upload por hash idêntico cobrem também o fluxo PSX classificado como `MEMORY_CARD` / `memory-card-0`.
+- [COBERTURA FUNCIONAL] Com esta confirmação, ficam validados no aparelho tanto o caso de SRAM sem alteração/alteração real quanto os dois casos equivalentes para cartão de memória PSX.
+- [PRESERVAÇÃO] O teste não exigiu forçar conflitos nem apagar versões; nenhuma exclusão ou migração de saves foi solicitada.
+- [PR] Resultado registrado na PR #50 existente. Continua aberta em draft e sem merge; não foi criada PR concorrente.
+
+
+### Validação funcional — histórico e restauração manual de SRAM (25/11/2026)
+
+- [TESTE NO TELEFONE APROVADO PELO USUÁRIO] O usuário confirmou que todos os cenários da consulta e restauração manual passaram.
+- [HISTÓRICO] A lista de versões SRAM do RomM pôde ser consultada na tela de detalhes do jogo.
+- [RESTAURAÇÃO] A versão específica escolhida foi restaurada com sucesso pelo fluxo explícito do Tandem.
+- [PRESERVAÇÃO DO HISTÓRICO] A restauração não eliminou as versões anteriores; a versão escolhida foi promovida como nova versão ativa, conforme o desenho do recurso.
+- [PRESERVAÇÃO LOCAL] A SRAM local anterior foi preservada pelo mecanismo de backup antes da aplicação da versão escolhida.
+- [COBERTURA FUNCIONAL CONCLUÍDA] Com este resultado, o usuário confirma como aprovados: sincronização de SRAM/cartões, ausência de upload quando o conteúdo não muda, sincronização após gravação real, consulta do histórico e restauração manual de versão específica.
+- [CI] CI #1260 / run 45546474646 passou em Spotless, testes unitários, build Debug APK, upload do artefato e final-status. O código validado estava no commit b4e48e6da5a7522516e611a294fdca47ff665a46; alterações documentais posteriores não alteraram código.
+- [SEGURANÇA] Nenhum save local ou remoto foi apagado ou migrado durante os testes. A restauração manual preserva versões anteriores e backup local.
+- [PR] Resultado registrado na PR #50 existente. Continua aberta em draft e sem merge até revisão final e autorização do usuário.
+
+
+### Revisão final — endurecimento da restauração manual SRAM (25/11/2026)
+
+- [REVISÃO ESTÁTICA] A revisão do fluxo de restauração identificou dois pontos de robustez: a criação da pasta de backup não verificava o retorno de `mkdirs()`; e, ao restaurar a versão mais recente, o baseline Device Sync era confirmado antes da aplicação local.
+- [CORREÇÃO] A criação da pasta de backup agora é validada. Se não puder ser preparada, a restauração é cancelada antes de alterar o arquivo local.
+- [CORREÇÃO] Quando a versão mais recente é selecionada, `confirmDownloaded` fica somente depois da substituição local e da verificação final do hash. Ao escolher uma versão histórica, o baseline da versão ativa atual continua sendo confirmado antes de publicar a escolha explícita como nova versão ativa.
+- [PRESERVAÇÃO] A cópia local continua sendo protegida e verificada antes da substituição. A publicação de versão histórica mantém `overwrite=false` e `autocleanup=false`.
+- [VALIDAÇÃO PENDENTE] Commit de código `9b2fbe6f1d262e71f918b173a5884b488347e4ad`. A CI específica deste commit ainda não apareceu na consulta; não considerar esta correção validada até Spotless, testes e build Debug APK concluírem com sucesso.
+- [PR] Alteração feita na PR #50 existente; sem PR concorrente e sem merge.
+
+### CI #1270 — endurecimento da restauração manual SRAM aprovado (25/11/2026)
+
+- [CI APROVADA] Workflow run #1270 / 45604027001 concluiu com sucesso no commit de código `9b2fbe6f1d262e71f918b173a5884b488347e4ad`.
+- [ESTILO] Job `check-style`: Spotless automático, commit/etapa de formatação e verificação final concluídos com sucesso.
+- [TESTES E BUILD] Job `build-debug-apk (assembleLawnWithQuickstepGithubDebug)`: testes unitários, compilação do APK Debug e upload do artefato concluídos com sucesso.
+- [STATUS FINAL] Job `final-status` concluído com sucesso. Os jobs de publicação/release foram ignorados; esta CI não publicou uma release.
+- [APK] Artefato `assembleLawnWithQuickstepGithubDebug`, ID `15016193442`, tamanho 46.451.922 bytes, SHA-256 `161f6e9ec38b5ea1268317c8b12559b9b338fe7883b734f02d6c401bd1386ba8`; disponível até 23/02/2027. Execução: https://github.com/izzyn0okami/Tandem/actions/runs/45604027001
+- [CORREÇÕES VALIDADAS] A CI valida a revisão que verifica a criação da pasta de backup e adia a confirmação do download da versão mais recente até depois da aplicação local e da validação final do hash.
+- [TESTES FUNCIONAIS] Permanecem aprovados pelo usuário os testes no aparelho para SRAM/cartões PSX, ausência de nova versão quando o conteúdo não muda, sincronização após gravação real e consulta/restauração manual do histórico SRAM.
+- [ESTADO DA PR] PR #50 continua aberta, em draft, mergeable e sem divergência com a base (145 commits à frente, 0 atrás na última comparação). Não há reviews formais nem threads de revisão listadas. Não foi feito merge.
+- [PRESERVAÇÃO] Nenhum save local/remoto, ROM ou dado de jogo foi apagado, movido ou migrado nesta validação. Save states continuam exclusivamente locais; SRAM/cartões continuam no Device Sync.
+- [PRÓXIMO PASSO] Revisão final de prontidão e decisão do usuário sobre eventual merge. Não mesclar sem autorização explícita.
+
+### CI #1274 — validação do log de auditoria concluída (25/11/2026)
+
+- [CI APROVADA] Workflow run #1274 / 45605304904 concluiu com sucesso no commit `a5edf7ed16f2a7b02b1b706e21f9ac36d4d8bb52`, que contém o registro da CI #1270 e das correções finais da restauração SRAM.
+- [ESTILO] `check-style`: Spotless automático e verificação final aprovados.
+- [TESTES E BUILD] `build-debug-apk (assembleLawnWithQuickstepGithubDebug)`: testes unitários, compilação do APK Debug e upload do artefato aprovados.
+- [STATUS FINAL] `final-status` aprovado. Etapas de release/notificação foram ignoradas conforme o fluxo; nenhuma release foi publicada.
+- [APK] Artefato `assembleLawnWithQuickstepGithubDebug`, ID `15017309105`, tamanho 46.452.021 bytes, SHA-256 `2362515932f2f455a1b0532ddf77e73e7162ee7be89ac68cb341327ebb1ac99c`; disponível até 23/02/2027. Execução: https://github.com/izzyn0okami/Tandem/actions/runs/45605304904
+- [ESTADO] PR #50 permanece aberta, draft, mergeable e 146 commits à frente / 0 atrás da base na última comparação. Nenhuma review formal ou thread de revisão listada.
+- [SEGURANÇA] Nenhum save, ROM ou dado remoto foi apagado, movido ou migrado. Não houve merge.
+- [PENDÊNCIA] Revisão final do conjunto e decisão explícita do usuário sobre merge. A PR permanece sem merge.
