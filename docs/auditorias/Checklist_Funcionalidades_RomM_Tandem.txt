@@ -1476,5 +1476,15 @@ Branch: feat/romm-stage-f-dashboard.
 - F3 mostra até 10 notificações recentes e quantidade não lida; não modifica estado remoto.
 - Todas as chamadas são GET e usam somente scopes já solicitados pelo fluxo de pareamento: roms.read e me.read. Nenhum novo escopo OAuth é solicitado.
 - F4 e F5 permanecem sem implementação mutável: me.write não está solicitado no token atual. Nenhuma notificação é marcada como lida/dispensada e nenhum canal é criado/editado/testado/removido.
-- [PENDENTE] CI/compilação, testes automatizados específicos e validação funcional do painel no aparelho.
+- [CONCLUÍDO — CÓDIGO] Testes específicos F1–F3 adicionados em `tests/unit/kotlin/app/lawnchair/gamemode/RomMInsightsTest.kt`, cobrindo endpoints, autenticação, parâmetros, feeds vazios e limite de recomendações. A validação da nova suíte aguarda CI #1317/#1318.
+- [CONCLUÍDO — UI] Navegação do painel empilhada verticalmente para evitar overflow em telas estreitas; a distinção de visibilidade das métricas gerais foi explicada junto aos números.
+- [PENDENTE] CI final do head atual e validação funcional do painel no aparelho.
 - [SEGURANÇA] Não foram feitas chamadas ao RomM pessoal do usuário nem alterados dados remotos.
+
+
+ATUALIZAÇÃO DE AUDITORIA — F1–F3 (2026-11-25)
+- Revisão do servidor RomM 5.4.1 confirmou o contrato de GET /api/stats, /api/recommendations e /api/notifications.
+- Atenção semântica de F1: SAVES, STATES e SCREENSHOTS são contagens gerais do banco; PLATFORMS, ROMS, TOTAL_FILESIZE_BYTES e as estatísticas opcionais por plataforma recebem filtro de visibilidade. A UI e a documentação agora explicitam essa diferença.
+- CI #1313 (run 45638448471) aprovou unit tests, build Debug APK e Spotless no head 20ee3fec4f209a1755e4457908009ea030066431; artefato ID 15033752882, SHA-256 93ce82be84f2c31bb2004504b224eb8167aab9c4c04c744fb201320c2afa9f61.
+- Após esse CI, foram adicionados testes próprios F1–F3, explicação de escopo das estatísticas e ajuste de navegação para telas estreitas. O head atual é e2aaa85a967eeb71cfc636848d82d78972f303ee; CIs #1317/#1318 estão em andamento. O artefato de #1313 não inclui esses últimos ajustes/testes.
+- PR #53 continua em rascunho, não mesclada; nenhuma PR concorrente foi aberta.
