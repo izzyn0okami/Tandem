@@ -44,5 +44,6 @@ class RomMSaveSyncWorker(
         const val KEY_PLATFORM = "platform_slug"
         const val KEY_GAME_IDENTITY = "game_identity"
         const val KEY_ACCOUNT_FINGERPRINT = "account_fingerprint"
+        const val KEY_SNAPSHOT_JOB_ID = "snapshot_job_id"
     }
 }
