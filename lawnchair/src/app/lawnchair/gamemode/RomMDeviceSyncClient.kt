@@ -409,6 +409,7 @@ class RomMDeviceSyncClient(
                         response.code,
                         "RomM Device Sync respondeu HTTP ${response.code}",
                         romMErrorDetail(errorBody),
+                        response.request.url.encodedPath,
                     )
                 }
                 val body = response.body ?: throw IOException("O RomM retornou um save sem conteúdo.")
