@@ -41,7 +41,12 @@ internal fun romMUserFacingError(error: Throwable, action: String): String {
     return when (httpError.statusCode) {
         401 -> "A autenticação do RomM foi recusada. O token pode estar inválido, expirado ou revogado. Reconecte a conta RomM e tente novamente.$status$endpoint"
         403 -> "A conta RomM foi autenticada, mas não possui a permissão necessária para $action. Revise os escopos autorizados no token ou faça um novo pareamento com as permissões exigidas.$status$endpoint"
-        404 -> "O RomM não encontrou o recurso ou a rota solicitada. Isso pode indicar recurso inexistente/oculto ou uma rota não disponível nesta versão; HTTP 404 não confirma falta de permissão.$status$endpoint"
+        404 -> when (httpError.endpoint) {
+            "/api/client-tokens/exchange" -> "O código de pareamento é inválido ou expirou. Gere um novo código no RomM e tente novamente.$status$endpoint"
+            "/api/auth/device/init" -> "Esta versão do RomM não disponibiliza o pareamento por dispositivo. Use o fluxo de código manual.$status$endpoint"
+            else -> "O RomM não encontrou o recurso ou a rota solicitada. Isso pode indicar recurso inexistente/oculto ou uma rota não disponível nesta versão; HTTP 404 não confirma falta de permissão.$status$endpoint"
+        }
+        429 -> httpError.message ?: "Muitas tentativas. Aguarde um pouco e tente novamente."
         else -> "Não foi possível $action.$status$endpoint"
     }
 }
