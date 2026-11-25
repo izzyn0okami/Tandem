@@ -524,7 +524,17 @@ class GLRetroView(
         state to progress
     }
 
-    /** Restore the emulator and achievement runtime in order on the GL thread. */
+    /** Restore a persisted emulator state and achievement runtime on the GL thread.
+     * Historical save states may have a different serialized size; let the core validate them.
+     */
+    fun unserializePersistedStateWithAchievements(state: ByteArray, progress: ByteArray?): Boolean = runOnGLThread {
+        if (achievementsHardcoreEnabled) return@runOnGLThread false
+        val loaded = LibretroDroid.unserializePersistedState(state)
+        if (loaded) LibretroDroid.raDeserializeProgress(progress)
+        loaded
+    }
+
+    /** Restore a transient state only when it matches the active core's exact serialization size. */
     fun unserializeStateWithAchievements(state: ByteArray, progress: ByteArray?): Boolean = runOnGLThread {
         if (achievementsHardcoreEnabled) return@runOnGLThread false
         val loaded = LibretroDroid.unserializeState(state)
