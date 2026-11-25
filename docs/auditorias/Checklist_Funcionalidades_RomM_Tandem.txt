@@ -75,14 +75,14 @@ F. ESTATÍSTICAS, RECOMENDAÇÕES E NOTIFICAÇÕES
 [FORA DO ESCOPO INICIAL] F6. Replicar painel administrativo, logs e auditoria do RomM.
 
 G. RECURSOS ESPECIALIZADOS
-[FORA DO ESCOPO INICIAL] G1. Feeds externos (WebRCade, PKGi, Tinfoil etc.); manter API nativa do RomM como fonte.
-[FORA DO ESCOPO INICIAL] G2. Tarefas administrativas de scan, limpeza e manutenção.
-[FORA DO ESCOPO INICIAL] G3. Streaming remoto do RomM; não substitui LibretroDroid local.
-[FORA DO ESCOPO INICIAL] G4. Netplay; compatibilidade LibretroDroid ainda não comprovada.
-[PENDENTE] G5. Memory cards: estudar formatos, versões e limitações antes de qualquer integração.
-[FORA DO ESCOPO INICIAL] G6. Música, artistas, álbuns e playlists; exigiria player independente.
-[PENDENTE] G7. Sockets/eventos em tempo real; adotar apenas quando REST não atender a uma necessidade concreta.
-[FORA DO ESCOPO INICIAL] G8. Administração de usuários, permissões, grupos, canais e tarefas do servidor.
+[FORA DO ESCOPO — DECISÃO DO USUÁRIO] G1. Feeds externos (WebRCade, PKGi, Tinfoil etc.); não implementar nesta etapa.
+[FORA DO ESCOPO — DECISÃO DO USUÁRIO] G2. Tarefas administrativas de scan, limpeza e manutenção; não implementar.
+[FORA DO ESCOPO — DECISÃO DO USUÁRIO] G3. Streaming remoto do RomM; não implementar nesta etapa.
+[FORA DO ESCOPO — DECISÃO DO USUÁRIO] G4. Netplay; não implementar nesta etapa.
+[AUDITADO — LIMITAÇÃO TÉCNICA] G5. Memory cards: API dedicada RomM é orientada a cartões PCSX2/Dolphin em ZIP; runtime atual LibretroDroid não fornece conversão/semântica compatível. Preservar Device Sync E9; expansão depende de runtime/conversor compatível.
+[EM IMPLEMENTAÇÃO — PR #56] G6. Música, artistas, álbuns, favoritos e playlists; catálogo nativo e reprodução por stream HTTP autenticado.
+[AUDITADO — SEM IMPLEMENTAÇÃO] G7. Socket.IO: /ws geral exige sessão web para eventos privados; /devices aceita token de dispositivo + devices.read. G6 funciona por REST/HTTP e não requer socket persistente; não adicionar conexão em background.
+[FORA DO ESCOPO — DECISÃO DO USUÁRIO] G8. Administração de usuários, permissões e grupos; não implementar nesta etapa.
 
 H. AUTENTICAÇÃO, PERMISSÕES E COMPATIBILIDADE DA API
 [CONCLUÍDO] H1. Inventário dos endpoints RomM usados atualmente.
@@ -1724,3 +1724,127 @@ FECHAMENTO E MERGE — ESTÁGIO H / PR #54 (2026-11-25)
 - [CONCLUÍDO] Estágio H: H1–H7 concluídos conforme escopo auditado; H4/H7 implementados e validados no aparelho pelo usuário; H5/H6 esclarecidos sem introduzir refresh token ou remover fluxos de autenticação.
 - [PENDÊNCIAS] E6/E7 permanecem pendentes e independentes. F5 permanece descartado por decisão explícita do usuário.
 - [SEGURANÇA] Nenhuma chamada foi feita à conta RomM pessoal do usuário; nenhum token foi lido, alterado, revogado ou reemitido.
+
+
+AUDITORIA E PREPARAÇÃO — ESTÁGIO G / RECURSOS ESPECIALIZADOS (2026-11-25)
+Base: game-mode-m2-dev após merge da PR #54.
+Branch: feat/romm-stage-g-specialized.
+Escopo reavaliado conforme a lista G1–G8 fornecida pelo usuário e as decisões anteriores preservadas.
+
+DECISÕES DE ESCOPO PRESERVADAS
+- G1 Feeds externos, G2 tarefas administrativas, G3 streaming remoto, G4 netplay, G6 biblioteca musical e G8 administração de usuários/permissões permanecem fora do escopo por decisão anterior. Não reintroduzir essas áreas nesta PR.
+- Esta PR trata somente da auditoria especializada G5 e G7; não amplia privilégios, não executa tarefas no servidor e não altera dados da conta RomM.
+
+G5 — MEMORY CARDS: FORMATOS E COMPATIBILIDADE
+- [AUDITADO] RomM 5.4.1 possui API dedicada /api/memory-cards e rotas de versões/conteúdo, separadas de /api/saves e /api/states. O modelo dedicado representa cartões inteiros associados a emulador/usuário e snapshots ZIP.
+- [AUDITADO] O contrato e o fluxo de integração documentados suportam cartões inteiros de PCSX2 e Dolphin; a API rejeita imagens raw e espera ZIP com layout de integração seguro.
+- [AUDITADO] O Tandem atual executa núcleos Libretro via LibretroDroid. Os adaptadores de memory card existentes são específicos de Libretro (pcsx_rearmed, swanstation e mednafen_psx) e mapeiam somente o slot primário memory-card-0.
+- [AUDITADO] Para esses núcleos PSX, o arquivo .srm pode ser o cartão do slot 0 por jogo; isso não o torna automaticamente compatível com a API dedicada de Memory Cards do RomM. O fluxo atual de Device Sync usa /api/saves, slot autosave, e preserva os bytes como save comum.
+- [NÃO COMPATÍVEL — NÃO IMPLEMENTAR] Não converter/encapsular .srm, .mcd, .mcr ou formatos de cartão Libretro em ZIP do modelo PCSX2/Dolphin sem um conversor oficialmente compatível e uma definição verificável de layout/semântica. Extensão ou tamanho não provam compatibilidade.
+- [CONCLUÍDO — AUDITORIA] Nenhuma ampliação segura da integração com /api/memory-cards foi identificada para a arquitetura atual LibretroDroid. Preservar Device Sync existente e os limites já validados em E9: slot 0 elegível conforme adaptador; slot 1, cartões compartilhados e formatos alternativos não são importados/sincronizados implicitamente.
+- [PENDENTE PARA FUTURA EXPANSÃO] Uma integração dedicada exigirá suporte de runtime a PCSX2/Dolphin ou conversores/formatos Libretro formalmente compatíveis, inventário de slots, isolamento por usuário/emulador, versionamento e testes de ida/volta com arquivos sintéticos e reais autorizados.
+
+G7 — SOCKETS E EVENTOS EM TEMPO REAL
+- [AUDITADO — ROMM 5.4.x] RomM usa Socket.IO em /ws/socket.io para eventos gerais e /netplay/socket.io para coordenação de Netplay. Os canais são distintos e não devem ser misturados.
+- [AUDITADO — AUTENTICAÇÃO] O namespace padrão de /ws autentica pela sessão web (cookie romm_session); conectar sem sessão válida não associa o socket à sala privada do usuário. Um Client API Token comum não deve ser presumido equivalente a uma sessão web.
+- [AUDITADO — DISPOSITIVOS] O namespace /devices, sob /ws/socket.io, aceita Client API Token vinculado a dispositivo via handshake auth.token ou Authorization Bearer, exige token ativo e devices.read, e mantém o dispositivo online enquanto conectado. Eventos documentados incluem install:queued e install:cancelled.
+- [AUDITADO — EVENTOS] O canal geral publica eventos de notificações, atividade, Device Sync, instalações, alterações de permissões e streaming. Netplay usa endpoint separado, exige fluxo WebRTC e permanece fora do escopo anterior G4.
+- [CONCLUÍDO — DECISÃO TÉCNICA] Não adicionar conexão persistente ao namespace padrão /ws: o Tandem usa Client API Token e não possui sessão web RomM; a conexão não garantiria eventos privados do usuário.
+- [CONCLUÍDO — DECISÃO TÉCNICA] O namespace /devices é tecnicamente acessível com o token de dispositivo e devices.read, mas os eventos de instalação dependem do fluxo de instalação remota (D9), que permanece fora do escopo. Sem uma ação concreta de usuário dependente desses eventos, polling REST existente é suficiente e mais simples.
+- [CONCLUÍDO — AUDITORIA; SEM SOCKET EM PRODUÇÃO] Não implementar socket persistente nesta etapa. Manter REST como fonte de verdade e evitar conexão em background, consumo de bateria, reconexão contínua e novos estados de sessão sem benefício funcional presente.
+- [PENDENTE PARA FUTURA EXPANSÃO] Reavaliar G7 quando houver uma funcionalidade aprovada que dependa de eventos push, por exemplo instalação remota de ROMs ou uma tela ativa de progresso. Exigir token/device scope apropriado, reconexão com backoff, lifecycle Android, deduplicação de eventos, fallback REST e testes de proxy sem assumir que WebSocket está habilitado no servidor.
+
+SEGURANÇA E VALIDAÇÃO
+- Nenhuma conexão foi aberta ao servidor RomM pessoal do usuário; nenhum token foi lido, transmitido, alterado ou revogado.
+- Nenhum save, memory card, arquivo remoto, usuário, permissão ou tarefa administrativa foi alterado.
+- Não foram adicionadas permissões OAuth nem dependências Socket.IO.
+- A auditoria baseia-se no código Tandem já integrado e na documentação oficial RomM 5.4.x; CI não é aplicável a alterações exclusivamente documentais, mas será executada após abertura da PR.
+- [PENDENTE] Revisão do usuário sobre os limites e conclusões desta auditoria. Nenhuma funcionalidade especializada nova é ativada por esta PR.
+
+
+
+ABERTURA DA PR — ESTÁGIO G (2026-11-25)
+- [PR ABERTA — DRAFT] PR #55: https://github.com/izzyn0okami/Tandem/pull/55
+- Branch: feat/romm-stage-g-specialized; base: game-mode-m2-dev.
+- Head inicial: 6786af543dd33f6d94263de99f0c1a61e890dd45.
+- Alteração: somente este checklist de auditoria (37 linhas adicionadas); nenhum código funcional, dependência ou permissão foi alterado.
+- [CI] A consulta de workflow runs associadas ao head retornou zero execuções no momento do registro. Não declarar CI aprovada; verificar novamente após eventual novo commit/execução.
+- [PENDENTE — REVISÃO DO USUÁRIO] Confirmar as conclusões G5/G7 e manter o escopo anterior de G1/G2/G3/G4/G6/G8 fora da implementação.
+- PR permanece aberta, draft e sem merge; nenhum APK novo ou release foi produzido.
+
+
+DECISÃO DE ESCOPO — REVISÃO DO ESTÁGIO G (2026-11-25)
+- [DECISÃO DO USUÁRIO — ESCOPO FINAL] Entre os itens anteriormente excluídos, somente G6 (música, artistas, álbuns e playlists) será trabalhado. G1, G3, G4 e G8 voltam a ficar fora do escopo. G2 permanece excluído.
+- [AUDITORIA PRESERVADA] G5 e G7 mantêm as conclusões técnicas já registradas. G5 não autoriza conversão insegura de arquivos Libretro para a API dedicada RomM; G7 não justifica socket persistente sem consumidor funcional.
+
+- [PLANO] Implementar somente G6 em incrementos independentes, validando schemas, scopes, reprodução e gestão de playlists. Não introduzir permissões além de playlists.read/playlists.write nem ações destrutivas sem confirmação.
+- [GOVERNANÇA] PR #55 continua aberta e sem merge; esta atualização apenas corrige o escopo documental. Nenhuma implementação funcional foi iniciada nesta alteração, nenhum dado RomM foi alterado e nenhum merge/release foi realizado.
+
+
+AUDITORIA PRELIMINAR DE VIABILIDADE — ITENS G REABERTOS (2026-11-25)
+Referência de API/documentação: RomM 5.4.x; validação final deve usar o OpenAPI da versão efetivamente instalada pelo usuário.
+
+G1 — FEEDS EXTERNOS
+- [AUDITADO — CONTRATO] RomM publica feeds para clientes específicos: Tinfoil (.nsp/.xci), pkgj/pkgi/fpkgi (.pkg) e Kekatsu (.nds). São formatos/protocolos de clientes externos, não uma API genérica de catálogo para qualquer app Android.
+- [SEGURANÇA] A autenticação de feed e download varia por cliente; Tinfoil não propaga credenciais aos URLs de download e pode exigir desabilitar autenticação do endpoint de download no servidor. Não recomendar essa alteração como padrão.
+- [PLANO] Investigar quais feeds podem ser consumidos diretamente no Android sem credenciais embutidas ou enfraquecimento de autenticação. Não implementar instaladores de plataformas externas nem presumir que um feed é uma API REST comum.
+
+G3 — STREAMING REMOTO
+- [AUDITADO — CONTRATO] O streaming do RomM executa emuladores no servidor via container docker-webstation/Selkies e romm-broker; vídeo, áudio e entrada chegam ao navegador por WebRTC. A interface do stream exige HTTPS e configuração explícita de containers/plataformas no servidor.
+- [AUDITADO — LIMITAÇÃO] Não é execução remota do núcleo LibretroDroid local; a sessão é hospedada no servidor. A experiência Android depende de WebView/browser compatível com WebRTC e gamepad, além de host HTTPS alcançável.
+- [PLANO] Implementar primeiro detecção de disponibilidade/configuração e abertura segura da sessão web oficial. Não criar protocolo de streaming próprio nem assumir que toda plataforma/servidor oferece streaming.
+
+G4 — NETPLAY
+- [AUDITADO — CONTRATO] Netplay RomM é coordenação do EmulatorJS no navegador, em endpoint Socket.IO separado (/netplay/socket.io), com WebRTC/ICE; exige Netplay habilitado no servidor, STUN/TURN para conexões fora da LAN e contas/acesso ao mesmo servidor.
+- [AUDITADO — LIMITAÇÃO] Não há evidência de compatibilidade direta com os núcleos LibretroDroid usados pelo Tandem. Não anunciar multiplayer nativo entre instâncias Libretro locais.
+- [PLANO] Avaliar integração como experiência web do RomM, separada do lançamento Libretro local; detectar indisponibilidade e explicar requisitos do servidor. Não adicionar socket Netplay até definir cliente e fluxo compatíveis.
+
+G6 — MÚSICA, ARTISTAS, ÁLBUNS E PLAYLISTS
+- [AUDITADO — API] RomM 5.4.x documenta GET /music/tracks (lista filtrável/paginada), facetas /music/games, /music/platforms, /music/game-genres, /music/albums, /music/artists, /music/genres, /music/years, /music/stats e /music/favorites; POST /music/favorites marca favoritos.
+- [AUDITADO — PLAYLISTS] /music/playlists oferece operações de leitura/criação/edição/exclusão; /{id}/tracks lista, adiciona e remove faixas e /{id}/tracks/order reordena.
+- [PLANO] Integração nativa com o player de áudio existente: catálogo, navegação por artista/álbum, favoritos e playlists. Escritas em playlists exigem ação explícita e confirmação para exclusão. Confirmar escopos e payloads no OpenAPI da instância antes da implementação.
+
+G8 — ADMINISTRAÇÃO DE USUÁRIOS E PERMISSÕES
+- [AUDITADO — MODELO] RomM atual usa papéis Admin/User, grupos de permissões e overrides por usuário; os scopes são derivados das permissões efetivas. A administração pode alterar grupos, overrides e papel, redefinir senha e excluir contas.
+- [AUDITADO — ESCOPO] Scopes de usuários: users.read e users.write. Operações de tarefas usam tasks.run, mas tarefas administrativas G2 continuam explicitamente excluídas.
+- [SEGURANÇA] Não solicitar users.write automaticamente no pareamento. A interface administrativa deve ficar oculta/inativa sem scope e autorização do servidor; excluir usuários, alterar papéis ou conceder privilégios deve exigir confirmação contextual. Nunca permitir que o app eleve a si próprio.
+- [PLANO] Começar com leitura de usuários/grupos e visualização de permissões efetivas; somente depois propor operações de escrita específicas e separadas.
+
+G7 — REAVALIAÇÃO
+- [AUDITADO] O namespace /ws geral requer sessão web para eventos privados; /devices aceita token vinculado a dispositivo com devices.read. Netplay usa endpoint Socket.IO separado.
+- [DECISÃO TÉCNICA] G6 usa endpoints REST para catálogo, favoritos e playlists; não há requisito de push. Manter REST como fonte da verdade e não adicionar socket persistente.
+
+ORDEM PROPOSTA DE IMPLEMENTAÇÃO
+1. G6 — música e playlists: API documentada e player de áudio já existente no Tandem.
+2. G8 — leitura administrativa (usuários/grupos/permissões); escritas apenas em incremento separado com confirmação e scope explícito.
+3. G3 — descoberta de disponibilidade e abertura da sessão de streaming web segura.
+4. G4 — experiência Netplay via RomM/EmulatorJS, sem alegar compatibilidade LibretroDroid.
+5. G1 — suporte somente a feeds compatíveis com um consumidor Android concreto e autenticação segura.
+6. G5/G7 — preservar limites e decisões auditadas; reabrir apenas mediante evidência técnica.
+
+FONTES OFICIAIS CONSULTADAS
+- https://docs.romm.app/5.4.0/ecosystem/feed-clients/
+- https://docs.romm.app/5.4.0/using/emulator-streaming/
+- https://docs.romm.app/5.4.0/using/netplay/
+- https://docs.romm.app/5.4.0/using/jukebox/
+- https://docs.romm.app/latest/Usage/UserManagement/
+- https://docs.romm.app/5.4.0/developers/websockets/
+
+- [PENDENTE] Validar os schemas exatos e os scopes no /openapi.json da versão do servidor do usuário antes de qualquer chamada autenticada ou operação de escrita.
+- [GOVERNANÇA] G2 continua excluído por decisão do usuário. Nenhuma conexão foi aberta ao servidor pessoal, nenhum token foi lido e nenhum dado remoto foi alterado.
+
+
+IMPLEMENTAÇÃO FUNCIONAL — ESTÁGIO G6 / PR #56 (2026-11-25)
+Branch: feat/romm-stage-g-music; base: game-mode-m2-dev.
+
+- [IMPLEMENTADO — API] Cliente RomM: GET /api/music/tracks com busca e paginação; GET /api/music/artists e /albums; GET /api/music/favorites; GET /api/music/playlists e /{id}/tracks.
+- [IMPLEMENTADO — ESCRITA EXPLÍCITA] Favoritar/desfavoritar faixas; criar e excluir playlists privadas; adicionar e remover faixas de uma playlist. Exclusão de playlist exige confirmação e não remove os arquivos de áudio originais.
+- [IMPLEMENTADO — PLAYER] Nova aba Música/Jukebox no Modo Jogos. Reprodução por HTTP diretamente do RomM com MediaPlayer Android, sem baixar o arquivo inteiro; controles reproduzir/pausar, anterior/próxima e busca de posição; foco de áudio Android e liberação do player ao sair da tela.
+- [IMPLEMENTADO — NAVEGAÇÃO] Pesquisa, navegação por artistas e álbuns, favoritos, playlists, paginação de faixas e seleção de playlist como destino para adicionar músicas.
+- [SEGURANÇA] A URL de stream retornada pelo servidor é validada para permanecer no mesmo esquema/host/porta do RomM antes de anexar o Bearer token. Nenhum token é enviado a host externo.
+- [PERMISSÕES] O pareamento por dispositivo passa a solicitar playlists.read e playlists.write, além dos scopes existentes. Tokens manuais precisam conter esses scopes para favoritos e playlists; HTTP 403 permanece visível e orienta a revisar/renovar a autorização. A leitura do catálogo usa roms.read.
+- [LIMITAÇÃO DE FORMATO] O player Android aceita MP3, OGG/OGA, Opus, M4A, AAC, WAV e FLAC. Formatos de console SPC/VGM/VGZ/GYM aparecem no catálogo, mas não são iniciados pelo MediaPlayer nativo; suporte exigiria motor GME separado e não foi presumido.
+- [NÃO IMPLEMENTADO] Não foi adicionada reprodução em segundo plano, notificação MediaSession, download offline, edição/ordenação de playlists ou sockets. O player encerra ao sair da tela Jukebox.
+- [PENDENTE — CI] Aguardar CI da PR #56; não presumir compilação/testes aprovados antes do resultado.
+- [PENDENTE — TESTE NO APARELHO] Validar com a instância RomM do usuário: catálogo, pesquisa, artistas/álbuns, reprodução de formatos suportados, foco/pausa, favoritos, criar playlist, adicionar/remover faixa e exclusão confirmada. Confirmar autorização playlists.read/write.
+- [GOVERNANÇA] PR #56 permanece aberta e sem merge; nenhum APK foi publicado em latest/release e nenhum dado da instância RomM pessoal foi acessado ou alterado durante a implementação.
