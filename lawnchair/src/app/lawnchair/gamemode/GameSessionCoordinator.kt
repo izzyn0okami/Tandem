@@ -185,8 +185,7 @@ internal object GameSessionCoordinator {
         }
     }
 
-    internal fun pendingConflictKey(gameIdentity: String, accountFingerprint: String) =
-        "pending_device_sync_conflict:$gameIdentity:$accountFingerprint"
+    internal fun pendingConflictKey(gameIdentity: String, accountFingerprint: String) = "pending_device_sync_conflict:$gameIdentity:$accountFingerprint"
 
     private fun statusKey(gameIdentity: String, accountFingerprint: String) = "sync_status:$gameIdentity:$accountFingerprint"
 }
