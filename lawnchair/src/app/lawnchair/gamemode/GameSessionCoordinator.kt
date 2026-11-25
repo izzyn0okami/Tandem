@@ -147,6 +147,9 @@ internal object GameSessionCoordinator {
         if (unresolved) {
             app.getSharedPreferences("romm_sync", Context.MODE_PRIVATE).edit {
                 putString(statusKey(gameIdentity, expectedAccountFingerprint), "pending")
+                if (saveResult?.conflictsPreserved ?: 0 > 0) {
+                    putString(pendingConflictKey(gameIdentity, expectedAccountFingerprint), snapshotJobId)
+                }
             }
         }
         return !saveRetry
@@ -180,6 +183,9 @@ internal object GameSessionCoordinator {
             GameLog.log("Device Sync", "dispositivo registrado automaticamente para a conta RomM atual")
         }
     }
+
+    internal fun pendingConflictKey(gameIdentity: String, accountFingerprint: String) =
+        "pending_device_sync_conflict:$gameIdentity:$accountFingerprint"
 
     private fun statusKey(gameIdentity: String, accountFingerprint: String) = "sync_status:$gameIdentity:$accountFingerprint"
 }
