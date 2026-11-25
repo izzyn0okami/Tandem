@@ -231,6 +231,17 @@ object RomMDeviceSyncRunner {
                                 val expectedHash = operation.serverContentHash
                                     ?: throw IOException("O RomM não informou o hash do save para download.")
                                 if (localSave != null && initialLocalHash != null &&
+                                    !initialTargetHash.equals(initialLocalHash, ignoreCase = true)
+                                ) {
+                                    conflicts++
+                                    GameLog.log(
+                                        "Device Sync",
+                                        "download adiado: o save ativo mudou depois da captura da fila; " +
+                                            "snapshot e versão atual foram preservados para resolução explícita",
+                                    )
+                                    return@forEach
+                                }
+                                if (localSave != null && initialLocalHash != null &&
                                     !initialLocalHash.equals(expectedHash, ignoreCase = true)
                                 ) {
                                     if (!originalSave.matchesMd5(initialTargetHash)) {
