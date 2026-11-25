@@ -1235,3 +1235,49 @@ ATUALIZAÇÃO — PR #49, CI PÓS-MERGE #1056 E TESTE NO APARELHO (2026-11-24)
 - [SEGURANÇA] As operações Device Sync falharam antes de concluir. Não há registro de save real baixado, sobrescrito, movido ou apagado. Não habilitar overwrite automático nem contornar HTTP 409 sem resolução explícita do conflito.
 - [PENDENTE] Confirmar qual save remoto está bloqueando cada slot; capturar o detalhe do HTTP 409; decidir estratégia compatível com slots compartilhados entre emuladores sem misturar saves incompatíveis; revalidar PSX e SNES no telefone.
 - [PENDENTE — MEMÓRIA] Investigar o encerramento por pouca memória em sessão recém-iniciada e verificar se há relação com pressão de heap nativo.
+
+
+AUDITORIA TÉCNICA COMPLEMENTAR — ESTÁGIO E COMPLETO (2026-11-25)
+Base auditada: game-mode-m2-dev, head 87f6e8026d4d8cac81d194920fb6e5325a43326d.
+PRs relacionadas: #41 e #50 mescladas. Nenhuma PR aberta na consulta.
+CI pós-merge #1278 / run 45609890196: SUCCESS no head auditado. check-style/Spotless, testes unitários, Build Debug APK, Upload artifact e final-status aprovados. O job tandem-release também concluiu com sucesso. Execução: https://github.com/izzyn0okami/Tandem/actions/runs/45609890196.
+
+ESCOPO E DECISÕES CONFIRMADAS
+- Save states: por decisão do usuário, permanecem exclusivamente locais. O Tandem não deve consultar, baixar, enviar, atualizar nem excluir states no RomM. States remotos preexistentes são preservados.
+- SRAM e cartões de memória: RomM Device Sync é o transporte ativo. WebDAV não substitui o protocolo nesta etapa.
+- Exclusões remotas: operações delete continuam ignoradas; overwrite=false permanece obrigatório.
+- PR #41 não está aberta: foi mesclada em 23/11/2026 (merge e80af4e957ba29d879c87ed3208d6c86d44b9f87).
+- PR #50 também foi mesclada em 25/11/2026 (merge 68e813ca3798fed4ef554b83d3977cc27696be38). A branch base atual contém o commit documental 87f6e8026d4d8cac81d194920fb6e5325a43326d.
+
+RESULTADO POR ITEM
+- E1 — CONCLUÍDO NO ESCOPO APROVADO: SRAM/cartões são listados pelo inventário tipado e transportados pelo Device Sync; save states foram deliberadamente retirados do transporte remoto e permanecem locais.
+- E2 — IMPLEMENTADO: identidade estável por servidor, conta e jogo, com fingerprint de conteúdo e isolamento por conta. Há testes para separação entre contas e servidores.
+- E3 — PARCIAL: snapshots temporários e validação de hash existem; SaveSnapshotStore também possui manifesto SHA-256 e testes de imutabilidade. Porém, o caminho efetivo do WorkManager/Device Sync não usa SaveSnapshotStore: pushAsync agenda o worker sem capturar o payload; o worker chama GameSessionCoordinator.pushFromWorker e o parâmetro snapshotJobId não é consumido pelo coordenador/executor. O executor captura novamente o arquivo local em cada execução. Assim, a tarefa persiste e tem backoff, mas o payload não é imutável entre retries. Pendente integrar snapshot durável e idempotência ao fluxo Device Sync.
+- E4 — PARCIAL: resolução local de conflitos possui inspeção, escolha explícita, staging, backups dos dois conjuntos, verificação SHA-256 e rollback. Histórico SRAM permite selecionar e restaurar uma versão com confirmação e backup local. Contudo, reconcileDivergentSave no executor Device Sync também arbitra divergências automaticamente por timestamp, favorecendo RomM em empate e arquivando a versão perdedora. Pendente definir se essa política automática é aceita como regra final ou se todo conflito Device Sync deve exigir escolha explícita do usuário.
+- E5 — INTEGRADO, COM VALIDAÇÃO COMPLEMENTAR: GameSessionCoordinator executa Device Sync antes/depois da sessão; registro do dispositivo, negotiate/complete, upload/download de SRAM/cartões, staging, hash, confirmação posterior, proteção contra mudança local e recusa de delete estão integrados. Os testes automatizados cobrem protocolo e transporte. O log funcional registra aprovação do usuário para sincronização SRAM/cartões, não envio quando o conteúdo não muda, envio após gravação real, histórico e restauração manual. Ainda falta matriz ampliada de falhas de rede, retomada após encerramento forçado e interoperabilidade de todos os núcleos/slots suportados.
+- E6 — IMPLEMENTADO: PoC WebDAV com OPTIONS, PROPFIND e GET para staging, verificação SHA-256 e validação de caminhos. O cliente também contém PUT restrito a arquivo novo com If-None-Match: *; não há DELETE/MOVE nem sobrescrita.
+- E7 — PARCIAL: testes MockWebServer cobrem descoberta, download/staging, caminhos inválidos e upload protegido contra sobrescrita. Não foi comprovado teste de interoperabilidade em servidor WebDAV real/controlado.
+- E8 — CONCLUÍDO COMO ANÁLISE/DECISÃO: comparação com RetroArch Cloud Sync/RomM documentada em Auditoria_Integrada_3_Pilares_Tandem.txt. Decisão registrada: não substituir o transporte ativo por WebDAV nesta etapa, devido às diferenças de autenticação, comportamento de exclusão e garantias de segurança.
+- E9 — PARCIAL: inventário distingue CORE_SAVE, MEMORY_CARD, SAVE_STATE e RETRO_ACHIEVEMENTS_PROGRESS. Adaptadores declaram grupo de cartões PSX (PCSX ReARMed, SwanStation e Beetle PSX) e grupo SRAM SNES (Snes9x, Snes9x 2010 e bsnes); núcleos desconhecidos só aceitam a si próprios. States e progresso RA permanecem locais. Pendente ampliar/confirmar a matriz de formatos e slots de memory cards para outros sistemas e executar testes negativos por adaptador.
+- E10 — DECISÃO REGISTRADA PARA O ESCOPO ATUAL: RomM Device Sync permanece responsável por SRAM/cartões; save states permanecem locais; WebDAV não substitui o transporte nesta etapa. Qualquer ampliação para novos tipos de artefato exige decisão e validação próprias.
+
+ACHADOS TÉCNICOS RELEVANTES
+1. WorkManager usa trabalho único persistente, rede conectada e backoff exponencial, mas não preserva o payload original entre tentativas porque o snapshot durável não está ligado ao worker Device Sync.
+2. O executor sincroniza somente a ROM e o slot selecionados pelo adaptador. Upload usa overwrite=false; downloads vão para staging, validam MD5 e preservam backup SHA-256 antes da promoção.
+3. Operações delete e desconhecidas não são executadas. HTTP 409 é tratado como conflito, não como motivo para sobrescrita forçada.
+4. A restauração manual de histórico SRAM foi validada pelo usuário; a versão antiga escolhida vira nova versão ativa sem apagar o histórico anterior.
+5. A reconciliação automática por timestamp e a exigência de escolha explícita de E4 precisam permanecer claramente diferenciadas na interface e na documentação.
+
+PENDÊNCIAS ANTES DE DECLARAR E COMPLETO
+- Integrar snapshots imutáveis ao worker Device Sync e provar que retries reutilizam exatamente os mesmos bytes.
+- Definir com o usuário se a reconciliação automática por timestamp em conflitos Device Sync é aceita ou se deve haver escolha explícita em todos os casos.
+- Completar testes de retomada após perda de rede/encerramento do processo e matriz de interoperabilidade PSX/SNES e demais adaptadores.
+- Ampliar a matriz de memory cards por sistema/core e testar incompatibilidades negativas.
+- Testar WebDAV em servidor controlado real antes de qualquer uso além da PoC.
+- Não iniciar o Estágio F até resolver ou aceitar formalmente as pendências acima.
+
+SEGURANÇA E LIMITES DESTA AUDITORIA
+- Auditoria estática do código e dos testes; nenhuma transferência, alteração, migração ou exclusão de save local/remoto foi executada.
+- Nenhum arquivo de usuário foi alterado pelo processo de auditoria.
+- CI #1278 valida estilo, testes automatizados e build no head informado; não substitui testes funcionais no aparelho.
+- PR #41 e PR #50 estão mescladas. Não há PR aberta na consulta atual.
