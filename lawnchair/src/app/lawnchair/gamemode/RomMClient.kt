@@ -42,7 +42,7 @@ internal fun romMErrorDetail(body: String?): String? {
     return raw
         .replace(Regex("[\\r\\n\\t\\p{Cntrl}]"), " ")
         .replace(
-            Regex("""(?i)\\b(token|access_token|authorization|password|secret|api[_-]?key)\\b(\\s*[:=]\\s*)(?:"[^"]*"|'[^']*'|Bearer\\s+\\S+|\\S+)"""),
+            Regex("""(?i)\b(token|access_token|authorization|password|secret|api[_-]?key)\b(\s*[:=]\s*)(?:"[^"]*"|'[^']*'|Bearer\s+\S+|\S+)"""),
             "$1$2[redacted]",
         )
         .replace(Regex("\\s+"), " ")
