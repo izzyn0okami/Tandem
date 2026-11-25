@@ -1340,3 +1340,18 @@ FECHAMENTO E3/E4 — TESTES NO APARELHO APROVADOS (2026-11-25)
 - APK de validação: artefato ID 15025267268, 46.460.473 bytes, SHA-256 1190afb15c414845e9716e0b38e29db25c0b72328728240905125de9e35bcf64; expira em 2027-02-23. Nenhuma release publicada.
 - PR #51 foi marcada pronta para revisão; permanece sem merge até autorização explícita.
 - Nenhuma transferência, sobrescrita, movimentação ou exclusão de save real foi realizada por esta atualização.
+
+
+MERGE — PR #51 / FECHAMENTO E3-E4 (2026-11-25)
+- [PR MESCLADA] PR #51 — Persist save queue snapshots and require explicit conflict resolution.
+- Destino: game-mode-m2-dev.
+- Merge commit: 4834759da89199cfd29cf745f958be2f9eec8efe.
+- Head integrado: d346554ec6476c0e7a2d9377eb9800ed3a13cbbe.
+- [CI APROVADA] CI #1295 / run 45624780870, no head d346554ec6476c0e7a2d9377eb9800ed3a13cbbe: check-style/Spotless, testes unitários, Build Debug APK, Upload artifact e final-status concluídos com sucesso.
+- Jobs opcionais send-notifications, crowdin-auto-merge, nightly-release e tandem-release foram ignorados; nenhuma release foi publicada por esta CI.
+- [TESTE NO APARELHO] O usuário aprovou o fluxo de fila persistente e resolução explícita de conflitos antes do merge.
+- [CONCLUÍDO] E3 e E4 integrados à game-mode-m2-dev.
+- [PENDÊNCIAS DO ESTÁGIO E] Permanecem E5 (validação complementar de falhas de rede/retomada e interoperabilidade), E6/E7 (PoC/testes WebDAV controlados conforme escopo), E9 (matriz ampliada de formatos/slots de memory cards) e decisão E10 já registrada para o escopo atual. Não iniciar Estágio F enquanto as pendências aplicáveis do Estágio E não forem resolvidas ou formalmente aceitas.
+- Segurança preservada: save states exclusivamente locais; SRAM/cartões elegíveis via Device Sync; overwrite=false; sem exclusão automática nem sobrescrita forçada em HTTP 409.
+- Nenhuma transferência, sobrescrita, movimentação ou exclusão de save real foi realizada pelo merge.
+- Não há PR aberta no repositório imediatamente após o merge.
