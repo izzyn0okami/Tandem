@@ -1536,3 +1536,8 @@ Branch: feat/romm-stage-f-dashboard; PR #53 permanece draft e sem merge.
 - [TESTES COMPLEMENTARES] Também foram adicionados casos de 401 (não autorizado) e falha de rede sem retry, além do caso 403. Commit de testes complementares: ffc91eda8cc7c6167bf7e0348441d0deaca86a66.
 - [CI ATUALIZADA] A alteração dos testes ocorreu enquanto a CI #1335 ainda executava no head anterior a2b7335c5ce581b78d38f39e51b39d47fdfd61b0. Essa execução não cobre o commit complementar; aguardar execução CI vinculada ao head ffc91eda8cc7c6167bf7e0348441d0deaca86a66 antes de declarar F4 validada.
 - [REVISÃO] PR #53 permanece aberta e draft. O campo mergeable foi reportado temporariamente como false após atualização do head; não iniciar merge. Reavaliar após atualização de checks e estado do GitHub.
+
+- [CI #1339 — FALHA IDENTIFICADA E CORRIGIDA] Spotless e formatação passaram; a compilação dos testes unitários falhou por uso incorreto da API MockWebServer 3 nos testes novos (ByteString nullable, verificação de JSON null e encerramento do servidor). Não foi falha na implementação de produção.
+- [CORREÇÃO] Commit cf0dd066fc0d0d2de8872d2422dd8ea253821d8d ajusta leitura do corpo via ByteString.utf8(), comparação explícita com JSONObject.NULL e simulação de falha de rede encerrando o servidor após capturar a URL.
+- [PENDENTE] Aguardar CI do commit cf0dd066fc0d0d2de8872d2422dd8ea253821d8d. APK não foi gerado na CI #1339 porque os testes não compilaram.
+- [ESTADO] F4 continua implementada em código, mas não validada. PR #53 permanece aberta e draft, sem merge; validação em aparelho ainda pendente.
