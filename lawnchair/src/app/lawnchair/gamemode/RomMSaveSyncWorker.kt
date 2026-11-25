@@ -5,7 +5,7 @@ import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import kotlinx.coroutines.CancellationException
 
-/** Executa a sincronização coordenada de SRAM/cartões e estados fora do ciclo de vida da Activity. */
+/** Executa a sincronização de SRAM/cartões via Device Sync fora do ciclo de vida da Activity. */
 class RomMSaveSyncWorker(
     appContext: Context,
     params: WorkerParameters,
