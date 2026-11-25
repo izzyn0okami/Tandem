@@ -1488,3 +1488,17 @@ ATUALIZAÇÃO DE AUDITORIA — F1–F3 (2026-11-25)
 - CI #1313 (run 45638448471) aprovou unit tests, build Debug APK e Spotless no head 20ee3fec4f209a1755e4457908009ea030066431; artefato ID 15033752882, SHA-256 93ce82be84f2c31bb2004504b224eb8167aab9c4c04c744fb201320c2afa9f61.
 - Após esse CI, foram adicionados testes próprios F1–F3, explicação de escopo das estatísticas e ajuste de navegação para telas estreitas. O head atual é e2aaa85a967eeb71cfc636848d82d78972f303ee; CIs #1317/#1318 estão em andamento. O artefato de #1313 não inclui esses últimos ajustes/testes.
 - PR #53 continua em rascunho, não mesclada; nenhuma PR concorrente foi aberta.
+
+
+VALIDAÇÃO FUNCIONAL — F1–F3 APROVADAS PELO USUÁRIO (2026-11-25)
+- [CONCLUÍDO — TESTE NO APARELHO] O usuário confirmou que Estatísticas (F1), Recomendações (F2) e Notificações (F3) estão todas funcionando corretamente na versão de teste da PR #53.
+- [CONCLUÍDO — CI] CI #1323 / run 45648223059, no head 7a4930c0dd5c707e566f34bb634096986aee21b4: SUCCESS.
+- Job build-debug-apk: testes unitários, compilação do APK e upload do artefato concluídos com sucesso.
+- Job check-style: Spotless automático, commit de formatação e verificação final concluídos com sucesso.
+- Job final-status: SUCCESS. Jobs opcionais de notificações e releases foram ignorados; nenhuma release foi publicada.
+- [APK DE VALIDAÇÃO] Artefato assembleLawnWithQuickstepGithubDebug, ID 15037893589, 46.485.683 bytes, SHA-256 do arquivo de artefato: c5c7d2534a507c37cc68a81805a2b845df75aa269e72bfdd66b37f2329d86b4f; disponível até 2027-02-23.
+- [CONCLUÍDO] F1, F2 e F3 passam a [CONCLUÍDO] no escopo de consulta somente leitura e foram validadas pelo usuário no aparelho.
+- [PENDENTE] F4 — avaliar marcação/dispensa de notificações; exige me.write e decisão explícita sobre permissões e confirmação na interface.
+- [PENDENTE] F5 — avaliar canais de notificação/Apprise; operações mutáveis exigem me.write e decisão de interface. Não ampliar escopos sem autorização.
+- PR #53 permanece aberta, em rascunho (draft), sem merge. Não mesclar sem autorização explícita do usuário.
+- Nenhuma alteração foi feita em dados remotos do RomM; F1–F3 continuam somente leitura.
