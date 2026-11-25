@@ -168,7 +168,7 @@ private fun ConnectForm(onConnect: () -> Unit) {
                             result.onSuccess {
                                 pairing = it
                                 message = ""
-                            }.onFailure { message = it.message ?: it.toString() }
+                            }.onFailure { message = romMUserFacingError(it, "iniciar o pareamento por dispositivo") }
                         }
                         busy = false
                     }
