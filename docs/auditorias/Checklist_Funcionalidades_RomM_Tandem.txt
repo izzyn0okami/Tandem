@@ -57,8 +57,8 @@ D. PLATAFORMAS, FIRMWARE E DISPOSITIVOS
 E. SAVES, STATES E SINCRONIZAÇÃO
 [CONCLUÍDO] E1. Listagem/download/upload de saves e states pelos endpoints RomM atuais.
 [CONCLUÍDO] E2. Identidade estável por conta/jogo e isolamento por conta.
-[CONCLUÍDO] E3. Snapshots imutáveis e proteção contra sobrescrita silenciosa.
-[EM ANDAMENTO] E4. Resolução explícita de conflitos de saves — PR #41 aberta, draft, sem merge.
+[EM ANDAMENTO] E3. Snapshots imutáveis integrados à fila persistente Device Sync; validação de CI pendente.
+[EM ANDAMENTO] E4. Resolução explícita de conflitos Device Sync: arbitragem por timestamp removida; escolha local explícita e restauração remota pelo histórico integradas. CI pendente.
 [EM ANDAMENTO] E5. Device Sync Protocol oficial: cliente, registro/negotiate/complete, persistência isolada do device_id, transporte SRAM e inspeção local somente leitura implementados com testes automatizados; CIs #893 e #896 aprovadas. Falta ação explícita de registro na interface, integração segura/limitada, interoperabilidade com RomM real e validação no telefone. Save states permanecem fora do transporte.
 [PENDENTE] E6. Prova de conceito RetroArch Cloud Sync/WebDAV em modo somente leitura.
 [PENDENTE] E7. Testes controlados de upload/download WebDAV sem DELETE automático.
@@ -1281,3 +1281,42 @@ SEGURANÇA E LIMITES DESTA AUDITORIA
 - Nenhum arquivo de usuário foi alterado pelo processo de auditoria.
 - CI #1278 valida estilo, testes automatizados e build no head informado; não substitui testes funcionais no aparelho.
 - PR #41 e PR #50 estão mescladas. Não há PR aberta na consulta atual.
+
+
+IMPLEMENTAÇÃO — FILA PERSISTENTE E RESOLUÇÃO DE CONFLITOS (2026-11-25)
+Branch: fix/persistent-save-queue-conflict-resolution
+Base: game-mode-m2-dev @ e038d51b556d00b1fa646303bd00fd195f450e50
+PR: ainda não aberta nesta atualização; código em revisão pré-PR.
+
+E3 — IMPLEMENTAÇÃO APLICADA
+- SaveSync.pushAsync cria um UUID de trabalho e captura o artefato elegível SRAM/cartão antes de enfileirar o WorkManager.
+- A captura usa SaveSnapshotStore em filesDir/device-sync-queue, manifesto SHA-256 e promoção atômica do diretório.
+- O worker recebe o ID da captura; GameSessionCoordinator carrega e verifica o snapshot, e RomMDeviceSyncRunner usa os bytes capturados, sem recapturar a SRAM ativa.
+- Jobs sem save local também recebem manifesto vazio persistente, evitando que um save criado depois seja incorporado retroativamente à tarefa.
+- Retries reutilizam o mesmo snapshot. Capturas adulteradas/incompletas são recusadas. Capturas associadas a conflito ficam preservadas até a resolução explícita.
+- Testes adicionados em SaveSnapshotStoreTest: retry reutiliza bytes originais mesmo após mudança do arquivo ativo; adulteração é recusada; manifesto vazio é recuperável e removível.
+
+E4 — IMPLEMENTAÇÃO APLICADA
+- Removida a escolha automática por timestamp em reconcileDivergentSave. Operações Conflict e Upload sem histórico confirmado são estacionadas sem substituir nenhum lado.
+- Download não é aplicado se o save ativo mudou desde a captura da fila; o snapshot e o arquivo ativo são preservados.
+- A interface apresenta ação explícita para manter/publicar a versão local. A escolha remota permanece disponível pelo Histórico de SRAM e restauração manual já existente.
+- Ao escolher a versão local, o Tandem confirma primeiro o head remoto como baseline e publica os bytes locais como nova versão ativa, sem overwrite nem limpeza do histórico.
+- Ao concluir qualquer escolha, a captura pendente é arquivada com verificação SHA-256 antes de limpar o registro da fila.
+- Nenhuma decisão é tomada com base em horário. Um upload sem histórico é tratado conservadoramente como divergência sem baseline confirmado, não como prova de conflito real.
+
+ARQUIVOS ALTERADOS
+- lawnchair/src/app/lawnchair/gamemode/SaveSnapshotStore.kt
+- lawnchair/src/app/lawnchair/gamemode/SaveSync.kt
+- lawnchair/src/app/lawnchair/gamemode/RomMSaveSyncWorker.kt
+- lawnchair/src/app/lawnchair/gamemode/GameSessionCoordinator.kt
+- lawnchair/src/app/lawnchair/gamemode/RomMDeviceSyncRunner.kt
+- lawnchair/src/app/lawnchair/gamemode/GameScreens.kt
+- tests/unit/kotlin/app/lawnchair/gamemode/SaveSnapshotStoreTest.kt
+
+VALIDAÇÃO E LIMITES
+- [PENDENTE] Spotless, testes unitários, Build Debug APK e CI integral no head desta branch.
+- [CONFIRMADO PELO USUÁRIO] Os testes funcionais já feitos no aparelho cobrem vários núcleos e compatibilidade, com resultados positivos. Não solicitar repetição geral desses testes; após APK aprovado, validar apenas o fluxo novo de fila persistente e as duas escolhas de resolução.
+- CI automatizada não substitui a validação pontual no aparelho.
+- Save states permanecem exclusivamente locais; Device Sync continua limitado a SRAM/cartões elegíveis.
+- overwrite=false, sem DELETE automático e sem sobrescrita automática em HTTP 409.
+- Nenhum merge foi realizado.
