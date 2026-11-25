@@ -67,7 +67,7 @@ object RomMDeviceSyncRunner {
                 migrationSourcesOverride = emptyMap(),
             )
             val client = RomMDeviceSyncClient(connection.url, connection.token)
-            val emulator = "tandem_$coreId"
+            val emulator = DeviceSyncArtifactPolicy.canonicalEmulator(coreId)
             val snapshotRoot = File(app.filesDir, "device-sync-snapshots")
             if (!snapshotRoot.exists() && !snapshotRoot.mkdirs()) {
                 throw IOException("Não foi possível preparar a captura temporária do save.")
