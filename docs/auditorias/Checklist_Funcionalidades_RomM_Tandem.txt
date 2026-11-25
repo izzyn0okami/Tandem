@@ -1612,3 +1612,12 @@ CI / ESTADO DO TRABALHO
 - [CONCLUÍDO — CI] CI #1348, run 45709991124, evento pull_request, validou o head 17dce11dd53caf0864058acb0946d263180a4772: SUCCESS. check-style, build-debug-apk e final-status passaram. O artefato de CI corresponde ao commit anterior à atualização documental F5.
 - PR #53 permanece aberta, draft, sem merge; branch feat/romm-stage-f-dashboard; base game-mode-m2-dev. Nenhuma PR concorrente criada.
 - F5 permanece auditada, mas não implementada. F6 continua fora do escopo inicial.
+
+DECISÃO DE ESCOPO — F5 DESCARTADO (2026-11-25)
+- [FORA DO ESCOPO — DECISÃO DO USUÁRIO] F5 — gestão de canais de notificação (webhook, email e Apprise) foi descartado. O usuário não vê utilidade prática nessas funções no Tandem.
+- A auditoria técnica permanece como registro histórico de capacidades do RomM, mas não constitui plano de implementação nem pendência.
+- Não implementar listagem, criação, edição, exclusão, teste ou confirmação de canais; não integrar catálogo/parser Apprise.
+- F1, F2, F3 e F4 permanecem concluídos e preservados. A caixa de entrada e as ações de notificação existentes não serão removidas.
+- Nenhuma configuração ou canal remoto foi alterado como consequência desta decisão.
+- F5 não exige nova PR, alteração funcional ou CI; a PR #53 permanece dedicada ao trabalho já aprovado em F1–F4 e não deve receber implementação F5.
+- PR #53: https://github.com/izzyn0okami/Tandem/pull/53; estado consultado: open, draft=true, merged=false. Nenhum merge executado.
