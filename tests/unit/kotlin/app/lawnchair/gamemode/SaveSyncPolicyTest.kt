@@ -263,7 +263,7 @@ class SaveSyncPolicyTest {
     }
 
     @Test
-    fun legacySnapshotsTransportOnlyQuickStatesThroughTheStatesEndpoint() {
+    fun legacySnapshotsDoNotTransportSaveStatesToRomM() {
         val sram = java.io.File("legacy.srm")
         val quickState = java.io.File("slot1.state")
 
@@ -274,7 +274,7 @@ class SaveSyncPolicyTest {
             ),
         )
 
-        assertEquals(mapOf(RemoteFileKind.State to quickState), transportFiles)
+        assertTrue(transportFiles.isEmpty())
     }
 
 
