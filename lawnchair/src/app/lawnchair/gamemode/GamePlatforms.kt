@@ -346,6 +346,23 @@ object GamePlatforms {
             launch = LaunchMode.GAMENATIVE,
         ),
         GamePlatform(
+            slug = "arcade",
+            name = "Arcade",
+            coreId = "fbneo",
+            extensions = setOf("zip", "7z"),
+            folderAliases = setOf("arcade", "mame", "fbneo", "arcadegames"),
+            sortOrder = 119,
+            zipIsNativeRom = true,
+        ),
+        GamePlatform(
+            slug = "supergrafx",
+            name = "NEC SuperGrafx",
+            coreId = "mednafen_supergrafx",
+            extensions = setOf("sgx"),
+            folderAliases = setOf("supergrafx", "nec-supergrafx"),
+            sortOrder = 136,
+        ),
+        GamePlatform(
             slug = "vita",
             name = "PlayStation Vita",
             coreId = "vita3k",
