@@ -48,7 +48,7 @@ CONCLUÍDO NESTA ABERTURA
 - [x] Inspecionados os arquivos-base listados acima e registrados os achados preliminares.
 
 PENDÊNCIAS
-- [ ] Concluir auditoria de código e contratos por I7–I16.
+- [ ] Concluir auditoria de código e contratos por I7–I16.\n- [x] I7 — reforçar seleção segura de entrada ZIP, rejeitando caminhos absolutos, traversal, segmentos inválidos e entradas sem metadados de tamanho/CRC; manter erro explícito para zero ou múltiplas ROMs compatíveis.\n- [x] I8 — manter bypass de extração para plataformas discBased e ZIPs nativos; confirmar preservação no código.\n- [ ] I7/I8 — testes automatizados e validação funcional dos casos ZIP ainda pendentes.
 - [ ] Implementar correções comprovadas, preservando compatibilidade e comportamento existente.
 - [ ] Adicionar testes automatizados determinísticos para casos válidos, ambíguos e inválidos.
 - [ ] Executar CI completa (Spotless, testes unitários e build APK).
