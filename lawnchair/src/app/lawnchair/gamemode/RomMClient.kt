@@ -207,6 +207,37 @@ data class RemoteSoundtrackTrack(
     val durationSeconds: Double?,
 )
 
+/** Faixa do catálogo global de música do RomM (jukebox), não limitada a um jogo aberto. */
+data class RemoteMusicTrack(
+    val romFileId: Long,
+    val romId: Long,
+    val fileName: String,
+    val title: String?,
+    val artist: String?,
+    val album: String?,
+    val genre: String?,
+    val year: Int?,
+    val trackNumber: Int?,
+    val discNumber: Int?,
+    val durationSeconds: Double?,
+    val hasEmbeddedCover: Boolean,
+    val isFavorite: Boolean,
+    val gameName: String?,
+    val platformName: String,
+    val streamUrl: String,
+)
+
+data class RemoteMusicFacet(val value: String, val count: Int)
+data class RemoteMusicPlaylist(
+    val id: Long,
+    val name: String,
+    val description: String?,
+    val isPublic: Boolean,
+    val ownerUsername: String,
+    val trackCount: Int,
+)
+data class RemoteMusicPage<T>(val items: List<T>, val total: Int, val limit: Int, val offset: Int)
+
 /**
  * Categorias que representam conteúdo de jogo executável/instalável.
  * Categorias auxiliares e categorias futuras desconhecidas ficam fora da ROM.
@@ -771,6 +802,236 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
                 )
             }
         }
+    }
+
+    /** Catálogo musical paginado; filtros são aplicados no servidor para não baixar a biblioteca inteira. */
+    fun listMusicTracks(
+        search: String? = null,
+        artist: String? = null,
+        album: String? = null,
+        limit: Int = 50,
+        offset: Int = 0,
+    ): RemoteMusicPage<RemoteMusicTrack> = musicTrackPage(
+        "tracks",
+        search,
+        artist,
+        album,
+        limit,
+        offset,
+    )
+
+    fun listMusicFavorites(
+        search: String? = null,
+        limit: Int = 50,
+        offset: Int = 0,
+    ): RemoteMusicPage<RemoteMusicTrack> = musicTrackPage(
+        "favorites",
+        search,
+        null,
+        null,
+        limit,
+        offset,
+    )
+
+    private fun musicTrackPage(
+        endpoint: String,
+        search: String?,
+        artist: String?,
+        album: String?,
+        limit: Int,
+        offset: Int,
+    ): RemoteMusicPage<RemoteMusicTrack> {
+        require(limit in 1..1_000 && offset >= 0) { "Paginação musical inválida" }
+        val builder = base.newBuilder()
+            .addPathSegments("api/music/$endpoint")
+            .addQueryParameter("limit", limit.toString())
+            .addQueryParameter("offset", offset.toString())
+            .addQueryParameter("order_by", "title")
+            .addQueryParameter("order_dir", "asc")
+        search?.trim()?.takeIf { it.isNotEmpty() }?.let { builder.addQueryParameter("search", it) }
+        artist?.takeIf { it.isNotBlank() }?.let { builder.addQueryParameter("artist", it) }
+        album?.takeIf { it.isNotBlank() }?.let { builder.addQueryParameter("album", it) }
+        val url = builder.build()
+        return http.newCall(request(url).get().build()).execute().use { response ->
+            if (!response.isSuccessful) throw httpException(response, "consultar o catálogo musical")
+            val json = JSONObject(response.body.string())
+            val items = json.optJSONArray("items") ?: org.json.JSONArray()
+            val tracks = (0 until items.length()).mapNotNull { index ->
+                parseMusicTrack(items.optJSONObject(index))
+            }
+            RemoteMusicPage(
+                items = tracks,
+                total = json.optInt("total", tracks.size),
+                limit = json.optInt("limit", limit),
+                offset = json.optInt("offset", offset),
+            )
+        }
+    }
+
+    fun listMusicArtists(search: String? = null, limit: Int = 100, offset: Int = 0): RemoteMusicPage<RemoteMusicFacet> = musicFacetPage("artists", search, limit, offset)
+
+    fun listMusicAlbums(search: String? = null, limit: Int = 100, offset: Int = 0): RemoteMusicPage<RemoteMusicFacet> = musicFacetPage("albums", search, limit, offset)
+
+    private fun musicFacetPage(
+        endpoint: String,
+        search: String?,
+        limit: Int,
+        offset: Int,
+    ): RemoteMusicPage<RemoteMusicFacet> {
+        require(limit in 1..1_000 && offset >= 0) { "Paginação de metadados musicais inválida" }
+        val builder = base.newBuilder()
+            .addPathSegments("api/music/$endpoint")
+            .addQueryParameter("limit", limit.toString())
+            .addQueryParameter("offset", offset.toString())
+            .addQueryParameter("order_by", "value")
+            .addQueryParameter("order_dir", "asc")
+        search?.trim()?.takeIf { it.isNotEmpty() }?.let { builder.addQueryParameter("search", it) }
+        return http.newCall(request(builder.build()).get().build()).execute().use { response ->
+            if (!response.isSuccessful) throw httpException(response, "consultar artistas e álbuns")
+            val json = JSONObject(response.body.string())
+            val items = json.optJSONArray("items") ?: org.json.JSONArray()
+            val facets = (0 until items.length()).mapNotNull { index ->
+                val item = items.optJSONObject(index) ?: return@mapNotNull null
+                val value = item.optString("value").takeIf { it.isNotBlank() && it != "null" } ?: return@mapNotNull null
+                RemoteMusicFacet(value, item.optInt("count", 0))
+            }
+            RemoteMusicPage(facets, json.optInt("total", facets.size), json.optInt("limit", limit), json.optInt("offset", offset))
+        }
+    }
+
+    fun listMusicPlaylists(): List<RemoteMusicPlaylist> {
+        val url = base.resolve("api/music/playlists")!!
+        return http.newCall(request(url).get().build()).execute().use { response ->
+            if (!response.isSuccessful) throw httpException(response, "consultar playlists")
+            val array = org.json.JSONArray(response.body.string())
+            (0 until array.length()).mapNotNull { index -> parseMusicPlaylist(array.optJSONObject(index)) }
+        }
+    }
+
+    fun listMusicPlaylistTracks(
+        playlistId: Long,
+        limit: Int = 100,
+        offset: Int = 0,
+    ): RemoteMusicPage<RemoteMusicTrack> {
+        require(playlistId > 0L && limit in 1..1_000 && offset >= 0) { "Playlist ou paginação inválida" }
+        val url = base.newBuilder()
+            .addPathSegments("api/music/playlists/$playlistId/tracks")
+            .addQueryParameter("limit", limit.toString())
+            .addQueryParameter("offset", offset.toString())
+            .addQueryParameter("order_by", "position")
+            .addQueryParameter("order_dir", "asc")
+            .build()
+        return http.newCall(request(url).get().build()).execute().use { response ->
+            if (!response.isSuccessful) throw httpException(response, "consultar faixas da playlist")
+            val json = JSONObject(response.body.string())
+            val items = json.optJSONArray("items") ?: org.json.JSONArray()
+            val tracks = (0 until items.length()).mapNotNull { index -> parseMusicTrack(items.optJSONObject(index)) }
+            RemoteMusicPage(tracks, json.optInt("total", tracks.size), json.optInt("limit", limit), json.optInt("offset", offset))
+        }
+    }
+
+    fun createMusicPlaylist(name: String): RemoteMusicPlaylist {
+        val cleanName = name.trim()
+        require(cleanName.isNotEmpty() && cleanName.length <= 400) { "O nome da playlist deve ter de 1 a 400 caracteres" }
+        val body = JSONObject().put("name", cleanName).put("is_public", false)
+            .toString().toRequestBody("application/json".toMediaType())
+        val url = base.resolve("api/music/playlists")!!
+        return http.newCall(request(url).post(body).build()).execute().use { response ->
+            if (!response.isSuccessful) throw httpException(response, "criar playlist")
+            parseMusicPlaylist(JSONObject(response.body.string())) ?: throw IOException("O RomM retornou uma playlist inválida")
+        }
+    }
+
+    fun deleteMusicPlaylist(playlistId: Long) {
+        require(playlistId > 0L) { "ID de playlist inválido" }
+        val url = base.resolve("api/music/playlists/$playlistId")!!
+        http.newCall(request(url).delete().build()).execute().use { response ->
+            if (!response.isSuccessful) throw httpException(response, "excluir playlist")
+        }
+    }
+
+    fun addMusicFavorites(trackIds: List<Long>) = updateMusicTrackMembership("favorites", trackIds, add = true)
+    fun removeMusicFavorites(trackIds: List<Long>) = updateMusicTrackMembership("favorites", trackIds, add = false)
+
+    fun addMusicPlaylistTracks(playlistId: Long, trackIds: List<Long>) = updateMusicTrackMembership("playlists/$playlistId/tracks", trackIds, add = true)
+
+    fun removeMusicPlaylistTracks(playlistId: Long, trackIds: List<Long>) = updateMusicTrackMembership("playlists/$playlistId/tracks", trackIds, add = false)
+
+    private fun updateMusicTrackMembership(path: String, trackIds: List<Long>, add: Boolean) {
+        require(trackIds.isNotEmpty() && trackIds.all { it > 0L }) { "Selecione pelo menos uma faixa válida" }
+        if (path.startsWith("playlists/")) {
+            require(path.substringAfter('/').substringBefore('/').toLongOrNull()?.let { it > 0L } == true) {
+                "ID de playlist inválido"
+            }
+        }
+        val body = JSONObject().put("rom_file_ids", org.json.JSONArray(trackIds.distinct()))
+            .toString().toRequestBody("application/json".toMediaType())
+        val url = base.resolve("api/music/$path")!!
+        http.newCall(
+            request(url).apply {
+                if (add) post(body) else delete(body)
+            }.build(),
+        ).execute().use { response ->
+            if (!response.isSuccessful) throw httpException(response, if (add) "adicionar faixas" else "remover faixas")
+        }
+    }
+
+    /** Retorna URL e cabeçalhos apenas quando o stream permanece no mesmo host autenticado. */
+    fun musicStreamSource(track: RemoteMusicTrack): Pair<String, Map<String, String>> {
+        val raw = track.streamUrl
+        require(raw.isNotBlank() && !raw.startsWith("//")) { "URL de áudio inválida" }
+        val url = raw.toHttpUrlOrNull() ?: base.resolve(raw.trimStart('/'))
+            ?: throw IOException("O RomM retornou uma URL de áudio inválida")
+        require(url.scheme == base.scheme && url.host == base.host && url.port == base.port && url.username.isEmpty() && url.password.isEmpty()) {
+            "O stream musical aponta para outro servidor; reprodução bloqueada por segurança"
+        }
+        val headers = token?.takeIf { it.isNotBlank() }?.let { mapOf("Authorization" to "Bearer $it") }.orEmpty()
+        return url.toString() to headers
+    }
+
+    private fun parseMusicTrack(item: JSONObject?): RemoteMusicTrack? {
+        item ?: return null
+        val fileId = item.optLong("rom_file_id", -1L)
+        val romId = item.optLong("rom_id", -1L)
+        val fileName = item.optString("file_name").takeIf { it.isNotBlank() && it != "null" }
+        val streamUrl = item.optString("stream_url").takeIf { it.isNotBlank() && it != "null" }
+        if (fileId <= 0L || romId <= 0L || fileName == null || streamUrl == null) return null
+        fun string(name: String) = item.optString(name).takeIf { it.isNotBlank() && it != "null" }
+        fun int(name: String) = if (item.isNull(name)) null else item.optInt(name)
+        val duration = if (item.isNull("duration_seconds")) null else item.optDouble("duration_seconds").takeIf { it > 0.0 }
+        return RemoteMusicTrack(
+            romFileId = fileId,
+            romId = romId,
+            fileName = fileName,
+            title = string("title"),
+            artist = string("artist"),
+            album = string("album"),
+            genre = string("genre"),
+            year = int("year"),
+            trackNumber = int("track"),
+            discNumber = int("disc"),
+            durationSeconds = duration,
+            hasEmbeddedCover = item.optBoolean("has_embedded_cover", false),
+            isFavorite = item.optBoolean("is_favorite", false),
+            gameName = string("game_name"),
+            platformName = string("platform_name").orEmpty(),
+            streamUrl = streamUrl,
+        )
+    }
+
+    private fun parseMusicPlaylist(item: JSONObject?): RemoteMusicPlaylist? {
+        item ?: return null
+        val id = item.optLong("id", -1L)
+        val name = item.optString("name").takeIf { it.isNotBlank() && it != "null" }
+        if (id <= 0L || name == null) return null
+        return RemoteMusicPlaylist(
+            id = id,
+            name = name,
+            description = item.optString("description").takeIf { it.isNotBlank() && it != "null" },
+            isPublic = item.optBoolean("is_public", false),
+            ownerUsername = item.optString("owner_username").takeIf { it != "null" }.orEmpty(),
+            trackCount = item.optInt("track_count", 0),
+        )
     }
 
     /** Extensões anunciadas pelo heartbeat; RomM 5.4.x usa a lista compatível abaixo. */
@@ -2226,6 +2487,8 @@ class RomMClient(private val baseUrl: String, private val token: String?) {
             "firmware.read",
             "devices.read",
             "devices.write",
+            "playlists.read",
+            "playlists.write",
         )
     }
 }

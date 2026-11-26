@@ -159,6 +159,7 @@ private data class PendingSaveConflict(
 
 private enum class GameTab(val label: Int) {
     Library(R.string.game_tab_library),
+    Music(R.string.game_tab_music),
     Achievements(R.string.game_tab_achievements),
     Settings(R.string.game_tab_settings),
 }
@@ -579,6 +580,8 @@ private fun GameModeRoot(refreshKey: Int, onExit: () -> Unit) {
                     targetScreen.key == "scraper" -> ScraperScreen()
 
                     targetScreen.key == "server" -> ServerScreen(remote)
+
+                    targetScreen.key == "tab:Music" -> RomMMusicScreen()
 
                     targetScreen.key == "tab:Settings" -> SettingsScreen(
                         rootPath = rootPath,

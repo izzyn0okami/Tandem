@@ -63,6 +63,7 @@
     <string name="game_session_paused">Em pausa</string>
     <string name="game_session_autosave_note">Salvamento automático a cada minuto</string>
     <string name="game_tab_library">Biblioteca</string>
+    <string name="game_tab_music">Música</string>
     <string name="game_tab_server">Servidor RomM</string>
     <string name="game_tab_achievements">Conquistas</string>
     <string name="game_tab_settings">Configurações</string>
