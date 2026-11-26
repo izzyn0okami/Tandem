@@ -24,7 +24,8 @@ internal class VirtualGamepadView @JvmOverloads constructor(
     context: Context,
     attrs: AttributeSet? = null,
     private val retroView: GLRetroView? = null,
-) : View(context, attrs), InputManager.InputDeviceListener {
+) : View(context, attrs),
+    InputManager.InputDeviceListener {
 
     private enum class Control {
         DPAD,
