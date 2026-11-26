@@ -90,22 +90,74 @@ class CoreInstallerTest {
     }
 
     @Test
-    fun removesResidualBackupWhenTargetIsAlreadyValid() {
-        val directory = Files.createTempDirectory("core-recovery-residual").toFile()
+    fun restoresConfirmedBackupWhenTargetContainsUncommittedValidCore() {
+        val directory = Files.createTempDirectory("core-recovery-confirmed-backup").toFile()
         val target = File(directory, "core.so")
         val backup = File(directory, "core.so.backup")
         try {
-            writeArm64Elf(target)
-            writeArm64Elf(backup)
-            CoreInstaller.recoverBackup(target, backup)
-            assertTrue(CoreInstaller.isArm64Elf(target))
+            writeArm64Elf(target, 2)
+            writeArm64Elf(backup, 1)
+            val confirmedDigest = CoreInstaller.sha256(backup)
+            CoreInstaller.recoverBackup(target, backup, confirmedDigest)
+            assertEquals(confirmedDigest, CoreInstaller.sha256(target))
             assertFalse(backup.exists())
         } finally {
             directory.deleteRecursively()
         }
     }
 
-    private fun writeArm64Elf(file: File) {
+    @Test
+    fun removesBackupWhenTargetMatchesConfirmedDigest() {
+        val directory = Files.createTempDirectory("core-recovery-confirmed-target").toFile()
+        val target = File(directory, "core.so")
+        val backup = File(directory, "core.so.backup")
+        try {
+            writeArm64Elf(target, 1)
+            writeArm64Elf(backup, 2)
+            val confirmedDigest = CoreInstaller.sha256(target)
+            CoreInstaller.recoverBackup(target, backup, confirmedDigest)
+            assertEquals(confirmedDigest, CoreInstaller.sha256(target))
+            assertFalse(backup.exists())
+        } finally {
+            directory.deleteRecursively()
+        }
+    }
+
+    @Test
+    fun preservesBothValidFilesWhenConfirmedDigestIsUnavailable() {
+        val directory = Files.createTempDirectory("core-recovery-unknown-digest").toFile()
+        val target = File(directory, "core.so")
+        val backup = File(directory, "core.so.backup")
+        try {
+            writeArm64Elf(target, 1)
+            writeArm64Elf(backup, 2)
+            val targetDigest = CoreInstaller.sha256(target)
+            val backupDigest = CoreInstaller.sha256(backup)
+            CoreInstaller.recoverBackup(target, backup, null)
+            assertEquals(targetDigest, CoreInstaller.sha256(target))
+            assertEquals(backupDigest, CoreInstaller.sha256(backup))
+        } finally {
+            directory.deleteRecursively()
+        }
+    }
+
+    @Test
+    fun restoresBackupMatchingConfirmedDigestWhenTargetIsMissing() {
+        val directory = Files.createTempDirectory("core-recovery-missing-digest").toFile()
+        val target = File(directory, "core.so")
+        val backup = File(directory, "core.so.backup")
+        try {
+            writeArm64Elf(backup, 1)
+            val confirmedDigest = CoreInstaller.sha256(backup)
+            CoreInstaller.recoverBackup(target, backup, confirmedDigest)
+            assertEquals(confirmedDigest, CoreInstaller.sha256(target))
+            assertFalse(backup.exists())
+        } finally {
+            directory.deleteRecursively()
+        }
+    }
+
+    private fun writeArm64Elf(file: File, marker: Int = 0) {
         val header = ByteArray(20)
         header[0] = 0x7F
         header[1] = 'E'.code.toByte()
@@ -114,7 +166,7 @@ class CoreInstallerTest {
         header[4] = 2
         header[5] = 1
         header[18] = 183.toByte()
-        file.writeBytes(header)
+        file.writeBytes(header + byteArrayOf(marker.toByte()))
     }
 
 }
