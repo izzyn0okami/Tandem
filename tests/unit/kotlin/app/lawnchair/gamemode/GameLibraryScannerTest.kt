@@ -10,12 +10,10 @@ import org.junit.Test
 class GameLibraryScannerTest {
 
     private lateinit var root: File
-    private lateinit var psx: GamePlatform
 
     @Before
     fun setUp() {
         root = Files.createTempDirectory("tandem-game-library").toFile()
-        psx = checkNotNull(GamePlatforms.bySlug("psx"))
     }
 
     @After
