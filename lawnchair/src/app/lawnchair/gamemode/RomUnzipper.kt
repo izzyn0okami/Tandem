@@ -13,6 +13,10 @@ import java.util.zip.ZipFile
  */
 object RomUnzipper {
 
+    // ROMs retro e imagens de disco suportadas pelo Libretro cabem com ampla margem neste limite.
+    // Evita que um ZIP malicioso ou danificado tente esgotar o armazenamento do dispositivo.
+    private const val MAX_ROM_SIZE_BYTES = 8L * 1024 * 1024 * 1024
+
     fun prepare(context: Context, romPath: String, platform: GamePlatform?): File = prepare(File(romPath), platform, context.cacheDir)
 
     /** Separado do Context Android para validar a política de ZIPs em testes unitários. */
@@ -44,6 +48,9 @@ object RomUnzipper {
         }
         val entry = candidates.single()
         require(entry.size >= 0L) { "A entrada ${entry.name} não informa um tamanho válido." }
+        require(entry.size <= MAX_ROM_SIZE_BYTES) {
+            "A ROM de ${entry.name} excede o limite seguro de ${MAX_ROM_SIZE_BYTES / (1024 * 1024)} MB."
+        }
         require(entry.crc >= 0L) { "A entrada ${entry.name} não informa um CRC válido." }
 
         val root = File(cacheDir, "unzipped")
