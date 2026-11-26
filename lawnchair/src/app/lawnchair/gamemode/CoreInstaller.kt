@@ -27,7 +27,7 @@ object CoreInstaller {
     )
 
     internal fun artifact(coreId: String): CoreArtifact {
-        require(coreId.matches(Regex("[a-zA-Z0-9_]+"))) { "Identificador de núcleo inválido" }
+        require(coreId.matches(Regex("[a-zA-Z0-9_-]+"))) { "Identificador de núcleo inválido" }
         return specialArtifacts[coreId]
             ?: CoreArtifact("${coreId}_libretro_android.so.zip", "${coreId}_libretro_android.so")
     }
