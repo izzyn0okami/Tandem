@@ -586,3 +586,21 @@ ATUALIZAÇÃO — LIMITE DE EXTRAÇÃO ZIP E CIs #1592–#1594 — 2026-11-26
 - [ ] Revisar e testar recuperação/rollback do instalador de núcleos (CoreInstaller).
 - [ ] Validar no aparelho casos específicos de ZIP e recuperação de cache, além dos testes automatizados.
 - PR #57 permanece aberta e draft, sem merge ou publicação em tandem-latest; PR #41 permanece intocada.
+
+
+ATUALIZAÇÃO — RECUPERAÇÃO DO INSTALADOR DE NÚCLEOS E CIs — 2026-11-26
+- [x] CoreInstaller agora verifica destino e backup antes de iniciar uma nova instalação.
+- [x] Se o destino estiver ausente ou não passar na validação ELF ARM64 e o backup for válido, o backup é restaurado.
+- [x] Se o destino já for válido, backup residual de uma promoção concluída é removido.
+- [x] Se destino e backup forem inválidos, ambos são preservados para diagnóstico até que um novo pacote validado esteja pronto para substituição.
+- [x] Testes unitários adicionados para backup válido com destino ausente, backup válido com destino inválido e backup residual com destino válido.
+- [x] CI #1598 — https://github.com/izzyn0okami/Tandem/actions/runs/45856337891 — sucesso: check-style, testes unitários e build APK.
+- [x] CI #1599 — https://github.com/izzyn0okami/Tandem/actions/runs/45856408145 — sucesso: check-style, testes unitários e build APK.
+- [x] CI #1601 — https://github.com/izzyn0okami/Tandem/actions/runs/45856579102 — sucesso no commit 79ac5535b57131a891075c02fcff589d9861dca9; check-style, testes unitários e build APK.
+- [ ] CI #1602 — https://github.com/izzyn0okami/Tandem/actions/runs/45856653958 — o build APK passou, mas check-style não conseguiu resolver o plugin KSP 2.3.13; falha de resolução de dependência no ambiente CI, sem erro de formatação identificado. Job check-style reenviado para nova tentativa.
+- [ ] CI #1600 — https://github.com/izzyn0okami/Tandem/actions/runs/45856427780 — build APK passou; push automático do commit Spotless foi rejeitado por non-fast-forward devido a atualização concorrente da branch. A execução posterior #1601 passou.
+- [ ] CI #1603 terminou action_required por aprovação de workflow; não foi considerada validação nem falha de compilação.
+- [x] Jobs tandem-release e nightly-release ignorados nas CIs de PR; nenhuma publicação em tandem-latest.
+- [ ] Teste funcional no aparelho para instalação interrompida/recuperação de backup permanece pendente.
+- [ ] Revisar demais caminhos de rollback, falha de rede, ZIP de núcleo inválido e consistência dos metadados SHA-256/ETag após interrupção.
+- PR #57 permanece aberta e draft, sem merge ou publicação em tandem-latest; PR #41 permanece intocada.
