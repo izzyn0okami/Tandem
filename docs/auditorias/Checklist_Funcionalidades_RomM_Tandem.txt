@@ -80,7 +80,7 @@ G. RECURSOS ESPECIALIZADOS
 [FORA DO ESCOPO — DECISÃO DO USUÁRIO] G3. Streaming remoto do RomM; não implementar nesta etapa.
 [FORA DO ESCOPO — DECISÃO DO USUÁRIO] G4. Netplay; não implementar nesta etapa.
 [AUDITADO — LIMITAÇÃO TÉCNICA] G5. Memory cards: API dedicada RomM é orientada a cartões PCSX2/Dolphin em ZIP; runtime atual LibretroDroid não fornece conversão/semântica compatível. Preservar Device Sync E9; expansão depende de runtime/conversor compatível.
-[EM IMPLEMENTAÇÃO — PR #56] G6. Música, artistas, álbuns, favoritos e playlists; catálogo nativo e reprodução por stream HTTP autenticado.
+[IMPLEMENTADO — CI APROVADA; TESTE NO APARELHO PENDENTE] G6. Música, artistas, álbuns, favoritos e playlists; catálogo nativo e reprodução por stream HTTP autenticado. PR #56, CI #1398 aprovada.
 [AUDITADO — SEM IMPLEMENTAÇÃO] G7. Socket.IO: /ws geral exige sessão web para eventos privados; /devices aceita token de dispositivo + devices.read. G6 funciona por REST/HTTP e não requer socket persistente; não adicionar conexão em background.
 [FORA DO ESCOPO — DECISÃO DO USUÁRIO] G8. Administração de usuários, permissões e grupos; não implementar nesta etapa.
 
@@ -1842,6 +1842,15 @@ Branch: feat/romm-stage-g-music; base: game-mode-m2-dev.
 - [PERMISSÕES] O pareamento por dispositivo passa a solicitar playlists.read e playlists.write, além dos scopes existentes. Tokens manuais precisam conter esses scopes para favoritos e playlists; HTTP 403 permanece visível e orienta a revisar/renovar a autorização. A leitura do catálogo usa roms.read.
 - [LIMITAÇÃO DE FORMATO] O player Android aceita MP3, OGG/OGA, Opus, M4A, AAC, WAV e FLAC. Formatos de console SPC/VGM/VGZ/GYM aparecem no catálogo, mas não são iniciados pelo MediaPlayer nativo; suporte exigiria motor GME separado e não foi presumido.
 - [NÃO IMPLEMENTADO] Não foi adicionada reprodução em segundo plano, notificação MediaSession, download offline, edição/ordenação de playlists ou sockets. O player encerra ao sair da tela Jukebox.
-- [PENDENTE — CI] Aguardar CI da PR #56; não presumir compilação/testes aprovados antes do resultado.
-- [PENDENTE — TESTE NO APARELHO] Validar com a instância RomM do usuário: catálogo, pesquisa, artistas/álbuns, reprodução de formatos suportados, foco/pausa, favoritos, criar playlist, adicionar/remover faixa e exclusão confirmada. Confirmar autorização playlists.read/write.
+- [CONCLUÍDO — CI] CI #1398 (run 45724342968), head 7e2d2e25754e26d9ca0faf116ad535a8227969e2: check-style SUCCESS; build-debug-apk SUCCESS (testes unitários, compilação assembleLawnWithQuickstepGithubDebug e upload do artefato); final-status SUCCESS. Execução #1397 também concluiu com sucesso após Spotless automático.
+- [PENDENTE — TESTE NO APARELHO] Validar com a instância RomM do usuário: catálogo, pesquisa, artistas/álbuns, reprodução de formatos suportados, foco/pausa, favoritos, criar playlist, adicionar/remover faixa e exclusão confirmada. Confirmar autorização playlists.read/write. CI aprovada não substitui esses testes reais.
 - [GOVERNANÇA] PR #56 permanece aberta e sem merge; nenhum APK foi publicado em latest/release e nenhum dado da instância RomM pessoal foi acessado ou alterado durante a implementação.
+
+
+VALIDAÇÃO DE CI — ESTÁGIO G6 / PR #56 (2026-11-25)
+- [CONCLUÍDO — CI] CI #1398: https://github.com/izzyn0okami/Tandem/actions/runs/45724342968 — run 45724342968, evento workflow_dispatch, head 7e2d2e25754e26d9ca0faf116ad535a8227969e2; check-style SUCCESS; build-debug-apk SUCCESS; final-status SUCCESS.
+- [CONCLUÍDO — TESTES AUTOMATIZADOS] Etapa Run unit tests concluída com sucesso.
+- [CONCLUÍDO — COMPILAÇÃO] Build APK assembleLawnWithQuickstepGithubDebug concluído com sucesso; artefato enviado ao Actions.
+- [CONCLUÍDO — FORMATAÇÃO] Spotless automático e verificação final concluídos com sucesso. O commit de formatação foi incluído no head validado.
+- [PENDENTE — TESTE NO APARELHO] Catálogo, busca, facetas de artista/álbum, streaming real, foco de áudio, favoritos e operações de playlist; confirmar scopes playlists.read e playlists.write.
+- [GOVERNANÇA] PR #56 segue aberta, draft e sem merge. Não instalar APK de PR sobre tandem-latest, pois builds de PR não recebem a chave de assinatura de publicação. Latest permanece inalterada; aguarda teste do usuário e autorização explícita para merge.
