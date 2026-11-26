@@ -36,6 +36,7 @@ object CoreRegistry {
         ),
         "amstradcpc" to listOf(
             core("cap32", "Caprice32", "Amstrad CPC"),
+            core("crocods", "CrocoDS", "Alternativa Amstrad CPC"),
         ),
         "ps2" to listOf(
             core("pcee2", "PCEE2", "PCSX2 ARM64 experimental; Vulkan/OpenGL; saves, states e memory monitoring"),
@@ -235,6 +236,11 @@ object CoreRegistry {
             core("bluemsx", "blueMSX", "Padrão"),
             core("openmsx", "openMSX", "Alternativa de alta precisão"),
         ),
+        "thomson" to listOf(core("theodore", "Theodore", "Thomson MO/TO")),
+        "dingoo" to listOf(core("dingooemu", "DingooEmu", "Dingoo A320")),
+        "gametank" to listOf(core("gametank", "GameTank", "Clydeware GameTank")),
+        "vircon32" to listOf(core("vircon32", "Vircon32", "Virtual 32-bit console")),
+        "pocketstation" to listOf(core("pokketstation", "PokketStation", "Sony PocketStation; loads memory-card dumps")),
         "c128" to listOf(core("vice_x128", "VICE x128", "Commodore 128")),
         "vic20" to listOf(core("vice_xvic", "VICE xvic", "Commodore VIC-20")),
         "pet" to listOf(core("vice_xpet", "VICE xpet", "Commodore PET")),
