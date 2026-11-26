@@ -183,6 +183,29 @@ class BiosManagerTest {
     }
 
     @Test
+    fun advancedCoreKitsRequireTheirActualSystemStructure() {
+        val ps2 = GamePlatforms.all.single { it.slug == "ps2" }
+        val ps2Kit = File(root, "pcsx2").apply { mkdirs() }
+        assertFalse(BiosManager.kitContentsReady(ps2, "pcsx2", ps2Kit))
+        File(ps2Kit, "bios/scph10000.bin").apply { parentFile?.mkdirs(); writeText("bios") }
+        assertTrue(BiosManager.kitContentsReady(ps2, "pcsx2", ps2Kit))
+
+        val vita = GamePlatforms.all.single { it.slug == "vita" }
+        val vitaKit = File(root, "vita3k").apply { mkdirs() }
+        File(vitaKit, "PSP2UPDAT.PUP").writeText("firmware")
+        File(vitaKit, "data/data.bin").apply { parentFile?.mkdirs(); writeText("data") }
+        File(vitaKit, "shaders-builtin/shader.bin").apply { parentFile?.mkdirs(); writeText("shader") }
+        assertFalse(BiosManager.kitContentsReady(vita, "vita3k", vitaKit))
+        File(vitaKit, "preinst_fresh.pup").writeText("preinstalled firmware")
+        assertTrue(BiosManager.kitContentsReady(vita, "vita3k", vitaKit))
+
+        val dolphin = GamePlatforms.all.single { it.slug == "gc" }
+        val dolphinKit = File(root, "dolphin-emu").apply { mkdirs() }
+        File(dolphinKit, "Sys/GC/font.bin").apply { parentFile?.mkdirs(); writeText("sys") }
+        assertTrue(BiosManager.kitContentsReady(dolphin, "dolphin-emu", dolphinKit))
+    }
+
+    @Test
     fun deviceCapabilityParserKeepsOnlyExplicitBooleanValues() {
         val parsed = parseDeclaredDeviceCapabilities(
             mapOf("remote_install" to true, "save_sync" to false, "label" to "unknown"),
