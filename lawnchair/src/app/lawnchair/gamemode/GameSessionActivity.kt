@@ -495,6 +495,8 @@ class GameSessionActivity : ComponentActivity() {
         raIdleJob = null
     }
 
+    // Serializa o autosave periódico com a persistência disparada por pausa/encerramento.
+    @Synchronized
     private fun persistSram() {
         val view = retroView ?: return
         val store = saveStore ?: return
