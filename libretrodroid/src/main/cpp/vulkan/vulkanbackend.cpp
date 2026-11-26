@@ -428,23 +428,52 @@ bool VulkanBackend::loadInstanceFunctions() {
         load("vkGetPhysicalDeviceFeatures"));
     vk.createDevice = reinterpret_cast<PFN_vkCreateDevice>(load("vkCreateDevice"));
     vk.getDeviceProcAddr = reinterpret_cast<PFN_vkGetDeviceProcAddr>(load("vkGetDeviceProcAddr"));
-    return vk.destroyInstance && vk.enumeratePhysicalDevices && vk.createDevice && vk.getDeviceProcAddr;
+    return vk.destroyInstance && vk.enumeratePhysicalDevices && vk.getPhysicalDeviceProperties &&
+           vk.getPhysicalDeviceQueueFamilyProperties && vk.enumerateDeviceExtensionProperties &&
+           vk.getPhysicalDeviceFeatures && vk.createDevice && vk.getDeviceProcAddr;
 }
 
 bool VulkanBackend::pickPhysicalDevice() {
     uint32_t count = 0;
-    vk.enumeratePhysicalDevices(instance, &count, nullptr);
-    if (count == 0) return false;
-    std::vector<VkPhysicalDevice> devices(count);
-    vk.enumeratePhysicalDevices(instance, &count, devices.data());
-    gpu = devices.front();
+    VkResult result = vk.enumeratePhysicalDevices(instance, &count, nullptr);
+    if ((result != VK_SUCCESS && result != VK_INCOMPLETE) || count == 0) {
+        LOGE("Vulkan physical-device enumeration failed: result=%d count=%u", result, count);
+        return false;
+    }
 
-    VkPhysicalDeviceProperties properties {};
-    vk.getPhysicalDeviceProperties(gpu, &properties);
-    LOGI("Vulkan device: %s (api %u.%u.%u, driver %u)", properties.deviceName,
-         VK_API_VERSION_MAJOR(properties.apiVersion), VK_API_VERSION_MINOR(properties.apiVersion),
-         VK_API_VERSION_PATCH(properties.apiVersion), properties.driverVersion);
-    return true;
+    std::vector<VkPhysicalDevice> devices(count);
+    result = vk.enumeratePhysicalDevices(instance, &count, devices.data());
+    if ((result != VK_SUCCESS && result != VK_INCOMPLETE) || count == 0) {
+        LOGE("Vulkan physical-device list could not be read: result=%d count=%u", result, count);
+        return false;
+    }
+    devices.resize(count);
+
+    const auto required = requiredDeviceExtensions();
+    for (VkPhysicalDevice candidate : devices) {
+        uint32_t extensionCount = 0;
+        result = vk.enumerateDeviceExtensionProperties(candidate, nullptr, &extensionCount, nullptr);
+        if (result != VK_SUCCESS && result != VK_INCOMPLETE) continue;
+        std::vector<VkExtensionProperties> available(extensionCount);
+        result = vk.enumerateDeviceExtensionProperties(candidate, nullptr, &extensionCount, available.data());
+        if (result != VK_SUCCESS && result != VK_INCOMPLETE) continue;
+
+        const bool compatible = std::all_of(required.begin(), required.end(), [&available](const char* name) {
+            return hasExtension(available, name);
+        });
+        if (!compatible) continue;
+
+        gpu = candidate;
+        VkPhysicalDeviceProperties properties {};
+        vk.getPhysicalDeviceProperties(gpu, &properties);
+        LOGI("Vulkan device: %s (api %u.%u.%u, driver %u)", properties.deviceName,
+             VK_API_VERSION_MAJOR(properties.apiVersion), VK_API_VERSION_MINOR(properties.apiVersion),
+             VK_API_VERSION_PATCH(properties.apiVersion), properties.driverVersion);
+        return true;
+    }
+
+    LOGE("No Vulkan physical device supports all required frame-export extensions");
+    return false;
 }
 
 VkDevice VulkanBackend::createDeviceWrapper(VkPhysicalDevice physicalDevice, void* opaque,
@@ -605,7 +634,11 @@ bool VulkanBackend::loadDeviceFunctions() {
     vk.getAndroidHardwareBufferProperties = reinterpret_cast<PFN_vkGetAndroidHardwareBufferPropertiesANDROID>(
         load("vkGetAndroidHardwareBufferPropertiesANDROID"));
 
-    return vk.destroyDevice && vk.queueSubmit && vk.cmdBlitImage && vk.cmdClearColorImage && vk.createImage &&
+    return vk.destroyDevice && vk.getDeviceQueue && vk.deviceWaitIdle && vk.createCommandPool &&
+           vk.destroyCommandPool && vk.allocateCommandBuffers && vk.beginCommandBuffer && vk.endCommandBuffer &&
+           vk.resetCommandBuffer && vk.cmdPipelineBarrier && vk.cmdBlitImage && vk.cmdClearColorImage &&
+           vk.createFence && vk.destroyFence && vk.waitForFences && vk.resetFences && vk.queueSubmit &&
+           vk.createImage && vk.destroyImage && vk.allocateMemory && vk.freeMemory && vk.bindImageMemory &&
            vk.getAndroidHardwareBufferProperties;
 }
 
