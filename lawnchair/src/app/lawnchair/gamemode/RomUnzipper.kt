@@ -13,11 +13,16 @@ import java.util.zip.ZipFile
  */
 object RomUnzipper {
 
-    fun prepare(context: Context, romPath: String, platform: GamePlatform?): File {
-        val rom = File(romPath)
-        if (!rom.extension.equals("zip", ignoreCase = true) || platform?.discBased == true || platform?.zipIsNativeRom == true) return rom
+    fun prepare(context: Context, romPath: String, platform: GamePlatform?): File =
+        prepare(File(romPath), platform, context.cacheDir)
+
+    /** Separado do Context Android para validar a política de ZIPs em testes unitários. */
+    internal fun prepare(rom: File, platform: GamePlatform?, cacheDir: File): File {
+        if (!rom.extension.equals("zip", ignoreCase = true) || platform?.discBased == true || platform?.zipIsNativeRom == true) {
+            return rom
+        }
         return try {
-            extract(rom, platform?.extensions.orEmpty(), context.cacheDir)
+            extract(rom, platform?.extensions.orEmpty(), cacheDir)
                 ?: throw IllegalArgumentException("O arquivo ${rom.name} não contém uma ROM compatível.")
         } catch (error: IllegalArgumentException) {
             GameLog.error("jogo", "arquivo ZIP inválido ou ambíguo: ${rom.name}", error)
