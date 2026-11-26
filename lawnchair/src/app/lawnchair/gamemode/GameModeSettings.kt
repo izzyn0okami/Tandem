@@ -24,43 +24,37 @@ object GameModeSettings {
     private const val KEY_VIRTUAL_GAMEPAD_OFFSET_X = "virtual_gamepad_offset_x"
     private const val KEY_VIRTUAL_GAMEPAD_OFFSET_Y = "virtual_gamepad_offset_y"
 
-    fun isVirtualGamepadEnabled(context: Context): Boolean =
-        context.getSharedPreferences(FILE, Context.MODE_PRIVATE).getBoolean(KEY_VIRTUAL_GAMEPAD_ENABLED, true)
+    fun isVirtualGamepadEnabled(context: Context): Boolean = context.getSharedPreferences(FILE, Context.MODE_PRIVATE).getBoolean(KEY_VIRTUAL_GAMEPAD_ENABLED, true)
 
     fun setVirtualGamepadEnabled(context: Context, enabled: Boolean) {
         context.getSharedPreferences(FILE, Context.MODE_PRIVATE).edit { putBoolean(KEY_VIRTUAL_GAMEPAD_ENABLED, enabled) }
     }
 
-    fun isVirtualGamepadAutoHideEnabled(context: Context): Boolean =
-        context.getSharedPreferences(FILE, Context.MODE_PRIVATE).getBoolean(KEY_VIRTUAL_GAMEPAD_AUTO_HIDE, true)
+    fun isVirtualGamepadAutoHideEnabled(context: Context): Boolean = context.getSharedPreferences(FILE, Context.MODE_PRIVATE).getBoolean(KEY_VIRTUAL_GAMEPAD_AUTO_HIDE, true)
 
     fun setVirtualGamepadAutoHideEnabled(context: Context, enabled: Boolean) {
         context.getSharedPreferences(FILE, Context.MODE_PRIVATE).edit { putBoolean(KEY_VIRTUAL_GAMEPAD_AUTO_HIDE, enabled) }
     }
 
-    fun virtualGamepadOpacity(context: Context): Float =
-        context.getSharedPreferences(FILE, Context.MODE_PRIVATE).getFloat(KEY_VIRTUAL_GAMEPAD_OPACITY, 0.76f).coerceIn(0.25f, 1f)
+    fun virtualGamepadOpacity(context: Context): Float = context.getSharedPreferences(FILE, Context.MODE_PRIVATE).getFloat(KEY_VIRTUAL_GAMEPAD_OPACITY, 0.76f).coerceIn(0.25f, 1f)
 
     fun setVirtualGamepadOpacity(context: Context, value: Float) {
         context.getSharedPreferences(FILE, Context.MODE_PRIVATE).edit { putFloat(KEY_VIRTUAL_GAMEPAD_OPACITY, value.coerceIn(0.25f, 1f)) }
     }
 
-    fun virtualGamepadScale(context: Context): Float =
-        context.getSharedPreferences(FILE, Context.MODE_PRIVATE).getFloat(KEY_VIRTUAL_GAMEPAD_SCALE, 1f).coerceIn(0.7f, 1.3f)
+    fun virtualGamepadScale(context: Context): Float = context.getSharedPreferences(FILE, Context.MODE_PRIVATE).getFloat(KEY_VIRTUAL_GAMEPAD_SCALE, 1f).coerceIn(0.7f, 1.3f)
 
     fun setVirtualGamepadScale(context: Context, value: Float) {
         context.getSharedPreferences(FILE, Context.MODE_PRIVATE).edit { putFloat(KEY_VIRTUAL_GAMEPAD_SCALE, value.coerceIn(0.7f, 1.3f)) }
     }
 
-    fun virtualGamepadOffsetX(context: Context): Float =
-        context.getSharedPreferences(FILE, Context.MODE_PRIVATE).getFloat(KEY_VIRTUAL_GAMEPAD_OFFSET_X, 0f).coerceIn(-0.08f, 0.08f)
+    fun virtualGamepadOffsetX(context: Context): Float = context.getSharedPreferences(FILE, Context.MODE_PRIVATE).getFloat(KEY_VIRTUAL_GAMEPAD_OFFSET_X, 0f).coerceIn(-0.08f, 0.08f)
 
     fun setVirtualGamepadOffsetX(context: Context, value: Float) {
         context.getSharedPreferences(FILE, Context.MODE_PRIVATE).edit { putFloat(KEY_VIRTUAL_GAMEPAD_OFFSET_X, value.coerceIn(-0.08f, 0.08f)) }
     }
 
-    fun virtualGamepadOffsetY(context: Context): Float =
-        context.getSharedPreferences(FILE, Context.MODE_PRIVATE).getFloat(KEY_VIRTUAL_GAMEPAD_OFFSET_Y, 0f).coerceIn(-0.08f, 0.08f)
+    fun virtualGamepadOffsetY(context: Context): Float = context.getSharedPreferences(FILE, Context.MODE_PRIVATE).getFloat(KEY_VIRTUAL_GAMEPAD_OFFSET_Y, 0f).coerceIn(-0.08f, 0.08f)
 
     fun setVirtualGamepadOffsetY(context: Context, value: Float) {
         context.getSharedPreferences(FILE, Context.MODE_PRIVATE).edit { putFloat(KEY_VIRTUAL_GAMEPAD_OFFSET_Y, value.coerceIn(-0.08f, 0.08f)) }

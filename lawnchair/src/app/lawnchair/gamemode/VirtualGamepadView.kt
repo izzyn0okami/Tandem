@@ -288,7 +288,6 @@ internal class VirtualGamepadView @JvmOverloads constructor(
             event.actionMasked == MotionEvent.ACTION_CANCEL
     }
 
-
     /**
      * A View overlay receives the entire multitouch stream once a virtual control owns the first
      * pointer. Forward only pointers that began outside controls so DS touchscreen input remains usable.
@@ -387,5 +386,4 @@ internal class VirtualGamepadView @JvmOverloads constructor(
     }
 
     private fun dp(value: Float): Float = value * density
-
 }
