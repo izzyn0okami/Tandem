@@ -54,6 +54,7 @@ internal class VirtualGamepadView @JvmOverloads constructor(
     private var rightX = 0f
     private var rightY = 0f
     private var registered = false
+    private var menuOpen = false
 
     init {
         isClickable = true
@@ -83,6 +84,11 @@ internal class VirtualGamepadView @JvmOverloads constructor(
     override fun onInputDeviceRemoved(deviceId: Int) = updateControllerVisibility()
     override fun onInputDeviceChanged(deviceId: Int) = updateControllerVisibility()
 
+    internal fun setMenuOpen(open: Boolean) {
+        menuOpen = open
+        updateControllerVisibility()
+    }
+
     private fun updateControllerVisibility() {
         val physicalPadConnected = InputDevice.getDeviceIds().any { id ->
             val device = InputDevice.getDevice(id)
@@ -92,7 +98,7 @@ internal class VirtualGamepadView @JvmOverloads constructor(
                 )
         }
         val hideForPhysicalPad = prefs.getBoolean(KEY_AUTO_HIDE, true) && physicalPadConnected
-        val shouldShow = prefs.getBoolean(KEY_ENABLED, true) && !hideForPhysicalPad
+        val shouldShow = prefs.getBoolean(KEY_ENABLED, true) && !hideForPhysicalPad && !menuOpen
         val newVisibility = if (shouldShow) VISIBLE else GONE
         if (visibility != newVisibility) {
             if (newVisibility != VISIBLE) releaseAll()
