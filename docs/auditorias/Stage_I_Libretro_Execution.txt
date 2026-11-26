@@ -162,3 +162,12 @@ I12 — CONFERÊNCIA DE DISPONIBILIDADE DE NÚCLEOS — 2026-11-26
 - [ ] Completar conferência individual de todos os IDs do catálogo; a amostra não equivale a auditoria integral.
 - [ ] Validar compatibilidade funcional no aparelho; presença do pacote não comprova funcionamento com cada plataforma/jogo/BIOS.
 - Fonte consultada: índice público https://buildbot.libretro.com/nightly/android/latest/arm64-v8a/ (consulta em 2026-11-26).
+
+
+I11 — REVISÃO DE METADADOS DE ATUALIZAÇÃO — 2026-11-26
+- [x] Corrigida a comparação de Last-Modified: o horário local do arquivo não é mais usado como se fosse timestamp do Buildbot.
+- [x] Quando o servidor não fornece Last-Modified/ETag comparáveis com o registro instalado, updateAvailable retorna estado desconhecido (null), evitando declarar falsamente que não existe atualização.
+- [x] Metadados ausentes são removidos em vez de receber timestamp local artificial.
+- [x] Instalador agora rejeita ZIP de núcleo que contenha entradas adicionais além da biblioteca esperada.
+- [ ] Testes automatizados de rollback e metadados HTTP ainda pendentes.
+- [ ] Aguardar CI da cabeça atual, incluindo os novos testes CoreInstaller e GameLibraryScanner.
