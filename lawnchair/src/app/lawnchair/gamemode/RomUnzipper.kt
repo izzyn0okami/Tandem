@@ -62,7 +62,9 @@ object RomUnzipper {
         // O tamanho sozinho não identifica uma ROM: outra versão pode ter exatamente os mesmos bytes.
         // Reutilize o cache apenas quando os metadados da entrada ZIP também forem idênticos.
         if (out.isFile && out.length() == entry.size && metadata.isFile &&
-            runCatching { metadata.readText() == sourceSignature }.getOrDefault(false)
+            runCatching {
+                metadata.readText() == sourceSignature && crcMatches(out, entry.crc)
+            }.getOrDefault(false)
         ) {
             return out
         }
@@ -137,6 +139,19 @@ object RomUnzipper {
 
         GameLog.log("jogo", "extraído de ${rom.name}: ${entry.name} (${out.length() / 1024} KB; CRC verificado)")
         out
+    }
+
+    private fun crcMatches(file: File, expected: Long): Boolean {
+        val crc = CRC32()
+        file.inputStream().buffered().use { input ->
+            val buffer = ByteArray(64 * 1024)
+            while (true) {
+                val read = input.read(buffer)
+                if (read < 0) break
+                crc.update(buffer, 0, read)
+            }
+        }
+        return crc.value == expected
     }
 
     /** Bloqueia nomes absolutos, traversal e segmentos vazios/dot antes de aceitar a entrada. */
