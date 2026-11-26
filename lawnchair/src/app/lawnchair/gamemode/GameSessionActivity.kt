@@ -541,7 +541,10 @@ class GameSessionActivity : ComponentActivity() {
         val store = saveStore ?: return
         val saved = runCatching {
             val (emuState, raProgress) = view.serializeStateWithAchievements()
-            if (emuState == null) return@runCatching false
+            if (emuState == null) {
+                GameLog.log("saves", "núcleo não forneceu estado rápido serializável")
+                return@runCatching false
+            }
             val payload = if (raProgress != null) {
                 val header = "TNDM".toByteArray(Charsets.US_ASCII)
                 val len = raProgress.size
@@ -570,7 +573,15 @@ class GameSessionActivity : ComponentActivity() {
             return
         }
         val view = retroView ?: return
-        val payload = saveStore?.readState() ?: return
+        val payload = runCatching { saveStore?.readState() }
+            .onFailure { GameLog.error("saves", "falha ao ler arquivo de estado rápido", it) }
+            .getOrNull()
+        if (payload == null) {
+            GameLog.log("saves", "carregamento solicitado, mas não há estado rápido legível")
+            toast(R.string.game_session_state_load_failed)
+            setMenu(false)
+            return
+        }
         var emuState = payload
         var raProgress: ByteArray? = null
         val marker = "TNDM".toByteArray(Charsets.US_ASCII)
@@ -582,6 +593,7 @@ class GameSessionActivity : ComponentActivity() {
             val emuSize = payload.size - 8 - len
             if (len < 0 || emuSize <= 0) {
                 // Cabeçalho corrompido ou pacote truncado: não entrega o conteúdo ao núcleo.
+                GameLog.log("saves", "estado rápido rejeitado: cabeçalho TNDM inválido ou payload truncado (len=$len, total=${payload.size})")
                 toast(R.string.game_session_state_load_failed)
                 setMenu(false)
                 return
@@ -592,6 +604,7 @@ class GameSessionActivity : ComponentActivity() {
         val loaded = runCatching { view.unserializePersistedStateWithAchievements(emuState, raProgress) }
             .onFailure { GameLog.error("saves", "falha ao carregar estado rápido", it) }
             .getOrDefault(false)
+        if (!loaded) GameLog.log("saves", "núcleo recusou o estado rápido; sessão continuou sem restaurá-lo")
         toast(if (loaded) R.string.game_session_state_loaded else R.string.game_session_state_load_failed)
         setMenu(false)
     }
