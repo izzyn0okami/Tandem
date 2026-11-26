@@ -1,14 +1,17 @@
 package app.lawnchair.gamemode
 
+import java.io.ByteArrayOutputStream
 import java.io.File
 import java.nio.file.Files
 import java.util.zip.ZipEntry
+import java.util.zip.CRC32
 import java.util.zip.ZipOutputStream
 import org.junit.After
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertSame
 import org.junit.Before
 import org.junit.Test
 
@@ -53,6 +56,55 @@ class RomUnzipperTest {
 
         assertNotNull(repaired)
         assertArrayEquals(bytes, repaired!!.readBytes())
+    }
+
+
+    @Test
+    fun rejectsDuplicateEntriesWithTheSameRomName() {
+        val archive = zipWithDuplicateEntry(
+            "duplicate.zip",
+            "game.nes",
+            byteArrayOf(1, 2, 3),
+            byteArrayOf(4, 5, 6),
+        )
+
+        expectFailure<IllegalArgumentException> {
+            RomUnzipper.extract(archive, setOf("nes"), cache)
+        }
+    }
+
+    @Test
+    fun discBasedZipIsPassedThroughWithoutExtraction() {
+        val archive = File(root, "disc.zip").apply { writeText("not an extractable ZIP") }
+        val platform = GamePlatform(
+            slug = "psx-test",
+            name = "PlayStation test",
+            coreId = "test",
+            extensions = setOf("cue", "chd", "zip"),
+            folderAliases = setOf("psx-test"),
+            sortOrder = 1,
+            discBased = true,
+        )
+
+        assertSame(archive, RomUnzipper.prepare(archive, platform, cache))
+        assertEquals(emptyList<File>(), cache.walkTopDown().filter { it.isFile }.toList())
+    }
+
+    @Test
+    fun nativeZipRomIsPassedThroughWithoutExtraction() {
+        val archive = File(root, "arcade.zip").apply { writeText("native ZIP ROM") }
+        val platform = GamePlatform(
+            slug = "neogeo-test",
+            name = "Neo Geo test",
+            coreId = "test",
+            extensions = setOf("zip"),
+            folderAliases = setOf("neogeo-test"),
+            sortOrder = 1,
+            zipIsNativeRom = true,
+        )
+
+        assertSame(archive, RomUnzipper.prepare(archive, platform, cache))
+        assertEquals(emptyList<File>(), cache.walkTopDown().filter { it.isFile }.toList())
     }
 
     @Test
@@ -130,6 +182,81 @@ class RomUnzipperTest {
             }
         }
         return archive
+    }
+
+
+    /** Produz ZIP válido com dois registros centrais de mesmo nome (ZipOutputStream proíbe duplicatas). */
+    private fun zipWithDuplicateEntry(
+        archiveName: String,
+        entryName: String,
+        first: ByteArray,
+        second: ByteArray,
+    ): File {
+        val name = entryName.toByteArray(Charsets.UTF_8)
+        val localRecords = ByteArrayOutputStream()
+        val centralRecords = ByteArrayOutputStream()
+        val contents = listOf(first, second)
+
+        contents.forEach { data ->
+            val crc = CRC32().apply { update(data) }.value
+            val localOffset = localRecords.size()
+            writeInt(localRecords, 0x04034b50L)
+            writeShort(localRecords, 20)
+            writeShort(localRecords, 0)
+            writeShort(localRecords, 0)
+            writeShort(localRecords, 0)
+            writeShort(localRecords, 0)
+            writeInt(localRecords, crc)
+            writeInt(localRecords, data.size.toLong())
+            writeInt(localRecords, data.size.toLong())
+            writeShort(localRecords, name.size)
+            writeShort(localRecords, 0)
+            localRecords.write(name)
+            localRecords.write(data)
+
+            writeInt(centralRecords, 0x02014b50L)
+            writeShort(centralRecords, 20)
+            writeShort(centralRecords, 20)
+            writeShort(centralRecords, 0)
+            writeShort(centralRecords, 0)
+            writeShort(centralRecords, 0)
+            writeShort(centralRecords, 0)
+            writeInt(centralRecords, crc)
+            writeInt(centralRecords, data.size.toLong())
+            writeInt(centralRecords, data.size.toLong())
+            writeShort(centralRecords, name.size)
+            writeShort(centralRecords, 0)
+            writeShort(centralRecords, 0)
+            writeShort(centralRecords, 0)
+            writeShort(centralRecords, 0)
+            writeInt(centralRecords, 0)
+            writeInt(centralRecords, localOffset.toLong())
+            centralRecords.write(name)
+        }
+
+        val centralOffset = localRecords.size()
+        val archiveBytes = ByteArrayOutputStream()
+        localRecords.writeTo(archiveBytes)
+        centralRecords.writeTo(archiveBytes)
+        writeInt(archiveBytes, 0x06054b50L)
+        writeShort(archiveBytes, 0)
+        writeShort(archiveBytes, 0)
+        writeShort(archiveBytes, contents.size)
+        writeShort(archiveBytes, contents.size)
+        writeInt(archiveBytes, centralRecords.size().toLong())
+        writeInt(archiveBytes, centralOffset.toLong())
+        writeShort(archiveBytes, 0)
+
+        return File(root, archiveName).apply { writeBytes(archiveBytes.toByteArray()) }
+    }
+
+    private fun writeShort(output: ByteArrayOutputStream, value: Int) {
+        output.write(value and 0xff)
+        output.write((value ushr 8) and 0xff)
+    }
+
+    private fun writeInt(output: ByteArrayOutputStream, value: Long) {
+        repeat(4) { shift -> output.write(((value ushr (shift * 8)) and 0xff).toInt()) }
     }
 
     private fun corruptCentralDirectoryUncompressedSize(archive: File) {
