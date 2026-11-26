@@ -691,3 +691,14 @@ ATUALIZAÇÃO — VALIDAÇÃO DO ENVELOPE E PERSISTÊNCIA DE ESTADO — 2026-11-
 - [ ] Validar no aparelho recuperação do instalador após interrupção, falha de rede, ZIP inválido e divergência de SHA-256/ETag.
 - [ ] Confirmar recuperação de saves em cenários de conflito e sincronização com RomM.
 - PR #57 permanece aberta e draft, sem merge; PR #41 permanece intocada.
+
+
+ATUALIZAÇÃO — CI #45907953883 APROVADA — 2026-11-26
+- [x] CI #45907953883 — https://github.com/izzyn0okami/Tandem/actions/runs/45907953883 — conclusão success no HEAD 11edf8f8e88a6ba80e4cc69b59abb2b02105734d.
+- [x] check-style / Spotless: sucesso, incluindo verificação após formatação automática.
+- [x] Testes unitários: sucesso.
+- [x] Build assembleLawnWithQuickstepGithubDebug: sucesso.
+- [x] Upload do artefato APK: sucesso.
+- [x] Jobs tandem-release e nightly-release ignorados; nenhuma publicação em tandem-latest.
+- PR #57 permanece aberta e draft, sem merge; PR #41 permanece intocada.
+- [ ] Testes instrumentados e validação funcional no aparelho continuam pendentes conforme os itens acima.
