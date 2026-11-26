@@ -62,7 +62,7 @@ internal fun CoresScreen() {
             val selectedDriver = remember(tick) { VulkanDriverManager.selectedId(context) }
             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Text("Driver Vulkan (Snapdragon / Adreno)", color = GameColors.text, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
-                Text("Opcional e sem root. O driver do sistema continua disponível; alterações só valem ao iniciar uma nova sessão.", color = GameColors.textDim, fontSize = 12.sp)
+                Text("Opcional e sem root. Use apenas pacotes confiáveis e compatíveis com sua GPU Adreno. Um driver incompatível pode fechar o jogo; selecione Driver do sistema para reverter. Alterações só valem em novas sessões.", color = GameColors.textDim, fontSize = 12.sp)
                 FocusSurface(
                     onClick = { driverPicker.launch(arrayOf("application/zip", "application/x-zip-compressed", "application/octet-stream")) },
                     modifier = Modifier.fillMaxWidth(),
