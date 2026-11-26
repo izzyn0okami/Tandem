@@ -452,3 +452,16 @@ ESTADO ATUAL DA PR #57
 - Última CI completa de referência: #1560, sucesso.
 - APK debug construído e artefato carregado na execução #1560. Disponibilizar somente para teste na branch da PR; não confundir com build tandem-latest.
 - Nenhum merge ou publicação em tandem-latest foi realizado.
+
+
+ATUALIZAÇÃO — VALIDAÇÃO DO GAMEPAD PELO USUÁRIO — 2026-11-26
+- [x] Usuário confirmou que o gamepad virtual de toque funcionou no aparelho.
+- [x] A validação confirma funcionamento básico do gamepad na configuração testada.
+- [ ] Não considerar automaticamente validados todos os casos avançados: dois analógicos simultâneos sob carga, multitouch misto com touchscreen do DS, retrato/paisagem, reconexão de controle físico e liberação em todas as transições de ciclo de vida.
+- [ ] Preferências avançadas de layout ainda precisam de interface completa.
+- CI #1561 — https://github.com/izzyn0okami/Tandem/actions/runs/45755929007:
+  - [x] check-style / Spotless: sucesso.
+  - [x] testes unitários: sucesso.
+  - [ ] build APK e upload do artefato: em andamento no momento deste registro.
+  - Head submetido à execução: f1a29b7ff873e5ef02f3ca28891cbab97ce3071d.
+- PR #57 continua aberta e draft; nenhum merge ou publicação em tandem-latest foi realizado.
