@@ -231,8 +231,8 @@ object CoreInstaller {
         val backupIsValid = backup.isFile && isArm64Elf(backup)
         val targetDigest = if (targetIsValid) sha256(target) else null
         val backupDigest = if (backupIsValid) sha256(backup) else null
-        val targetMatches = expectedDigest != null && targetDigest.equals(expectedDigest, ignoreCase = true)
-        val backupMatches = expectedDigest != null && backupDigest.equals(expectedDigest, ignoreCase = true)
+        val targetMatches = targetDigest?.equals(expectedDigest, ignoreCase = true) == true
+        val backupMatches = backupDigest?.equals(expectedDigest, ignoreCase = true) == true
 
         when {
             targetMatches -> {
@@ -244,7 +244,7 @@ object CoreInstaller {
                     check(target.delete()) { "Não foi possível remover destino não confirmado ${target.name}" }
                 }
                 check(backup.renameTo(target)) { "Não foi possível restaurar backup confirmado ${backup.name}" }
-                check(isArm64Elf(target) && sha256(target).equals(expectedDigest, ignoreCase = true)) {
+                check(isArm64Elf(target) && sha256(target)?.equals(expectedDigest, ignoreCase = true) == true) {
                     "Backup restaurado não corresponde ao SHA-256 confirmado"
                 }
             }
