@@ -50,16 +50,35 @@ object BiosManager {
     /** Plataformas que precisam de uma pasta de sistema inteira (ex.: blueMSX), em vez de um arquivo só. */
     fun platformsWithKit(): List<GamePlatform> = GamePlatforms.all.filter { it.biosKit != null }
 
-    /** Cada subpasta pedida existe e tem pelo menos um arquivo dentro. */
-    fun kitReady(context: Context, platform: GamePlatform): Boolean {
-        val kit = platform.biosKit ?: return true
-        return kit.all { folder -> File(systemDir(context), folder).let { it.isDirectory && it.walkTopDown().any(File::isFile) } }
+    /** Valida também os subdiretórios e arquivos mínimos exigidos pelos cores avançados. */
+    internal fun kitContentsReady(platform: GamePlatform, folder: String, directory: File): Boolean {
+        if (!directory.isDirectory) return false
+        fun containsFile(path: String) = File(directory, path).let { it.isFile }
+        fun containsFiles(path: String) = File(directory, path).let { it.isDirectory && it.walkTopDown().any(File::isFile) }
+        fun hasAnyNamedFile(vararg names: String) =
+            directory.walkTopDown().filter(File::isFile).any { file -> names.any { it.equals(file.name, ignoreCase = true) } }
+
+        return when {
+            platform.slug == "ps2" && folder == "pcsx2" -> containsFiles("bios")
+            platform.slug == "vita" && folder == "vita3k" ->
+                containsFile("PSP2UPDAT.PUP") &&
+                    hasAnyNamedFile("PSP2UPDAT_PREINST.PUP", "preinst_fresh.pup") &&
+                    containsFiles("data") &&
+                    containsFiles("shaders-builtin")
+            platform.slug in setOf("gc", "wii") && folder == "dolphin-emu" -> containsFiles("Sys")
+            else -> directory.walkTopDown().any(File::isFile)
+        }
     }
 
-    /** Quantas das subpastas pedidas já têm algum arquivo. */
+    fun kitReady(context: Context, platform: GamePlatform): Boolean {
+        val kit = platform.biosKit ?: return true
+        return kit.all { folder -> kitContentsReady(platform, folder, File(systemDir(context), folder)) }
+    }
+
+    /** Quantas das subpastas pedidas já atendem aos requisitos mínimos do core. */
     fun kitStatus(context: Context, platform: GamePlatform): Pair<Int, Int> {
         val kit = platform.biosKit ?: return 0 to 0
-        val ok = kit.count { folder -> File(systemDir(context), folder).let { it.isDirectory && it.walkTopDown().any(File::isFile) } }
+        val ok = kit.count { folder -> kitContentsReady(platform, folder, File(systemDir(context), folder)) }
         return ok to kit.size
     }
 
