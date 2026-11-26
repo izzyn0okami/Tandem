@@ -2,6 +2,7 @@ package app.lawnchair.gamemode
 
 import android.content.Context
 import java.io.File
+import java.security.MessageDigest
 import java.util.zip.CRC32
 import java.util.zip.ZipFile
 
@@ -29,17 +30,24 @@ object RomUnzipper {
 
     private fun extract(context: Context, rom: File, wanted: Set<String>): File? = ZipFile(rom).use { zip ->
         val candidates = zip.entries().asSequence()
-            .filter { !it.isDirectory && File(it.name).extension.lowercase() in wanted }
+            .filter { !it.isDirectory && isSafeEntryName(it.name) && File(it.name).extension.lowercase() in wanted }
             .toList()
         require(candidates.size == 1) {
             when (candidates.size) {
-                0 -> "O arquivo ${rom.name} não contém uma ROM com extensão reconhecida."
+                0 -> "O arquivo ${rom.name} não contém uma ROM compatível. Verifique a plataforma e as extensões cadastradas."
                 else -> "O arquivo ${rom.name} contém ${candidates.size} ROMs possíveis. Extraia ou selecione o jogo desejado."
             }
         }
         val entry = candidates.single()
+        require(entry.size >= 0L) { "A entrada ${entry.name} não informa um tamanho válido." }
+        require(entry.crc >= 0L) { "A entrada ${entry.name} não informa um CRC válido." }
+
         val root = File(context.cacheDir, "unzipped")
-        val folder = File(root, rom.absolutePath.hashCode().toString())
+        // SHA-256 evita colisões do hashCode de String e mantém caches de sessões diferentes isolados.
+        val folderId = MessageDigest.getInstance("SHA-256")
+            .digest(rom.absolutePath.toByteArray(Charsets.UTF_8))
+            .joinToString("") { "%02x".format(it) }
+        val folder = File(root, folderId)
         val out = File(folder, "${rom.nameWithoutExtension}.${File(entry.name).extension}")
         val metadata = File(folder, "${out.name}.source")
         val sourceSignature = listOf(
@@ -59,10 +67,12 @@ object RomUnzipper {
             return out
         }
 
-        // Mantém só a extração do jogo atual.
-        root.deleteRecursively()
+        // Não apaga o diretório inteiro: outra sessão pode estar usando o cache de outro jogo.
         folder.mkdirs()
         val temp = File(folder, "${out.name}.part")
+        val backup = File(folder, "${out.name}.backup")
+        temp.delete()
+        backup.delete()
         val crc = CRC32()
         var copied = 0L
         zip.getInputStream(entry).use { input ->
@@ -74,34 +84,56 @@ object RomUnzipper {
                     output.write(buffer, 0, read)
                     crc.update(buffer, 0, read)
                     copied += read
+                    check(copied <= entry.size) {
+                        "A ROM extraída excedeu o tamanho declarado pela entrada ZIP."
+                    }
                 }
                 output.flush()
             }
         }
-        check(entry.size < 0L || copied == entry.size) {
+        check(copied == entry.size) {
             "ROM extraída incompleta: recebidos $copied de ${entry.size} bytes."
         }
-        check(entry.crc < 0L || crc.value == entry.crc) {
+        check(crc.value == entry.crc) {
             "A verificação CRC da ROM extraída falhou."
         }
-        if (!temp.renameTo(out)) {
-            temp.delete()
-            return null
+
+        // Substituição atômica com rollback: nunca descarta um cache válido antes da nova extração.
+        val hadPrevious = out.exists()
+        if (hadPrevious) check(out.renameTo(backup)) { "Não foi possível preservar a ROM em cache anterior." }
+        try {
+            check(temp.renameTo(out)) { "Não foi possível concluir a extração da ROM." }
+        } catch (failure: Exception) {
+            if (hadPrevious && backup.exists() && !backup.renameTo(out)) {
+                throw IllegalStateException("Falha ao restaurar a ROM em cache anterior; backup preservado.", failure)
+            }
+            throw failure
         }
 
-        // Se não for possível gravar o marcador, a ROM ainda pode ser usada nesta sessão;
-        // na próxima abertura ela será extraída novamente, em vez de reutilizar cache sem validação.
         val metadataTemp = File(folder, "${metadata.name}.part")
-        runCatching {
+        try {
             metadataTemp.writeText(sourceSignature)
-            check(metadataTemp.renameTo(metadata))
-        }.onFailure {
+            check(metadataTemp.renameTo(metadata)) { "Não foi possível registrar a origem da ROM em cache." }
+        } catch (failure: Exception) {
             metadataTemp.delete()
+            // A ROM já foi integralmente validada e pode ser usada nesta sessão. Sem marcador,
+            // ela será extraída novamente na próxima abertura.
             metadata.delete()
-            GameLog.error("jogo", "não foi possível registrar a origem do cache de ${rom.name}", it)
+            GameLog.error("jogo", "não foi possível registrar a origem do cache de ${rom.name}", failure)
+        } finally {
+            backup.delete()
+            temp.delete()
         }
 
         GameLog.log("jogo", "extraído de ${rom.name}: ${entry.name} (${out.length() / 1024} KB; CRC verificado)")
         out
+    }
+
+    /** Bloqueia nomes absolutos, traversal e segmentos vazios/dot antes de aceitar a entrada. */
+    private fun isSafeEntryName(name: String): Boolean {
+        if (name.isBlank() || '\u0000' in name || name.startsWith('/') || name.startsWith('\\')) return false
+        if (Regex("^[A-Za-z]:").containsMatchIn(name)) return false
+        val normalized = name.replace('\\', '/')
+        return normalized.split('/').none { it.isBlank() || it == "." || it == ".." }
     }
 }
