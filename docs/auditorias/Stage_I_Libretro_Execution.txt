@@ -148,3 +148,17 @@ CI / CORREÇÃO
 - [x] Corrigido o escape inválido em commit 7bd0005850c1de69c67c4ec973d69bf174559c68.
 - [ ] A CI desse commit e os workflows seguintes ainda precisam terminar.
 - [ ] Não gerar/entregar APK de teste até a CI da cabeça atual da PR passar.
+
+
+I10 — REVISÃO ADICIONAL DE PLAYLISTS M3U — 2026-11-26
+- [x] Identificado caso complementar: playlists frequentemente apontam para .cue, enquanto .bin/.sub/.sbi são arquivos companheiros não listados no M3U.
+- [x] Scanner agora oculta também os arquivos companheiros com o mesmo nome-base e extensão declarada em discCompanionExtensions, sem esconder outros jogos da pasta.
+- [x] Teste multidisco ampliado com arquivos .bin ao lado dos .cue.
+- [ ] Aguardar CI dos commits atuais e confirmar testes de scanner.
+
+I12 — CONFERÊNCIA DE DISPONIBILIDADE DE NÚCLEOS — 2026-11-26
+- [x] Conferência amostral do catálogo CoreRegistry contra o índice oficial Android ARM64 do Buildbot.
+- [x] Foram encontrados os pacotes dos núcleos alternativos consultados: Nestopia, Mesen, Mupen64Plus-Next GLES2/GLES3, Beetle PSX, Snes9x 2010, mGBA, Gearboy, Geargrafx, GearSystem, melonDS, FreeIntv e EasyRPG.
+- [ ] Completar conferência individual de todos os IDs do catálogo; a amostra não equivale a auditoria integral.
+- [ ] Validar compatibilidade funcional no aparelho; presença do pacote não comprova funcionamento com cada plataforma/jogo/BIOS.
+- Fonte consultada: índice público https://buildbot.libretro.com/nightly/android/latest/arm64-v8a/ (consulta em 2026-11-26).
