@@ -78,4 +78,12 @@ class CoreInstallerTest {
         assertEquals("vita3k", CoreInstaller.coreIdFromFile(File("vita3k_libretro_android.so")))
     }
 
+    @Test
+    fun hyphenatedCoreIdsUseSafeStandardArtifactNames() {
+        assertEquals(
+            CoreInstaller.CoreArtifact("bsnes-jg_libretro_android.so.zip", "bsnes-jg_libretro_android.so"),
+            CoreInstaller.artifact("bsnes-jg"),
+        )
+    }
+
 }
