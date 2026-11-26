@@ -175,13 +175,15 @@ object VulkanDriverManager {
                 val digest = sha256(mainLibrary)
                 val id = "${safeId(name)}-${safeId(version)}-${digest.take(12)}"
                 val installedDir = File(driversDir(context), id)
-                val sourceName = context.contentResolver.query(
-                    uri,
-                    arrayOf(OpenableColumns.DISPLAY_NAME),
-                    null,
-                    null,
-                    null,
-                )?.use { cursor -> if (cursor.moveToFirst()) cursor.getString(0) else null }
+                val sourceName = runCatching {
+                    context.contentResolver.query(
+                        uri,
+                        arrayOf(OpenableColumns.DISPLAY_NAME),
+                        null,
+                        null,
+                        null,
+                    )?.use { cursor -> if (cursor.moveToFirst()) cursor.getString(0) else null }
+                }.getOrNull()
                 val installedMetadata = JSONObject(metadata.toString())
                     .put("installedSha256", digest)
                     .put("installedLibrary", libraryName)
