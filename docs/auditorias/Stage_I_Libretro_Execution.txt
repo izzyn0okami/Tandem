@@ -623,3 +623,14 @@ ATUALIZAÇÃO — RECUPERAÇÃO TRANSACIONAL POR SHA-256 — 2026-11-26
 - [ ] CI dos commits de recuperação por digest pendente.
 - [ ] Após CI verde, revisar logs e testar no aparelho uma instalação interrompida/recuperação de backup.
 - PR #57 permanece aberta e draft, sem merge; nenhuma publicação em tandem-latest; PR #41 permanece intocada.
+
+
+ATUALIZAÇÃO — VALIDAÇÃO DA RECUPERAÇÃO POR SHA-256 — 2026-11-26
+- [x] CI #1609 — https://github.com/izzyn0okami/Tandem/actions/runs/45880767398 — sucesso no HEAD a117d6c7270289ccce356870fff3ed15e361a14e; check-style/Spotless e build APK concluídos.
+- [x] Os testes unitários executaram sem falhas na CI #1609; a falha observada nas execuções #1606 e #1607 era um teste legado que esperava apagar backup sem digest, comportamento agora intencionalmente proibido. O teste foi substituído por cenários que verificam a decisão com digest explícito e preservação quando o digest é desconhecido.
+- [x] CI #1606 e #1607 falharam somente no teste legado `removesResidualBackupWhenTargetIsAlreadyValid`; não houve falha de compilação do código de produção.
+- [x] CI #1608 falhou durante a instalação do NDK no runner (arquivo ZIP inválido/corrompido), não por falha de formatação; a execução #1609 subsequente passou.
+- [x] CI #1609 confirma formatação, testes unitários e compilação do APK. A validação não substitui teste funcional no aparelho.
+- [ ] Teste funcional no aparelho para instalação interrompida/recuperação de backup permanece pendente.
+- [ ] Revisar caminhos adicionais de rollback, falha de rede, ZIP inválido e consistência de metadados SHA-256/ETag.
+- PR #57 permanece aberta e draft, sem merge; nenhuma publicação em tandem-latest; PR #41 permanece intocada.
