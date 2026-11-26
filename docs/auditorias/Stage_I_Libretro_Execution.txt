@@ -109,3 +109,23 @@ PENDÊNCIAS GERAIS ATUALIZADAS
 - [ ] I11–I16: auditoria e implementação ainda pendentes.
 - [ ] Nova CI após os commits de I9/I10 ainda pendente.
 - [ ] Não mesclar nem publicar em tandem-latest sem autorização explícita.
+
+
+CORREÇÃO DE CI — 2026-11-26
+- Run 45734654373: check-style/Spotless passou.
+- O job de compilação falhou antes de executar os testes por um escape inválido de barra invertida em GameLibrary.kt:77.
+- Causa isolada pelo log do compilador Kotlin: Unsupported escape sequence.
+- [x] Corrigido o literal de caractere usado para normalizar separadores de caminhos M3U.
+- Commit corretivo: 7bd0005850c1de69c67c4ec973d69bf174559c68.
+- [ ] Aguardar nova CI após a correção; nenhum APK pode ser considerado disponível até o build terminar com sucesso.
+
+I11 — NOTAS DE AUDITORIA DO INSTALADOR DE NÚCLEOS
+- O instalador baixa o ZIP por HTTPS, exige o nome exato do arquivo interno e valida ELF64 little-endian/AArch64 antes de substituir a instalação.
+- O fluxo usa arquivo temporário, backup e rollback; falhas antes da promoção preservam o núcleo anterior.
+- A extração via ZipInputStream valida CRC ao encerrar a entrada, mas a implementação ainda não persiste SHA-256 do binário instalado nem compara um digest publicado por fonte confiável.
+- Last-Modified/ETag são metadados HTTP de atualização, não prova criptográfica de integridade ou versão semântica.
+- A URL usa o canal latest; não há ainda uma versão/build identificável e reproduzível apresentada na interface.
+- [ ] Verificar disponibilidade de checksum/manifesto oficial para cada núcleo no Buildbot antes de adotar validação SHA-256 remota.
+- [ ] Persistir SHA-256 local e metadados de origem/data para diagnóstico e detecção de corrupção.
+- [ ] Revisar catálogo CoreRegistry contra binários realmente publicados no endpoint Android ARM64; não oferecer alternativas inexistentes.
+- [ ] Criar testes automatizados para ELF válido/inválido, ZIP inesperado/corrompido, rollback e atualização sem metadados.
