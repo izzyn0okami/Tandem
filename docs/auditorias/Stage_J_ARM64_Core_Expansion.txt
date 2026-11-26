@@ -14,3 +14,14 @@ CI APROVADA — PR #58 — atualização 2026-11-26
 - [ ] Completar auditoria integral de catálogo, extensões, BIOS/firmware e licenças/atribuições.
 - [ ] Rever integração RomM/RetroAchievements por core, respeitando armazenamento interno de emuladores sem save RAM Libretro.
 - PR #58 continua aberta e draft, baseada em PR #57; nenhuma mesclagem ou publicação em tandem-latest foi realizada.
+
+
+
+REVISÃO DE IMPLEMENTAÇÃO — 2026-11-26
+- [x] CI #1522 aprovada no commit cf70dad1ada109d4595db25b013f77187f241771; estilo, testes unitários, APK debug, upload de artefato e final-status passaram.
+- [x] Corrigido estado visual de seleção de driver Vulkan: preferências antigas que apontam para instalação ausente deixam de aparecer como selecionadas.
+- [x] Importação de drivers: consulta do nome de origem tornou-se opcional e não bloqueia importações quando o provedor SAF não oferece metadados.
+- [x] Vita3K: firmware passou a ser rastreado exclusivamente dentro do kit system/vita3k; removidos indicadores enganosos de PUP na raiz do sistema.
+- [x] Adicionado teste unitário garantindo que Vita3K exija o kit e não liste PUPs como BIOS na raiz.
+- [ ] CI #1530 e verificações dos commits posteriores: em andamento/aguardando execução; só registrar como concluídos após resultado final.
+- [ ] Teste físico Vulkan/Turnip no Snapdragon/Adreno e validação dos cores avançados no aparelho continuam pendentes.
