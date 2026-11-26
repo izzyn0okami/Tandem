@@ -171,3 +171,17 @@ I11 — REVISÃO DE METADADOS DE ATUALIZAÇÃO — 2026-11-26
 - [x] Instalador agora rejeita ZIP de núcleo que contenha entradas adicionais além da biblioteca esperada.
 - [ ] Testes automatizados de rollback e metadados HTTP ainda pendentes.
 - [ ] Aguardar CI da cabeça atual, incluindo os novos testes CoreInstaller e GameLibraryScanner.
+
+
+CI — INVESTIGAÇÃO DA FALHA 45735603900
+- [x] Consultados os logs dos jobs de testes e formatação.
+- [x] Confirmado que a compilação Kotlin ocorreu; a falha funcional veio de dois testes unitários:
+  - GameLibraryScannerTest.m3uHidesOnlyTheDiscFilesItReferences — GameLibraryScannerTest.kt:36.
+  - GamePlatformsResolutionTest.genericBinaryExtensionDoesNotOverrideDiscPlatformRules — GamePlatformsResolutionTest.kt:23.
+- Causa: quando uma pasta reconhecida (ex.: psx) não aceitava a extensão do arquivo, GamePlatforms.resolve continuava a procurar por extensão global. Como Intellivision declara .bin, arquivos .bin dentro de uma pasta PlayStation podiam ser classificados incorretamente como Intellivision.
+- [x] Corrigido GamePlatforms.resolve: uma pasta reconhecida agora determina a plataforma; se a extensão não for compatível com ela, o resultado é null, sem fallback para outra plataforma.
+- Commit corretivo: 11850d847464098723bcb8675af6f517fd4bbeda.
+- A falha de Spotless foi operacional: o job aplicou formatação e tentou enviar commit automático 43491b9, mas o push foi rejeitado por non-fast-forward porque a branch remota já tinha commits mais recentes. SpotlessApply em si terminou com sucesso.
+- [ ] Aguardar nova CI para confirmar os dois testes corrigidos e o build APK.
+- [ ] Se o job de formatação voltar a falhar por corrida de push, aplicar a formatação diretamente na branch e ajustar o fluxo CI para não tentar publicar um commit obsoleto.
+
