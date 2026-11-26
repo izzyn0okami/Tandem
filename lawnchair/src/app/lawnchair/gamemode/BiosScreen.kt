@@ -143,7 +143,7 @@ internal fun BiosScreen(rootPath: String) {
                 val ready = ok == total
                 Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                     Text(
-                        text = "${platform.name} · ${stringResource(R.string.game_bios_kit_required)}",
+                        text = "${platform.name} · ${if (platform.biosRequired) stringResource(R.string.game_bios_kit_required) else "arquivos opcionais"}",
                         color = if (ready) GameColors.success else GameColors.danger,
                         fontSize = 14.sp,
                         fontWeight = FontWeight.SemiBold,
