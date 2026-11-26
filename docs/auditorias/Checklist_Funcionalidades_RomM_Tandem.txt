@@ -1860,4 +1860,12 @@ VALIDAÇÃO FUNCIONAL NO APARELHO — ESTÁGIO G6 / PR #56 (2026-11-25)
 - [CONCLUÍDO — TESTE NO APARELHO] Usuário confirmou que todos os recursos da Jukebox estão funcionando corretamente no aparelho.
 - [CONCLUÍDO — VALIDAÇÃO FUNCIONAL] Catálogo, busca, artistas/álbuns, reprodução, foco/controles de áudio, favoritos e operações de playlists considerados aprovados pelo usuário.
 - [CONCLUÍDO — AUTORIZAÇÃO] Scopes necessários e integração com a instância RomM validados pelo teste do usuário.
-- [PENDENTE — GOVERNANÇA] PR #56 permanece aberta, draft e sem merge; aguardar autorização explícita para merge em game-mode-m2-dev e publicação em tandem-latest.
+- [CONCLUÍDO — GOVERNANÇA] PR #56 mesclada em game-mode-m2-dev após autorização explícita; publicação assinada em tandem-latest ainda depende de confirmação do workflow.
+
+
+FECHAMENTO — ESTÁGIO G6 / PR #56 (2026-11-26)
+- [CONCLUÍDO — CI] CI #1403, run 45729648865, validou o head 91569248bf0d74b8eccd850d589c322f933be23d: check-style SUCCESS; testes unitários SUCCESS; build-debug-apk SUCCESS; upload do artefato SUCCESS; final-status SUCCESS.
+- [CONCLUÍDO — TESTE NO APARELHO] O usuário confirmou que todos os recursos da Jukebox funcionaram corretamente; catálogo, pesquisa, artistas/álbuns, reprodução, controles/foco de áudio, favoritos e playlists estão aprovados.
+- [CONCLUÍDO — MERGE AUTORIZADO] PR #56 mesclada por squash em game-mode-m2-dev. Commit: 3fd9a720eef64b1b7d7865e0a5965c3e8276a8ac.
+- [CONCLUÍDO] G6 implementado e validado. G1, G2, G3, G4 e G8 permanecem fora do escopo por decisão do usuário; G5 e G7 permanecem auditorias técnicas sem implementação.
+- [PENDENTE — PUBLICAÇÃO] Confirmar execução e sucesso do workflow de publicação assinada em tandem-latest após o merge. Não considerar a publicação concluída até verificar o APK/release e sua assinatura.
