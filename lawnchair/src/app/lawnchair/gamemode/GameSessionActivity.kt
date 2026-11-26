@@ -141,7 +141,7 @@ class GameSessionActivity : ComponentActivity() {
             systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
         }
 
-        val coreId = File(corePath).name.removeSuffix("_libretro_android.so")
+        val coreId = CoreInstaller.coreIdFromFile(File(corePath))
         val platformSlug = intent.getStringExtra(EXTRA_PLATFORM)
         val siblings = platformSlug?.let(GamePlatforms::bySlug)?.let { CoreRegistry.cores(it) }.orEmpty().map { it.id }
         val legacyCores = intent.getStringArrayListExtra(EXTRA_MIGRATION_CORES).orEmpty()
@@ -190,6 +190,10 @@ class GameSessionActivity : ComponentActivity() {
             systemDirectory = GameFolders.dir(this@GameSessionActivity, FolderKind.Bios).absolutePath
             savesDirectory = effectiveSavesDirectory.absolutePath
             saveRAMState = store.readSram()
+            // Estes cores negociam um contexto Vulkan próprio no LibretroDroid. O driver
+            // customizado, quando selecionado, é carregado rootless via libadrenotools.
+            preferVulkan = coreId in VULKAN_CORES
+            vulkanDriver = VulkanDriverManager.selected(this@GameSessionActivity)
             // Opções que o usuário salvou para este núcleo.
             variables = CoreRegistry.variables(this@GameSessionActivity, coreId)
         }
@@ -754,6 +758,7 @@ class GameSessionActivity : ComponentActivity() {
         private const val EXTRA_MIGRATION_PATHS = "migration_paths"
         private const val RA_TOAST_MS = 4_000L
         private const val SRAM_AUTOSAVE_MS = 60_000L
+        private val VULKAN_CORES = setOf("pcee2", "armsx2", "pcsx2", "azahar", "panda3ds", "vita3k", "rpcs3", "xenia_edge")
 
         fun intent(
             context: Context,
