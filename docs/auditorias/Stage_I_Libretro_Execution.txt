@@ -129,3 +129,22 @@ I11 — NOTAS DE AUDITORIA DO INSTALADOR DE NÚCLEOS
 - [ ] Persistir SHA-256 local e metadados de origem/data para diagnóstico e detecção de corrupção.
 - [ ] Revisar catálogo CoreRegistry contra binários realmente publicados no endpoint Android ARM64; não oferecer alternativas inexistentes.
 - [ ] Criar testes automatizados para ELF válido/inválido, ZIP inesperado/corrompido, rollback e atualização sem metadados.
+
+
+I11 — INTEGRIDADE LOCAL E ASSINATURAS DO BUILDBOT — 2026-11-26
+- [x] Confirmado no índice oficial Android ARM64 que o Buildbot publica arquivos .so.zip e arquivos .so.sig para diversos núcleos.
+- [x] Confirmado que os .sig são assinaturas OpenPGP (o servidor responde com content-type application/pgp-signature); não são arquivos de checksum SHA-256 em texto.
+- [x] Não foi encontrada, na listagem consultada, uma lista .sha256/manifesto de hashes para substituir a verificação de assinatura.
+- [ ] Antes de verificar .sig no aplicativo, identificar e fixar uma chave pública Libretro confiável e seu fingerprint por canal oficial; não confiar em chave baixada sem validação independente.
+- [x] CoreInstaller agora calcula e persiste SHA-256 local do núcleo instalado.
+- [x] Núcleos já instalados recebem uma impressão digital local na primeira verificação; alterações posteriores no arquivo fazem o núcleo ser tratado como inválido.
+- [x] A instalação salva SHA-256 junto dos metadados HTTP de data/ETag.
+- [x] Adicionados testes unitários para digest SHA-256 conhecido, cabeçalho ELF ARM64 válido, arquitetura errada e cabeçalho truncado.
+- [ ] A impressão digital local detecta corrupção posterior, mas não autentica a origem do primeiro download; a validação criptográfica de origem permanece pendente.
+- [ ] Confirmar compilação/testes dos commits recentes na CI.
+
+CI / CORREÇÃO
+- Run 45734654373 falhou na compilação Kotlin por escape inválido em GameLibrary.kt:77; Spotless passou.
+- [x] Corrigido o escape inválido em commit 7bd0005850c1de69c67c4ec973d69bf174559c68.
+- [ ] A CI desse commit e os workflows seguintes ainda precisam terminar.
+- [ ] Não gerar/entregar APK de teste até a CI da cabeça atual da PR passar.
