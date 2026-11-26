@@ -75,21 +75,26 @@ object RomUnzipper {
         backup.delete()
         val crc = CRC32()
         var copied = 0L
-        zip.getInputStream(entry).use { input ->
-            temp.outputStream().use { output ->
-                val buffer = ByteArray(64 * 1024)
-                while (true) {
-                    val read = input.read(buffer)
-                    if (read < 0) break
-                    output.write(buffer, 0, read)
-                    crc.update(buffer, 0, read)
-                    copied += read
-                    check(copied <= entry.size) {
-                        "A ROM extraída excedeu o tamanho declarado pela entrada ZIP."
+        try {
+            zip.getInputStream(entry).use { input ->
+                temp.outputStream().use { output ->
+                    val buffer = ByteArray(64 * 1024)
+                    while (true) {
+                        val read = input.read(buffer)
+                        if (read < 0) break
+                        output.write(buffer, 0, read)
+                        crc.update(buffer, 0, read)
+                        copied += read
+                        check(copied <= entry.size) {
+                            "A ROM extraída excedeu o tamanho declarado pela entrada ZIP."
+                        }
                     }
+                    output.flush()
                 }
-                output.flush()
             }
+        } catch (failure: Exception) {
+            temp.delete()
+            throw failure
         }
         check(copied == entry.size) {
             "ROM extraída incompleta: recebidos $copied de ${entry.size} bytes."
