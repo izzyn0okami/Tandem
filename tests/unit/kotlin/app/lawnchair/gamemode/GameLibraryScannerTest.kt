@@ -25,7 +25,9 @@ class GameLibraryScannerTest {
     fun m3uHidesOnlyTheDiscFilesItReferences() {
         val folder = File(root, "psx").apply { mkdirs() }
         File(folder, "disc1.cue").writeText("FILE \"disc1.bin\" BINARY")
+        File(folder, "disc1.bin").writeText("disc 1 data")
         File(folder, "disc2.cue").writeText("FILE \"disc2.bin\" BINARY")
+        File(folder, "disc2.bin").writeText("disc 2 data")
         File(folder, "unrelated-game.cue").writeText("FILE \"unrelated.bin\" BINARY")
         File(folder, "game.m3u").writeText("disc1.cue\ndisc2.cue\n")
 
