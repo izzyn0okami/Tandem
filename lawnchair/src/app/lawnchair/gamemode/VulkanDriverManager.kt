@@ -97,6 +97,12 @@ object VulkanDriverManager {
                             continue
                         }
                         val raw = entry.name
+                        // Bundles Turnip multi-plataforma podem conter manifest.json, LICENSES e
+                        // uma pasta linux/ ao lado de android/. Esses itens não são carregados no Android.
+                        if (raw == "manifest.json" || raw == "NOTICE" || raw.startsWith("linux/") || raw.startsWith("LICENSES/")) {
+                            zip.closeEntry()
+                            continue
+                        }
                         check(!raw.startsWith("/") && !raw.startsWith("\\") && !raw.contains('\\')) { "Caminho inválido no pacote" }
                         val segments = raw.split('/').filter { it.isNotEmpty() }
                         check(segments.isNotEmpty() && segments.none { it == "." || it == ".." || ':' in it }) {
