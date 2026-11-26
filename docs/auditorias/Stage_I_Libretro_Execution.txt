@@ -657,3 +657,19 @@ ATUALIZAÇÃO — CIs #1613–#1615 CONCLUÍDAS — 2026-11-26
 - [ ] Validar no aparelho recuperação de backup após instalação interrompida, falha de rede, ZIP inválido e integridade dos metadados SHA-256/ETag.
 - [ ] Testar no aparelho a persistência/recuperação de SRAM e estados rápidos em cenários reais de pausa, retomada e encerramento.
 - PR #57 permanece aberta e draft, sem merge; PR #41 permanece intocada.
+
+
+ATUALIZAÇÃO — DIAGNÓSTICO DE ESTADOS RÁPIDOS — 2026-11-26
+- [x] Registrada a ausência de estado serializável fornecido pelo núcleo.
+- [x] Registrada falha de leitura do arquivo de estado rápido e ausência de estado legível.
+- [x] Registrada rejeição de cabeçalho TNDM inválido ou payload truncado.
+- [x] Registrada recusa do estado pelo núcleo sem exceção.
+- [x] CI #1619 — https://github.com/izzyn0okami/Tandem/actions/runs/45902974577 — sucesso: check-style, testes unitários e build APK.
+- [x] CI #1620 — https://github.com/izzyn0okami/Tandem/actions/runs/45903012751 — sucesso: check-style, testes unitários e build APK.
+- [x] CI #1621 — https://github.com/izzyn0okami/Tandem/actions/runs/45903080681 — sucesso: check-style, testes unitários e build APK.
+- [x] Jobs tandem-release e nightly-release ignorados; nenhuma publicação em tandem-latest.
+- [ ] Testes instrumentados de encerramento forçado, perda de processo e falha nativa.
+- [ ] Validar no aparelho a recuperação após instalação interrompida, falha de rede, ZIP inválido e divergência de SHA-256/ETag.
+- [ ] Validar no aparelho persistência e restauração de SRAM e estados rápidos em pausa, retomada e encerramento.
+- [ ] Confirmar recuperação de saves em cenários de conflito e sincronização com RomM.
+- PR #57 permanece aberta e draft, sem merge; PR #41 permanece intocada.
