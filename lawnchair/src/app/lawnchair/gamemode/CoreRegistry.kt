@@ -101,6 +101,7 @@ object CoreRegistry {
             core("mamearcade", "MAME Arcade", "Compatibilidade ampla; maior consumo"),
             core("mame2003_plus", "MAME 2003 Plus", "Conjuntos de ROMs clássicos"),
             core("hbmame", "HBMAME", "Variantes e hacks de arcade"),
+            core("supermodel", "Supermodel", "Sega Model 3 arcade"),
         ),
         "supergrafx" to listOf(
             core("mednafen_supergrafx", "Beetle SuperGrafx", "NEC SuperGrafx"),
@@ -207,6 +208,48 @@ object CoreRegistry {
         "msx" to listOf(
             core("bluemsx", "blueMSX", "Padrão"),
             core("openmsx", "openMSX", "Alternativa de alta precisão"),
+        ),
+        "cdi" to listOf(
+            core("same_cdi", "SAME CD-i", "Philips CD-i"),
+        ),
+        "playdia" to listOf(
+            core("playdiaemu", "Playdia Emulator", "Bandai Playdia"),
+        ),
+        "vectrex" to listOf(
+            core("vecx", "VecX", "GCE Vectrex"),
+        ),
+        "odyssey2" to listOf(
+            core("o2em", "O2EM", "Magnavox Odyssey² / Videopac"),
+        ),
+        "pc88" to listOf(
+            core("quasi88", "QUASI88", "NEC PC-8801"),
+        ),
+        "sharpx1" to listOf(
+            core("x1", "Sharp X1", "Sharp X1 computer"),
+        ),
+        "virtualxt" to listOf(
+            core("virtualxt", "VirtualXT", "IBM PC/XT emulator"),
+        ),
+        "tic80" to listOf(
+            core("tic80", "TIC-80", "Fantasy computer"),
+        ),
+        "wasm4" to listOf(
+            core("wasm4", "WASM-4", "Fantasy console"),
+        ),
+        "uzebox" to listOf(
+            core("uzem", "Uzem", "Uzebox"),
+        ),
+        "commanderx16" to listOf(
+            core("x16emu", "Commander X16", "Commander X16"),
+        ),
+        "wqx" to listOf(
+            core("wqxemu", "WQX Emulator", "WQX handheld"),
+        ),
+        "tamagotchi" to listOf(
+            core("tamalibretro", "TamaLibRetro", "Tamagotchi"),
+        ),
+        "javame" to listOf(
+            core("squirreljme", "SquirrelJME", "Java ME runtime"),
         ),
         "intellivision" to listOf(
             core("freeintv", "FreeIntv", "Padrão"),
