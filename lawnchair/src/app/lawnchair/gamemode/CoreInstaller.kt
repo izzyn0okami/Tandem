@@ -217,7 +217,7 @@ object CoreInstaller {
                 digest.update(buffer, 0, read)
             }
         }
-        digest.digest().joinToString("") { "%02x".format(it) }
+        digest.digest().joinToString("") { "%02x".format(it.toInt() and 0xFF) }
     }.getOrNull()
 
     /** Valida ELF64 little-endian para AArch64 (e_machine = EM_AARCH64/183). */
