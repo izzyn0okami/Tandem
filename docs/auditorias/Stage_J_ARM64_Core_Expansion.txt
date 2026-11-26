@@ -118,3 +118,74 @@ GOVERNANÇA
 - PR #57 não será mesclada automaticamente.
 - Não mesclar nem publicar em tandem-latest sem autorização explícita.
 - Builds de validação desta branch não devem ser apresentados como tandem-latest.
+
+
+J1 — INVENTÁRIO REAL DO BUILDBOT ARM64 — 2026-11-26
+
+CONSULTA AO ÍNDICE OFICIAL
+https://buildbot.libretro.com/nightly/android/latest/arm64-v8a/
+O índice foi aberto e conferido diretamente. Os arquivos abaixo estavam listados no momento da consulta. Isso confirma pacote publicado, mas não teste de inicialização no LibretroDroid.
+
+CORES DE CONSOLES AVANÇADOS CONFIRMADOS NO ÍNDICE
+- [x] armsx2_libretro_android.so.zip
+- [x] pcee2_libretro_android.so.zip
+- [x] pcsx2_libretro_android.so.zip
+- [x] azahar_libretro.so.zip (nome do artefato difere do padrão *_libretro_android.so)
+- [x] panda3ds_libretro_android.so.zip
+- [x] vita3k_libretro_android.so.zip
+- [x] rpcs3_libretro_android.so.zip
+- [x] xenia_edge_libretro_android.so.zip
+
+NÃO CONFIRMADOS NO ÍNDICE CONSULTADO
+- [ ] Dolphin Libretro: não localizado como pacote Android ARM64 no índice consultado.
+- [ ] Cemu Libretro: não localizado como pacote Android ARM64 no índice consultado.
+- [ ] Nintendo Switch: sem core ARM64 viável confirmado.
+Esses projetos não entram no grupo "instalável agora" até aparecer um pacote oficial verificável.
+
+CORES RETRÔ/COMPUTADORES CONFIRMADOS NO ÍNDICE
+- [x] Atari 8-bit: atari800.
+- [x] Atari ST: hatari, hatari2014, hatarib.
+- [x] Amiga: puae, puae2021, amiberry.
+- [x] Commodore: vice_x64, vice_x64sc, vice_x128, vice_xvic, vice_xpet, vice_xplus4, vice_xscpu64.
+- [x] ZX Spectrum: fuse.
+- [x] Amstrad CPC: cap32/theodore (validar sistema e contrato).
+- [x] DOS: dosbox_pure, dosbox_core (validar IDs presentes no índice), rust_dos.
+- [x] Aventuras clássicas: scummvm.
+- [x] Apple II: applewin.
+- [x] Sharp X68000: px68k.
+- [x] NEC PC-98: np2kai.
+- [x] MSX: openmsx, bluemsx.
+- [x] PC-FX: mednafen_pcfx.
+- [x] SuperGrafx: mednafen_supergrafx.
+- [x] Neo Geo CD: neocd.
+- [x] Pokémon Mini: pokemini.
+- [x] Game & Watch: gw.
+- [x] Mega Duck/Watara Supervision: potator.
+- [x] Arduboy: ardens.
+- [x] MAME: mame2000, mame2003, mame2003_plus, mame2010, mame2015, mame2016, mamearcade, mamemess.
+- [x] HBMAME: hbmame.
+- [x] FBNeo: fbneo.
+- [x] Outros confirmados úteis: gearsystem, sameboy, gambatte, mesen, mesen2, mesen-s, nestopia, quicknes, swanstation, ymir, yabasanshiro, yabause, parallel_n64, parallel_dc, noods, melondsds, etc.
+
+CORREÇÕES IMPORTANTES EM RELAÇÃO À PRÉVIA
+- A afirmação de que Dolphin e Cemu tinham pacotes Android ARM64 no Buildbot não foi confirmada pelo índice atual. Removidos da lista de integração imediata; podem voltar se surgir pacote comprovado ou build próprio reproduzível.
+- Vita3K, RPCS3 e Xenia Edge estão sim no índice atual; Vita3K deve ser implementado como experimental prioritário conforme pedido do usuário.
+- Azahar tem nome de artefato diferente; CoreInstaller precisa suportar nome do arquivo remoto e nome interno independentemente do coreId.
+- PS2 tem três artefatos no índice (ARMSX2, PCEE2, PCSX2); comparar requisitos/recursos antes de selecionar padrão.
+- A lista de arquivos do índice é dinâmica (nightly). O catálogo deve usar metadados fixos e validação do pacote antes de instalação; nunca assumir que todo arquivo listado é core de console.
+
+J1 — ESTADO
+- [x] Conferir índice oficial Android ARM64 diretamente.
+- [x] Corrigir a lista de cores avançados efetivamente publicados.
+- [x] Confirmar Vita3K, RPCS3 e Xenia Edge.
+- [x] Identificar incompatibilidade de nomenclatura do pacote Azahar com o instalador atual.
+- [ ] Fazer auditoria de cada core candidate contra core-info (extensões, firmware, recursos, API gráfica e estado experimental).
+- [ ] Implementar catálogo de artefatos com nomes remotos/internos configuráveis.
+- [ ] Validar os binários no LibretroDroid, especialmente Vulkan HW render.
+
+NOTA SOBRE VULKAN/TURNIP
+- A infraestrutura Vulkan já existe em LibretroDroid: VulkanBackend, libadrenotools, setVulkanConfig, VulkanDriver, GLRetroViewData.preferVulkan e GLRetroViewData.vulkanDriver.
+- O caminho rootless via libadrenotools é apropriado; o app não precisa alterar /vendor.
+- A sessão atual ainda não configura preferVulkan/vulkanDriver de acordo com o core nem apresenta gestão de pacotes externos.
+- Vita3K requer Vulkan 1.1 ou OpenGL com glcore conforme renderer; PCEE2 aceita Vulkan/OpenGL/software (Vulkan recomendado). O backend atual do Tandem é GLES para apresentação e oferece contexto Vulkan separado para cores que negociam HW render; cada core precisa ser testado nessa ponte.
+- Não implementar fallback silencioso para OpenGL quando um core exige Vulkan. Apresentar erro claro e manter o driver do sistema selecionável.
