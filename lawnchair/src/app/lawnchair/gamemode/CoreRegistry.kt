@@ -38,7 +38,7 @@ object CoreRegistry {
             core("cap32", "Caprice32", "Amstrad CPC"),
         ),
         "ps2" to listOf(
-            core("pcee2", "PCEE2", "PCSX2 ARM64; experimental, Vulkan/OpenGL; saves, states e RA"),
+            core("pcee2", "PCEE2", "PCSX2 ARM64 experimental; Vulkan/OpenGL; saves, states e memory monitoring"),
             core("armsx2", "ARMSX2", "PCSX2 ARM64; Vulkan por padrão, OpenGL ES 3.2 ou software"),
             core("pcsx2", "PCSX2 Libretro", "Alternativa experimental; validar recursos e estabilidade"),
         ),
