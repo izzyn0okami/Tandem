@@ -207,3 +207,34 @@ CI APROVADA — 2026-11-26
 - [ ] I12: conferência integral do catálogo ainda pendente; verificação atual é amostral.
 - [ ] I13–I16: auditoria/implementação e validação funcional continuam em aberto.
 - PR #57 permanece aberta e draft, sem merge e sem publicação em tandem-latest.
+
+
+I17 — GAMEPAD VIRTUAL DE TOQUE (ADICIONADO A PEDIDO DO USUÁRIO) — 2026-11-26
+Objetivo: permitir jogar no celular sem controle físico, com uma camada de entrada virtual independente e integrada ao pipeline de input do Libretro.
+
+Requisitos funcionais aprovados:
+- [ ] D-pad virtual no lado esquerdo.
+- [ ] Botões de ação A/B/X/Y no lado direito, com mapeamento coerente ao padrão Libretro.
+- [ ] Start e Select; incluir botão Menu/Hotkey apenas se necessário para os atalhos já existentes, evitando disparos acidentais.
+- [ ] Layout avançado com DOIS ANALÓGICOS virtuais, inspirado na disposição do Argosy: analógico esquerdo e direito separados, simultaneamente utilizáveis.
+- [ ] Analógicos com zona morta, alcance configurável e retorno suave ao centro; emitir eixos analógicos reais ao Libretro, não simular apenas D-pad.
+- [ ] Suporte a toque multitouch para combinar movimento, câmera e botões ao mesmo tempo.
+- [ ] Layout responsivo para retrato e paisagem, com posicionamento e dimensões adaptáveis à área útil.
+- [ ] Opções de transparência, escala, posição e visibilidade dos elementos; preservar a área de jogo.
+- [ ] Perfis/layouts selecionáveis por preferência do usuário; persistir configurações.
+- [ ] Ocultar automaticamente o gamepad virtual quando controle físico estiver conectado, com opção de manter visível se o usuário preferir.
+- [ ] Cancelar entradas presas ao perder foco, pausar, sair da sessão ou alterar orientação.
+- [ ] Não interceptar gestos do sistema nem bloquear o menu/atalhos de sessão.
+- [ ] Testes automatizados de mapeamento de botões/eixos, multitouch, deadzone, cancelamento e ciclo de vida; validação no aparelho para ergonomia e compatibilidade com núcleos.
+
+Diretriz visual:
+- A referência solicitada é a composição do Argosy com dois sticks analógicos, não uma cópia literal de seus recursos ou implementação.
+- A primeira versão deve oferecer um layout padrão completo e funcional; customização detalhada pode ser incremental, sem deixar os dois analógicos fora da entrega.
+- Os controles virtuais são uma camada de interface de sessão, separada dos controles físicos e da lógica do núcleo.
+
+Estado:
+- [x] Escopo I17 aprovado pelo usuário, incluindo layout de dois analógicos estilo Argosy.
+- [ ] Auditoria do caminho de entrada do LibretroDroid para confirmar API de eixos/botões e limites de multitouch.
+- [ ] Implementação visual e integração com GameSessionActivity.
+- [ ] Testes automatizados e CI.
+- [ ] Teste funcional/ergonômico no aparelho.
