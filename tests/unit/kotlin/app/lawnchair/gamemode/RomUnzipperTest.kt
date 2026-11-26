@@ -168,6 +168,29 @@ class RomUnzipperTest {
     }
 
     @Test
+    fun rejectsRomLargerThanSafeExtractionLimitBeforeWritingCache() {
+        val archive = zip("oversized.zip", "game.nes" to byteArrayOf(1, 2, 3))
+        setCentralDirectoryUncompressedSize(archive, 8L * 1024 * 1024 * 1024 + 1)
+
+        expectFailure<IllegalArgumentException> {
+            RomUnzipper.prepare(
+                archive,
+                GamePlatform(
+                    slug = "nes-test",
+                    name = "NES test",
+                    coreId = "test",
+                    extensions = setOf("nes"),
+                    folderAliases = setOf("nes-test"),
+                    sortOrder = 1,
+                ),
+                cache,
+            )
+        }
+
+        assertEquals(emptyList<File>(), cache.walkTopDown().filter { it.isFile }.toList())
+    }
+
+    @Test
     fun rejectsDeclaredSizeMismatchAndCleansTemporaryFile() {
         val archive = zip("bad-size.zip", "game.nes" to byteArrayOf(1, 2, 3))
         corruptCentralDirectoryUncompressedSize(archive)
@@ -274,6 +297,18 @@ class RomUnzipperTest {
 
     private fun writeInt(output: ByteArrayOutputStream, value: Long) {
         repeat(4) { shift -> output.write(((value ushr (shift * 8)) and 0xff).toInt()) }
+    }
+
+    private fun setCentralDirectoryUncompressedSize(archive: File, size: Long) {
+        val bytes = archive.readBytes()
+        val signature = byteArrayOf(0x50, 0x4B, 0x01, 0x02)
+        val offset = (0..bytes.size - signature.size).firstOrNull { index ->
+            signature.indices.all { bytes[index + it] == signature[it] }
+        } ?: error("Central directory entry not found")
+        repeat(4) { index ->
+            bytes[offset + 24 + index] = (size ushr (index * 8)).toByte()
+        }
+        archive.writeBytes(bytes)
     }
 
     private fun corruptCentralDirectoryUncompressedSize(archive: File) {
