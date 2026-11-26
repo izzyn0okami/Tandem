@@ -114,43 +114,72 @@ void* VulkanBackend::openCustomDriver() const {
 #endif
 }
 
-bool VulkanBackend::loadLoader() {
-    if (vk.getInstanceProcAddr != nullptr) return true;
+void VulkanBackend::resetLoader() {
+    vk = Dispatch {};
+    if (loaderHandle != nullptr) {
+        dlclose(loaderHandle);
+        loaderHandle = nullptr;
+    }
+    usingCustomDriver = false;
+}
 
-    if (driverConfig.isCustom() && !driverConfig.hookDirectory.empty()) {
-        loaderHandle = openCustomDriver();
+bool VulkanBackend::loadLoader(bool allowCustom) {
+    if (vk.getInstanceProcAddr != nullptr && vk.createInstance != nullptr) return true;
+
+    auto resolve = [this](void* handle) {
+        if (handle == nullptr) return false;
+        auto getInstanceProcAddr = reinterpret_cast<PFN_vkGetInstanceProcAddr>(
+            dlsym(handle, "vkGetInstanceProcAddr"));
+        if (getInstanceProcAddr == nullptr) return false;
+        auto createInstance = reinterpret_cast<PFN_vkCreateInstance>(
+            getInstanceProcAddr(VK_NULL_HANDLE, "vkCreateInstance"));
+        if (createInstance == nullptr) return false;
+
+        vk.getInstanceProcAddr = getInstanceProcAddr;
+        vk.enumerateInstanceVersion = reinterpret_cast<PFN_vkEnumerateInstanceVersion>(
+            getInstanceProcAddr(VK_NULL_HANDLE, "vkEnumerateInstanceVersion"));
+        vk.createInstance = createInstance;
+        return true;
+    };
+
+    if (allowCustom && driverConfig.isCustom() && !driverConfig.hookDirectory.empty()) {
+        void* custom = openCustomDriver();
+        if (resolve(custom)) {
+            loaderHandle = custom;
+            usingCustomDriver = true;
+            return true;
+        }
+        if (custom != nullptr) dlclose(custom);
+        LOGW("Custom Vulkan driver entry points are incomplete; trying the system driver");
+        vk = Dispatch {};
     }
-    if (loaderHandle == nullptr) {
-        loaderHandle = dlopen("libvulkan.so", RTLD_NOW | RTLD_LOCAL);
-    }
-    if (loaderHandle == nullptr) {
+
+    void* system = dlopen("libvulkan.so", RTLD_NOW | RTLD_LOCAL);
+    if (system == nullptr) {
         LOGW("Vulkan loader unavailable: %s", dlerror());
         return false;
     }
-
-    vk.getInstanceProcAddr = reinterpret_cast<PFN_vkGetInstanceProcAddr>(
-        dlsym(loaderHandle, "vkGetInstanceProcAddr"));
-    if (vk.getInstanceProcAddr == nullptr) {
-        LOGW("Vulkan loader has no vkGetInstanceProcAddr");
+    if (!resolve(system)) {
+        LOGW("System Vulkan loader has no usable Vulkan entry points");
+        dlclose(system);
+        vk = Dispatch {};
         return false;
     }
-
-    vk.enumerateInstanceVersion = reinterpret_cast<PFN_vkEnumerateInstanceVersion>(
-        vk.getInstanceProcAddr(VK_NULL_HANDLE, "vkEnumerateInstanceVersion"));
-    vk.createInstance = reinterpret_cast<PFN_vkCreateInstance>(
-        vk.getInstanceProcAddr(VK_NULL_HANDLE, "vkCreateInstance"));
-    return vk.createInstance != nullptr;
+    loaderHandle = system;
+    usingCustomDriver = false;
+    return true;
 }
 
-bool VulkanBackend::isAvailable() {
-    if (availability >= 0) return availability == 1;
-    availability = 0;
-
-    if (!loadLoader()) return false;
+bool VulkanBackend::probeLoader() {
+    if (!loadLoader(false) && vk.createInstance == nullptr) return false;
 
     uint32_t loaderVersion = VK_API_VERSION_1_0;
     if (vk.enumerateInstanceVersion != nullptr) {
-        vk.enumerateInstanceVersion(&loaderVersion);
+        const VkResult versionResult = vk.enumerateInstanceVersion(&loaderVersion);
+        if (versionResult != VK_SUCCESS) {
+            LOGW("Vulkan loader version query failed: %d", versionResult);
+            return false;
+        }
     }
     if (loaderVersion < MINIMUM_API_VERSION) {
         LOGW("Vulkan loader version %u.%u is below 1.1", VK_API_VERSION_MAJOR(loaderVersion),
@@ -165,8 +194,9 @@ bool VulkanBackend::isAvailable() {
     info.pApplicationInfo = &app;
 
     VkInstance probe = VK_NULL_HANDLE;
-    if (vk.createInstance(&info, nullptr, &probe) != VK_SUCCESS) {
-        LOGW("Vulkan probe instance could not be created");
+    const VkResult createResult = vk.createInstance(&info, nullptr, &probe);
+    if (createResult != VK_SUCCESS || probe == VK_NULL_HANDLE) {
+        LOGW("Vulkan probe instance could not be created: %d", createResult);
         return false;
     }
 
@@ -176,28 +206,76 @@ bool VulkanBackend::isAvailable() {
     auto extensions = reinterpret_cast<PFN_vkEnumerateDeviceExtensionProperties>(
         vk.getInstanceProcAddr(probe, "vkEnumerateDeviceExtensionProperties"));
 
-    uint32_t count = 1;
-    VkPhysicalDevice device = VK_NULL_HANDLE;
-    VkResult enumerated = enumerate(probe, &count, &device);
-    bool supported = (enumerated == VK_SUCCESS || enumerated == VK_INCOMPLETE) && count > 0;
+    bool supported = destroy != nullptr && enumerate != nullptr && extensions != nullptr;
+    std::vector<VkPhysicalDevice> devices;
+    if (supported) {
+        uint32_t count = 0;
+        const VkResult countResult = enumerate(probe, &count, nullptr);
+        if ((countResult != VK_SUCCESS && countResult != VK_INCOMPLETE) || count == 0) {
+            LOGW("Vulkan probe found no physical devices: result=%d count=%u", countResult, count);
+            supported = false;
+        } else {
+            devices.resize(count);
+            const VkResult devicesResult = enumerate(probe, &count, devices.data());
+            if ((devicesResult != VK_SUCCESS && devicesResult != VK_INCOMPLETE) || count == 0) {
+                LOGW("Vulkan physical-device enumeration failed: %d", devicesResult);
+                supported = false;
+            } else {
+                devices.resize(count);
+            }
+        }
+    }
 
     if (supported) {
-        uint32_t extensionCount = 0;
-        extensions(device, nullptr, &extensionCount, nullptr);
-        std::vector<VkExtensionProperties> available(extensionCount);
-        extensions(device, nullptr, &extensionCount, available.data());
-        for (const char* name : FRAME_EXPORT_EXTENSIONS) {
-            if (!hasExtension(available, name)) {
-                LOGW("Vulkan device lacks %s", name);
-                supported = false;
+        supported = false;
+        for (VkPhysicalDevice device : devices) {
+            uint32_t extensionCount = 0;
+            VkResult extensionResult = extensions(device, nullptr, &extensionCount, nullptr);
+            if (extensionResult != VK_SUCCESS && extensionResult != VK_INCOMPLETE) continue;
+            std::vector<VkExtensionProperties> available(extensionCount);
+            extensionResult = extensions(device, nullptr, &extensionCount, available.data());
+            if (extensionResult != VK_SUCCESS && extensionResult != VK_INCOMPLETE) continue;
+
+            const bool hasRequiredExtensions = std::all_of(
+                std::begin(FRAME_EXPORT_EXTENSIONS), std::end(FRAME_EXPORT_EXTENSIONS),
+                [&available](const char* name) { return hasExtension(available, name); });
+            if (hasRequiredExtensions) {
+                supported = true;
+                break;
             }
         }
     }
 
     destroy(probe, nullptr);
-    availability = supported ? 1 : 0;
     LOGI("Vulkan HW rendering %s", supported ? "available" : "unavailable");
     return supported;
+}
+
+bool VulkanBackend::isAvailable() {
+    if (availability >= 0) return availability == 1;
+    availability = 0;
+
+    if (!loadLoader()) return false;
+    const bool customWasLoaded = usingCustomDriver;
+    if (probeLoader()) {
+        availability = 1;
+        return true;
+    }
+
+    if (customWasLoaded) {
+        LOGW("Selected custom Vulkan driver failed the Vulkan probe; retrying with the system driver");
+        resetLoader();
+        if (loadLoader(false) && probeLoader()) {
+            availability = 1;
+            LOGI("System Vulkan driver passed the fallback probe");
+            return true;
+        }
+        resetLoader();
+    }
+
+    availability = 0;
+    LOGW("No compatible Vulkan driver passed the hardware-rendering probe");
+    return false;
 }
 
 void VulkanBackend::setNegotiationInterface(
