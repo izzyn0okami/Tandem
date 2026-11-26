@@ -56,4 +56,65 @@ class CoreInstallerTest {
             file.delete()
         }
     }
+
+    @Test
+    fun restoresValidBackupWhenTargetIsMissing() {
+        val directory = Files.createTempDirectory("core-recovery-missing").toFile()
+        val target = File(directory, "core.so")
+        val backup = File(directory, "core.so.backup")
+        try {
+            writeArm64Elf(backup)
+            CoreInstaller.recoverBackup(target, backup)
+            assertTrue(target.isFile)
+            assertTrue(CoreInstaller.isArm64Elf(target))
+            assertFalse(backup.exists())
+        } finally {
+            directory.deleteRecursively()
+        }
+    }
+
+    @Test
+    fun restoresValidBackupOverInvalidTarget() {
+        val directory = Files.createTempDirectory("core-recovery-invalid").toFile()
+        val target = File(directory, "core.so")
+        val backup = File(directory, "core.so.backup")
+        try {
+            target.writeText("corrupt target")
+            writeArm64Elf(backup)
+            CoreInstaller.recoverBackup(target, backup)
+            assertTrue(CoreInstaller.isArm64Elf(target))
+            assertFalse(backup.exists())
+        } finally {
+            directory.deleteRecursively()
+        }
+    }
+
+    @Test
+    fun removesResidualBackupWhenTargetIsAlreadyValid() {
+        val directory = Files.createTempDirectory("core-recovery-residual").toFile()
+        val target = File(directory, "core.so")
+        val backup = File(directory, "core.so.backup")
+        try {
+            writeArm64Elf(target)
+            writeArm64Elf(backup)
+            CoreInstaller.recoverBackup(target, backup)
+            assertTrue(CoreInstaller.isArm64Elf(target))
+            assertFalse(backup.exists())
+        } finally {
+            directory.deleteRecursively()
+        }
+    }
+
+    private fun writeArm64Elf(file: File) {
+        val header = ByteArray(20)
+        header[0] = 0x7F
+        header[1] = 'E'.code.toByte()
+        header[2] = 'L'.code.toByte()
+        header[3] = 'F'.code.toByte()
+        header[4] = 2
+        header[5] = 1
+        header[18] = 183.toByte()
+        file.writeBytes(header)
+    }
+
 }
