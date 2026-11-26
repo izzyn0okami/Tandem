@@ -43,6 +43,19 @@ class RomUnzipperTest {
     }
 
     @Test
+    fun corruptedCachedRomIsRecreatedInsteadOfReused() {
+        val bytes = byteArrayOf(1, 2, 3, 4, 5)
+        val archive = zip("cached.zip", "game.nes" to bytes)
+        val first = RomUnzipper.extract(archive, setOf("nes"), cache)!!
+        first.writeBytes(byteArrayOf(9, 9, 9, 9, 9))
+
+        val repaired = RomUnzipper.extract(archive, setOf("nes"), cache)
+
+        assertNotNull(repaired)
+        assertArrayEquals(bytes, repaired!!.readBytes())
+    }
+
+    @Test
     fun rejectsArchiveWithMultipleCompatibleRoms() {
         val archive = zip(
             "multiple.zip",
