@@ -242,7 +242,12 @@ bool VulkanBackend::probeLoader() {
         }
     }
 
-    destroy(probe, nullptr);
+    if (destroy != nullptr) {
+        destroy(probe, nullptr);
+    } else {
+        LOGW("Vulkan probe instance has no vkDestroyInstance entry point");
+        supported = false;
+    }
     LOGI("Vulkan HW rendering %s", supported ? "available" : "unavailable");
     return supported;
 }
