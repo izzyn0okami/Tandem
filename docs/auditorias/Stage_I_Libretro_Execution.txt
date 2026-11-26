@@ -388,7 +388,7 @@ OBSERVAÇÕES DE CATÁLOGO
 - A interface atual de catálogo não deve oferecer automaticamente todos os cores listados no Buildbot; cada associação plataforma/core precisa de metadados, extensões, BIOS, diretórios, recursos e testes.
 
 ORDEM RECOMENDADA PARA EXPANSÃO
-1. PS2: avaliar ARMSX2 e PCEE2 em paralelo; escolher apenas após testar inicialização, controles, BIOS, memória/saves e desempenho.
+1. PS2: priorizar avaliação do PCEE2 por oferecer Controls, Saves e Memory Monitoring; comparar ARMSX2 como alternativa, pois não declara suporte Libretro a Controls/Saves/Memory Monitoring. Escolher apenas após testar inicialização, BIOS, controles, memory cards, states, RA e desempenho.
 2. GameCube/Wii: integrar Dolphin, por ter documentação e recursos Libretro mais completos.
 3. 3DS: integrar Azahar em vez de Citra legado.
 4. Wii U: avaliar Cemu com fluxo específico de keys/MLC e tratamento de saves.
