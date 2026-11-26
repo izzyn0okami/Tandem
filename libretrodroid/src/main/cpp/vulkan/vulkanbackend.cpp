@@ -167,7 +167,7 @@ bool VulkanBackend::loadLoader(bool allowCustom) {
 }
 
 bool VulkanBackend::probeLoader() {
-    if (!loadLoader(false) && vk.createInstance == nullptr) return false;
+    if (!loadLoader(false)) return false;
 
     uint32_t loaderVersion = VK_API_VERSION_1_0;
     if (vk.enumerateInstanceVersion != nullptr) {
