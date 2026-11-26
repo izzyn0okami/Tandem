@@ -634,3 +634,13 @@ ATUALIZAÇÃO — VALIDAÇÃO DA RECUPERAÇÃO POR SHA-256 — 2026-11-26
 - [ ] Teste funcional no aparelho para instalação interrompida/recuperação de backup permanece pendente.
 - [ ] Revisar caminhos adicionais de rollback, falha de rede, ZIP inválido e consistência de metadados SHA-256/ETag.
 - PR #57 permanece aberta e draft, sem merge; nenhuma publicação em tandem-latest; PR #41 permanece intocada.
+
+
+REVISÃO I14–I16 — DIAGNÓSTICOS DE SALVAMENTO — 2026-11-26
+- [x] Identificado que falhas em `serializeSRAM()`/gravação local eram capturadas sem registro, dificultando distinguir falha de serialização, gravação e SRAM vazia.
+- [x] Adicionado registro explícito para SRAM vazia (sem sobrescrever arquivo existente) e log de exceção quando serialização/gravação falhar.
+- [x] Adicionado log de exceção ao falhar criação ou carregamento de estado rápido.
+- Commit: 357bc14047ab55ba2af6df6cc7e2cea6fe4c9a4c.
+- [ ] CI de diagnóstico pendente.
+- [ ] Testes instrumentados de encerramento forçado, perda de processo e falha nativa ainda pendentes.
+- Observação: revisão estática do ciclo de vida indica que a Activity persiste SRAM em `onPause`, libera entradas virtuais, encerra RA/Core antes da suspensão do GL ao finalizar/recriar e evita dupla destruição com `nativeDestroyed`; ainda falta validação automatizada/instrumentada dessas transições.
