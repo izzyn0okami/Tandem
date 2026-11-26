@@ -63,6 +63,23 @@ object RomUnzipper {
             entry.crc.toString(),
         ).joinToString("\n")
 
+        // Não apaga o diretório inteiro: outra sessão pode estar usando o cache de outro jogo.
+        check(folder.isDirectory || folder.mkdirs()) { "Não foi possível criar o cache da ROM." }
+        val temp = File(folder, "${out.name}.part")
+        val backup = File(folder, "${out.name}.backup")
+
+        // Recupera uma promoção interrompida antes de iniciar outra extração. Se o processo
+        // morreu entre out -> backup e .part -> out, o backup ainda é a única cópia anterior.
+        if (!out.exists() && backup.isFile) {
+            check(backup.renameTo(out)) {
+                "Não foi possível restaurar a ROM em cache após uma interrupção."
+            }
+        } else if (out.exists() && backup.exists()) {
+            // out já foi promovido; o backup é sobra de uma transação concluída parcialmente.
+            check(backup.delete()) { "Não foi possível limpar o backup antigo da ROM em cache." }
+        }
+        temp.delete()
+
         // O tamanho sozinho não identifica uma ROM: outra versão pode ter exatamente os mesmos bytes.
         // Reutilize o cache apenas quando os metadados da entrada ZIP também forem idênticos.
         if (out.isFile && out.length() == entry.size && metadata.isFile &&
@@ -72,13 +89,6 @@ object RomUnzipper {
         ) {
             return out
         }
-
-        // Não apaga o diretório inteiro: outra sessão pode estar usando o cache de outro jogo.
-        folder.mkdirs()
-        val temp = File(folder, "${out.name}.part")
-        val backup = File(folder, "${out.name}.backup")
-        temp.delete()
-        backup.delete()
         val crc = CRC32()
         var copied = 0L
         try {
