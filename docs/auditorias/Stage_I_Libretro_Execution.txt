@@ -702,3 +702,15 @@ ATUALIZAÇÃO — CI #45907953883 APROVADA — 2026-11-26
 - [x] Jobs tandem-release e nightly-release ignorados; nenhuma publicação em tandem-latest.
 - PR #57 permanece aberta e draft, sem merge; PR #41 permanece intocada.
 - [ ] Testes instrumentados e validação funcional no aparelho continuam pendentes conforme os itens acima.
+
+
+REVISÃO DE COBERTURA I7/I8 — 2026-11-26
+- [x] Reinspecionados RomUnzipper.kt e RomUnzipperTest.kt no HEAD da PR #57.
+- [x] Confirmados testes para extração de uma ROM compatível e reutilização de cache validado.
+- [x] Confirmados testes para múltiplas ROMs compatíveis, ausência de ROM compatível, entrada duplicada, traversal, ZIP corrompido, CRC divergente, tamanho declarado divergente e limite de tamanho.
+- [x] Confirmados testes de bypass para ZIPs nativos e plataformas baseadas em disco.
+- [x] Confirmada cobertura de recuperação de backup após promoção interrompida e reparo de cache corrompido.
+- [x] CI #45907953883 aprovou os testes unitários e build APK após essa cobertura estar presente no HEAD validado.
+- [ ] Validação funcional no aparelho com ZIPs reais de sistemas baseados em arquivo e disco continua pendente.
+- [ ] Confirmar comportamento de ROMs multidisco reais (M3U/CUE) no aparelho.
+- [ ] A cobertura não substitui validação com arquivos reais grandes e armazenamento limitado no telefone.
