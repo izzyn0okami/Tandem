@@ -19,9 +19,30 @@ object CoreInstaller {
     private const val BASE_URL = "https://buildbot.libretro.com/nightly/android/latest/arm64-v8a"
     private const val PREFS = "libretro_core_updates"
 
+    internal data class CoreArtifact(val archiveName: String, val libraryName: String)
+
+    private val specialArtifacts = mapOf(
+        // O Buildbot publica Azahar com nome diferente do padrão Android.
+        "azahar" to CoreArtifact("azahar_libretro.so.zip", "azahar_libretro.so"),
+    )
+
+    internal fun artifact(coreId: String): CoreArtifact {
+        require(coreId.matches(Regex("[a-zA-Z0-9_]+"))) { "Identificador de núcleo inválido" }
+        return specialArtifacts[coreId]
+            ?: CoreArtifact("${coreId}_libretro_android.so.zip", "${coreId}_libretro_android.so")
+    }
+
+    fun coreIdFromFile(file: File): String {
+        val name = file.name
+        specialArtifacts.forEach { (id, artifact) ->
+            if (name == artifact.libraryName) return id
+        }
+        return name.removeSuffix("_libretro_android.so")
+    }
+
     fun coresDir(context: Context): File = File(context.filesDir, "libretro/cores").apply { mkdirs() }
 
-    fun coreFile(context: Context, coreId: String): File = File(coresDir(context), "${coreId}_libretro_android.so")
+    fun coreFile(context: Context, coreId: String): File = File(coresDir(context), artifact(coreId).libraryName)
 
     fun isInstalled(context: Context, coreId: String): Boolean {
         val file = coreFile(context, coreId)
@@ -51,8 +72,9 @@ object CoreInstaller {
         runCatching {
             val target = coreFile(context, coreId)
             if (!target.isFile || !isArm64Elf(target)) return@runCatching false
+            val remote = artifact(coreId)
 
-            val connection = URL("$BASE_URL/${target.name}.zip").openConnection() as HttpURLConnection
+            val connection = URL("$BASE_URL/${remote.archiveName}").openConnection() as HttpURLConnection
             connection.requestMethod = "HEAD"
             connection.connectTimeout = 15_000
             connection.readTimeout = 20_000
@@ -113,9 +135,10 @@ object CoreInstaller {
         runCatching {
             require(coreId.matches(Regex("[a-zA-Z0-9_]+"))) { "Identificador de núcleo inválido" }
             val target = coreFile(context, coreId)
+            val remote = artifact(coreId)
             val part = File(target.parentFile, "${target.name}.part")
             val backup = File(target.parentFile, "${target.name}.backup")
-            val connection = URL("$BASE_URL/${target.name}.zip").openConnection() as HttpURLConnection
+            val connection = URL("$BASE_URL/${remote.archiveName}").openConnection() as HttpURLConnection
             connection.connectTimeout = 30_000
             connection.readTimeout = 90_000
             GameLog.log("núcleos", "baixando ${target.name}")
@@ -127,8 +150,8 @@ object CoreInstaller {
                 val remoteEtag = connection.getHeaderField("ETag")?.takeIf { it.isNotBlank() }
                 ZipInputStream(connection.inputStream).use { zip ->
                     val entry = zip.nextEntry
-                    check(entry != null && entry.name == target.name && !entry.isDirectory) {
-                        "ZIP inesperado: esperava ${target.name}, veio ${entry?.name}"
+                    check(entry != null && entry.name == remote.libraryName && !entry.isDirectory) {
+                        "ZIP inesperado: esperava ${remote.libraryName}, veio ${entry?.name}"
                     }
                     FileOutputStream(part).use { output ->
                         val buffer = ByteArray(64 * 1024)
