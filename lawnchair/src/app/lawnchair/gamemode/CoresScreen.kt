@@ -5,6 +5,8 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -34,6 +36,19 @@ internal fun CoresScreen() {
     var tick by remember { mutableIntStateOf(0) }
     var message by remember { mutableStateOf("") }
     val platforms = remember { GamePlatforms.all.filter { it.launch == LaunchMode.LIBRETRO && CoreRegistry.cores(it).size > 1 } }
+    val driverPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        if (uri != null) {
+            scope.launch {
+                message = "Importando driver Vulkan…"
+                val result = VulkanDriverManager.importPackage(context, uri)
+                message = result.fold(
+                    onSuccess = { "Driver importado: ${it.name} ${it.version}. Selecione-o abaixo." },
+                    onFailure = { "Falha ao importar driver: ${it.message ?: "pacote inválido"}" },
+                )
+                tick++
+            }
+        }
+    }
 
     Column(
         modifier = Modifier.fillMaxSize().padding(horizontal = 24.dp, vertical = 4.dp),
@@ -42,6 +57,52 @@ internal fun CoresScreen() {
         Text(stringResource(R.string.game_cores_title), color = GameColors.text, fontSize = 20.sp, fontWeight = FontWeight.Bold)
         Text(stringResource(R.string.game_cores_note), color = GameColors.textDim, fontSize = 12.sp)
         if (message.isNotEmpty()) Text(message, color = GameColors.textDim, fontSize = 12.sp, maxLines = 2)
+        if (VulkanDriverManager.isLikelyAdreno()) {
+            val drivers = remember(tick) { VulkanDriverManager.installed(context) }
+            val selectedDriver = remember(tick) { VulkanDriverManager.selectedId(context) }
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text("Driver Vulkan (Snapdragon / Adreno)", color = GameColors.text, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+                Text("Opcional e sem root. O driver do sistema continua disponível; alterações só valem ao iniciar uma nova sessão.", color = GameColors.textDim, fontSize = 12.sp)
+                FocusSurface(
+                    onClick = { driverPicker.launch(arrayOf("application/zip", "application/x-zip-compressed", "application/octet-stream")) },
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Text("Importar pacote Turnip / AdrenoTools (.zip)", color = GameColors.text, fontSize = 13.sp, modifier = Modifier.padding(12.dp))
+                }
+                FocusSurface(
+                    onClick = {
+                        VulkanDriverManager.select(context, null)
+                        tick++
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Text(
+                        text = "${if (selectedDriver == null) "●" else "○"} Driver Vulkan do sistema",
+                        color = if (selectedDriver == null) GameColors.accent else GameColors.text,
+                        fontSize = 13.sp,
+                        modifier = Modifier.padding(12.dp),
+                    )
+                }
+                drivers.forEach { driver ->
+                    FocusSurface(
+                        onClick = {
+                            VulkanDriverManager.select(context, driver.id)
+                            tick++
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Column(modifier = Modifier.fillMaxWidth().padding(12.dp)) {
+                            Text(
+                                text = "${if (selectedDriver == driver.id) "●" else "○"} ${driver.name} ${driver.version}",
+                                color = if (selectedDriver == driver.id) GameColors.accent else GameColors.text,
+                                fontSize = 13.sp,
+                            )
+                            Text("${driver.vendor} • ${driver.author} • SHA-256 ${driver.sha256.take(12)}…", color = GameColors.textDim, fontSize = 11.sp)
+                        }
+                    }
+                }
+            }
+        }
         LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxSize()) {
             items(platforms, key = { it.slug }) { platform ->
                 val chosen = remember(tick) { CoreRegistry.chosen(context, platform) }
