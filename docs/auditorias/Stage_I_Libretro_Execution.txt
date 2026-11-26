@@ -260,3 +260,27 @@ I17 — AUDITORIA DO CAMINHO DE ENTRADA — 2026-11-26
 - [ ] Implementar ocultação automática quando InputManager detectar controle físico conectado.
 - [ ] Testes automatizados para deadzone, clamp, botões, D-pad e liberação de entradas.
 - [ ] CI e validação visual/ergonômica no aparelho.
+
+
+CI — IMPLEMENTAÇÃO INICIAL I17 — 2026-11-26
+- [x] CI #1465 — https://github.com/izzyn0okami/Tandem/actions/runs/45740796378 — sucesso.
+- [x] check-style / Spotless: sucesso, sem nova alteração de formatação.
+- [x] Testes unitários: sucesso.
+- [x] assembleLawnWithQuickstepGithubDebug: sucesso.
+- [x] Upload do artefato APK: sucesso.
+- [x] Workflow final: sucesso.
+- [ ] Teste funcional no aparelho: pendente; a CI não valida ergonomia, multitouch real, eixos dos dois analógicos, detecção de controle físico nem coexistência com a tela de toque do DS.
+- CI #1461 — https://github.com/izzyn0okami/Tandem/actions/runs/45740638760 — falhou na compilação Kotlin em GameSessionActivity.kt:460: referência não resolvida a VirtualGamepadView.setMenuOpen. A execução posterior #1465 passou com o código atualizado; a falha intermediária fica registrada para rastreabilidade.
+- CI #1460 — https://github.com/izzyn0okami/Tandem/actions/runs/45740602519 — check-style falhou no push automático do Spotless por corrida non-fast-forward; o job de build/testes passou. A execução posterior #1465 confirmou estilo e build.
+- Estado atual da branch validado pela CI #1465; PR #57 permanece aberta e draft, sem merge e sem publicação em tandem-latest.
+
+I17 — ESTADO DA PRIMEIRA IMPLEMENTAÇÃO
+- [x] Criada camada visual VirtualGamepadView com D-pad, A/B/X/Y, Start/Select e dois sticks independentes.
+- [x] Integrados os eixos virtuais aos canais LibretroDroid MOTION_SOURCE_DPAD, MOTION_SOURCE_ANALOG_LEFT e MOTION_SOURCE_ANALOG_RIGHT.
+- [x] Implementado rastreamento de ponteiros e entradas simultâneas; adicionada liberação de entradas em cancelamento e eventos de ciclo de vida.
+- [x] Implementada ocultação automática quando um controle físico é detectado e ocultação ao abrir o menu da sessão.
+- [x] Criados testes unitários para deadzone radial, clamp de eixo, diagonal e limiar do D-pad.
+- [ ] Preferências de escala, posição, transparência e override de auto-hide ainda não possuem interface de configuração completa.
+- [ ] Testes automatizados de dispatch multitouch/lifecycle e integração de eixos ainda pendentes.
+- [ ] Revisar visualmente a composição e a ergonomia em retrato/paisagem; teste real no aparelho pendente.
+- [ ] I7/I8: testes dedicados de extração ZIP continuam pendentes.
