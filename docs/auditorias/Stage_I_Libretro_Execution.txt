@@ -681,9 +681,12 @@ ATUALIZAÇÃO — VALIDAÇÃO DO ENVELOPE DE ESTADO RÁPIDO — 2026-11-26
 - [x] O decoder preserva compatibilidade com estados legados sem envelope.
 - [x] O decoder rejeita cabeçalho TNDM incompleto, comprimento unsigned maior que o payload e envelope sem bytes de estado do emulador.
 - [x] Adicionados testes unitários para estado legado, round-trip, cabeçalho truncado, comprimento acima do payload, comprimento unsigned inválido e ausência de estado de emulação.
-- [x] Spotless aprovado na execução #1626 e nas verificações de estilo #1627/#1628.
-- [ ] CI #1627 — https://github.com/izzyn0okami/Tandem/actions/runs/45904366623 — build/testes ainda em execução na última consulta.
-- [ ] CI #1628 — https://github.com/izzyn0okami/Tandem/actions/runs/45904377691 — primeira tentativa falhou antes da compilação porque o repositório não resolveu o plugin KSP 2.3.13; job de build foi repetido para descartar falha transitória.
-- [ ] Confirmar que QuickStateEnvelopeTest compila e passa no conjunto de testes do projeto.
-- [ ] Confirmar build APK no commit que contém codec, integração e testes.
-- [ ] Testes instrumentados de ciclo de vida e validação funcional no aparelho continuam pendentes.
+- [x] CI #1627 — https://github.com/izzyn0okami/Tandem/actions/runs/45904366623 — sucesso: Spotless, testes unitários, build APK e upload do artefato.
+- [x] CI #1628 — https://github.com/izzyn0okami/Tandem/actions/runs/45904377691 — sucesso após repetição do job de build; Spotless, testes unitários, build APK e upload do artefato.
+- [x] A primeira tentativa do job de build da CI #1628 falhou antes da compilação por indisponibilidade transitória de resolução do plugin KSP 2.3.13; a repetição passou sem alteração de código para contornar dependência.
+- [x] Jobs tandem-release e nightly-release ignorados; nenhuma publicação em tandem-latest.
+- [ ] Testes instrumentados de ciclo de vida, encerramento forçado, perda de processo e falha nativa continuam pendentes.
+- [ ] Validação funcional no aparelho da persistência/restauração de SRAM e estados rápidos em pausa, retomada e encerramento continua pendente.
+- [ ] Validar no aparelho recuperação do instalador após interrupção, falha de rede, ZIP inválido e divergência de SHA-256/ETag.
+- [ ] Confirmar recuperação de saves em cenários de conflito e sincronização com RomM.
+- PR #57 permanece aberta e draft, sem merge; PR #41 permanece intocada.
