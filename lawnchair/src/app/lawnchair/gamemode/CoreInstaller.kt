@@ -68,8 +68,10 @@ object CoreInstaller {
                 when {
                     remoteModified > 0L && installedModified > 0L ->
                         remoteModified > installedModified + 1_000L
+
                     remoteEtag != null && installedEtag != null ->
                         remoteEtag != installedEtag
+
                     else -> null
                 }
             } finally {
@@ -187,10 +189,16 @@ object CoreInstaller {
                 prefs.edit()
                     .putString("sha256_$coreId", installedDigest)
                     .apply {
-                        if (remoteModified > 0L) putLong("modified_$coreId", remoteModified)
-                        else remove("modified_$coreId")
-                        if (remoteEtag != null) putString("etag_$coreId", remoteEtag)
-                        else remove("etag_$coreId")
+                        if (remoteModified > 0L) {
+                            putLong("modified_$coreId", remoteModified)
+                        } else {
+                            remove("modified_$coreId")
+                        }
+                        if (remoteEtag != null) {
+                            putString("etag_$coreId", remoteEtag)
+                        } else {
+                            remove("etag_$coreId")
+                        }
                     }
                     .apply()
                 // A limpeza do backup é pós-commit: sua falha não invalida a instalação.
