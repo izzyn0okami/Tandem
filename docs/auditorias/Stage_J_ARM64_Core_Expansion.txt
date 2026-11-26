@@ -189,3 +189,39 @@ NOTA SOBRE VULKAN/TURNIP
 - A sessão atual ainda não configura preferVulkan/vulkanDriver de acordo com o core nem apresenta gestão de pacotes externos.
 - Vita3K requer Vulkan 1.1 ou OpenGL com glcore conforme renderer; PCEE2 aceita Vulkan/OpenGL/software (Vulkan recomendado). O backend atual do Tandem é GLES para apresentação e oferece contexto Vulkan separado para cores que negociam HW render; cada core precisa ser testado nessa ponte.
 - Não implementar fallback silencioso para OpenGL quando um core exige Vulkan. Apresentar erro claro e manter o driver do sistema selecionável.
+
+
+J2/J3/J4/J5/J6/J7 — PRIMEIRA IMPLEMENTAÇÃO — 2026-11-26
+
+CONCLUÍDO NO CÓDIGO (AGUARDANDO CI)
+- [x] Criado catálogo inicial para PS2: PCEE2 padrão, ARMSX2 e PCSX2 como alternativas.
+- [x] Migrado o encaminhamento de PS2 de emulador externo para Libretro.
+- [x] Migrado o encaminhamento de 3DS para Azahar, com Panda3DS como alternativa.
+- [x] Incluídos Vita3K (experimental prioritário), RPCS3 (experimental) e Xenia Edge (experimental).
+- [x] Incluídas plataformas iniciais de computadores/consoles retrô: Atari 8-bit, Atari ST, Amiga, C64, ZX Spectrum, DOS, ScummVM, Apple II, X68000, PC-98, PC-FX, Neo Geo CD, Pokémon Mini, Game & Watch, Mega Duck/Watara, Arduboy, Arcade e SuperGrafx.
+- [x] CoreInstaller passou a aceitar o nome real do artefato Azahar (azahar_libretro.so.zip / azahar_libretro.so), além do padrão Android.
+- [x] Adicionados testes unitários para resolução dos sistemas novos e nomes de artefatos especiais.
+- [x] Criado VulkanDriverManager rootless, com importação de pacote AdrenoTools ZIP, extração privada, validação de meta.json, API mínima, ELF64/AArch64, dependências .so, limite de tamanho, rejeição de caminhos inseguros, SHA-256 local e seleção do driver.
+- [x] Adicionada UI na tela de núcleos para importar/selecionar driver Turnip/Adreno e voltar ao driver do sistema.
+- [x] GameSessionActivity injeta a seleção do driver e preferência Vulkan para os cores avançados.
+- [x] Confirmado no build.gradle raiz que jniLibs.useLegacyPackaging = true, requisito do libadrenotools para os hooks em nativeLibraryDir.
+
+PENDÊNCIAS TÉCNICAS IMPORTANTES
+- [ ] Confirmar que a CI compila a nova gestão de drivers e o catálogo ampliado.
+- [ ] Adicionar testes automatizados para parser ZIP de drivers, arquivos duplicados, traversal, dependências e rollback.
+- [ ] Adicionar probe explícito para validar a GPU e extensões Vulkan do driver selecionado antes de iniciar o core; atualmente o backend tenta carregar o driver e possui fallback do loader, mas ainda não apresenta uma validação prévia amigável.
+- [ ] Confirmar a detecção de Adreno no Edge 30 Fusion/LineageOS 24.0 e o carregamento rootless no aparelho.
+- [ ] Testar PCEE2, ARMSX2, Azahar, Panda3DS, Vita3K, RPCS3 e Xenia Edge no LibretroDroid.
+- [ ] Garantir que a configuração do core selecionado não força Vulkan em uma variante de renderer que não o suporta.
+- [ ] Rever o tratamento de firmware PS2, PS Vita e PS3 na interface de BIOS; PS2 e Vita usam kit de sistema em subpastas.
+- [ ] Vita3K requer não só firmware PUP, mas também diretórios data e shaders-builtin em system/vita3k; validar a importação do kit completo.
+- [ ] RPCS3 e Xenia Edge mantêm saves dentro do armazenamento do console emulado; não enviar esses dados para sincronização RomM como se fossem SRAM genérica.
+- [ ] Azahar usa diretório de usuário próprio em Saves/Azahar; mapear saves internos sem sobrescrever o diretório do emulador.
+- [ ] Completar catálogo de sistemas do Buildbot que ainda não estão representados (incluindo famílias de computadores, consoles de nicho e engines relevantes).
+- [ ] Confirmar extensões/formatos de cada plataforma contra a documentação do core; a primeira lista de extensões é preliminar.
+- [ ] Dolphin e Cemu permanecem pendentes de pacote ARM64 verificável ou de build próprio reproduzível.
+
+CI / PR
+- PR #58: https://github.com/izzyn0okami/Tandem/pull/58 — aberta como draft, empilhada sobre PR #57.
+- CI inicial: run 45744311190 (#1484) — queued no momento do registro.
+- Nenhuma alteração foi mesclada nem publicada em tandem-latest.
