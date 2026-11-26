@@ -1,14 +1,13 @@
 
 
-CI APROVADA — PR #58 — 2026-11-26
-- [x] CI #1512 — https://github.com/izzyn0okami/Tandem/actions/runs/45745134780 — conclusão success.
-- [x] check-style / Spotless: sucesso; aplicação automática de formatação e verificação final concluídas.
+CI APROVADA — PR #58 — atualização 2026-11-26
+- [x] CI #1522 — https://github.com/izzyn0okami/Tandem/actions/runs/45746878243 — conclusão success no commit cf70dad1ada109d4595db25b013f77187f241771.
+- [x] check-style / Spotless: sucesso; formatação aplicada e verificada.
 - [x] Testes unitários: sucesso.
 - [x] Build assembleLawnWithQuickstepGithubDebug: sucesso.
 - [x] Upload do APK de debug: sucesso.
 - [x] Job final-status: sucesso.
-- Commit validado: 189d508847e0ef741d1a9744aa0a3e6bb664105a.
-- Artefato de debug gerado pela CI #1512; esta validação comprova compilação e testes automatizados, não compatibilidade funcional no aparelho.
+- [x] Metadados de procedência do driver externo: nome do arquivo de origem, provedor, instante de importação e hash SHA-256 adicionados à instalação local.
 - [ ] Testar no aparelho os novos cores e respectivos BIOS/firmware, controles, áudio/vídeo, saves e estados.
 - [ ] Importar pacote Turnip/Adreno confiável e validar carregamento real no Snapdragon/Adreno, enumeração Vulkan, extensões e fallback.
 - [ ] Completar probe Vulkan explícito e testes de fallback; CI atual não valida inicialização de GPU física.
