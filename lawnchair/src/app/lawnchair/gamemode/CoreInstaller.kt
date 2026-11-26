@@ -253,6 +253,7 @@ object CoreInstaller {
             }
         }
     }
+
     /** SHA-256 local para detectar corrupção posterior do arquivo instalado. */
     internal fun sha256(file: File): String? = runCatching {
         val digest = MessageDigest.getInstance("SHA-256")
