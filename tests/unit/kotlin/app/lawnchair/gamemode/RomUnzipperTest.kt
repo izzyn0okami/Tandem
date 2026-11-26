@@ -86,6 +86,19 @@ class RomUnzipperTest {
     }
 
     @Test
+    fun rejectsDeclaredSizeMismatchAndCleansTemporaryFile() {
+        val archive = zip("bad-size.zip", "game.nes" to byteArrayOf(1, 2, 3))
+        corruptCentralDirectoryUncompressedSize(archive)
+
+        expectFailure<Exception> {
+            RomUnzipper.extract(archive, setOf("nes"), cache)
+        }
+
+        val temporaryFiles = cache.walkTopDown().filter { it.name.endsWith(".part") }.toList()
+        assertEquals(emptyList<File>(), temporaryFiles)
+    }
+
+    @Test
     fun rejectsCorruptZip() {
         val archive = File(root, "corrupt.zip").apply { writeText("not a ZIP archive") }
 
@@ -104,6 +117,17 @@ class RomUnzipperTest {
             }
         }
         return archive
+    }
+
+    private fun corruptCentralDirectoryUncompressedSize(archive: File) {
+        val bytes = archive.readBytes()
+        val signature = byteArrayOf(0x50, 0x4B, 0x01, 0x02)
+        val offset = (0..bytes.size - signature.size).firstOrNull { index ->
+            signature.indices.all { bytes[index + it] == signature[it] }
+        } ?: error("Central directory entry not found")
+        // Uncompressed size is the four-byte little-endian field at offset 24.
+        bytes[offset + 24] = (bytes[offset + 24].toInt() + 1).toByte()
+        archive.writeBytes(bytes)
     }
 
     private fun corruptCentralDirectoryCrc(archive: File) {
