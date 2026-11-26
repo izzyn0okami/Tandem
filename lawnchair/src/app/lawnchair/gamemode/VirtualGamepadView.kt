@@ -256,6 +256,7 @@ internal class VirtualGamepadView @JvmOverloads constructor(
                 if (pointerControls.values.contains(control)) return true
                 pointerControls[pointerId] = control
                 updateControl(control, event.getX(index), event.getY(index), pressed = true)
+                forwardPassthroughTouch(event)
             }
 
             MotionEvent.ACTION_MOVE -> {
@@ -269,10 +270,8 @@ internal class VirtualGamepadView @JvmOverloads constructor(
             MotionEvent.ACTION_UP, MotionEvent.ACTION_POINTER_UP -> {
                 val index = event.actionIndex
                 val pointerId = event.getPointerId(index)
-                if (pointerId in passthroughPointerIds) {
-                    forwardPassthroughTouch(event)
-                    passthroughPointerIds.remove(pointerId)
-                }
+                forwardPassthroughTouch(event)
+                passthroughPointerIds.remove(pointerId)
                 pointerControls.remove(pointerId)?.let { releaseControl(it) }
             }
 
