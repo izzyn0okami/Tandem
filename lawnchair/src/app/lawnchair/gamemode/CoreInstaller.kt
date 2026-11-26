@@ -142,6 +142,7 @@ object CoreInstaller {
                         output.fd.sync()
                     }
                     zip.closeEntry()
+                    check(zip.nextEntry == null) { "ZIP contém entradas adicionais inesperadas" }
                 }
                 check(isArm64Elf(part)) {
                     "${target.name} não é uma biblioteca ELF ARM64 válida"
