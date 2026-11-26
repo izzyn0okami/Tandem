@@ -729,3 +729,11 @@ ATUALIZAÇÃO — CI #1642 E REVISÃO ESTÁTICA DO CICLO DE VIDA — 2026-11-26
 - [ ] Confirmar no aparelho a persistência/restauração de SRAM e estados rápidos em pausa, retomada e encerramento.
 - [ ] Validar se a sincronização pós-pausa deve ocorrer também em pausa transitória (app em segundo plano), ou se deve ficar restrita ao encerramento real da sessão; revisar sem alterar o contrato de Device Sync até confirmar o comportamento desejado.
 - PR #57 permanece aberta e draft, sem merge; PR #41 permanece intocada; tandem-latest não foi alterada.
+
+
+COMPLEMENTO — SINCRONIZAÇÃO DURANTE PAUSA TRANSITÓRIA — 2026-11-26
+- [x] Revisado SaveSync.pushAsync: antes de enfileirar o Worker, captura uma cópia/snapshot do artefato de save selecionado; o Worker usa o snapshot identificado pelo job, não uma leitura posterior do arquivo vivo.
+- [x] Os trabalhos são serializados por identidade do jogo, núcleo e fingerprint da conta, com política APPEND_OR_REPLACE; uma pausa seguida de retomada não faz o Worker enviar diretamente um arquivo que o núcleo esteja modificando.
+- [x] A sincronização disparada em onPause também ocorre em pausa transitória do Android; a implementação usa snapshot imutável e pode manter a fila pendente para a próxima execução.
+- [ ] Testar no aparelho pausa/retomada rápida com rede lenta, verificando que o snapshot antigo não substitui o save mais recente e que o segundo job é processado depois.
+- [ ] Verificar comportamento real de conflito quando uma pausa transitória gera upload enquanto o usuário retoma a sessão.
