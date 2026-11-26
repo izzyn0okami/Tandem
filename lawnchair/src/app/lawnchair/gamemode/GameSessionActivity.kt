@@ -508,8 +508,10 @@ class GameSessionActivity : ComponentActivity() {
                 } else {
                     GameLog.log("saves", "SRAM inalterado após serialização do núcleo; gravação e upload desnecessários ignorados")
                 }
+            } else {
+                GameLog.log("saves", "núcleo retornou SRAM vazia; arquivo local existente não foi alterado")
             }
-        }
+        }.onFailure { GameLog.error("saves", "falha ao serializar ou persistir SRAM", it) }
         val user = RaSettings.user(this) ?: return
         if (raSession != null) {
             runCatching {
@@ -556,7 +558,7 @@ class GameSessionActivity : ComponentActivity() {
             logArtifactInventory("estado rápido salvo")
             romPath?.let { path -> coreIdOf()?.let { GameSessionCoordinator.markPending(this, path, it, intent.getStringExtra(EXTRA_PLATFORM), gameIdentity) } }
             true
-        }.getOrDefault(false)
+        }.onFailure { GameLog.error("saves", "falha ao criar estado rápido", it) }.getOrDefault(false)
         toast(if (saved) R.string.game_session_state_saved else R.string.game_session_state_save_failed)
         setMenu(false)
     }
@@ -587,7 +589,9 @@ class GameSessionActivity : ComponentActivity() {
             raProgress = payload.copyOfRange(8, 8 + len)
             emuState = payload.copyOfRange(8 + len, payload.size)
         }
-        val loaded = runCatching { view.unserializePersistedStateWithAchievements(emuState, raProgress) }.getOrDefault(false)
+        val loaded = runCatching { view.unserializePersistedStateWithAchievements(emuState, raProgress) }
+            .onFailure { GameLog.error("saves", "falha ao carregar estado rápido", it) }
+            .getOrDefault(false)
         toast(if (loaded) R.string.game_session_state_loaded else R.string.game_session_state_load_failed)
         setMenu(false)
     }
