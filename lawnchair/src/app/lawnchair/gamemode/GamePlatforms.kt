@@ -336,7 +336,7 @@ object GamePlatforms {
             folderAliases = setOf("wiiu", "nintendowiiu"),
             sortOrder = 105,
             multiFileFolder = true,
-            bios = listOf(BiosFile("keys.txt", "Chaves Wii U (necessárias para imagens criptografadas)")),
+            biosKit = listOf("Cemu"),
         ),
         GamePlatform(
             slug = "pc",
