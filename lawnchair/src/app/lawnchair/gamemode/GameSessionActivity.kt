@@ -208,12 +208,18 @@ class GameSessionActivity : ComponentActivity() {
         lifecycle.addObserver(view)
         val gamepad = VirtualGamepadView(this, retroView = view)
         virtualGamepad = gamepad
-        setContentView(
-            FrameLayout(this).apply {
-                addView(view, ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
-                addView(gamepad, ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
-            },
-        )
+        val sessionHost = object : FrameLayout(this) {
+            override fun dispatchTouchEvent(event: MotionEvent): Boolean {
+                // Always let the overlay classify each pointer, even when an earlier finger
+                // started on the DS touchscreen. It forwards only non-control pointers to GLRetroView.
+                if (gamepad.dispatchTouchEvent(event)) return true
+                return view.dispatchTouchEvent(event)
+            }
+        }.apply {
+            addView(view, ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
+            addView(gamepad, ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
+        }
+        setContentView(sessionHost)
 
         if (coreId == "melonds") {
             lifecycleScope.launch {
