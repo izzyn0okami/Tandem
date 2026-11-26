@@ -63,12 +63,13 @@ object CoreInstaller {
                 val remoteModified = connection.lastModified
                 val remoteEtag = connection.getHeaderField("ETag")?.takeIf { it.isNotBlank() }
                 val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-                val installedModified = prefs.getLong("modified_$coreId", target.lastModified())
+                val installedModified = prefs.getLong("modified_$coreId", 0L)
                 val installedEtag = prefs.getString("etag_$coreId", null)
                 when {
-                    remoteModified > 0L && remoteModified > installedModified + 1_000L -> true
-                    remoteEtag != null && installedEtag != null && remoteEtag != installedEtag -> true
-                    remoteModified > 0L || (remoteEtag != null && installedEtag != null) -> false
+                    remoteModified > 0L && installedModified > 0L ->
+                        remoteModified > installedModified + 1_000L
+                    remoteEtag != null && installedEtag != null ->
+                        remoteEtag != installedEtag
                     else -> null
                 }
             } finally {
@@ -184,9 +185,11 @@ object CoreInstaller {
                 val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
                 prefs.edit()
                     .putString("sha256_$coreId", installedDigest)
-                    .putLong("modified_$coreId", remoteModified.takeIf { it > 0L } ?: System.currentTimeMillis())
                     .apply {
+                        if (remoteModified > 0L) putLong("modified_$coreId", remoteModified)
+                        else remove("modified_$coreId")
                         if (remoteEtag != null) putString("etag_$coreId", remoteEtag)
+                        else remove("etag_$coreId")
                     }
                     .apply()
                 // A limpeza do backup é pós-commit: sua falha não invalida a instalação.
