@@ -42,8 +42,8 @@ internal class VirtualGamepadView @JvmOverloads constructor(
     private data class Region(val x: Float, val y: Float, val radius: Float)
 
     private val inputManager = context.getSystemService(Context.INPUT_SERVICE) as InputManager
-    private val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
     private val pointerControls = mutableMapOf<Int, Control>()
+    private val passthroughPointerIds = mutableSetOf<Int>()
     private val pressedKeys = mutableSetOf<Int>()
     private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
     private val rect = RectF()
@@ -98,8 +98,8 @@ internal class VirtualGamepadView @JvmOverloads constructor(
                     device.supportsSource(InputDevice.SOURCE_JOYSTICK)
                 )
         }
-        val hideForPhysicalPad = prefs.getBoolean(KEY_AUTO_HIDE, true) && physicalPadConnected
-        val shouldShow = prefs.getBoolean(KEY_ENABLED, true) && !hideForPhysicalPad && !menuOpen
+        val hideForPhysicalPad = GameModeSettings.isVirtualGamepadAutoHideEnabled(context) && physicalPadConnected
+        val shouldShow = GameModeSettings.isVirtualGamepadEnabled(context) && !hideForPhysicalPad && !menuOpen
         val newVisibility = if (shouldShow) VISIBLE else GONE
         if (visibility != newVisibility) {
             if (newVisibility != VISIBLE) releaseAll()
@@ -115,7 +115,7 @@ internal class VirtualGamepadView @JvmOverloads constructor(
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
         if (width <= 0 || height <= 0) return
-        val alpha = (prefs.getFloat(KEY_OPACITY, DEFAULT_OPACITY) * 255f).toInt().coerceIn(40, 255)
+        val alpha = (GameModeSettings.virtualGamepadOpacity(context) * 255f).toInt().coerceIn(40, 255)
 
         val dpad = region(Control.DPAD)
         drawDpad(canvas, dpad, alpha)
@@ -201,20 +201,23 @@ internal class VirtualGamepadView @JvmOverloads constructor(
 
     private fun region(control: Control): Region {
         val portrait = height > width
+        val scale = GameModeSettings.virtualGamepadScale(context)
+        val offsetX = width * GameModeSettings.virtualGamepadOffsetX(context)
+        val offsetY = height * GameModeSettings.virtualGamepadOffsetY(context)
         val y = height * if (portrait) 0.82f else 0.78f
-        val stickRadius = dp(if (portrait) 31f else 36f)
-        val dpadRadius = dp(if (portrait) 31f else 36f)
-        val buttonRadius = dp(if (portrait) 13f else 15f)
+        val stickRadius = dp(if (portrait) 31f else 36f) * scale
+        val dpadRadius = dp(if (portrait) 31f else 36f) * scale
+        val buttonRadius = dp(if (portrait) 13f else 15f) * scale
         return when (control) {
-            Control.DPAD -> Region(width * 0.105f, y, dpadRadius)
-            Control.LEFT_STICK -> Region(width * 0.325f, y, stickRadius)
-            Control.RIGHT_STICK -> Region(width * 0.675f, y, stickRadius)
-            Control.A -> Region(width * 0.90f, y + buttonRadius * 1.55f, buttonRadius)
-            Control.B -> Region(width * 0.90f + buttonRadius * 1.55f, y, buttonRadius)
-            Control.X -> Region(width * 0.90f - buttonRadius * 1.55f, y, buttonRadius)
-            Control.Y -> Region(width * 0.90f, y - buttonRadius * 1.55f, buttonRadius)
-            Control.SELECT -> Region(width * 0.455f, height * 0.95f, dp(17f))
-            Control.START -> Region(width * 0.545f, height * 0.95f, dp(17f))
+            Control.DPAD -> Region(width * 0.105f + offsetX, y + offsetY, dpadRadius)
+            Control.LEFT_STICK -> Region(width * 0.325f + offsetX, y + offsetY, stickRadius)
+            Control.RIGHT_STICK -> Region(width * 0.675f + offsetX, y + offsetY, stickRadius)
+            Control.A -> Region(width * 0.90f + offsetX, y + buttonRadius * 1.55f + offsetY, buttonRadius)
+            Control.B -> Region(width * 0.90f + buttonRadius * 1.55f + offsetX, y + offsetY, buttonRadius)
+            Control.X -> Region(width * 0.90f - buttonRadius * 1.55f + offsetX, y + offsetY, buttonRadius)
+            Control.Y -> Region(width * 0.90f + offsetX, y - buttonRadius * 1.55f + offsetY, buttonRadius)
+            Control.SELECT -> Region(width * 0.455f + offsetX, height * 0.95f + offsetY, dp(17f) * scale)
+            Control.START -> Region(width * 0.545f + offsetX, height * 0.95f + offsetY, dp(17f) * scale)
         }
     }
 
@@ -243,9 +246,14 @@ internal class VirtualGamepadView @JvmOverloads constructor(
             MotionEvent.ACTION_DOWN, MotionEvent.ACTION_POINTER_DOWN -> {
                 val index = event.actionIndex
                 val control = hitControl(event.getX(index), event.getY(index))
-                if (control == null) return pointerControls.isNotEmpty()
-                if (pointerControls.values.contains(control)) return true
                 val pointerId = event.getPointerId(index)
+                if (control == null) {
+                    if (pointerControls.isEmpty()) return false
+                    passthroughPointerIds += pointerId
+                    forwardPassthroughTouch(event)
+                    return true
+                }
+                if (pointerControls.values.contains(control)) return true
                 pointerControls[pointerId] = control
                 updateControl(control, event.getX(index), event.getY(index), pressed = true)
             }
@@ -255,19 +263,44 @@ internal class VirtualGamepadView @JvmOverloads constructor(
                     val control = pointerControls[event.getPointerId(index)] ?: continue
                     updateControl(control, event.getX(index), event.getY(index), pressed = true)
                 }
+                forwardPassthroughTouch(event)
             }
 
             MotionEvent.ACTION_UP, MotionEvent.ACTION_POINTER_UP -> {
                 val index = event.actionIndex
                 val pointerId = event.getPointerId(index)
+                if (pointerId in passthroughPointerIds) {
+                    forwardPassthroughTouch(event)
+                    passthroughPointerIds.remove(pointerId)
+                }
                 pointerControls.remove(pointerId)?.let { releaseControl(it) }
             }
 
-            MotionEvent.ACTION_CANCEL -> releaseAll()
+            MotionEvent.ACTION_CANCEL -> {
+                forwardPassthroughTouch(event)
+                passthroughPointerIds.clear()
+                releaseAll()
+            }
         }
         invalidate()
-        return pointerControls.isNotEmpty() || event.actionMasked == MotionEvent.ACTION_UP ||
+        return pointerControls.isNotEmpty() || passthroughPointerIds.isNotEmpty() || event.actionMasked == MotionEvent.ACTION_UP ||
             event.actionMasked == MotionEvent.ACTION_CANCEL
+    }
+
+
+    /**
+     * A View overlay receives the entire multitouch stream once a virtual control owns the first
+     * pointer. Forward only pointers that began outside controls so DS touchscreen input remains usable.
+     */
+    private fun forwardPassthroughTouch(event: MotionEvent) {
+        if (passthroughPointerIds.isEmpty()) return
+        val pointerIdBits = passthroughPointerIds.fold(0) { bits, pointerId -> bits or (1 shl pointerId) }
+        val forwarded = event.split(pointerIdBits)
+        try {
+            retroView?.dispatchTouchEvent(forwarded)
+        } finally {
+            forwarded.recycle()
+        }
     }
 
     private fun updateControl(control: Control, x: Float, y: Float, pressed: Boolean) {
@@ -354,11 +387,4 @@ internal class VirtualGamepadView @JvmOverloads constructor(
 
     private fun dp(value: Float): Float = value * density
 
-    companion object {
-        private const val PREFS = "virtual_gamepad"
-        private const val KEY_ENABLED = "enabled"
-        private const val KEY_AUTO_HIDE = "auto_hide"
-        private const val KEY_OPACITY = "opacity"
-        private const val DEFAULT_OPACITY = 0.76f
-    }
 }
