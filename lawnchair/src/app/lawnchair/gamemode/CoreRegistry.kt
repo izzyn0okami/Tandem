@@ -25,6 +25,86 @@ object CoreRegistry {
     private fun core(id: String, label: String, note: String) = CoreInfo(id, label, note)
 
     private val catalog: Map<String, List<CoreInfo>> = mapOf(
+        "ps2" to listOf(
+            core("pcee2", "PCEE2", "PCSX2 ARM64; experimental, Vulkan/OpenGL; saves, states e RA"),
+            core("armsx2", "ARMSX2", "PCSX2 ARM64; Vulkan por padrão, OpenGL ES 3.2 ou software"),
+            core("pcsx2", "PCSX2 Libretro", "Alternativa experimental; validar recursos e estabilidade"),
+        ),
+        "3ds" to listOf(
+            core("azahar", "Azahar", "Core 3DS atual; requer ROMs descriptografadas"),
+            core("panda3ds", "Panda3DS", "Alternativa experimental; validar compatibilidade"),
+        ),
+        "vita" to listOf(
+            core("vita3k", "Vita3K", "Experimental; Vulkan 1.1, firmware e dados próprios; sem save states/RA"),
+        ),
+        "ps3" to listOf(
+            core("rpcs3", "RPCS3", "Experimental e muito exigente; Vulkan no Android; firmware PS3"),
+        ),
+        "xbox360" to listOf(
+            core("xenia_edge", "Xenia Edge", "Experimental; Vulkan 1.1; saves no armazenamento próprio"),
+        ),
+        "atari8" to listOf(
+            core("atari800", "Atari800", "Atari 8-bit / 5200"),
+        ),
+        "atarist" to listOf(
+            core("hatari", "Hatari", "Atari ST/STE/TT/Falcon"),
+            core("hatari2014", "Hatari 2014", "Alternativa mais antiga"),
+            core("hatarib", "HatariB", "Alternativa"),
+        ),
+        "amiga" to listOf(
+            core("puae", "PUAE", "Commodore Amiga"),
+            core("puae2021", "PUAE 2021", "Versão anterior"),
+            core("amiberry", "Amiberry", "Alternativa"),
+        ),
+        "c64" to listOf(
+            core("vice_x64", "VICE x64", "Commodore 64"),
+            core("vice_x64sc", "VICE x64sc", "Emulação mais precisa"),
+        ),
+        "zxspectrum" to listOf(
+            core("fuse", "Fuse", "ZX Spectrum"),
+        ),
+        "dos" to listOf(
+            core("rust_dos", "Rust DOS", "Ambiente DOS experimental"),
+        ),
+        "scummvm" to listOf(
+            core("scummvm", "ScummVM", "Aventuras gráficas clássicas"),
+        ),
+        "apple2" to listOf(
+            core("applewin", "AppleWin", "Apple II"),
+        ),
+        "x68000" to listOf(
+            core("px68k", "PX68k", "Sharp X68000"),
+        ),
+        "pc98" to listOf(
+            core("np2kai", "Neko Project II Kai", "NEC PC-98"),
+        ),
+        "pcfx" to listOf(
+            core("mednafen_pcfx", "Beetle PC-FX", "NEC PC-FX"),
+        ),
+        "neogeocd" to listOf(
+            core("neocd", "NeoCD", "Neo Geo CD"),
+        ),
+        "pokemini" to listOf(
+            core("pokemini", "PokeMini", "Pokémon Mini"),
+        ),
+        "gamewatch" to listOf(
+            core("gw", "Game & Watch", "Nintendo Game & Watch"),
+        ),
+        "megaduck" to listOf(
+            core("potator", "Potator", "Mega Duck / Watara Supervision"),
+        ),
+        "arduboy" to listOf(
+            core("ardens", "Ardens", "Arduboy"),
+        ),
+        "arcade" to listOf(
+            core("fbneo", "FinalBurn Neo", "Arcade e Neo Geo"),
+            core("mamearcade", "MAME Arcade", "Compatibilidade ampla; maior consumo"),
+            core("mame2003_plus", "MAME 2003 Plus", "Conjuntos de ROMs clássicos"),
+            core("hbmame", "HBMAME", "Variantes e hacks de arcade"),
+        ),
+        "supergrafx" to listOf(
+            core("mednafen_supergrafx", "Beetle SuperGrafx", "NEC SuperGrafx"),
+        ),
         "nes" to listOf(
             core("fceumm", "FCEUmm", "Rápido e compatível"),
             core("nestopia", "Nestopia", "Mais preciso"),
