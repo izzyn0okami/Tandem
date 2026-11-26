@@ -374,11 +374,8 @@ object GamePlatforms {
             folderAliases = setOf("vita", "psvita", "ps_vita", "playstationvita"),
             sortOrder = 106,
             zipIsNativeRom = true,
-            bios = listOf(
-                BiosFile("PSP2UPDAT.PUP", "Firmware PS Vita (obrigatório)"),
-                BiosFile("PSP2UPDAT_PREINST.PUP", "Firmware PS Vita preinstalado (obrigatório)"),
-                BiosFile("PSP2UPDAT_FONT.PUP", "Fontes do sistema PS Vita (opcional)"),
-            ),
+            // Vita3K keeps firmware, data and built-in shaders inside its own system kit.
+            // Do not expose these PUPs as root-level BIOS files in BiosScreen.
             biosRequired = true,
             biosKit = listOf("vita3k"),
         ),
