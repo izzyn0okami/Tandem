@@ -641,6 +641,18 @@ REVISÃO I14–I16 — DIAGNÓSTICOS DE SALVAMENTO — 2026-11-26
 - [x] Adicionado registro explícito para SRAM vazia (sem sobrescrever arquivo existente) e log de exceção quando serialização/gravação falhar.
 - [x] Adicionado log de exceção ao falhar criação ou carregamento de estado rápido.
 - Commit: 357bc14047ab55ba2af6df6cc7e2cea6fe4c9a4c.
-- [ ] CI de diagnóstico pendente.
+- [x] CI de diagnóstico aprovada: CIs #1613, #1614 e #1615 concluídas com sucesso.
 - [ ] Testes instrumentados de encerramento forçado, perda de processo e falha nativa ainda pendentes.
 - Observação: revisão estática do ciclo de vida indica que a Activity persiste SRAM em `onPause`, libera entradas virtuais, encerra RA/Core antes da suspensão do GL ao finalizar/recriar e evita dupla destruição com `nativeDestroyed`; ainda falta validação automatizada/instrumentada dessas transições.
+
+
+ATUALIZAÇÃO — CIs #1613–#1615 CONCLUÍDAS — 2026-11-26
+- [x] CI #1613 — https://github.com/izzyn0okami/Tandem/actions/runs/45882831827 — sucesso: check-style/Spotless, testes unitários, build APK e upload do artefato.
+- [x] CI #1614 — https://github.com/izzyn0okami/Tandem/actions/runs/45882875689 — sucesso: check-style/Spotless, testes unitários, build APK e upload do artefato.
+- [x] CI #1615 — https://github.com/izzyn0okami/Tandem/actions/runs/45882895559 — sucesso: check-style/Spotless, testes unitários, build APK e upload do artefato.
+- [x] As três execuções validaram os commits recentes de diagnóstico e suas atualizações documentais; todos os jobs de publicação tandem-release/nightly-release foram ignorados.
+- [x] Nenhuma publicação em tandem-latest foi realizada.
+- [ ] Testes instrumentados de encerramento forçado, perda de processo e falha nativa permanecem pendentes.
+- [ ] Validar no aparelho recuperação de backup após instalação interrompida, falha de rede, ZIP inválido e integridade dos metadados SHA-256/ETag.
+- [ ] Testar no aparelho a persistência/recuperação de SRAM e estados rápidos em cenários reais de pausa, retomada e encerramento.
+- PR #57 permanece aberta e draft, sem merge; PR #41 permanece intocada.
