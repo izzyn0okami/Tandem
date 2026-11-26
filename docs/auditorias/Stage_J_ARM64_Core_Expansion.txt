@@ -168,7 +168,7 @@ CORES RETRÔ/COMPUTADORES CONFIRMADOS NO ÍNDICE
 - [x] Outros confirmados úteis: gearsystem, sameboy, gambatte, mesen, mesen2, mesen-s, nestopia, quicknes, swanstation, ymir, yabasanshiro, yabause, parallel_n64, parallel_dc, noods, melondsds, etc.
 
 CORREÇÕES IMPORTANTES EM RELAÇÃO À PRÉVIA
-- A afirmação de que Dolphin e Cemu tinham pacotes Android ARM64 no Buildbot não foi confirmada pelo índice atual. Removidos da lista de integração imediata; podem voltar se surgir pacote comprovado ou build próprio reproduzível.
+- A primeira leitura parcial do índice não alcançou as linhas de Dolphin/Cemu e concluiu incorretamente que estavam ausentes. A leitura completa das linhas 65–66 (Cemu) e 94–95 (Dolphin) confirma os dois pacotes Android ARM64. Ambos foram incluídos na implementação.
 - Vita3K, RPCS3 e Xenia Edge estão sim no índice atual; Vita3K deve ser implementado como experimental prioritário conforme pedido do usuário.
 - Azahar tem nome de artefato diferente; CoreInstaller precisa suportar nome do arquivo remoto e nome interno independentemente do coreId.
 - PS2 tem três artefatos no índice (ARMSX2, PCEE2, PCSX2); comparar requisitos/recursos antes de selecionar padrão.
@@ -177,7 +177,7 @@ CORREÇÕES IMPORTANTES EM RELAÇÃO À PRÉVIA
 J1 — ESTADO
 - [x] Conferir índice oficial Android ARM64 diretamente.
 - [x] Corrigir a lista de cores avançados efetivamente publicados.
-- [x] Confirmar Vita3K, RPCS3 e Xenia Edge.
+- [x] Confirmar Vita3K, RPCS3, Xenia Edge, Dolphin e Cemu.
 - [x] Identificar incompatibilidade de nomenclatura do pacote Azahar com o instalador atual.
 - [ ] Fazer auditoria de cada core candidate contra core-info (extensões, firmware, recursos, API gráfica e estado experimental).
 - [ ] Implementar catálogo de artefatos com nomes remotos/internos configuráveis.
@@ -225,3 +225,15 @@ CI / PR
 - PR #58: https://github.com/izzyn0okami/Tandem/pull/58 — aberta como draft, empilhada sobre PR #57.
 - CI inicial: run 45744311190 (#1484) — queued no momento do registro.
 - Nenhuma alteração foi mesclada nem publicada em tandem-latest.
+
+
+CORREÇÃO COMPLEMENTAR DO INVENTÁRIO — DOLPHIN/CEMU
+A inspeção completa das linhas do índice oficial revelou os pacotes:
+- dolphin_libretro_android.so.zip (linha 95).
+- cemu_libretro_android.so.zip (linha 66).
+Ambos já foram integrados no catálogo do Tandem nesta branch:
+- GameCube e Wii -> Dolphin.
+- Wii U -> Cemu.
+Dolphin exige a pasta system/dolphin-emu/Sys e suporta OpenGL ES 3.0+ ou Vulkan; a BIOS GameCube é opcional para a maioria dos jogos.
+Cemu exige Vulkan no Android, usa system/Cemu para keys/configuração e saves/Cemu/mlc01 para o armazenamento emulado. Não possui save states nem memory monitoring.
+Fontes: https://docs.libretro.com/library/dolphin/ e https://docs.libretro.com/library/cemu/
