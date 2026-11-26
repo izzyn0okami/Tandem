@@ -39,3 +39,5 @@ REVISÃO VULKAN — 2026-11-26
 - [x] Revisão adicional do backend: a seleção do dispositivo físico passou a escolher apenas GPUs que oferecem todas as extensões exigidas; não assume que o primeiro dispositivo enumerado é compatível.
 - [x] Verificação de funções Vulkan obrigatórias ampliada antes de criar recursos, evitando chamadas JNI/nativas por ponteiros ausentes em drivers incompletos.
 - [ ] CI da revisão Vulkan mais recente (commits b190470 e c59b500) ainda aguardando execução/conclusão.
+- [x] Seleção de GPU ampliada para exigir API Vulkan suficiente para o core, extensões de exportação de frame e fila gráfica/de computação utilizável pelo backend.
+- [ ] CI dos últimos ajustes de seleção de GPU ainda pendente; verificar build nativo, testes e Spotless antes de encerrar esta revisão.
