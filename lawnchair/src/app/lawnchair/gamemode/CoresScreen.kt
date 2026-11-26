@@ -35,7 +35,7 @@ internal fun CoresScreen() {
     val scope = rememberCoroutineScope()
     var tick by remember { mutableIntStateOf(0) }
     var message by remember { mutableStateOf("") }
-    val platforms = remember { GamePlatforms.all.filter { it.launch == LaunchMode.LIBRETRO && CoreRegistry.cores(it).size > 1 } }
+    val platforms = remember { GamePlatforms.all.filter { it.launch == LaunchMode.LIBRETRO } }
     val driverPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         if (uri != null) {
             scope.launch {
