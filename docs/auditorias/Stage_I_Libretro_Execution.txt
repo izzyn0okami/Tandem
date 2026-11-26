@@ -284,3 +284,128 @@ I17 — ESTADO DA PRIMEIRA IMPLEMENTAÇÃO
 - [ ] Testes automatizados de dispatch multitouch/lifecycle e integração de eixos ainda pendentes.
 - [ ] Revisar visualmente a composição e a ergonomia em retrato/paisagem; teste real no aparelho pendente.
 - [ ] I7/I8: testes dedicados de extração ZIP continuam pendentes.
+
+
+AUDITORIA COMPLEMENTAR — CATÁLOGO LIBRETRO ANDROID ARM64 — 2026-11-25
+
+OBJETIVO
+Atualizar a relação de plataformas e núcleos que podem ser executados pelo Tandem em Android ARM64, separando catálogo já configurado, alternativas disponíveis e novos sistemas que exigem integração. Esta auditoria não marca compatibilidade funcional sem teste no aparelho.
+
+FONTES
+- Índice oficial Buildbot Android ARM64: https://buildbot.libretro.com/nightly/android/latest/arm64-v8a/
+- Lista oficial de cores Libretro: https://docs.libretro.com/guides/core-list/
+- Documentação oficial ARMSX2: https://docs.libretro.com/library/armsx2/
+- Documentação oficial PCEE2: https://docs.libretro.com/library/pcee2/
+- Documentação oficial Dolphin: https://docs.libretro.com/library/dolphin/
+- Documentação oficial Azahar: https://docs.libretro.com/library/azahar/
+- Documentação oficial Cemu: https://docs.libretro.com/library/cemu/
+- Documentação oficial RPCS3: https://docs.libretro.com/library/rpcs3/
+- Documentação oficial Vita3K: https://docs.libretro.com/library/vita3k/
+- Documentação oficial Xenia Edge: https://docs.libretro.com/library/xenia_edge/
+
+CRITÉRIO
+- "Configurado": GamePlatforms já encaminha a plataforma para Libretro e define coreId.
+- "Alternativa": CoreRegistry oferece uma segunda opção, mas isso não significa que toda opção esteja instalada ou testada.
+- "Binário Android ARM64 publicado": existe pacote .so.zip no índice Buildbot. Isso prova disponibilidade de artefato, não estabilidade nem compatibilidade funcional.
+- "Novo candidato": há core Libretro ARM64 e documentação compatível, mas GamePlatforms/fluxo do Tandem ainda não integra a plataforma.
+- "Experimental/alto custo": core publicado/documentado, mas a própria documentação indica estado experimental ou requisitos elevados.
+- Não incluir como implementável confirmado os sistemas sem binário Android ARM64 verificável.
+
+PLATAFORMAS JÁ CONFIGURADAS NO TANDEM
+A branch feat/libretro-stage-i contém 39 plataformas declaradas em GamePlatforms: 32 em Libretro, 6 por emulador externo e 1 via GameNative.
+
+32 plataformas atualmente configuradas para Libretro:
+- Nintendo NES — fceumm.
+- Nintendo SNES — snes9x.
+- Game Boy — mgba.
+- Game Boy Color — mgba.
+- Game Boy Advance — mgba.
+- Mega Drive/Genesis — genesis_plus_gx.
+- Master System — genesis_plus_gx.
+- Game Gear — genesis_plus_gx.
+- Sega 32X — picodrive.
+- Sega CD/Mega CD — genesis_plus_gx.
+- Nintendo 64 — mupen64plus_next_gles3.
+- PlayStation 1 — pcsx_rearmed.
+- PC Engine/TurboGrafx-16 — mednafen_pce_fast.
+- Atari 2600 — stella.
+- Neo Geo Pocket/Color — mednafen_ngp.
+- WonderSwan/Color — mednafen_wswan.
+- Sega SG-1000 — genesis_plus_gx.
+- Sega Saturn — mednafen_saturn.
+- Dreamcast — flycast.
+- Nintendo DS/DSi — melonds.
+- PSP — ppsspp.
+- 3DO — opera.
+- Virtual Boy — mednafen_vb.
+- Atari 7800 — prosystem.
+- Atari 5200 — a5200.
+- Atari Lynx — handy.
+- Atari Jaguar — virtualjaguar.
+- ColecoVision — gearcoleco.
+- MSX/MSX2 — bluemsx.
+- Intellivision — freeintv.
+- Neo Geo MVS/AES — fbneo.
+- EasyRPG/RPG Maker 2000/2003 — easyrpg.
+
+As alternativas já declaradas em CoreRegistry incluem, conforme a plataforma: Nestopia, Mesen, QuickNES, Snes9x 2010, bsnes, Gambatte, SameBoy, Gearboy, gpSP, VBA-M, VBA Next, PicoDrive, BlastEm, SMS Plus GX, Gearsystem, Mupen64Plus-Next GLES2, ParaLLEl N64, SwanStation, Beetle PSX, Beetle PCE, Geargrafx, Stella 2014, Atari800, Beetle Lynx, Gearlynx, RACE, YabaSanshiro, Yabause, DeSmuME, DeSmuME 2015 e NooDS. A disponibilidade individual de cada ID deve continuar sendo conferida antes de exibi-lo como opção instalável.
+
+PLATAFORMAS EXTERNAS ATUAIS COM CORE LIBRETRO ARM64 PUBLICADO
+- PlayStation 2 — ARMSX2 e PCEE2 têm documentação Libretro e builds Android arm64-v8a; também há pacote pcsx2 no índice, mas não deve ser escolhido sem identificar exatamente a variante e seu estado. ARMSX2 usa Vulkan por padrão e OpenGL ES 3.2 no Android; BIOS e pasta resources são necessárias. A documentação ARMSX2 lista States e Disk Control, mas não Saves, Controls ou Memory Monitoring. PCEE2 é explicitamente experimental, recomenda Vulkan e usa memory cards próprios em system/pcsx2/memcards. Candidato para substituir o emulador externo, com avaliação separada de entrada e sincronização de saves RomM.
+- GameCube — Dolphin Libretro tem build Android ARM64; exige pasta Sys e contexto gráfico OpenGL ES 3.0+ ou Vulkan. Possui suporte documentado a saves, states, controles e memory monitoring.
+- Wii — Dolphin Libretro, com os mesmos requisitos e limitações gerais do GameCube.
+- Nintendo 3DS — Azahar Libretro tem build Android ARM64; é a opção recomendada para avaliação, em vez do Citra antigo. Exige ROMs descriptografadas e arquivos de sistema/Mii em determinados jogos.
+- Wii U — Cemu Libretro tem build Android ARM64; exige Vulkan no Android, keys.txt e diretório MLC. A documentação informa que não oferece save states e usa estrutura própria de armazenamento.
+- PlayStation 3 — RPCS3 Libretro tem build Android ARM64, mas é muito exigente de CPU/GPU e firmware; classificar como experimental/alto custo, não como alvo garantido para telefone.
+- PlayStation Vita — Vita3K Libretro tem build Android ARM64 e exige Vulkan 1.1; classificar como experimental/alto custo.
+- Xbox 360 — Xenia Edge Libretro tem build Android ARM64 e exige Vulkan 1.1; a própria documentação o classifica como experimental e o emulador é muito exigente.
+- Nintendo Switch — nenhum core Libretro Android ARM64 apropriado foi confirmado no índice consultado; manter fora da lista confirmada.
+- Xbox original — não foi confirmado binário Android ARM64 apropriado para hakuX-lr/xemu no índice consultado; manter fora da lista confirmada.
+
+NOVOS SISTEMAS RETRÔ/COMPUTADORES COM BINÁRIOS ARM64 PUBLICADOS E POTENCIAL DE INTEGRAÇÃO
+- Arcade: FinalBurn Neo (fbneo), MAME (múltiplas versões: mame2000, mame2003, mame2003_plus, mame2010, mame2015, mame2016, mamearcade) e HBMAME. Alto valor para biblioteca arcade; precisa definir um contrato único de ROM sets/BIOS.
+- Atari 8-bit (400/800/XL/XE) e Atari 5200: Atari800.
+- Atari ST/STE/TT/Falcon: Hatari/Hatari 2014.
+- Commodore Amiga: PUAE/PUAE 2021 e Amiberry.
+- Commodore 64/128/VIC-20 e outras máquinas Commodore: VICE (variantes x64, x64sc, x128, xvic, xpet, xplus4, xscpu64).
+- ZX Spectrum: Fuse.
+- Amstrad CPC: Caprice32 (cap32).
+- DOS/PC antigo: DOSBox Pure, DOSBox Core e DOSBox SVN; são ambientes de PC, não compatibilidade universal com jogos Windows modernos.
+- Aventuras clássicas: ScummVM.
+- Apple II: AppleWin.
+- Sharp X68000: PX68k.
+- NEC PC-98: NP2kai.
+- MSX: além de blueMSX já configurado, fMSX e openMSX estão publicados.
+- PC Engine CD/SuperGrafx e PC-FX: cores Mednafen PCE, SuperGrafx e PC-FX disponíveis.
+- Neo Geo CD: NeoCD, além de FBNeo/Geolith para Neo Geo arcade.
+- Pokémon Mini: PokeMini.
+- Outros portáteis retrô adicionais: Game & Watch (gw), Mega Duck (potator), Watara Supervision (potator), Arduboy (ardens) e Atari Lynx (Handy/Gearlynx/Mednafen).
+
+OBSERVAÇÕES DE CATÁLOGO
+- O diretório Android ARM64 contém muitos outros cores de nicho, engines de jogos e cores de demonstração. A relação acima prioriza consoles, arcades e computadores que podem ser representados como plataformas de biblioteca no Tandem; não é uma transcrição de cada arquivo do Buildbot.
+- A existência de .so.zip não prova que o core carregue corretamente no LibretroDroid. O Buildbot também contém pacotes antigos e cores experimentais.
+- O CoreInstaller atual valida ELF64/AArch64 e instala um core por ID, mas não valida ainda a compatibilidade do contrato de diretórios, BIOS, controles, saves e video context de cada core.
+- A interface atual de catálogo não deve oferecer automaticamente todos os cores listados no Buildbot; cada associação plataforma/core precisa de metadados, extensões, BIOS, diretórios, recursos e testes.
+
+ORDEM RECOMENDADA PARA EXPANSÃO
+1. PS2: avaliar ARMSX2 e PCEE2 em paralelo; escolher apenas após testar inicialização, controles, BIOS, memória/saves e desempenho.
+2. GameCube/Wii: integrar Dolphin, por ter documentação e recursos Libretro mais completos.
+3. 3DS: integrar Azahar em vez de Citra legado.
+4. Wii U: avaliar Cemu com fluxo específico de keys/MLC e tratamento de saves.
+5. Sistemas retrô adicionais: arcade (FBNeo primeiro), Atari 8-bit, Amiga, Commodore, Spectrum, Amstrad, DOS e ScummVM.
+6. PS3, Vita e Xbox 360: manter em trilha experimental separada, sem prometer compatibilidade no aparelho.
+
+PENDÊNCIAS DESTA AUDITORIA
+- [x] Corrigir a informação anterior: ARMSX2 está publicado para Android ARM64 e documentado como core Libretro.
+- [x] Confirmar builds ARM64 para Dolphin, Azahar, Cemu, PCEE2, RPCS3, Vita3K e Xenia Edge no índice consultado.
+- [x] Identificar requisitos e limitações relevantes documentados para PS2, GameCube/Wii, 3DS e Wii U.
+- [ ] Validar cada core candidato carregando no LibretroDroid/Tandem.
+- [ ] Validar diretórios de sistema/BIOS, entrada, controles, áudio/vídeo, saves e states por core.
+- [ ] Decidir quais novas plataformas entram no catálogo RomM/Tandem; não implementar sem decisão de escopo.
+- [ ] Atualizar GamePlatforms/CoreRegistry e testes apenas depois de aprovadas as plataformas-alvo.
+- [ ] Revalidar a lista de pacotes no Buildbot antes de cada integração, pois nightly é mutável.
+
+ESTADO DA PR
+- PR #57 permanece aberta e draft.
+- Esta atualização é documental; não adiciona novos cores nem altera o comportamento do aplicativo.
+- Não mesclar nem publicar em tandem-latest sem autorização explícita.
