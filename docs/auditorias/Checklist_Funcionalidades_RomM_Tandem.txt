@@ -1869,3 +1869,12 @@ FECHAMENTO — ESTÁGIO G6 / PR #56 (2026-11-26)
 - [CONCLUÍDO — MERGE AUTORIZADO] PR #56 mesclada por squash em game-mode-m2-dev. Commit: 3fd9a720eef64b1b7d7865e0a5965c3e8276a8ac.
 - [CONCLUÍDO] G6 implementado e validado. G1, G2, G3, G4 e G8 permanecem fora do escopo por decisão do usuário; G5 e G7 permanecem auditorias técnicas sem implementação.
 - [PENDENTE — PUBLICAÇÃO] Confirmar execução e sucesso do workflow de publicação assinada em tandem-latest após o merge. Não considerar a publicação concluída até verificar o APK/release e sua assinatura.
+
+
+FECHAMENTO DA PUBLICAÇÃO — ESTÁGIO G6 / TANDEM-LATEST (2026-11-26)
+- [CONCLUÍDO — CI] CI push #1405, run 45731203085, concluiu com sucesso: check-style, testes unitários, build-debug-apk, upload do artefato, final-status e tandem-release.
+- [CONCLUÍDO — CI] CI push #1406, run 45731313370, concluiu com sucesso: check-style, testes unitários, build-debug-apk, upload do artefato, final-status e tandem-release.
+- [CONCLUÍDO — PUBLICAÇÃO ASSINADA] Release tandem-latest atualizada para Tandem (build 1406), publicada pelo GitHub Actions. Commit indicado no corpo da release: 03a1274ebbfad26f87e3da0b62512e77e34fe13c.
+- [CONCLUÍDO — ARTEFATO] Asset Tandem.apk enviado e confirmado na release: 52.981.975 bytes; SHA-256 4e3e25b82682827489e9385cf2cdb416c68134fc53d682d1d085c2731aa063af.
+- [CONCLUÍDO] A publicação assinada da integração G6/Jukebox está disponível em tandem-latest. O usuário pode atualizar pelo APK oficial da release.
+- [PENDENTE] Nenhuma pendência técnica de CI/publicação referente ao fechamento do Estágio G6. PR #55 (auditoria documental G5/G7) permanece separada e sem merge, conforme decisão anterior.
