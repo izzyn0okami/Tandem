@@ -1854,3 +1854,10 @@ VALIDAÇÃO DE CI — ESTÁGIO G6 / PR #56 (2026-11-25)
 - [CONCLUÍDO — FORMATAÇÃO] Spotless automático e verificação final concluídos com sucesso. O commit de formatação foi incluído no head validado.
 - [PENDENTE — TESTE NO APARELHO] Catálogo, busca, facetas de artista/álbum, streaming real, foco de áudio, favoritos e operações de playlist; confirmar scopes playlists.read e playlists.write.
 - [GOVERNANÇA] PR #56 segue aberta, draft e sem merge. Não instalar APK de PR sobre tandem-latest, pois builds de PR não recebem a chave de assinatura de publicação. Latest permanece inalterada; aguarda teste do usuário e autorização explícita para merge.
+
+
+VALIDAÇÃO FUNCIONAL NO APARELHO — ESTÁGIO G6 / PR #56 (2026-11-25)
+- [CONCLUÍDO — TESTE NO APARELHO] Usuário confirmou que todos os recursos da Jukebox estão funcionando corretamente no aparelho.
+- [CONCLUÍDO — VALIDAÇÃO FUNCIONAL] Catálogo, busca, artistas/álbuns, reprodução, foco/controles de áudio, favoritos e operações de playlists considerados aprovados pelo usuário.
+- [CONCLUÍDO — AUTORIZAÇÃO] Scopes necessários e integração com a instância RomM validados pelo teste do usuário.
+- [PENDENTE — GOVERNANÇA] PR #56 permanece aberta, draft e sem merge; aguardar autorização explícita para merge em game-mode-m2-dev e publicação em tandem-latest.
