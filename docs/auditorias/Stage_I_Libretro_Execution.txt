@@ -557,3 +557,18 @@ ATUALIZAÇÃO — TESTES ZIP ADICIONAIS E CI — 2026-11-26
 - [ ] Revisar casos adicionais de recuperação/rollback do cache ZIP e limites de extração.
 - [ ] Validação manual individual de ZIP duplicado, ZIP nativo e plataforma discBased no aparelho permanece pendente; o usuário já confirmou funcionamento geral do conjunto testado, mas não declarou esses três cenários isoladamente.
 - PR #57 permanece aberta e draft, sem merge ou publicação em tandem-latest; PR #41 permanece intocada.
+
+
+ATUALIZAÇÃO — RECUPERAÇÃO DE CACHE ZIP E CI — 2026-11-26
+- [x] Corrigida a recuperação de promoção de cache interrompida: se o arquivo final estiver ausente e houver backup, o backup é restaurado antes de nova extração.
+- [x] Se o arquivo final já foi promovido e restou um backup, o backup residual é removido antes de prosseguir.
+- [x] A criação do diretório de cache agora é verificada explicitamente; falha não segue silenciosamente.
+- [x] Novo teste automatizado simula interrupção após mover a ROM válida para .backup, altera o conteúdo do ZIP e confirma que a extração seguinte recupera/substitui o cache sem deixar .backup ou .part.
+- [x] CI #1586 — https://github.com/izzyn0okami/Tandem/actions/runs/45846759634 — sucesso; Spotless, testes unitários, build e upload do APK.
+- [x] CI #1587 — https://github.com/izzyn0okami/Tandem/actions/runs/45846870235 — sucesso; Spotless, testes unitários, build e upload do APK.
+- [x] CI #1588 — https://github.com/izzyn0okami/Tandem/actions/runs/45846898710 — sucesso no HEAD 713c1892ad71ad390a23caca10743542baf6eb66; Spotless, testes unitários, build e upload do APK.
+- [x] CI #1589, #1590 e #1591 — https://github.com/izzyn0okami/Tandem/actions/runs/45847025305 ; https://github.com/izzyn0okami/Tandem/actions/runs/45847128784 ; https://github.com/izzyn0okami/Tandem/actions/runs/45847262850 — todas concluídas com sucesso no mesmo HEAD 713c1892ad71ad390a23caca10743542baf6eb66.
+- [x] Jobs tandem-release e nightly-release ignorados; nenhuma publicação em tandem-latest.
+- [ ] Revisar limites de extração ZIP (tamanho máximo, razão de compressão e consumo de armazenamento) e demais cenários de rollback.
+- [ ] Validação manual isolada da recuperação de backup e dos cenários ZIP duplicado/nativo/discBased no aparelho permanece pendente.
+- PR #57 permanece aberta e draft, sem merge ou publicação em tandem-latest; PR #41 permanece intocada.
