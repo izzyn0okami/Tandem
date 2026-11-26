@@ -290,6 +290,7 @@ object GamePlatforms {
             discBased = true,
             discCompanionExtensions = setOf("bin"),
             biosRequired = true,
+            biosKit = listOf("pcsx2"),
         ),
         GamePlatform(
             slug = "gc",
@@ -388,7 +389,6 @@ object GamePlatforms {
             multiFileFolder = true,
             bios = listOf(BiosFile("PS3UPDAT.PUP", "Firmware PS3 (obrigatório)")),
             biosRequired = true,
-            biosKit = listOf("rpcs3"),
         ),
         GamePlatform(
             slug = "xbox360",
