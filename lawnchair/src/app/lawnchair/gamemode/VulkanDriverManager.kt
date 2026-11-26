@@ -47,7 +47,7 @@ object VulkanDriverManager {
             append(Build.BOARD).append(' ')
             if (Build.VERSION.SDK_INT >= 31) append(Build.SOC_MODEL)
         }.lowercase()
-        return listOf("qualcomm", "qcom", "adreno", "sm8350", "sm8450", "sm8475", "sm8550", "sm8650", "sm8750", "kona", "lahaina", "taro", "kalama", "pineapple").any(identifiers::contains)
+        return listOf("qualcomm", "qcom", "adreno", "sm8350", "sm8450", "sm8475", "sm8550", "sm8650", "sm8750", "kona", "lahaina", "taro", "kalama", "pineapple").any { identifiers.contains(it) }
     }
 
     fun installed(context: Context): List<InstalledVulkanDriver> =
