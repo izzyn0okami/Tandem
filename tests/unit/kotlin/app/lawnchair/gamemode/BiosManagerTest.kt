@@ -183,6 +183,14 @@ class BiosManagerTest {
     }
 
     @Test
+    fun vitaFirmwareIsTrackedOnlyThroughItsDedicatedKit() {
+        val vita = GamePlatforms.all.single { it.slug == "vita" }
+        assertTrue(vita.biosRequired)
+        assertEquals(listOf("vita3k"), vita.biosKit)
+        assertTrue(vita.bios.isEmpty())
+    }
+
+    @Test
     fun advancedCoreKitsRequireTheirActualSystemStructure() {
         val ps2 = GamePlatforms.all.single { it.slug == "ps2" }
         val ps2Kit = File(root, "pcsx2").apply { mkdirs() }
