@@ -758,7 +758,7 @@ class GameSessionActivity : ComponentActivity() {
         private const val EXTRA_MIGRATION_PATHS = "migration_paths"
         private const val RA_TOAST_MS = 4_000L
         private const val SRAM_AUTOSAVE_MS = 60_000L
-        private val VULKAN_CORES = setOf("pcee2", "armsx2", "pcsx2", "azahar", "panda3ds", "vita3k", "rpcs3", "xenia_edge")
+        private val VULKAN_CORES = setOf("pcee2", "armsx2", "pcsx2", "azahar", "panda3ds", "vita3k", "rpcs3", "xenia_edge", "dolphin", "cemu")
 
         fun intent(
             context: Context,
