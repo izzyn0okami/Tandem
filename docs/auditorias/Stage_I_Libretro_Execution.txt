@@ -465,3 +465,17 @@ ATUALIZAÇÃO — VALIDAÇÃO DO GAMEPAD PELO USUÁRIO — 2026-11-26
   - [ ] build APK e upload do artefato: em andamento no momento deste registro.
   - Head submetido à execução: f1a29b7ff873e5ef02f3ca28891cbab97ce3071d.
 - PR #57 continua aberta e draft; nenhum merge ou publicação em tandem-latest foi realizado.
+
+
+ATUALIZAÇÃO — CI #1563 — 2026-11-26
+- [x] CI #1563 — https://github.com/izzyn0okami/Tandem/actions/runs/45756741623 — conclusão success.
+- [x] check-style / Spotless: sucesso.
+- [x] Testes unitários: sucesso.
+- [x] Build assembleLawnWithQuickstepGithubDebug: sucesso.
+- [x] Upload do artefato APK: sucesso.
+- [x] Workflow final: sucesso.
+- Commit validado: 1d58c436c32452b23f273aa7d6468584bbe6abb2.
+- A CI confirma a suíte unitária atualmente configurada e a compilação; não substitui validação funcional no aparelho.
+- [ ] I7/I8: testes dedicados de RomUnzipper continuam pendentes (ZIP válido, múltiplas entradas, zero candidatas, traversal, CRC/tamanho incorretos e ZIP corrompido).
+- [ ] I17: usuário confirmou funcionamento básico no aparelho; testes avançados de multitouch misto, dois analógicos simultâneos, rotação, ciclo de vida e personalização permanecem pendentes.
+- PR #57 permanece aberta e draft, sem merge e sem publicação em tandem-latest.
