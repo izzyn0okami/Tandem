@@ -545,18 +545,7 @@ class GameSessionActivity : ComponentActivity() {
                 GameLog.log("saves", "núcleo não forneceu estado rápido serializável")
                 return@runCatching false
             }
-            val payload = if (raProgress != null) {
-                val header = "TNDM".toByteArray(Charsets.US_ASCII)
-                val len = raProgress.size
-                header + byteArrayOf(
-                    (len shr 24).toByte(),
-                    (len shr 16).toByte(),
-                    (len shr 8).toByte(),
-                    len.toByte(),
-                ) + raProgress + emuState
-            } else {
-                emuState
-            }
+            val payload = QuickStateEnvelope.encode(emuState, raProgress)
             store.writeState(payload)
             logArtifactInventory("estado rápido salvo")
             romPath?.let { path -> coreIdOf()?.let { GameSessionCoordinator.markPending(this, path, it, intent.getStringExtra(EXTRA_PLATFORM), gameIdentity) } }
@@ -582,26 +571,16 @@ class GameSessionActivity : ComponentActivity() {
             setMenu(false)
             return
         }
-        var emuState = payload
-        var raProgress: ByteArray? = null
-        val marker = "TNDM".toByteArray(Charsets.US_ASCII)
-        if (payload.size >= 8 && payload.copyOfRange(0, 4).contentEquals(marker)) {
-            val len = ((payload[4].toInt() and 0xFF) shl 24) or
-                ((payload[5].toInt() and 0xFF) shl 16) or
-                ((payload[6].toInt() and 0xFF) shl 8) or
-                (payload[7].toInt() and 0xFF)
-            val emuSize = payload.size - 8 - len
-            if (len < 0 || emuSize <= 0) {
-                // Cabeçalho corrompido ou pacote truncado: não entrega o conteúdo ao núcleo.
-                GameLog.log("saves", "estado rápido rejeitado: cabeçalho TNDM inválido ou payload truncado (len=$len, total=${payload.size})")
-                toast(R.string.game_session_state_load_failed)
-                setMenu(false)
-                return
-            }
-            raProgress = payload.copyOfRange(8, 8 + len)
-            emuState = payload.copyOfRange(8 + len, payload.size)
+        val decoded = QuickStateEnvelope.decode(payload)
+        if (decoded == null) {
+            GameLog.log("saves", "estado rápido rejeitado: envelope TNDM truncado ou com comprimentos inválidos (total=${payload.size})")
+            toast(R.string.game_session_state_load_failed)
+            setMenu(false)
+            return
         }
-        val loaded = runCatching { view.unserializePersistedStateWithAchievements(emuState, raProgress) }
+        val loaded = runCatching {
+            view.unserializePersistedStateWithAchievements(decoded.emulatorState, decoded.achievementsProgress)
+        }
             .onFailure { GameLog.error("saves", "falha ao carregar estado rápido", it) }
             .getOrDefault(false)
         if (!loaded) GameLog.log("saves", "núcleo recusou o estado rápido; sessão continuou sem restaurá-lo")
