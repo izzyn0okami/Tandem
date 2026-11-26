@@ -89,11 +89,11 @@ REGRAS DE INTEGRAÇÃO ROMM / SAVES / RETROACHIEVEMENTS
 PENDÊNCIAS INICIAIS
 - [ ] J1 inventário completo de todos os cores e arquivos Android ARM64.
 - [ ] J2 catálogo central e validação integral de disponibilidade.
-- [ ] J3 migração de PS2, GameCube, Wii, 3DS e Wii U.
-- [ ] J4 integração experimental Vita3K.
-- [ ] J5 integrar famílias retrô/arcade/computadores da lista.
-- [ ] J6 UI/fluxo de importação e seleção de driver externo Adreno/Turnip.
-- [ ] J7 ligar seleção de Vulkan/driver à sessão e validar fallback.
+- [x] J3 código de migração de PS2/PCEE2, GameCube/Wii/Dolphin, 3DS/Azahar e Wii U/Cemu; [ ] validação funcional.
+- [x] J4 cadastro e inicialização Vulkan do Vita3K experimental; [ ] validar firmware/data/shaders e execução real.
+- [x] J5 primeira leva de plataformas retrô/arcade/computadores cadastrada; [ ] completar inventário e validar extensões/BIOS.
+- [x] J6 UI/fluxo rootless de importação e seleção de driver externo Adreno/Turnip; [ ] validar pacotes reais.
+- [x] J7 preferência Vulkan e driver selecionado ligados à sessão; [ ] probe explícito e teste de fallback.
 - [ ] J8 testes unitários/instrumentados e CI.
 - [ ] Confirmar licenças e atribuições dos componentes adicionados.
 - [ ] Atualizar este log após cada CI/PR bem-sucedida e registrar pendências/concluídos.
@@ -237,3 +237,27 @@ Ambos já foram integrados no catálogo do Tandem nesta branch:
 Dolphin exige a pasta system/dolphin-emu/Sys e suporta OpenGL ES 3.0+ ou Vulkan; a BIOS GameCube é opcional para a maioria dos jogos.
 Cemu exige Vulkan no Android, usa system/Cemu para keys/configuração e saves/Cemu/mlc01 para o armazenamento emulado. Não possui save states nem memory monitoring.
 Fontes: https://docs.libretro.com/library/dolphin/ e https://docs.libretro.com/library/cemu/
+
+
+ATUALIZAÇÃO DO ESCOPO — DOLPHIN/CEMU E ESTADO DO CÓDIGO — 2026-11-26
+A leitura integral do Buildbot (não apenas os primeiros 200 resultados) confirmou também:
+- dolphin_libretro_android.so.zip — GameCube e Wii.
+- cemu_libretro_android.so.zip — Wii U.
+A primeira implementação desta branch agora migra:
+- PS2 -> PCEE2 (padrão), ARMSX2/PCSX2 (alternativas).
+- GameCube e Wii -> Dolphin (exige dolphin-emu/Sys; OpenGL ES 3.0+ ou Vulkan).
+- Wii U -> Cemu (Vulkan obrigatório no Android; keys.txt opcional conforme formato; MLC em saves/Cemu/mlc01).
+- 3DS -> Azahar (Panda3DS alternativo).
+- PS Vita -> Vita3K experimental prioritário.
+- PS3 -> RPCS3 experimental.
+- Xbox 360 -> Xenia Edge experimental.
+
+O catálogo adicional desta branch também inclui, entre outros: Atari 8-bit/ST, Amiga, C64, ZX Spectrum, Amstrad CPC, DOSBox, ScummVM, Apple II, X68000, PC-98/PC-88, Sharp X1, PC-FX, SuperGrafx, Neo Geo CD, CD-i, Playdia, Vectrex, Odyssey², Arcade (FBNeo/MAME/HBMAME/Supermodel/Hypseus), Pokémon Mini, Game & Watch, Mega Duck/Watara, Arduboy, VirtualXT, TIC-80, WASM-4, Uzebox, Commander X16, WQX, Tamagotchi e Java ME.
+
+ALTERNATIVAS ADICIONAIS REGISTRADAS
+- DOSBox Pure/Core/SVN e Rust DOS.
+- Amiberry, PUAE e PUAE 2021.
+- MAME 2000/2003/2003 Plus/2010/2015/2016/Arcade e FB Alpha 2012 (CPS1/2/3).
+- Genesis Plus GX Wide, bsnes-jg, Snes9x legados, Beetle PSX HW, Beetle GBA, ParaLLEl N64, Parallel DC, Ymir, melonDS DS e outras variantes presentes no índice.
+
+PENDÊNCIA: esta expansão não converte todos os cores do Buildbot em plataformas. Engines de jogos, cores de demonstração, utilitários e dispositivos de nicho continuam exigindo classificação separada para não poluir o catálogo de consoles/ROMs. O inventário integral permanece no Buildbot oficial e deverá ser revisitado por família.
