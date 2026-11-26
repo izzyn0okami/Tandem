@@ -75,3 +75,37 @@ HISTÓRICO DE ALTERAÇÕES
 - Nenhuma alteração funcional ou atualização de núcleo executada até este registro.
 - CI: ainda não iniciada.
 - PR: draft, aguardando implementação incremental.
+
+
+ATUALIZAÇÃO — 2026-11-25
+CI inicial da implementação I7/I8:
+- [x] check-style / Spotless: sucesso.
+- [x] testes unitários existentes: sucesso.
+- [x] assembleLawnWithQuickstepGithubDebug: sucesso.
+- [x] workflow final: sucesso.
+- Run: https://github.com/izzyn0okami/Tandem/actions/runs/45733415239
+- Observação: essa CI validou o estado anterior aos novos testes de scanner/resolução; as alterações seguintes aguardam uma nova execução completa.
+
+I9 — RESOLUÇÃO DE PLATAFORMAS:
+- [x] Auditoria do catálogo: todas as plataformas atualmente declaradas possuem ao menos uma extensão.
+- [x] Confirmado que extensões genéricas (ZIP/BIN) só são aceitas quando a pasta identifica uma plataforma compatível; BIN não é tratado como ROM independente para plataformas baseadas em disco.
+- [x] Confirmado que extensão desconhecida, extensão ambígua sem pasta e plataforma não identificada não são adivinhadas.
+- [x] Adicionados testes unitários para extensão única, extensão ambígua, extensão genérica, extensão desconhecida e catálogo sem plataformas extensionless.
+- [ ] Avaliar suporte a plataformas futuras sem extensão declarada; não há plataforma desse tipo no catálogo atual, portanto nenhuma regra permissiva foi introduzida.
+
+I10 — CONJUNTOS MULTIDISCO:
+- [x] Identificado risco no scanner: uma playlist M3U fazia desaparecer todos os arquivos discBased da mesma pasta, inclusive jogos não referenciados.
+- [x] Alterado o scanner para ocultar somente os discos efetivamente referenciados pela playlist M3U.
+- [x] Referências absolutas e caminhos que escapam da pasta da playlist são ignorados para fins de agrupamento.
+- [x] Adicionados testes unitários para playlist multidisco, jogo independente na mesma pasta, referência ausente e tentativa de referência fora da pasta.
+- [ ] Testar em CI os novos cenários e revisar qualquer falha de formatação/compilação.
+- [ ] Validar no aparelho com uma playlist M3U real e com jogos independentes na mesma pasta.
+
+PENDÊNCIAS GERAIS ATUALIZADAS
+- [ ] I7/I8: adicionar testes automatizados específicos de extração ZIP (válido, múltiplas ROMs, zero candidatas, traversal, CRC/tamanho incorretos e ZIP corrompido).
+- [ ] I7/I8: validação funcional no aparelho.
+- [ ] I9: considerar extensãoless somente quando surgir uma plataforma real com contrato explícito; catálogo atual não contém esse caso.
+- [ ] I10: validar no aparelho a abertura de playlists multidisco e a preservação de jogos independentes.
+- [ ] I11–I16: auditoria e implementação ainda pendentes.
+- [ ] Nova CI após os commits de I9/I10 ainda pendente.
+- [ ] Não mesclar nem publicar em tandem-latest sem autorização explícita.
