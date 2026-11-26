@@ -409,3 +409,30 @@ ESTADO DA PR
 - PR #57 permanece aberta e draft.
 - Esta atualização é documental; não adiciona novos cores nem altera o comportamento do aplicativo.
 - Não mesclar nem publicar em tandem-latest sem autorização explícita.
+
+
+ATUALIZAÇÃO DE VALIDAÇÃO — 2026-11-26
+- [x] CI #1483 concluída com sucesso para o commit 2d6ba3cc1e7ef1a4978907ed121b6e6f1c57e5d7.
+- Run: https://github.com/izzyn0okami/Tandem/actions/runs/45743549532
+- [x] Job check-style / Spotless: sucesso.
+- [x] Job de testes unitários: sucesso.
+- [x] Build assembleLawnWithQuickstepGithubDebug: sucesso.
+- [x] Upload do artefato APK: sucesso.
+- Observação: a aprovação da CI confirma somente os testes automatizados executados e a compilação; não substitui testes funcionais no aparelho.
+
+I17 — GAMEPAD VIRTUAL DE TOQUE (ESCOPO APROVADO PELO USUÁRIO)
+- [x] Implementada primeira camada visual com D-pad, A/B/X/Y, Start/Select e dois analógicos independentes.
+- [x] Preferências persistentes de ativação, ocultação automática ao conectar controle físico, opacidade, escala e deslocamento.
+- [x] Encaminhamento de toques fora dos controles para a superfície do jogo, preservando uso de tela de toque em sistemas como Nintendo DS.
+- [x] CI #1483 passou com a implementação atual.
+- [ ] Testes instrumentados específicos de multitouch, eixos analógicos, deadzone e retorno ao centro.
+- [ ] Verificar cancelamento de entradas e liberação dos botões ao pausar, sair ou rotacionar a tela.
+- [ ] Teste funcional/ergonômico no aparelho, em retrato e paisagem, ainda pendente.
+- [ ] Revisar acessibilidade e comportamento com controle físico conectado/desconectado.
+
+ESTADO DA PR — 2026-11-26
+- PR #57 permanece aberta e em draft; base game-mode-m2-dev.
+- Head validado pela CI: 2d6ba3cc1e7ef1a4978907ed121b6e6f1c57e5d7.
+- CI #1483 é a execução de referência aprovada para esse head.
+- Nenhum merge ou publicação em tandem-latest foi realizado.
+- Próxima etapa: revisão estática do gamepad virtual e testes instrumentados; depois, disponibilizar o APK para validação no aparelho se não houver novas alterações pendentes.
