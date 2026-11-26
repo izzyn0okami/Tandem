@@ -436,3 +436,19 @@ ESTADO DA PR — 2026-11-26
 - CI #1483 é a execução de referência aprovada para esse head.
 - Nenhum merge ou publicação em tandem-latest foi realizado.
 - Próxima etapa: revisão estática do gamepad virtual e testes instrumentados; depois, disponibilizar o APK para validação no aparelho se não houver novas alterações pendentes.
+
+
+ATUALIZAÇÃO DE CI E REVISÃO — 2026-11-26
+- [x] CI #1558 — run https://github.com/izzyn0okami/Tandem/actions/runs/45753928221 — sucesso no commit bda07cc6728cfcd29059373d6c7aeb902d904eec.
+- [x] CI #1559 — run https://github.com/izzyn0okami/Tandem/actions/runs/45754017943 — sucesso no mesmo commit; testes unitários, Spotless, build APK e upload do artefato concluídos.
+- [x] CI #1560 — run https://github.com/izzyn0okami/Tandem/actions/runs/45754101718 — sucesso no mesmo commit; testes unitários, Spotless, build APK e upload do artefato concluídos.
+- [x] Correção de multitouch: ACTION_POINTER_UP agora é consumido mesmo quando o último ponteiro de controle virtual é solto; releaseAll também limpa os IDs de ponteiros passthrough.
+- [ ] Ainda faltam testes instrumentados para multitouch misto (controle + touchscreen), duas entradas analógicas simultâneas, rotação e interrupção da sessão.
+- [ ] Ainda falta teste manual no aparelho; CI não comprova ergonomia nem compatibilidade com todos os cores.
+
+ESTADO ATUAL DA PR #57
+- Branch: feat/libretro-stage-i; base: game-mode-m2-dev; PR aberta e draft.
+- Head: bda07cc6728cfcd29059373d6c7aeb902d904eec.
+- Última CI completa de referência: #1560, sucesso.
+- APK debug construído e artefato carregado na execução #1560. Disponibilizar somente para teste na branch da PR; não confundir com build tandem-latest.
+- Nenhum merge ou publicação em tandem-latest foi realizado.
