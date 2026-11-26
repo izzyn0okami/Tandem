@@ -542,3 +542,18 @@ ATUALIZAÇÃO — RETORNO FUNCIONAL DO USUÁRIO — 2026-11-26
 - [x] Resultado registrado como validação funcional positiva do conjunto testado nesta etapa.
 - [ ] Casos não exercitados explicitamente (por exemplo, ZIP com entradas duplicadas, ZIP nativo e plataformas discBased) não são presumidos como testados individualmente.
 - PR #57 permanece aberta e draft, sem merge e sem publicação em tandem-latest; PR #41 permanece intocada.
+
+
+ATUALIZAÇÃO — TESTES ZIP ADICIONAIS E CI — 2026-11-26
+- [x] Extraída a política de preparação de ROM para uma sobrecarga interna testável sem Android Context; a entrada pública continua delegando ao mesmo fluxo.
+- [x] Adicionado teste que constrói ZIP com duas entradas centrais de mesmo nome e confirma rejeição de entradas ROM duplicadas.
+- [x] Adicionados testes que confirmam o bypass de extração para plataformas discBased e ZIPs nativos; os testes usam ZIP propositalmente inválido para garantir que não haja tentativa de extração.
+- [x] CI #1583 — https://github.com/izzyn0okami/Tandem/actions/runs/45842635879 — sucesso no commit 43f26a0b33b1a17be422aa03f75385ed8cb8d0de.
+- [x] CI #1582 — https://github.com/izzyn0okami/Tandem/actions/runs/45842589470 — sucesso no commit aa0e86a3e74a3e71ea00fc54faa87ec3a08268a1.
+- [x] CI #1581 — https://github.com/izzyn0okami/Tandem/actions/runs/45842338750 — sucesso no commit aa0e86a3e74a3e71ea00fc54faa87ec3a08268a1.
+- [x] CI #1584 — https://github.com/izzyn0okami/Tandem/actions/runs/45842869093 — sucesso no commit ecd4e2811bc5366e599178157eeeae47a9a4e0b5; check-style/Spotless, testes unitários, assembleLawnWithQuickstepGithubDebug e upload do APK concluídos.
+- [x] Os jobs tandem-release e nightly-release da CI #1584 foram ignorados; nenhuma publicação em tandem-latest ocorreu.
+- [ ] A execução automática de PR #1585 terminou com action_required por exigência de aprovação do workflow; não foi classificada como falha de build. A CI manual #1584 no mesmo HEAD validou estilo, testes e APK.
+- [ ] Revisar casos adicionais de recuperação/rollback do cache ZIP e limites de extração.
+- [ ] Validação manual individual de ZIP duplicado, ZIP nativo e plataforma discBased no aparelho permanece pendente; o usuário já confirmou funcionamento geral do conjunto testado, mas não declarou esses três cenários isoladamente.
+- PR #57 permanece aberta e draft, sem merge ou publicação em tandem-latest; PR #41 permanece intocada.
