@@ -96,11 +96,16 @@ object RomUnzipper {
             temp.delete()
             throw failure
         }
-        check(copied == entry.size) {
-            "ROM extraída incompleta: recebidos $copied de ${entry.size} bytes."
-        }
-        check(crc.value == entry.crc) {
-            "A verificação CRC da ROM extraída falhou."
+        try {
+            check(copied == entry.size) {
+                "ROM extraída incompleta: recebidos $copied de ${entry.size} bytes."
+            }
+            check(crc.value == entry.crc) {
+                "A verificação CRC da ROM extraída falhou."
+            }
+        } catch (failure: Exception) {
+            temp.delete()
+            throw failure
         }
 
         // Substituição atômica com rollback: nunca descarta um cache válido antes da nova extração.
