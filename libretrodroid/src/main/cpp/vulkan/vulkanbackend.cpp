@@ -75,11 +75,7 @@ void VulkanBackend::configure(bool prefer, const DriverConfig& driver) {
 
     driverConfig = driver;
     availability = -1;
-    vk = Dispatch {};
-    if (loaderHandle != nullptr) {
-        dlclose(loaderHandle);
-        loaderHandle = nullptr;
-    }
+    resetLoader();
 }
 
 void* VulkanBackend::openCustomDriver() const {
@@ -633,40 +629,65 @@ bool VulkanBackend::start() {
     if (isStarted()) return true;
     if (!isAvailable()) return false;
 
-    if (!createInstance() || !loadInstanceFunctions()) {
-        LOGE("Vulkan context could not be created");
-        shutdown();
-        return false;
-    }
-    createPresentationSurface();
-    if (!pickPhysicalDevice() || !createDevice() || !loadDeviceFunctions() || !createFrameResources()) {
-        LOGE("Vulkan context could not be created");
-        shutdown();
+    const bool customWasLoaded = usingCustomDriver;
+    const auto* coreNegotiation = negotiation;
+    auto initialize = [this]() {
+        if (!createInstance() || !loadInstanceFunctions()) {
+            LOGE("Vulkan context could not be created");
+            shutdown();
+            return false;
+        }
+        createPresentationSurface();
+        if (!pickPhysicalDevice() || !createDevice() || !loadDeviceFunctions() || !createFrameResources()) {
+            LOGE("Vulkan context could not be created");
+            shutdown();
+            return false;
+        }
+
+        renderInterface = {};
+        renderInterface.interface_type = RETRO_HW_RENDER_INTERFACE_VULKAN;
+        renderInterface.interface_version = RETRO_HW_RENDER_INTERFACE_VULKAN_VERSION;
+        renderInterface.handle = this;
+        renderInterface.instance = instance;
+        renderInterface.gpu = gpu;
+        renderInterface.device = device;
+        renderInterface.get_device_proc_addr = vk.getDeviceProcAddr;
+        renderInterface.get_instance_proc_addr = vk.getInstanceProcAddr;
+        renderInterface.queue = queue;
+        renderInterface.queue_index = queueFamily;
+        renderInterface.set_image = &callbackSetImage;
+        renderInterface.get_sync_index = &callbackGetSyncIndex;
+        renderInterface.get_sync_index_mask = &callbackGetSyncIndexMask;
+        renderInterface.set_command_buffers = &callbackSetCommandBuffers;
+        renderInterface.wait_sync_index = &callbackWaitSyncIndex;
+        renderInterface.lock_queue = &callbackLockQueue;
+        renderInterface.unlock_queue = &callbackUnlockQueue;
+        renderInterface.set_signal_semaphore = &callbackSetSignalSemaphore;
+
+        LOGI("Vulkan context ready (custom_driver=%d, negotiated=%d, queue family %u)",
+             usingCustomDriver, negotiatedDevice, queueFamily);
+        return true;
+    };
+
+    if (initialize()) return true;
+    if (!customWasLoaded) return false;
+
+    LOGW("Custom Vulkan driver passed the probe but failed context creation; retrying with the system driver");
+    resetLoader();
+    availability = -1;
+    if (!loadLoader(false) || !probeLoader()) {
+        resetLoader();
+        availability = 0;
         return false;
     }
 
-    renderInterface = {};
-    renderInterface.interface_type = RETRO_HW_RENDER_INTERFACE_VULKAN;
-    renderInterface.interface_version = RETRO_HW_RENDER_INTERFACE_VULKAN_VERSION;
-    renderInterface.handle = this;
-    renderInterface.instance = instance;
-    renderInterface.gpu = gpu;
-    renderInterface.device = device;
-    renderInterface.get_device_proc_addr = vk.getDeviceProcAddr;
-    renderInterface.get_instance_proc_addr = vk.getInstanceProcAddr;
-    renderInterface.queue = queue;
-    renderInterface.queue_index = queueFamily;
-    renderInterface.set_image = &callbackSetImage;
-    renderInterface.get_sync_index = &callbackGetSyncIndex;
-    renderInterface.get_sync_index_mask = &callbackGetSyncIndexMask;
-    renderInterface.set_command_buffers = &callbackSetCommandBuffers;
-    renderInterface.wait_sync_index = &callbackWaitSyncIndex;
-    renderInterface.lock_queue = &callbackLockQueue;
-    renderInterface.unlock_queue = &callbackUnlockQueue;
-    renderInterface.set_signal_semaphore = &callbackSetSignalSemaphore;
+    availability = 1;
+    negotiation = coreNegotiation;
+    if (initialize()) return true;
 
-    LOGI("Vulkan context ready (negotiated=%d, queue family %u)", negotiatedDevice, queueFamily);
-    return true;
+    resetLoader();
+    availability = 0;
+    return false;
 }
 
 const retro_hw_render_interface_vulkan* VulkanBackend::getRenderInterface() const {
