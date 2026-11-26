@@ -50,11 +50,10 @@ object VulkanDriverManager {
         return listOf("qualcomm", "qcom", "adreno", "sm8350", "sm8450", "sm8475", "sm8550", "sm8650", "sm8750", "kona", "lahaina", "taro", "kalama", "pineapple").any { identifiers.contains(it) }
     }
 
-    fun installed(context: Context): List<InstalledVulkanDriver> =
-        driversDir(context).listFiles().orEmpty()
-            .filter { it.isDirectory && File(it, "meta.json").isFile }
-            .mapNotNull { readInstalled(it) }
-            .sortedWith(compareBy<InstalledVulkanDriver> { it.vendor }.thenBy { it.name })
+    fun installed(context: Context): List<InstalledVulkanDriver> = driversDir(context).listFiles().orEmpty()
+        .filter { it.isDirectory && File(it, "meta.json").isFile }
+        .mapNotNull { readInstalled(it) }
+        .sortedWith(compareBy<InstalledVulkanDriver> { it.vendor }.thenBy { it.name })
 
     fun selected(context: Context): VulkanDriver? {
         if (!isLikelyAdreno()) return null
@@ -63,8 +62,7 @@ object VulkanDriverManager {
         return driver.asLibretroDriver()
     }
 
-    fun selectedId(context: Context): String? =
-        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getString(SELECTED, null)
+    fun selectedId(context: Context): String? = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getString(SELECTED, null)
 
     fun select(context: Context, id: String?) {
         require(id == null || installed(context).any { it.id == id }) { "Driver Vulkan não encontrado" }
@@ -113,6 +111,7 @@ object VulkanDriverManager {
                                 check(wrapper == null) { "Pacote mistura arquivos na raiz e em uma subpasta" }
                                 segments[0]
                             }
+
                             2 -> {
                                 val root = segments[0]
                                 check(wrapper == null || wrapper == root) { "Pacote contém múltiplas pastas raiz" }
@@ -120,6 +119,7 @@ object VulkanDriverManager {
                                 wrapper = root
                                 segments[1]
                             }
+
                             else -> error("Pacote de driver deve conter arquivos na raiz, sem subpastas internas")
                         }
                         check(fileName.matches(Regex("[A-Za-z0-9_.+-]+"))) { "Nome de arquivo inválido no pacote" }

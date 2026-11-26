@@ -55,17 +55,19 @@ object BiosManager {
         if (!directory.isDirectory) return false
         fun containsFile(path: String) = File(directory, path).let { it.isFile }
         fun containsFiles(path: String) = File(directory, path).let { it.isDirectory && it.walkTopDown().any(File::isFile) }
-        fun hasAnyNamedFile(vararg names: String) =
-            directory.walkTopDown().filter(File::isFile).any { file -> names.any { it.equals(file.name, ignoreCase = true) } }
+        fun hasAnyNamedFile(vararg names: String) = directory.walkTopDown().filter(File::isFile).any { file -> names.any { it.equals(file.name, ignoreCase = true) } }
 
         return when {
             platform.slug == "ps2" && folder == "pcsx2" -> containsFiles("bios")
+
             platform.slug == "vita" && folder == "vita3k" ->
                 containsFile("PSP2UPDAT.PUP") &&
                     hasAnyNamedFile("PSP2UPDAT_PREINST.PUP", "preinst_fresh.pup") &&
                     containsFiles("data") &&
                     containsFiles("shaders-builtin")
+
             platform.slug in setOf("gc", "wii") && folder == "dolphin-emu" -> containsFiles("Sys")
+
             else -> directory.walkTopDown().any(File::isFile)
         }
     }
