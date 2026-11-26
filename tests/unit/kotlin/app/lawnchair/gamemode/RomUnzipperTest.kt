@@ -60,6 +60,23 @@ class RomUnzipperTest {
 
 
     @Test
+    fun restoresBackupLeftByInterruptedPromotionBeforeReplacingCache() {
+        val archive = zip("interrupted.zip", "game.nes" to byteArrayOf(1, 2, 3))
+        val cached = RomUnzipper.extract(archive, setOf("nes"), cache)!!
+        val backup = File(cached.parentFile, "${cached.name}.backup")
+        assertEquals(true, cached.renameTo(backup))
+
+        zip("interrupted.zip", "game.nes" to byteArrayOf(4, 5, 6))
+
+        val recovered = RomUnzipper.extract(archive, setOf("nes"), cache)
+
+        assertNotNull(recovered)
+        assertArrayEquals(byteArrayOf(4, 5, 6), recovered!!.readBytes())
+        assertEquals(false, backup.exists())
+        assertEquals(false, File(cached.parentFile, "${cached.name}.part").exists())
+    }
+
+    @Test
     fun rejectsDuplicateEntriesWithTheSameRomName() {
         val archive = zipWithDuplicateEntry(
             "duplicate.zip",
