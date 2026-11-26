@@ -409,3 +409,12 @@ ESTADO DA PR
 - PR #57 permanece aberta e draft.
 - Esta atualização é documental; não adiciona novos cores nem altera o comportamento do aplicativo.
 - Não mesclar nem publicar em tandem-latest sem autorização explícita.
+
+
+CORREÇÃO DE AUDITORIA — CATÁLOGO ARM64 — 2026-11-26
+A revisão direta do índice oficial Buildbot Android ARM64 em Stage_J_ARM64_Core_Expansion.txt refinou e corrigiu a auditoria complementar anterior:
+- ARMSX2, PCEE2, PCSX2, Azahar, Panda3DS, Vita3K, RPCS3 e Xenia Edge aparecem no índice.
+- Dolphin e Cemu não foram localizados no índice atual; não devem ser descritos como binários Android ARM64 disponíveis neste momento.
+- Azahar usa o artefato azahar_libretro.so.zip, sem o sufixo _android no nome.
+- A lista anterior tratava alguns projetos documentados como se o pacote Android estivesse confirmado; isso foi corrigido no inventário Stage J.
+- O arquivo Stage_J_ARM64_Core_Expansion.txt passa a ser a referência para novos cores e estado de disponibilidade.
