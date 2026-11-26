@@ -572,3 +572,17 @@ ATUALIZAÇÃO — RECUPERAÇÃO DE CACHE ZIP E CI — 2026-11-26
 - [ ] Revisar limites de extração ZIP (tamanho máximo, razão de compressão e consumo de armazenamento) e demais cenários de rollback.
 - [ ] Validação manual isolada da recuperação de backup e dos cenários ZIP duplicado/nativo/discBased no aparelho permanece pendente.
 - PR #57 permanece aberta e draft, sem merge ou publicação em tandem-latest; PR #41 permanece intocada.
+
+
+ATUALIZAÇÃO — LIMITE DE EXTRAÇÃO ZIP E CIs #1592–#1594 — 2026-11-26
+- [x] Definido limite máximo de ROM extraída de 8 GiB para impedir consumo excessivo de armazenamento por entradas ZIP desproporcionais.
+- [x] O tamanho declarado é validado antes de iniciar a extração ou criar arquivos no cache.
+- [x] Adicionado teste que simula entrada ZIP com tamanho descompactado acima do limite e confirma rejeição antes de qualquer gravação no cache.
+- [x] CI #1592 — https://github.com/izzyn0okami/Tandem/actions/runs/45852253342 — sucesso; Spotless, testes unitários, build APK e upload do artefato.
+- [x] CI #1593 — https://github.com/izzyn0okami/Tandem/actions/runs/45852289746 — sucesso; Spotless, testes unitários, build APK e upload do artefato.
+- [x] CI #1594 — https://github.com/izzyn0okami/Tandem/actions/runs/45852309716 — sucesso no HEAD a8378faffbcef5647732e9a4f50f437bd1a60faf; Spotless, testes unitários, build APK e upload do artefato.
+- [x] Jobs tandem-release e nightly-release ignorados; nenhuma publicação em tandem-latest.
+- [ ] Considerar limite adicional para quantidade de entradas ZIP e consumo total de cache; razão de compressão não deve bloquear ROMs legítimas sem evidência.
+- [ ] Revisar e testar recuperação/rollback do instalador de núcleos (CoreInstaller).
+- [ ] Validar no aparelho casos específicos de ZIP e recuperação de cache, além dos testes automatizados.
+- PR #57 permanece aberta e draft, sem merge ou publicação em tandem-latest; PR #41 permanece intocada.
