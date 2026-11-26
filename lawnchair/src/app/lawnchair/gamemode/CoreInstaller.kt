@@ -5,6 +5,7 @@ import java.io.File
 import java.io.FileOutputStream
 import java.net.HttpURLConnection
 import java.net.URL
+import java.security.MessageDigest
 import java.util.zip.ZipInputStream
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -24,7 +25,22 @@ object CoreInstaller {
 
     fun isInstalled(context: Context, coreId: String): Boolean {
         val file = coreFile(context, coreId)
-        return file.isFile && isArm64Elf(file)
+        if (!file.isFile || !isArm64Elf(file)) return false
+
+        val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+        val storedDigest = prefs.getString("sha256_$coreId", null)
+        val actualDigest = sha256(file) ?: return false
+        if (storedDigest != null && !storedDigest.equals(actualDigest, ignoreCase = true)) {
+            GameLog.error(
+                "núcleos",
+                "integridade local de $coreId divergente; núcleo será tratado como inválido",
+                IllegalStateException("SHA-256 do núcleo instalado não corresponde ao registro local"),
+            )
+            return false
+        }
+        // Migração de núcleos já instalados: registra a impressão digital local na primeira leitura.
+        if (storedDigest == null) prefs.edit().putString("sha256_$coreId", actualDigest).apply()
+        return true
     }
 
     /**
@@ -164,8 +180,10 @@ object CoreInstaller {
                     )
                 }
 
+                val installedDigest = checkNotNull(sha256(target)) { "Não foi possível calcular SHA-256 do núcleo instalado" }
                 val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
                 prefs.edit()
+                    .putString("sha256_$coreId", installedDigest)
                     .putLong("modified_$coreId", remoteModified.takeIf { it > 0L } ?: System.currentTimeMillis())
                     .apply {
                         if (remoteEtag != null) putString("etag_$coreId", remoteEtag)
@@ -187,6 +205,20 @@ object CoreInstaller {
             }
         }.onFailure { GameLog.error("núcleos", "falha ao instalar/atualizar $coreId", it) }
     }
+
+    /** SHA-256 local para detectar corrupção posterior do arquivo instalado. */
+    internal fun sha256(file: File): String? = runCatching {
+        val digest = MessageDigest.getInstance("SHA-256")
+        file.inputStream().use { input ->
+            val buffer = ByteArray(64 * 1024)
+            while (true) {
+                val read = input.read(buffer)
+                if (read < 0) break
+                digest.update(buffer, 0, read)
+            }
+        }
+        digest.digest().joinToString("") { "%02x".format(it) }
+    }.getOrNull()
 
     /** Valida ELF64 little-endian para AArch64 (e_machine = EM_AARCH64/183). */
     internal fun isArm64Elf(file: File): Boolean = runCatching {
