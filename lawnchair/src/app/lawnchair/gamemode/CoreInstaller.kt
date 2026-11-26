@@ -115,6 +115,7 @@ object CoreInstaller {
             val target = coreFile(context, coreId)
             val part = File(target.parentFile, "${target.name}.part")
             val backup = File(target.parentFile, "${target.name}.backup")
+            recoverBackup(target, backup)
             val connection = URL("$BASE_URL/${target.name}.zip").openConnection() as HttpURLConnection
             connection.connectTimeout = 30_000
             connection.readTimeout = 90_000
@@ -218,6 +219,40 @@ object CoreInstaller {
         }.onFailure { GameLog.error("núcleos", "falha ao instalar/atualizar $coreId", it) }
     }
 
+    /**
+     * Recupera uma instalação interrompida sem descartar a única cópia ELF ARM64 válida.
+     * Um backup só é removido quando o destino já é válido; backups inválidos são preservados
+     * até que um novo download validado esteja pronto para promoção.
+     */
+    internal fun recoverBackup(target: File, backup: File) {
+        if (!backup.exists()) return
+
+        val targetIsValid = target.isFile && isArm64Elf(target)
+        val backupIsValid = backup.isFile && isArm64Elf(backup)
+
+        when {
+            targetIsValid -> {
+                check(backup.delete()) { "Não foi possível remover backup residual ${backup.name}" }
+            }
+
+            backupIsValid -> {
+                if (target.exists()) {
+                    check(target.delete()) { "Não foi possível remover destino inválido ${target.name}" }
+                }
+                check(backup.renameTo(target)) { "Não foi possível restaurar backup ${backup.name}" }
+                check(isArm64Elf(target)) { "Backup restaurado falhou na validação ELF ARM64" }
+            }
+
+            else -> {
+                // Preserva ambos para diagnóstico; a instalação validada poderá substituí-los.
+                GameLog.error(
+                    "núcleos",
+                    "destino e backup de ${target.name} são inválidos; arquivos preservados para recuperação",
+                    IllegalStateException("Nenhum dos arquivos disponíveis é um ELF ARM64 válido"),
+                )
+            }
+        }
+    }
     /** SHA-256 local para detectar corrupção posterior do arquivo instalado. */
     internal fun sha256(file: File): String? = runCatching {
         val digest = MessageDigest.getInstance("SHA-256")
