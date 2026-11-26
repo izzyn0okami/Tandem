@@ -13,8 +13,7 @@ import java.util.zip.ZipFile
  */
 object RomUnzipper {
 
-    fun prepare(context: Context, romPath: String, platform: GamePlatform?): File =
-        prepare(File(romPath), platform, context.cacheDir)
+    fun prepare(context: Context, romPath: String, platform: GamePlatform?): File = prepare(File(romPath), platform, context.cacheDir)
 
     /** Separado do Context Android para validar a política de ZIPs em testes unitários. */
     internal fun prepare(rom: File, platform: GamePlatform?, cacheDir: File): File {
