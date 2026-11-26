@@ -63,7 +63,11 @@ object VulkanDriverManager {
         return driver.asLibretroDriver()
     }
 
-    fun selectedId(context: Context): String? = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getString(SELECTED, null)
+    /** Returns only a currently valid installation; stale preferences must never look selected in the UI. */
+    fun selectedId(context: Context): String? {
+        val id = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getString(SELECTED, null) ?: return null
+        return id.takeIf { selectedId -> installed(context).any { it.id == selectedId } }
+    }
 
     fun select(context: Context, id: String?) {
         require(id == null || installed(context).any { it.id == id }) { "Driver Vulkan não encontrado" }
