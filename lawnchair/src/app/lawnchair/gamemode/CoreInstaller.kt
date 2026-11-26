@@ -115,7 +115,9 @@ object CoreInstaller {
             val target = coreFile(context, coreId)
             val part = File(target.parentFile, "${target.name}.part")
             val backup = File(target.parentFile, "${target.name}.backup")
-            recoverBackup(target, backup)
+            val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+            val expectedDigest = prefs.getString("sha256_$coreId", null)
+            recoverBackup(target, backup, expectedDigest)
             val connection = URL("$BASE_URL/${target.name}.zip").openConnection() as HttpURLConnection
             connection.connectTimeout = 30_000
             connection.readTimeout = 90_000
@@ -186,7 +188,6 @@ object CoreInstaller {
                 }
 
                 val installedDigest = checkNotNull(sha256(target)) { "Não foi possível calcular SHA-256 do núcleo instalado" }
-                val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
                 prefs.edit()
                     .putString("sha256_$coreId", installedDigest)
                     .apply {
@@ -220,31 +221,58 @@ object CoreInstaller {
     }
 
     /**
-     * Recupera uma instalação interrompida sem descartar a única cópia ELF ARM64 válida.
-     * Um backup só é removido quando o destino já é válido; backups inválidos são preservados
-     * até que um novo download validado esteja pronto para promoção.
+     * Recupera uma promoção interrompida usando o digest confirmado nas preferências.
+     * Nunca descarta um backup válido quando não há evidência de qual arquivo foi confirmado.
      */
-    internal fun recoverBackup(target: File, backup: File) {
+    internal fun recoverBackup(target: File, backup: File, expectedDigest: String? = null) {
         if (!backup.exists()) return
 
         val targetIsValid = target.isFile && isArm64Elf(target)
         val backupIsValid = backup.isFile && isArm64Elf(backup)
+        val targetDigest = if (targetIsValid) sha256(target) else null
+        val backupDigest = if (backupIsValid) sha256(backup) else null
+        val targetMatches = expectedDigest != null && targetDigest.equals(expectedDigest, ignoreCase = true)
+        val backupMatches = expectedDigest != null && backupDigest.equals(expectedDigest, ignoreCase = true)
 
         when {
-            targetIsValid -> {
+            targetMatches -> {
                 check(backup.delete()) { "Não foi possível remover backup residual ${backup.name}" }
             }
 
-            backupIsValid -> {
+            backupMatches -> {
                 if (target.exists()) {
-                    check(target.delete()) { "Não foi possível remover destino inválido ${target.name}" }
+                    check(target.delete()) { "Não foi possível remover destino não confirmado ${target.name}" }
                 }
+                check(backup.renameTo(target)) { "Não foi possível restaurar backup confirmado ${backup.name}" }
+                check(isArm64Elf(target) && sha256(target).equals(expectedDigest, ignoreCase = true)) {
+                    "Backup restaurado não corresponde ao SHA-256 confirmado"
+                }
+            }
+
+            !targetIsValid && backupIsValid -> {
+                // O destino não é executável; restaura a única cópia ELF válida disponível.
                 check(backup.renameTo(target)) { "Não foi possível restaurar backup ${backup.name}" }
                 check(isArm64Elf(target)) { "Backup restaurado falhou na validação ELF ARM64" }
+                if (expectedDigest != null && !sha256(target).equals(expectedDigest, ignoreCase = true)) {
+                    GameLog.error(
+                        "núcleos",
+                        "backup de ${target.name} restaurado, mas não corresponde ao digest registrado",
+                        IllegalStateException("SHA-256 do backup diverge do registro local"),
+                    )
+                }
+            }
+
+            targetIsValid && backupIsValid -> {
+                // Ambos são válidos, mas nenhum coincide com o commit conhecido (ou não há digest).
+                // Preserva os dois até que um novo pacote seja integralmente validado.
+                GameLog.error(
+                    "núcleos",
+                    "destino e backup válidos de ${target.name} não correspondem ao digest confirmado; ambos preservados",
+                    IllegalStateException("Não foi possível identificar com segurança a instalação confirmada"),
+                )
             }
 
             else -> {
-                // Preserva ambos para diagnóstico; a instalação validada poderá substituí-los.
                 GameLog.error(
                     "núcleos",
                     "destino e backup de ${target.name} são inválidos; arquivos preservados para recuperação",
