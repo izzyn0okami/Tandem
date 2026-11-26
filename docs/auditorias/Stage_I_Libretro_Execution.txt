@@ -185,3 +185,25 @@ CI — INVESTIGAÇÃO DA FALHA 45735603900
 - [ ] Aguardar nova CI para confirmar os dois testes corrigidos e o build APK.
 - [ ] Se o job de formatação voltar a falhar por corrida de push, aplicar a formatação diretamente na branch e ajustar o fluxo CI para não tentar publicar um commit obsoleto.
 
+
+
+CI APROVADA — 2026-11-26
+- [x] Correção GamePlatforms.resolve validada em CI.
+- [x] Spotless / check-style: sucesso.
+- [x] Testes unitários: sucesso.
+- [x] assembleLawnWithQuickstepGithubDebug: sucesso.
+- [x] Upload do artefato APK: sucesso.
+- CI #1450 — https://github.com/izzyn0okami/Tandem/actions/runs/45737526183 — sucesso.
+- CI #1451 — https://github.com/izzyn0okami/Tandem/actions/runs/45737540795 — sucesso.
+- CI #1452 — https://github.com/izzyn0okami/Tandem/actions/runs/45737684440 — sucesso.
+- CI #1453 — https://github.com/izzyn0okami/Tandem/actions/runs/45737693974 — sucesso; verificação completa de estilo, testes e build.
+- Commit validado: facd4cfa380010b76402b2e005132b5101d5a5e.
+- Artefato: assembleLawnWithQuickstepGithubDebug; artifact ID 15080391048; tamanho ZIP 46.584.266 bytes; contém APK debug de 52.988.079 bytes; expira em 2027-02-24.
+- [x] Artefato baixado e conteúdo conferido: exatamente um APK em lawnWithQuickstepGithub/debug.
+- [ ] Testes funcionais no aparelho ainda pendentes. CI verde não comprova execução real de cada núcleo, BIOS, áudio/vídeo, controles ou playlists.
+- [ ] Validar assinatura do APK contra a instalação atualmente presente no aparelho antes de atualizar; não desinstalar a versão existente apenas para contornar incompatibilidade de assinatura, pois isso pode apagar dados locais.
+- [ ] I7/I8: testes específicos ZIP ainda precisam ser adicionados/confirmados; não marcar como funcionalmente concluídos.
+- [ ] I11: assinatura OpenPGP remota ainda não validada com chave confiável; SHA-256 local detecta alteração posterior, não autentica a origem.
+- [ ] I12: conferência integral do catálogo ainda pendente; verificação atual é amostral.
+- [ ] I13–I16: auditoria/implementação e validação funcional continuam em aberto.
+- PR #57 permanece aberta e draft, sem merge e sem publicação em tandem-latest.
