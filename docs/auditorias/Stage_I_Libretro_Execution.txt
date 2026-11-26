@@ -479,3 +479,14 @@ ATUALIZAÇÃO — CI #1563 — 2026-11-26
 - [ ] I7/I8: testes dedicados de RomUnzipper continuam pendentes (ZIP válido, múltiplas entradas, zero candidatas, traversal, CRC/tamanho incorretos e ZIP corrompido).
 - [ ] I17: usuário confirmou funcionamento básico no aparelho; testes avançados de multitouch misto, dois analógicos simultâneos, rotação, ciclo de vida e personalização permanecem pendentes.
 - PR #57 permanece aberta e draft, sem merge e sem publicação em tandem-latest.
+
+
+I7/I8 — PRIMEIRA SUÍTE DEDICADA DE ROMUNZIPPER — 2026-11-26
+- [x] Extraída a lógica de ZIP para receber diretamente o diretório de cache, mantendo prepare(Context, ...) como ponto de integração Android.
+- [x] Criado RomUnzipperTest.kt no diretório efetivo tests/unit/kotlin/app/lawnchair/gamemode/.
+- [x] Casos adicionados: extração válida e reuso de cache, múltiplas ROMs compatíveis, ausência de ROM compatível, path traversal, CRC central-directory alterado e ZIP corrompido.
+- [ ] Aguardar CI para confirmar compilação e execução dos novos testes.
+- [ ] Adicionar cobertura de tamanho declarado incorreto, entradas duplicadas e bypass de ZIP nativo/discBased, conforme viabilidade do contrato atual.
+- Commit de refatoração: aec4132b5afa34a1abdd87dfeaa846724506d680.
+- Commit de testes: 3a626ba24513f4db849d2708fc7bd4a485a74b1b.
+- PR #57 permanece aberta e draft; PR #41 não foi alterada.
