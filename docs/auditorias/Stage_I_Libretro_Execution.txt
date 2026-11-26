@@ -1,0 +1,77 @@
+AUDITORIA E IMPLEMENTAÇÃO — ESTÁGIO I
+Projeto: izzyn0okami/Tandem
+Branch: feat/libretro-stage-i
+Base: game-mode-m2-dev
+Data de abertura: 2026-11-25
+Estado inicial: auditoria técnica concluída parcialmente; implementação e validações pendentes.
+
+OBJETIVO
+Revisar e fortalecer o Libretro e a execução local sem substituir o LibretroDroid, sem alterar a arquitetura ARM64 do aparelho-alvo e sem regredir RetroAchievements, saves locais ou Device Sync.
+
+ESCOPO DO ESTÁGIO
+- I7: arquivos ZIP com uma ROM, múltiplas ROMs, nenhuma ROM compatível e ZIP corrompido.
+- I8: arquivos ZIP de plataformas baseadas em disco e formatos ZIP nativos.
+- I9: plataformas sem extensões declaradas, plataforma desconhecida/nula e resolução de arquivo.
+- I10: cobertura de formatos multidisco, arquivos companheiros e diretórios com múltiplos arquivos.
+- I11: instalação/atualização de núcleos, versionamento e verificação de integridade.
+- I12: seleção de núcleos alternativos e persistência da escolha.
+- I13: compatibilidade real dos núcleos no aparelho; não inferir compatibilidade apenas porque o Buildbot oferece um binário.
+- I14: estabilidade de áudio, vídeo, controles, ciclo de vida e encerramento nativo.
+- I15: diagnóstico acionável e recuperação segura de falhas.
+- I16: testes automatizados para catálogo, ROM/ZIP, BIOS, instalação de núcleos e ciclo de sessão.
+
+BASE TÉCNICA INSPECIONADA
+Arquivos já identificados na branch base:
+- lawnchair/src/app/lawnchair/gamemode/GamePlatforms.kt
+- lawnchair/src/app/lawnchair/gamemode/RomUnzipper.kt
+- lawnchair/src/app/lawnchair/gamemode/RomLauncher.kt
+- lawnchair/src/app/lawnchair/gamemode/CoreInstaller.kt
+- lawnchair/src/app/lawnchair/gamemode/CoreRegistry.kt
+- lawnchair/src/app/lawnchair/gamemode/CoresScreen.kt
+- lawnchair/src/app/lawnchair/gamemode/GameSessionActivity.kt
+- lawnchair/src/app/lawnchair/gamemode/GameLog.kt
+
+ACHADOS PRELIMINARES DA AUDITORIA
+1. RomUnzipper já diferencia ZIPs de plataformas discBased e ZIPs declarados como ROM nativa; para os demais, procura entradas com extensões da plataforma e verifica CRC da ROM extraída. A política de múltiplas entradas, entradas duplicadas, ZIP vazio/corrompido e limites de extração precisa de testes e revisão.
+2. GamePlatforms já modela discBased, zipIsNativeRom, extensões companheiras de disco e multiFileFolder. A cobertura por plataforma e a resolução quando a plataforma/extensão não é conhecida ainda precisam de auditoria.
+3. CoreRegistry já mantém catálogo de núcleos alternativos e persiste a seleção por plataforma. A lista é estática; validar coerência entre catálogo, disponibilidade ARM64 do Buildbot e estado instalado antes de ampliar a interface.
+4. CoreInstaller já baixa ZIP do Buildbot ARM64, valida cabeçalho ELF AArch64, usa arquivo temporário, backup e rollback. A detecção de atualização usa Last-Modified/ETag quando disponíveis; ainda não há prova criptográfica de integridade (SHA-256) nem metadados explícitos de versão/build.
+5. GameSessionActivity já observa erros do motor Libretro e registra eventos de sessão. Revisar ciclo de vida, liberação de recursos nativos, falhas de inicialização e recuperação sem comprometer o launcher.
+6. GameLog já exporta diagnóstico local e lista núcleos instalados. Garantir que novos diagnósticos não incluam tokens, caminhos privados desnecessários ou conteúdo de ROM/saves.
+
+CONCLUÍDO NESTA ABERTURA
+- [x] Consultado o checklist e os registros de auditoria existentes no repositório.
+- [x] Confirmado que I1–I6 estão registrados como concluídos no checklist principal.
+- [x] Confirmado que a PR #54 (Estágio H) foi mesclada em game-mode-m2-dev.
+- [x] Confirmado que a PR #56 (G6) foi mesclada em game-mode-m2-dev.
+- [x] Confirmado que a PR #55 permanece aberta e documental; esta PR usa um log próprio para evitar conflito de edição no checklist principal.
+- [x] Inspecionados os arquivos-base listados acima e registrados os achados preliminares.
+
+PENDÊNCIAS
+- [ ] Concluir auditoria de código e contratos por I7–I16.
+- [ ] Implementar correções comprovadas, preservando compatibilidade e comportamento existente.
+- [ ] Adicionar testes automatizados determinísticos para casos válidos, ambíguos e inválidos.
+- [ ] Executar CI completa (Spotless, testes unitários e build APK).
+- [ ] Revisar resultados da CI e corrigir todas as falhas antes de solicitar validação.
+- [ ] Solicitar ao usuário os testes funcionais no aparelho apenas para cenários que não possam ser comprovados automaticamente.
+- [ ] Atualizar este log após cada CI concluída, correção relevante e validação do usuário.
+- [ ] Atualizar o checklist principal quando a PR #55 deixar de disputar o mesmo arquivo.
+- [ ] Não mesclar nem publicar em tandem-latest sem autorização explícita.
+
+REGRAS DE SEGURANÇA E COMPATIBILIDADE
+- Não remover núcleos, ROMs, BIOS, saves, states ou arquivos do usuário como parte de testes.
+- Não atualizar/substituir um núcleo funcional sem validar o novo binário e preservar rollback.
+- Não enviar ROMs, BIOS ou saves a serviços externos.
+- Não presumir que extensão desconhecida significa arquivo inválido; apresentar diagnóstico claro e permitir correção da associação quando seguro.
+- ZIPs ambíguos não devem escolher silenciosamente uma entrada incorreta.
+- ZIPs malformados, entradas duplicadas e arquivos excessivamente grandes devem falhar de forma controlada.
+- Preservar a seleção de núcleo por plataforma e as configurações específicas de cada núcleo.
+- Falha de um núcleo não deve encerrar o launcher nem corromper a sessão persistida.
+- Compatibilidade funcional no aparelho só será marcada como concluída após confirmação do usuário.
+
+HISTÓRICO DE ALTERAÇÕES
+2026-11-25 — Abertura da auditoria
+- Branch criada a partir de game-mode-m2-dev.
+- Nenhuma alteração funcional ou atualização de núcleo executada até este registro.
+- CI: ainda não iniciada.
+- PR: draft, aguardando implementação incremental.
