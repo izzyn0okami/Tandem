@@ -69,6 +69,7 @@ import kotlinx.coroutines.withContext
 class GameSessionActivity : ComponentActivity() {
 
     private var retroView: GLRetroView? = null
+    private var virtualGamepad: VirtualGamepadView? = null
     private var saveStore: SaveStore? = null
     private var menuOpen by mutableStateOf(false)
 
@@ -205,7 +206,14 @@ class GameSessionActivity : ComponentActivity() {
         val view = GLRetroView(this, data)
         retroView = view
         lifecycle.addObserver(view)
-        setContentView(view)
+        val gamepad = VirtualGamepadView(this, retroView = view)
+        virtualGamepad = gamepad
+        setContentView(
+            FrameLayout(this).apply {
+                addView(view, ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
+                addView(gamepad, ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
+            },
+        )
 
         if (coreId == "melonds") {
             lifecycleScope.launch {
@@ -449,6 +457,7 @@ class GameSessionActivity : ComponentActivity() {
             return
         }
         menuOpen = open
+        virtualGamepad?.setMenuOpen(open)
         if (!open) {
             optionsOpen = false
             raListOpen = false
@@ -598,6 +607,7 @@ class GameSessionActivity : ComponentActivity() {
     }
 
     override fun onDestroy() {
+        virtualGamepad?.releaseAll()
         stopRaIdleLoop()
         if (!nativeDestroyed) {
             raSession?.stop()
@@ -653,6 +663,7 @@ class GameSessionActivity : ComponentActivity() {
     private fun coreIdOf(): String? = intent.getStringExtra(EXTRA_CORE_PATH)?.let { File(it).name.removeSuffix("_libretro_android.so") }
 
     override fun onPause() {
+        virtualGamepad?.releaseAll()
         // Antes do super: a superfície de vídeo ainda está ativa e consegue entregar o save.
         persistSram()
         logArtifactInventory("pausa/encerramento da sessão")
