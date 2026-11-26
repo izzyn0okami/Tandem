@@ -25,3 +25,13 @@ REVISÃO DE IMPLEMENTAÇÃO — 2026-11-26
 - [x] Adicionado teste unitário garantindo que Vita3K exija o kit e não liste PUPs como BIOS na raiz.
 - [x] CI #1531 — https://github.com/izzyn0okami/Tandem/actions/runs/45748763904 — conclusão success no head 166b86857b47c12c6740d7aa79a99d4b62220250. Jobs build-debug-apk, check-style e final-status concluídos com sucesso; jobs condicionais de publicação/notificação foram ignorados conforme esperado.
 - [ ] Teste físico Vulkan/Turnip no Snapdragon/Adreno e validação dos cores avançados no aparelho continuam pendentes.
+
+
+REVISÃO VULKAN — 2026-11-26
+- [x] CI #1537 — https://github.com/izzyn0okami/Tandem/actions/runs/45750617958 — sucesso no commit c33df242704406b07279bff07608cd67bfa05e1d; build-debug-apk, check-style e final-status passaram; jobs condicionais de release/notificação foram ignorados.
+- [x] Revisado o probe nativo Vulkan existente: agora valida ponteiros de função, consulta versão com tratamento de erro, enumera todos os dispositivos físicos e procura um dispositivo com as extensões necessárias para exportação de frames.
+- [x] Fallback reforçado: se o driver customizado não carregar, falhar no probe, ou passar no probe mas falhar ao criar o contexto/dispositivo/recursos, o backend tenta novamente com o driver Vulkan do sistema.
+- [x] A configuração e o encerramento do loader limpam o estado de seleção do driver para evitar reaproveitar ponteiros/estado de uma biblioteca anterior.
+- [ ] CI da implementação Vulkan após os commits fc1e2e5, b190470 e posteriores ainda pendente; não considerar compilação validada até o resultado.
+- [ ] Teste físico no Snapdragon 888+ do usuário com pacote Turnip/Adreno confiável: importação, carregamento customizado, probe, fallback real, estabilidade e logs.
+- [ ] Testar núcleos que exigem Vulkan (Cemu, Vita3K, RPCS3, Xenia Edge) e os que apenas preferem Vulkan, verificando compatibilidade real no aparelho.
