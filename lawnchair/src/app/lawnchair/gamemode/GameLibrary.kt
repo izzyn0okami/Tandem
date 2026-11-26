@@ -49,17 +49,39 @@ object GameLibraryScanner {
             .sortedWith(compareBy({ it.platform.sortOrder }, { it.title.lowercase() }))
     }
 
-    /** Pasta de jogo em disco com uma lista .m3u: só a lista aparece (os .cue/.chd são os discos dela). */
-    private fun dropDiscCompanions(games: List<LocalGame>): List<LocalGame> {
-        val withPlaylist = games
+    /**
+     * Uma playlist M3U representa apenas os discos que ela referencia. Não esconda todos os arquivos
+     * da mesma pasta: isso poderia fazer desaparecer outro jogo colocado ao lado da playlist.
+     */
+    internal fun dropDiscCompanions(games: List<LocalGame>): List<LocalGame> {
+        val referencedPaths = games
             .filter { it.platform.discBased && it.path.endsWith(".m3u", ignoreCase = true) }
-            .map { File(it.path).parent }
+            .flatMap { game -> playlistDiscPaths(File(game.path)) }
             .toSet()
-        if (withPlaylist.isEmpty()) return games
+        if (referencedPaths.isEmpty()) return games
+
         return games.filterNot { game ->
-            game.platform.discBased && !game.path.endsWith(".m3u", ignoreCase = true) && File(game.path).parent in withPlaylist
+            game.platform.discBased &&
+                !game.path.endsWith(".m3u", ignoreCase = true) &&
+                runCatching { File(game.path).canonicalPath }.getOrNull() in referencedPaths
         }
     }
+
+    private fun playlistDiscPaths(playlist: File): List<String> = runCatching {
+        val parent = playlist.parentFile?.canonicalFile ?: return@runCatching emptyList()
+        val parentPrefix = parent.path + File.separator
+        playlist.readLines()
+            .map(String::trim)
+            .filter { it.isNotEmpty() && !it.startsWith("#") }
+            .mapNotNull { line ->
+                val relative = line.replace('\\\\', '/')
+                if (relative.startsWith("/") || Regex("^[A-Za-z]:").containsMatchIn(relative)) {
+                    return@mapNotNull null
+                }
+                val target = File(parent, relative).canonicalFile
+                target.path.takeIf { target.path.startsWith(parentPrefix) && target.isFile }
+            }
+    }.getOrDefault(emptyList())
 
     private fun toGame(root: File, file: File): LocalGame? {
         val folders = generateSequence(file.parentFile) { it.parentFile }
