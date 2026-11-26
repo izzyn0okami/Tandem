@@ -299,6 +299,7 @@ object GamePlatforms {
             extensions = setOf("gcm", "iso", "gcz", "rvz", "ciso", "tgc", "elf", "dol", "m3u"),
             folderAliases = setOf("gc", "ngc", "gamecube", "nintendogamecube"),
             sortOrder = 101,
+            biosRequired = true,
             biosKit = listOf("dolphin-emu"),
         ),
         GamePlatform(
@@ -308,6 +309,7 @@ object GamePlatforms {
             extensions = setOf("wbfs", "iso", "rvz", "wad", "elf", "dol", "m3u"),
             folderAliases = setOf("wii", "nintendowii"),
             sortOrder = 102,
+            biosRequired = true,
             biosKit = listOf("dolphin-emu"),
         ),
         GamePlatform(
