@@ -450,22 +450,34 @@ bool VulkanBackend::pickPhysicalDevice() {
     devices.resize(count);
 
     const auto required = requiredDeviceExtensions();
+    const uint32_t minimumDeviceVersion = std::max(MINIMUM_API_VERSION, requestedApiVersion());
+    const VkQueueFlags wantedQueue = VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT;
     for (VkPhysicalDevice candidate : devices) {
+        VkPhysicalDeviceProperties properties {};
+        vk.getPhysicalDeviceProperties(candidate, &properties);
+        if (properties.apiVersion < minimumDeviceVersion) continue;
+
         uint32_t extensionCount = 0;
         result = vk.enumerateDeviceExtensionProperties(candidate, nullptr, &extensionCount, nullptr);
         if (result != VK_SUCCESS && result != VK_INCOMPLETE) continue;
         std::vector<VkExtensionProperties> available(extensionCount);
         result = vk.enumerateDeviceExtensionProperties(candidate, nullptr, &extensionCount, available.data());
         if (result != VK_SUCCESS && result != VK_INCOMPLETE) continue;
-
-        const bool compatible = std::all_of(required.begin(), required.end(), [&available](const char* name) {
+        const bool hasExtensions = std::all_of(required.begin(), required.end(), [&available](const char* name) {
             return hasExtension(available, name);
         });
-        if (!compatible) continue;
+        if (!hasExtensions) continue;
+
+        uint32_t familyCount = 0;
+        vk.getPhysicalDeviceQueueFamilyProperties(candidate, &familyCount, nullptr);
+        std::vector<VkQueueFamilyProperties> families(familyCount);
+        vk.getPhysicalDeviceQueueFamilyProperties(candidate, &familyCount, families.data());
+        const bool hasQueue = std::any_of(families.begin(), families.end(), [wantedQueue](const auto& family) {
+            return (family.queueFlags & wantedQueue) == wantedQueue && family.queueCount > 0;
+        });
+        if (!hasQueue) continue;
 
         gpu = candidate;
-        VkPhysicalDeviceProperties properties {};
-        vk.getPhysicalDeviceProperties(gpu, &properties);
         LOGI("Vulkan device: %s (api %u.%u.%u, driver %u)", properties.deviceName,
              VK_API_VERSION_MAJOR(properties.apiVersion), VK_API_VERSION_MINOR(properties.apiVersion),
              VK_API_VERSION_PATCH(properties.apiVersion), properties.driverVersion);
