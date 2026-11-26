@@ -56,4 +56,26 @@ class CoreInstallerTest {
             file.delete()
         }
     }
+    @Test
+    fun azaharUsesItsPublishedBuildbotArtifactName() {
+        assertEquals(
+            CoreInstaller.CoreArtifact("azahar_libretro.so.zip", "azahar_libretro.so"),
+            CoreInstaller.artifact("azahar"),
+        )
+    }
+
+    @Test
+    fun standardCoresKeepAndroidArtifactNaming() {
+        assertEquals(
+            CoreInstaller.CoreArtifact("vita3k_libretro_android.so.zip", "vita3k_libretro_android.so"),
+            CoreInstaller.artifact("vita3k"),
+        )
+    }
+
+    @Test
+    fun coreIdIsResolvedFromTheActualLibraryFilename() {
+        assertEquals("azahar", CoreInstaller.coreIdFromFile(File("azahar_libretro.so")))
+        assertEquals("vita3k", CoreInstaller.coreIdFromFile(File("vita3k_libretro_android.so")))
+    }
+
 }
