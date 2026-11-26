@@ -524,3 +524,21 @@ ATUALIZAÇÃO — CI #1574 — 2026-11-26
 - [ ] Validação funcional no aparelho dos cenários ZIP ainda pendente.
 - [ ] Cobertura de entradas ZIP duplicadas e bypass de ZIP nativo/discBased ainda pendente.
 - PR #57 permanece aberta e draft, sem merge; PR #41 permanece intocada.
+
+
+ATUALIZAÇÃO — CI #1577 E CI #1578 — 2026-11-26
+- [x] CI #1577 — https://github.com/izzyn0okami/Tandem/actions/runs/45816875807 — conclusão success.
+- [x] Commit validado pela execução #1577: df0011307e5cbc4a8aefe617014cabaa8cb1cc0b (atualização documental do log).
+- [x] CI #1578 — https://github.com/izzyn0okami/Tandem/actions/runs/45816948888 — conclusão success.
+- [x] Commit validado pela execução #1578: 57f200e735abe88a2cefe447a77697cececd9b8d (verificação CRC do cache ZIP e teste de recuperação).
+- [x] Em ambas: check-style / Spotless, testes unitários, build assembleLawnWithQuickstepGithubDebug e upload do artefato APK concluídos com sucesso.
+- [x] Jobs tandem-release e nightly-release ignorados; nenhuma publicação em tandem-latest.
+- [x] Cache ZIP agora é validado também pelo CRC antes de reutilização; cache corrompido com tamanho preservado é reextraído, coberto por teste unitário.
+- [ ] Entradas ZIP duplicadas e testes específicos de bypass para ZIP nativo/discBased ainda precisam de revisão/cobertura.
+- [ ] A validação no aparelho de casos ZIP específicos permanece pendente, salvo os cenários efetivamente exercitados pelo usuário.
+
+ATUALIZAÇÃO — RETORNO FUNCIONAL DO USUÁRIO — 2026-11-26
+- [x] Usuário confirmou que tudo está funcionando corretamente nos testes realizados no aparelho.
+- [x] Resultado registrado como validação funcional positiva do conjunto testado nesta etapa.
+- [ ] Casos não exercitados explicitamente (por exemplo, ZIP com entradas duplicadas, ZIP nativo e plataformas discBased) não são presumidos como testados individualmente.
+- PR #57 permanece aberta e draft, sem merge e sem publicação em tandem-latest; PR #41 permanece intocada.
