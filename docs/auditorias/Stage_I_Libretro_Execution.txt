@@ -510,3 +510,17 @@ ATUALIZAÇÃO — CI #1566 E CI #1567 — 2026-11-26
 - [ ] A cobertura adicional de tamanho declarado incorreto, entradas duplicadas e bypass de ZIP nativo/discBased continua pendente.
 - [ ] Validação funcional dos casos ZIP no aparelho continua pendente.
 - PR #57 permanece aberta e draft, sem merge; PR #41 permanece intocada.
+
+
+ATUALIZAÇÃO — CI #1574 — 2026-11-26
+- [x] CI #1574 — https://github.com/izzyn0okami/Tandem/actions/runs/45809020368 — conclusão success.
+- [x] Commit validado: 2f149192f0b285dc07e299aee5f8bdd3d893137e.
+- [x] check-style / Spotless: sucesso.
+- [x] Testes unitários: sucesso, incluindo a suíte RomUnzipperTest atualizada.
+- [x] Build assembleLawnWithQuickstepGithubDebug: sucesso.
+- [x] Upload do artefato APK: sucesso.
+- [x] Jobs de publicação tandem-release e nightly-release ignorados; nenhuma publicação em tandem-latest.
+- [x] Correção de limpeza do arquivo temporário .part em falhas de validação e teste para divergência de tamanho declarado cobertos pela CI.
+- [ ] Validação funcional no aparelho dos cenários ZIP ainda pendente.
+- [ ] Cobertura de entradas ZIP duplicadas e bypass de ZIP nativo/discBased ainda pendente.
+- PR #57 permanece aberta e draft, sem merge; PR #41 permanece intocada.
