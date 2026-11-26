@@ -149,9 +149,11 @@ object VulkanDriverManager {
                 check(metadata.optInt("schemaVersion", -1) == 1) { "Versão de pacote AdrenoTools não suportada" }
                 val name = metadata.optString("name").takeIf { it.isNotBlank() } ?: error("Nome do driver ausente")
                 val author = metadata.optString("author").takeIf { it.isNotBlank() } ?: error("Autor do driver ausente")
+                val packageVersion = metadata.optString("packageVersion").takeIf { it.isNotBlank() } ?: error("Versão do pacote ausente")
                 val vendor = metadata.optString("vendor").takeIf { it in setOf("Mesa", "Qualcomm") }
                     ?: error("Fornecedor do driver deve ser Mesa ou Qualcomm")
                 val version = metadata.optString("driverVersion").takeIf { it.isNotBlank() } ?: error("Versão do driver ausente")
+                check(packageVersion.length <= 80 && version.length <= 80) { "Metadados de versão inválidos" }
                 val minApi = metadata.optInt("minApi", 0)
                 check(minApi > 0 && Build.VERSION.SDK_INT >= minApi) { "Este driver exige Android API $minApi" }
                 val libraryName = metadata.optString("libraryName").takeIf {
