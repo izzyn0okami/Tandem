@@ -140,7 +140,14 @@ internal fun BiosScreen(rootPath: String) {
         LazyColumn(verticalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxSize()) {
             items(BiosManager.platformsWithKit(), key = { "kit-" + it.slug }) { platform ->
                 val (ok, total) = remember(tick) { BiosManager.kitStatus(context, platform) }
-                val ready = ok == total
+                val ready = !platform.biosRequired || ok == total
+                val kitInstructions = when (platform.slug) {
+                    "ps2" -> "Importe a pasta pcsx2 completa, incluindo bios/ com o BIOS do seu console."
+                    "vita" -> "Importe vita3k com PSP2UPDAT.PUP, PSP2UPDAT_PREINST.PUP, data/ e shaders-builtin/."
+                    "gc", "wii" -> "Importe dolphin-emu contendo a subpasta Sys/."
+                    "wiiu" -> "Opcional: importe Cemu/ com keys.txt e recursos do sistema."
+                    else -> null
+                }
                 Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                     Text(
                         text = "${platform.name} · ${if (platform.biosRequired) stringResource(R.string.game_bios_kit_required) else "arquivos opcionais"}",
@@ -153,6 +160,7 @@ internal fun BiosScreen(rootPath: String) {
                         color = GameColors.textDim,
                         fontSize = 12.sp,
                     )
+                    if (kitInstructions != null) Text(kitInstructions, color = GameColors.textDim, fontSize = 11.sp)
                     GameButton(
                         stringResource(R.string.game_bios_kit_import),
                         compact = true,
