@@ -238,3 +238,25 @@ Estado:
 - [ ] Implementação visual e integração com GameSessionActivity.
 - [ ] Testes automatizados e CI.
 - [ ] Teste funcional/ergonômico no aparelho.
+
+
+CI APROVADA — 2026-11-26 (ATUALIZAÇÃO)
+- [x] CI #1454 — https://github.com/izzyn0okami/Tandem/actions/runs/45738766195 — conclusão success.
+- [x] check-style / Spotless: sucesso.
+- [x] Testes unitários: sucesso.
+- [x] assembleLawnWithQuickstepGithubDebug: sucesso.
+- [x] Upload do APK de debug: sucesso.
+- Observação: o workflow aplicou/verificou Spotless e completou o build; esta execução valida o commit de documentação/escopo anterior à implementação funcional de I17.
+
+I17 — AUDITORIA DO CAMINHO DE ENTRADA — 2026-11-26
+- [x] Inspecionada a implementação local de LibretroDroid e GLRetroView.
+- [x] Confirmado que GLRetroView expõe sendKeyEvent(action, keyCode, port) e sendMotionEvent(source, xAxis, yAxis, port).
+- [x] Confirmados os canais nativos: MOTION_SOURCE_DPAD, MOTION_SOURCE_ANALOG_LEFT e MOTION_SOURCE_ANALOG_RIGHT. Portanto, os dois analógicos podem emitir eixos distintos sem alteração do JNI.
+- [x] Confirmado que o caminho de controle físico já usa os eixos X/Y para o analógico esquerdo e Z/RZ para o direito; o gamepad virtual pode enviar diretamente os dois canais nativos.
+- [x] Confirmado o mapeamento Android/RetroPad A/B e X/Y invertido no GamepadsManager; a camada virtual deverá emitir os códigos já normalizados para não inverter os botões.
+- [x] Localizada a implementação de referência do Argosy: OnScreenControls.kt e OnScreenControlsHost.kt no repositório público rommapp/argosy-launcher. Referência usada para arquitetura de dois sticks, D-pad, clusters de botões, transparência e layouts por orientação; não copiar implementação de forma cega.
+- [ ] Implementar camada visual de toque independente do GLRetroView, para que toques fora dos controles continuem chegando à tela de toque do DS.
+- [ ] Implementar rastreamento multitouch por pointerId e liberação de todos os inputs em ACTION_CANCEL, pausa, saída e perda de visibilidade.
+- [ ] Implementar ocultação automática quando InputManager detectar controle físico conectado.
+- [ ] Testes automatizados para deadzone, clamp, botões, D-pad e liberação de entradas.
+- [ ] CI e validação visual/ergonômica no aparelho.
