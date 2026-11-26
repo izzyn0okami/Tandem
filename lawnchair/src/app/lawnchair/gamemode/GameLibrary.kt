@@ -54,10 +54,22 @@ object GameLibraryScanner {
      * da mesma pasta: isso poderia fazer desaparecer outro jogo colocado ao lado da playlist.
      */
     internal fun dropDiscCompanions(games: List<LocalGame>): List<LocalGame> {
-        val referencedPaths = games
-            .filter { it.platform.discBased && it.path.endsWith(".m3u", ignoreCase = true) }
-            .flatMap { game -> playlistDiscPaths(File(game.path)) }
-            .toSet()
+        val playlists = games.filter { it.platform.discBased && it.path.endsWith(".m3u", ignoreCase = true) }
+        val referencedPaths = playlists.flatMap { game ->
+            val discs = playlistDiscPaths(File(game.path))
+            val companions = discs.flatMap { discPath ->
+                val disc = File(discPath)
+                disc.parentFile?.listFiles()
+                    .orEmpty()
+                    .filter { companion ->
+                        companion.isFile &&
+                            companion.nameWithoutExtension.equals(disc.nameWithoutExtension, ignoreCase = true) &&
+                            companion.extension.lowercase() in game.platform.discCompanionExtensions
+                    }
+                    .mapNotNull { companion -> runCatching { companion.canonicalPath }.getOrNull() }
+            }
+            discs + companions
+        }.toSet()
         if (referencedPaths.isEmpty()) return games
 
         return games.filterNot { game ->
