@@ -74,7 +74,7 @@ object GameLibraryScanner {
             .map(String::trim)
             .filter { it.isNotEmpty() && !it.startsWith("#") }
             .mapNotNull { line ->
-                val relative = line.replace('\\\\', '/')
+                val relative = line.replace('\\', '/')
                 if (relative.startsWith("/") || Regex("^[A-Za-z]:").containsMatchIn(relative)) {
                     return@mapNotNull null
                 }
