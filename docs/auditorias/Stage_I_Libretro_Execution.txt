@@ -604,3 +604,22 @@ ATUALIZAÇÃO — RECUPERAÇÃO DO INSTALADOR DE NÚCLEOS E CIs — 2026-11-26
 - [ ] Teste funcional no aparelho para instalação interrompida/recuperação de backup permanece pendente.
 - [ ] Revisar demais caminhos de rollback, falha de rede, ZIP de núcleo inválido e consistência dos metadados SHA-256/ETag após interrupção.
 - PR #57 permanece aberta e draft, sem merge ou publicação em tandem-latest; PR #41 permanece intocada.
+
+
+ATUALIZAÇÃO — CIs #1602 E #1604 CONCLUÍDAS — 2026-11-26
+- [x] CI #1602 — https://github.com/izzyn0okami/Tandem/actions/runs/45856653958 — conclusão success na tentativa 2; check-style/Spotless, testes e build APK aprovados.
+- [x] CI #1604 — https://github.com/izzyn0okami/Tandem/actions/runs/45879205231 — conclusão success; validou a atualização documental anterior no commit 90f498e984f41bbce68eabab89c4691e9fb08e3b.
+- [x] A falha inicial de resolução do plugin KSP foi transitória; a nova tentativa terminou com sucesso, sem alteração de código para contornar dependência.
+- [x] Nenhum job de publicação foi executado; tandem-latest não foi atualizado.
+
+ATUALIZAÇÃO — RECUPERAÇÃO TRANSACIONAL POR SHA-256 — 2026-11-26
+- [x] CoreInstaller passa a ler o SHA-256 confirmado nas preferências antes de recuperar arquivos .backup.
+- [x] Se o destino corresponder ao digest confirmado, o destino é mantido e o backup residual é removido.
+- [x] Se o backup corresponder ao digest confirmado e o destino for diferente, o backup confirmado é restaurado.
+- [x] Se destino e backup forem ELF válidos, mas nenhum corresponder ao digest (ou não houver digest registrado), ambos são preservados para diagnóstico até que um novo pacote validado esteja pronto.
+- [x] Se o destino estiver ausente/inválido e o backup for a única cópia ELF válida, o backup é restaurado; divergência do digest é registrada.
+- [x] Testes adicionados para backup confirmado com destino não confirmado, destino confirmado com backup residual, ausência de digest com ambos válidos e recuperação do backup confirmado com destino ausente.
+- Commits de implementação/testes: 799f53f4922eb5e6053f80e4c5eb42d0c8bf5528; 8c23713b66dae56a2a9df3b597c32a72429b6ee9; 8dc2c8443ce6c61a8de4a0f7e6d6f78629c45f1e.
+- [ ] CI dos commits de recuperação por digest pendente.
+- [ ] Após CI verde, revisar logs e testar no aparelho uma instalação interrompida/recuperação de backup.
+- PR #57 permanece aberta e draft, sem merge; nenhuma publicação em tandem-latest; PR #41 permanece intocada.
