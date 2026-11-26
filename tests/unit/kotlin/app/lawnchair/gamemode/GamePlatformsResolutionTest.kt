@@ -60,4 +60,12 @@ class GamePlatformsResolutionTest {
         assertEquals("fbneo", GamePlatforms.resolve(listOf("arcade"), "zip")?.coreId)
     }
 
+    @Test
+    fun dolphinAndCemuPlatformsUseLibretro() {
+        assertEquals("dolphin", GamePlatforms.resolve(listOf("gc"), "rvz")?.coreId)
+        assertEquals("dolphin", GamePlatforms.resolve(listOf("wii"), "wbfs")?.coreId)
+        assertEquals("cemu", GamePlatforms.resolve(listOf("wiiu"), "wua")?.coreId)
+        assertEquals("cap32", GamePlatforms.resolve(listOf("amstradcpc"), "dsk")?.coreId)
+    }
+
 }
