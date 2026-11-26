@@ -284,7 +284,8 @@ internal class VirtualGamepadView @JvmOverloads constructor(
             }
         }
         invalidate()
-        return pointerControls.isNotEmpty() || passthroughPointerIds.isNotEmpty() || event.actionMasked == MotionEvent.ACTION_UP ||
+        return pointerControls.isNotEmpty() || passthroughPointerIds.isNotEmpty() ||
+            event.actionMasked == MotionEvent.ACTION_UP || event.actionMasked == MotionEvent.ACTION_POINTER_UP ||
             event.actionMasked == MotionEvent.ACTION_CANCEL
     }
 
@@ -375,6 +376,7 @@ internal class VirtualGamepadView @JvmOverloads constructor(
     internal fun releaseAll() {
         pointerControls.values.toSet().forEach(::releaseControl)
         pointerControls.clear()
+        passthroughPointerIds.clear()
         pressedKeys.toList().forEach(::releaseKey)
         dpadX = 0f
         dpadY = 0f
