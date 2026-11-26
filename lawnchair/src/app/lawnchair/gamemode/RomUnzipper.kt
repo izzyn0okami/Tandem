@@ -17,7 +17,7 @@ object RomUnzipper {
         val rom = File(romPath)
         if (!rom.extension.equals("zip", ignoreCase = true) || platform?.discBased == true || platform?.zipIsNativeRom == true) return rom
         return try {
-            extract(context, rom, platform?.extensions.orEmpty())
+            extract(rom, platform?.extensions.orEmpty(), context.cacheDir)
                 ?: throw IllegalArgumentException("O arquivo ${rom.name} não contém uma ROM compatível.")
         } catch (error: IllegalArgumentException) {
             GameLog.error("jogo", "arquivo ZIP inválido ou ambíguo: ${rom.name}", error)
@@ -28,7 +28,7 @@ object RomUnzipper {
         }
     }
 
-    private fun extract(context: Context, rom: File, wanted: Set<String>): File? = ZipFile(rom).use { zip ->
+    internal fun extract(rom: File, wanted: Set<String>, cacheDir: File): File? = ZipFile(rom).use { zip ->
         val candidates = zip.entries().asSequence()
             .filter { !it.isDirectory && isSafeEntryName(it.name) && File(it.name).extension.lowercase() in wanted }
             .toList()
@@ -42,7 +42,7 @@ object RomUnzipper {
         require(entry.size >= 0L) { "A entrada ${entry.name} não informa um tamanho válido." }
         require(entry.crc >= 0L) { "A entrada ${entry.name} não informa um CRC válido." }
 
-        val root = File(context.cacheDir, "unzipped")
+        val root = File(cacheDir, "unzipped")
         // SHA-256 evita colisões do hashCode de String e mantém caches de sessões diferentes isolados.
         val folderId = MessageDigest.getInstance("SHA-256")
             .digest(rom.absolutePath.toByteArray(Charsets.UTF_8))
