@@ -447,7 +447,7 @@ object GamePlatforms {
         GamePlatform(
             slug = "dos",
             name = "MS-DOS",
-            coreId = "rust_dos",
+            coreId = "dosbox_pure",
             extensions = setOf("zip", "exe", "com", "bat", "conf"),
             folderAliases = setOf("dos", "msdos", "ms-dos", "dosbox"),
             sortOrder = 125,
