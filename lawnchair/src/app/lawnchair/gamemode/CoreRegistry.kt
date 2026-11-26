@@ -25,6 +25,18 @@ object CoreRegistry {
     private fun core(id: String, label: String, note: String) = CoreInfo(id, label, note)
 
     private val catalog: Map<String, List<CoreInfo>> = mapOf(
+        "gc" to listOf(
+            core("dolphin", "Dolphin", "GameCube; Vulkan ou OpenGL ES 3.0; exige Sys"),
+        ),
+        "wii" to listOf(
+            core("dolphin", "Dolphin", "Wii; Vulkan ou OpenGL ES 3.0; exige Sys"),
+        ),
+        "wiiu" to listOf(
+            core("cemu", "Cemu", "Wii U; Vulkan obrigatório no Android; keys.txt opcional para imagens descriptografadas"),
+        ),
+        "amstradcpc" to listOf(
+            core("cap32", "Caprice32", "Amstrad CPC"),
+        ),
         "ps2" to listOf(
             core("pcee2", "PCEE2", "PCSX2 ARM64; experimental, Vulkan/OpenGL; saves, states e RA"),
             core("armsx2", "ARMSX2", "PCSX2 ARM64; Vulkan por padrão, OpenGL ES 3.2 ou software"),
@@ -64,7 +76,11 @@ object CoreRegistry {
             core("fuse", "Fuse", "ZX Spectrum"),
         ),
         "dos" to listOf(
-            core("rust_dos", "Rust DOS", "Ambiente DOS experimental"),
+            core("dosbox_pure", "DOSBox Pure", "DOSBox para jogos e imagens ZIP"),
+            core("dosbox_core", "DOSBox Core", "Alternativa para software DOS"),
+            core("dosbox", "DOSBox", "Compatibilidade clássica"),
+            core("dosbox_svn", "DOSBox SVN", "Versão de desenvolvimento"),
+            core("rust_dos", "Rust DOS", "Ambiente DOS alternativo"),
         ),
         "scummvm" to listOf(
             core("scummvm", "ScummVM", "Aventuras gráficas clássicas"),
@@ -99,9 +115,19 @@ object CoreRegistry {
         "arcade" to listOf(
             core("fbneo", "FinalBurn Neo", "Arcade e Neo Geo"),
             core("mamearcade", "MAME Arcade", "Compatibilidade ampla; maior consumo"),
+            core("mame2003", "MAME 2003", "Conjuntos de ROMs clássicos"),
+            core("mame2000", "MAME 2000", "Compatibilidade retro"),
             core("mame2003_plus", "MAME 2003 Plus", "Conjuntos de ROMs clássicos"),
+            core("mame2010", "MAME 2010", "Compatibilidade intermediária"),
+            core("mame2015", "MAME 2015", "Compatibilidade ampla"),
+            core("mame2016", "MAME 2016", "Compatibilidade ampla"),
             core("hbmame", "HBMAME", "Variantes e hacks de arcade"),
             core("supermodel", "Supermodel", "Sega Model 3 arcade"),
+            core("fbalpha2012", "FB Alpha 2012", "Arcade legado"),
+            core("fbalpha2012_cps1", "FB Alpha 2012 CPS-1", "Capcom CPS-1"),
+            core("fbalpha2012_cps2", "FB Alpha 2012 CPS-2", "Capcom CPS-2"),
+            core("fbalpha2012_cps3", "FB Alpha 2012 CPS-3", "Capcom CPS-3"),
+            core("hypseushw", "Hypseus", "Arcade LaserDisc"),
         ),
         "supergrafx" to listOf(
             core("mednafen_supergrafx", "Beetle SuperGrafx", "NEC SuperGrafx"),
