@@ -27,6 +27,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Slider
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -1534,6 +1535,12 @@ internal fun SettingsScreen(
     onExit: () -> Unit,
 ) {
     val context = LocalContext.current
+    var virtualGamepadEnabled by remember { mutableStateOf(GameModeSettings.isVirtualGamepadEnabled(context)) }
+    var virtualGamepadAutoHide by remember { mutableStateOf(GameModeSettings.isVirtualGamepadAutoHideEnabled(context)) }
+    var virtualGamepadOpacity by remember { mutableStateOf(GameModeSettings.virtualGamepadOpacity(context)) }
+    var virtualGamepadScale by remember { mutableStateOf(GameModeSettings.virtualGamepadScale(context)) }
+    var virtualGamepadOffsetX by remember { mutableStateOf(GameModeSettings.virtualGamepadOffsetX(context)) }
+    var virtualGamepadOffsetY by remember { mutableStateOf(GameModeSettings.virtualGamepadOffsetY(context)) }
     var autoEnter by remember { mutableStateOf(GameModeSettings.isAutoEnterEnabled(context)) }
     val toggleAuto = {
         autoEnter = !autoEnter
@@ -1779,6 +1786,65 @@ internal fun SettingsScreen(
         GameButton(
             label = "Sobre a iiDB / iiSU",
             onClick = { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://iisu.network/wiki/iidb-developers"))) },
+        )
+
+        SettingsSection("Controles virtuais")
+        SettingsSwitchRow(
+            label = "Exibir controles na tela durante os jogos",
+            checked = virtualGamepadEnabled,
+            onToggle = {
+                virtualGamepadEnabled = !virtualGamepadEnabled
+                GameModeSettings.setVirtualGamepadEnabled(context, virtualGamepadEnabled)
+            },
+        )
+        SettingsSwitchRow(
+            label = "Ocultar quando conectar controle físico",
+            checked = virtualGamepadAutoHide,
+            onToggle = {
+                virtualGamepadAutoHide = !virtualGamepadAutoHide
+                GameModeSettings.setVirtualGamepadAutoHideEnabled(context, virtualGamepadAutoHide)
+            },
+        )
+        Text("Opacidade: ${(virtualGamepadOpacity * 100).toInt()}%", color = GameColors.textDim, fontSize = 13.sp)
+        Slider(
+            value = virtualGamepadOpacity,
+            onValueChange = {
+                virtualGamepadOpacity = it
+                GameModeSettings.setVirtualGamepadOpacity(context, it)
+            },
+            valueRange = 0.25f..1f,
+        )
+        Text("Tamanho: ${(virtualGamepadScale * 100).toInt()}%", color = GameColors.textDim, fontSize = 13.sp)
+        Slider(
+            value = virtualGamepadScale,
+            onValueChange = {
+                virtualGamepadScale = it
+                GameModeSettings.setVirtualGamepadScale(context, it)
+            },
+            valueRange = 0.7f..1.3f,
+        )
+        Text("Posição horizontal: ${(virtualGamepadOffsetX * 100).toInt()}%", color = GameColors.textDim, fontSize = 13.sp)
+        Slider(
+            value = virtualGamepadOffsetX,
+            onValueChange = {
+                virtualGamepadOffsetX = it
+                GameModeSettings.setVirtualGamepadOffsetX(context, it)
+            },
+            valueRange = -0.08f..0.08f,
+        )
+        Text("Posição vertical: ${(virtualGamepadOffsetY * 100).toInt()}%", color = GameColors.textDim, fontSize = 13.sp)
+        Slider(
+            value = virtualGamepadOffsetY,
+            onValueChange = {
+                virtualGamepadOffsetY = it
+                GameModeSettings.setVirtualGamepadOffsetY(context, it)
+            },
+            valueRange = -0.08f..0.08f,
+        )
+        Text(
+            "As alterações são salvas automaticamente e aplicadas na próxima sessão de jogo. O layout mantém dois analógicos independentes.",
+            color = GameColors.textDim,
+            fontSize = 12.sp,
         )
 
         SettingsSection(stringResource(R.string.game_mode_section_interface))
