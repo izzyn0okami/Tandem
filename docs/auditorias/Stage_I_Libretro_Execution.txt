@@ -714,3 +714,18 @@ REVISÃO DE COBERTURA I7/I8 — 2026-11-26
 - [ ] Validação funcional no aparelho com ZIPs reais de sistemas baseados em arquivo e disco continua pendente.
 - [ ] Confirmar comportamento de ROMs multidisco reais (M3U/CUE) no aparelho.
 - [ ] A cobertura não substitui validação com arquivos reais grandes e armazenamento limitado no telefone.
+
+
+ATUALIZAÇÃO — CI #1642 E REVISÃO ESTÁTICA DO CICLO DE VIDA — 2026-11-26
+- [x] CI #1642 — https://github.com/izzyn0okami/Tandem/actions/runs/45909370118 — sucesso no commit documental anterior.
+- [x] check-style / Spotless: sucesso.
+- [x] Testes unitários: sucesso.
+- [x] Build debug APK e upload do artefato: sucesso.
+- [x] Jobs tandem-release e nightly-release ignorados; nenhuma publicação.
+- [x] Reinspecionado GameSessionActivity: persistência SRAM em onPause, liberação do gamepad virtual, encerramento RA/Core antes da suspensão da superfície GL quando a Activity termina ou é recriada, e proteção contra dupla destruição nativa.
+- [x] Reinspecionada persistência de SRAM: @Synchronized serializa a rotina de autosave periódico com os caminhos de pausa/encerramento; SRAM vazia não sobrescreve o arquivo existente.
+- [x] Reinspecionada sessão RomM: a sincronização de fundo usa snapshot e identidade/conta verificadas; conflitos preservados não são tratados como sucesso de upload.
+- [ ] Testes instrumentados de pausa/retomada, rotação, encerramento forçado, perda de processo e falha nativa continuam pendentes.
+- [ ] Confirmar no aparelho a persistência/restauração de SRAM e estados rápidos em pausa, retomada e encerramento.
+- [ ] Validar se a sincronização pós-pausa deve ocorrer também em pausa transitória (app em segundo plano), ou se deve ficar restrita ao encerramento real da sessão; revisar sem alterar o contrato de Device Sync até confirmar o comportamento desejado.
+- PR #57 permanece aberta e draft, sem merge; PR #41 permanece intocada; tandem-latest não foi alterada.
