@@ -248,7 +248,7 @@ internal class VirtualGamepadView @JvmOverloads constructor(
                 val control = hitControl(event.getX(index), event.getY(index))
                 val pointerId = event.getPointerId(index)
                 if (control == null) {
-                    if (pointerControls.isEmpty()) return false
+                    if (pointerControls.isEmpty() && passthroughPointerIds.isEmpty()) return false
                     passthroughPointerIds += pointerId
                     forwardPassthroughTouch(event)
                     return true
