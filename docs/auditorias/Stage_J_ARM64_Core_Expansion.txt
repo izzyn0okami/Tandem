@@ -41,3 +41,5 @@ REVISÃO VULKAN — 2026-11-26
 - [ ] CI da revisão Vulkan mais recente (commits b190470 e c59b500) ainda aguardando execução/conclusão.
 - [x] Seleção de GPU ampliada para exigir API Vulkan suficiente para o core, extensões de exportação de frame e fila gráfica/de computação utilizável pelo backend.
 - [ ] CI dos últimos ajustes de seleção de GPU ainda pendente; verificar build nativo, testes e Spotless antes de encerrar esta revisão.
+- [x] Probe Vulkan agora também trata a ausência inesperada de vkDestroyInstance sem dereferenciar ponteiro nulo; a disponibilidade é rejeitada com aviso.
+- [ ] CI incluindo a proteção final do probe (commit 80deb66) pendente.
