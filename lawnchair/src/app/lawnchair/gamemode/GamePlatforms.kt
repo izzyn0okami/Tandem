@@ -438,7 +438,11 @@ object GamePlatforms {
         for (folder in folders) {
             val key = normalize(folder)
             val byFolder = all.firstOrNull { key in it.folderAliases }
-            if (byFolder != null && (ext in byFolder.extensions || (!byFolder.discBased && ext in genericExtensions))) return byFolder
+            if (byFolder != null) {
+                return byFolder.takeIf {
+                    ext in it.extensions || (!it.discBased && ext in genericExtensions)
+                }
+            }
         }
         return all.singleOrNull { ext in it.extensions }
     }
