@@ -1577,3 +1577,26 @@ ACOMPANHAMENTO DE CI — 2026-11-27 — REVISÃO
 - [ ] CI #1839 — run 45994059394.
 - [ ] CI #1841 — run 45994116230 — commit ae35c84633eb9e4bc7a9270c5140d6ef86785430.
 - [ ] Aguardar CIs para commits N64 9423f87 e 96a538a.
+
+
+AUDITORIA DE SAVES — PC ENGINE / SUPERGRAFX — 2026-11-27
+- [x] Beetle PCE Fast: documentação Libretro declara Saves e States; mantém sincronização SRAM RomM habilitada.
+- [x] Beetle PCE (preciso): documentação lista States, mas não lista Saves frontend-level; sync SRAM RomM desativado até confirmação. Save states permanecem habilitados.
+- [x] Geargrafx: documentação declara Saves e States; backup RAM por jogo usa *.srm, elegível ao transporte SRAM. Memory Base 128 usa arquivo compartilhado geargrafx_mb128.sav e não é sincronizada pelo fluxo atual.
+- [x] CoreRegistry atualizado com notas dos formatos e capacidades.
+- [x] Teste JVM adicionado para diferenciar os três núcleos PCE.
+- [ ] Validar no aparelho backup RAM por jogo e comportamento de CD nos três núcleos.
+- [ ] Se houver interesse em sincronizar Memory Base 128, implementar adaptador próprio com identidade compartilhada; não tratar o .sav global como SRAM por jogo.
+
+Fontes:
+- https://docs.libretro.com/library/beetle_pce_fast/ — Saves e States suportados.
+- https://docs.libretro.com/library/mednafen_pce/ — States listado; Saves não listado.
+- https://docs.libretro.com/library/geargrafx/ — *.srm de backup RAM e geargrafx_mb128.sav compartilhado.
+
+Commits:
+- 705fc52b324c58b73d82f1e7bf5f43dc730d60ca — metadados PCE.
+- c3cdcb72617130e324f2108d06f7d73f7dba6098 — teste PCE.
+
+ACOMPANHAMENTO DE CI — 2026-11-27
+- [ ] CIs #1833, #1834, #1836, #1839, #1841 e #1844 ainda precisam de consulta final.
+- [ ] Aguardar CI para commits PCE 705fc52 e c3cdcb7.
