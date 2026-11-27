@@ -244,6 +244,7 @@ object GamePlatforms {
             extensions = setOf("iso", "chd", "cue"),
             folderAliases = setOf("3do", "panasonic3do"),
             sortOrder = 62,
+            raConsoleId = 43,
             discBased = true,
             discCompanionExtensions = setOf("bin"),
             bios = listOf(
@@ -514,6 +515,7 @@ object GamePlatforms {
             extensions = setOf("zip", "7z"),
             folderAliases = setOf("arcade", "mame", "fbneo", "arcadegames"),
             sortOrder = 119,
+            raConsoleId = 27,
             zipIsNativeRom = true,
         ),
         GamePlatform(
@@ -618,6 +620,7 @@ object GamePlatforms {
             extensions = setOf("cue", "chd", "ccd", "iso", "m3u"),
             folderAliases = setOf("pcfx", "necpcfx", "nec-pc-fx"),
             sortOrder = 130,
+            raConsoleId = 49,
             discBased = true,
         ),
         GamePlatform(
@@ -627,6 +630,7 @@ object GamePlatforms {
             extensions = setOf("cue", "chd", "iso", "m3u"),
             folderAliases = setOf("neogeocd", "neo-geo-cd", "snkneogeocd"),
             sortOrder = 131,
+            raConsoleId = 56,
             discBased = true,
         ),
         GamePlatform(
@@ -661,6 +665,7 @@ object GamePlatforms {
             extensions = setOf("hex", "arduboy"),
             folderAliases = setOf("arduboy"),
             sortOrder = 135,
+            raConsoleId = 71,
         ),
         GamePlatform(
             slug = "cdi",
@@ -687,6 +692,7 @@ object GamePlatforms {
             extensions = setOf("vec", "bin", "rom"),
             folderAliases = setOf("vectrex", "gcevectrex"),
             sortOrder = 139,
+            raConsoleId = 46,
         ),
         GamePlatform(
             slug = "odyssey2",
@@ -695,6 +701,7 @@ object GamePlatforms {
             extensions = setOf("bin", "rom"),
             folderAliases = setOf("odyssey2", "odyssey", "videopac"),
             sortOrder = 140,
+            raConsoleId = 23,
         ),
         GamePlatform(
             slug = "pc88",
@@ -703,6 +710,7 @@ object GamePlatforms {
             extensions = setOf("d88", "d77", "t88", "cmt", "m3u"),
             folderAliases = setOf("pc88", "pc8801", "necpc8801"),
             sortOrder = 141,
+            raConsoleId = 47,
             discBased = true,
         ),
         GamePlatform(
@@ -736,6 +744,7 @@ object GamePlatforms {
             extensions = setOf("wasm"),
             folderAliases = setOf("wasm4", "wasm-4"),
             sortOrder = 145,
+            raConsoleId = 72,
         ),
         GamePlatform(
             slug = "uzebox",
@@ -744,6 +753,7 @@ object GamePlatforms {
             extensions = setOf("uze"),
             folderAliases = setOf("uzebox", "uze"),
             sortOrder = 146,
+            raConsoleId = 80,
         ),
         GamePlatform(
             slug = "commanderx16",
