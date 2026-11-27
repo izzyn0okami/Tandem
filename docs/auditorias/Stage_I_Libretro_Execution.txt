@@ -1881,3 +1881,18 @@ Evidência CI #1915:
 - Job de build/testes: 140545972638; 256 testes concluídos, 1 falha.
 - Teste: extractsMelonDsCoreAndIgnoresMetadataAndUpstreamLicense; IllegalStateException em CoreInstallerTest.kt:362.
 - Commits anteriores avaliados: 548bbafec2323ac6509da34b4e3c071abd32fb0f (correção inicial) e 0076be382802e38744cffa180ff739d6cffb2eae (teste de regressão).
+
+
+VALIDAÇÃO NO APARELHO — MELONDS DS / PHANTOM HOURGLASS — 2026-11-27
+- [x] Usuário confirmou que a instalação do núcleo melonDS DS funcionou após a correção do reconhecimento do nome upstream melondsds-LICENSE.txt.
+- [x] Usuário confirmou que The Legend of Zelda: Phantom Hourglass abriu e não encontrou nenhum outro erro durante este teste.
+- [x] Considerado aprovado o teste de instalação/carregamento inicial do melonDS DS no aparelho.
+- [ ] Registrar versão/build exata utilizada no teste, caso seja informada posteriormente; não presumir número de build.
+- [ ] Continuam pendentes testes funcionais mais completos: áudio/vídeo prolongado, alternância e disposição das duas telas, controles físicos/touch e persistência do save local .srm após fechar/reabrir o jogo.
+- [ ] Testar Device Sync com RomM somente quando o aparelho estiver na rede local; timeouts fora da rede não contam como falha do núcleo.
+- [ ] Verificar/registrar CI integralmente aprovada para o commit final; a CI #1915 falhou em um teste unitário antes da correção do matcher de licença e não valida o commit corretivo posterior.
+- [x] PR #57 continua aberta e draft; sem merge e sem publicação em tandem-latest.
+
+Resultado do usuário:
+- Mensagem de 2026-11-27: "Funcionou. Não encontrei nenhum outro erro".
+- Resultado: correção funcional confirmada no teste real; não declarar Estágio I concluído enquanto as verificações restantes e CI não estiverem documentadas.
