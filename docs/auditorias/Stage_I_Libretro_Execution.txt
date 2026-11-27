@@ -1682,3 +1682,9 @@ Commits:
 CI:
 - Nenhum workflow foi retornado para o commit de teste no momento da consulta. Aguardar disparo/execução e registrar resultado integral antes de declarar a implementação validada.
 - PR #57 permanece aberta, draft e sem merge. Não publicar em tandem-latest.
+
+
+ACOMPANHAMENTO CI — IMPLEMENTAÇÃO .DSV — 2026-11-27
+- [ ] CI #1868 — run 45995160455 — commit af8dc0d27989c481bbbf67f61f92efea7b294e48: build-debug-apk e check-style na fila.
+- [ ] CI #1871 — run 45995224326 — commit b25992233863db6f62d1f9b55412ce38d468620c: build-debug-apk e check-style na fila.
+- [ ] Aguardar conclusão integral de ambas; não marcar implementação aprovada antes do final-status do workflow.
