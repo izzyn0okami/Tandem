@@ -1,0 +1,71 @@
+AUDITORIA — STAGE J / BACKEND VULKAN ARM64
+Data: 2026-11-27
+Repositorio: izzyn0okami/Tandem
+Branch: integration/stage-j-vulkan-backend
+Base: game-mode-m2-dev
+
+OBJETIVO
+Separar da PR #58 somente a melhoria do backend C++ Vulkan para carregamento de driver Adreno customizado, fallback para o loader do sistema e seleção/validação de GPU e fila. Esta PR não altera o importador Kotlin nem a UI de configurações.
+
+PORTADO
+- [x] resetLoader centraliza limpeza do Dispatch, fecha handle e zera usingCustomDriver.
+- [x] loadLoader valida os símbolos vkGetInstanceProcAddr e vkCreateInstance antes de aceitar um loader.
+- [x] Fallback do driver customizado para libvulkan.so quando o driver customizado não carrega ou não passa a probe.
+- [x] Probe Vulkan verifica enumeração de dispositivos e extensões exigidas em todos os dispositivos enumerados, em vez de presumir que o primeiro dispositivo serve.
+- [x] Seleção de GPU exige API mínima, extensões de exportação e fila graphics+compute antes da criação do dispositivo.
+- [x] loadInstanceFunctions/loadDeviceFunctions verificam todos os ponteiros usados pelo backend.
+- [x] Fallback para driver do sistema também quando o driver customizado passa a probe mas falha durante a criação do contexto.
+- [x] Preservado o CMake atual: libadrenotools já está integrado na base game-mode-m2-dev; não foi duplicado nem substituído.
+- [x] Preservada a API DriverConfig/GLRetroViewData atual; não foram alterados contratos JNI ou Kotlin.
+
+PONTOS DE ATENÇÃO
+- [ ] Revisar comportamento em aparelhos com múltiplos dispositivos Vulkan e núcleos que negociam dispositivo/fila próprios.
+- [ ] Confirmar que a recuperação após falha do custom driver restaura corretamente estado de negociação e recursos parciais.
+- [ ] Adicionar testes nativos automatizados se a infraestrutura atual permitir injeção de loader/Vulkan fake.
+- [ ] CI Android/NDK deve compilar todas as ABIs configuradas; validar especialmente arm64-v8a.
+- [ ] Teste físico com Turnip e fallback para driver do sistema no Motorola Edge 30 Fusion.
+- [ ] Confirmar logs de falha e garantir que uma falha de Turnip não impeça jogos que funcionam com o driver padrão.
+
+NÃO INCLUÍDO
+- Importador multi-driver AdrenoTools e migração de preferências.
+- UI de seleção/importação de múltiplos drivers.
+- Alterações no GameModeSettings, VulkanDriverManager ou GameModeActivity.
+- Alterações em tandem-latest.
+
+SEGURANÇA
+- PR será mantida em Draft até CI e revisão.
+- Nenhum merge automático.
+- PR #58 permanece aberta até que todos os blocos sejam reconciliados e as dependências resolvidas.
+
+
+CI #1972 APROVADA — PR #60 / BACKEND VULKAN — 2026-11-27
+- [x] CI #1972 — https://github.com/izzyn0okami/Tandem/actions/runs/46065457718 — conclusão success no head 3b89f8900fba41e38f162c392dbe01231a498dd3.
+- [x] check-style: Spotless automático executado sem necessidade de commit corretivo; verificação final passou.
+- [x] build-debug-apk: testes unitários passaram, APK assembleLawnWithQuickstepGithubDebug compilado e artefato enviado.
+- [x] final-status: sucesso; jobs condicionais de publicação/notificação ignorados conforme esperado.
+- [x] PR #60 permanece mergeable e sem commits atrás da base game-mode-m2-dev (base f13c7932cd006c086ca94b197a717462b495a899) na consulta desta auditoria.
+- [ ] Revisão estática adicional do caminho de shutdown/negociação Vulkan, destruição do dispositivo, fallback após falha parcial e consistência da GPU selecionada.
+- [ ] Teste físico no Motorola Edge 30 Fusion: importar/ativar Turnip, iniciar jogo Vulkan, verificar logs e forçar fallback ao loader do sistema.
+- [ ] Confirmar que a falha do driver customizado não impede jogos que funcionam com o driver Vulkan do sistema.
+- [ ] Avaliar testes nativos automatizados com loader/Vulkan fake; a CI atual prova compilação NDK/APK e testes JVM, não execução de GPU.
+- [x] Nenhuma mesclagem foi realizada; PR #60 continua Draft. PR #58 continua aberta para reconciliação restante. game-mode-m2-dev e tandem-latest não foram modificadas diretamente.
+
+
+REVISÃO DE CICLO DE VIDA — DESTRUIÇÃO DE DEVICE NEGOCIADO — 2026-11-27
+- [x] Revisado o caminho de encerramento após inspeção estática adicional.
+- [x] Corrigido shutdown() para destruir recursos de frame antes de liberar o VkDevice.
+- [x] Devices criados pelo callback Libretro negociado agora usam negotiation->destroy_device() quando disponível; o caminho direto vkDestroyDevice fica reservado a devices não negociados ou sem callback de destruição.
+- [x] destroyCoreDevice() agora limpa device, queue e negotiatedDevice após a destruição, evitando estado residual.
+- [ ] CI completa para o novo commit; a compilação NDK/APK ainda não substitui teste real no aparelho.
+- [ ] Testar encerramento e reinício repetido de sessões Vulkan no Motorola Edge 30 Fusion com Turnip e driver do sistema.
+
+- [x] Também foi corrigido o caminho em que o core reporta negociação bem-sucedida mas entrega VkDevice ou VkQueue nulos: o callback de destruição/fallback é acionado antes de qualquer nova tentativa, evitando recurso parcial residual.
+
+
+RESULTADO FINAL DA CI — 2026-11-27
+- [x] PR event CI #1994 (run 46069025487), head validado: 05e569f8438932214b2302ddd5f4f9d2644f3e46.
+- [x] Spotless aprovado.
+- [x] Testes unitários aprovados.
+- [x] APK Debug assembleLawnWithQuickstepGithubDebug compilado.
+- [x] Artefato APK enviado com sucesso.
+- [ ] Permanecem pendentes testes físicos de sessões Vulkan, Turnip e fallback para driver do sistema.
