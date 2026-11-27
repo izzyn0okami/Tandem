@@ -248,7 +248,7 @@ class GameSessionActivity : ComponentActivity() {
             }
         }
 
-        if (coreId == "melonds") {
+        if (coreId in setOf("melonds", "melonds_ds")) {
             lifecycleScope.launch {
                 view.getGLRetroEvents().first { it is GLRetroView.GLRetroEvents.FrameRendered }
                 applyDsSideBySide(view)
