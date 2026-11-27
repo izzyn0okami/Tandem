@@ -1532,6 +1532,14 @@ internal fun SettingsScreen(
     onOpenCores: () -> Unit,
     onOpenScraper: () -> Unit,
     onOpenServer: () -> Unit,
+    preferVulkan: Boolean,
+    externalVulkanDriverEnabled: Boolean,
+    vulkanDriverLabel: String?,
+    vulkanDriverStatus: String,
+    onTogglePreferVulkan: () -> Unit,
+    onToggleExternalVulkanDriver: () -> Unit,
+    onImportVulkanDriver: () -> Unit,
+    onRemoveVulkanDriver: () -> Unit,
     onExit: () -> Unit,
 ) {
     val context = LocalContext.current
@@ -1843,6 +1851,45 @@ internal fun SettingsScreen(
         )
         Text(
             "As alterações são salvas automaticamente e aplicadas na próxima sessão de jogo. O layout mantém dois analógicos independentes.",
+            color = GameColors.textDim,
+            fontSize = 12.sp,
+        )
+
+        SettingsSection("Gráficos e Vulkan")
+        SettingsSwitchRow(
+            label = "Preferir Vulkan quando disponível",
+            checked = preferVulkan,
+            onToggle = onTogglePreferVulkan,
+        )
+        Text(
+            "O Tandem usa Vulkan quando o núcleo solicita esse modo e o dispositivo oferece suporte. A preferência também orienta núcleos que permitem escolher o renderizador.",
+            color = GameColors.textDim,
+            fontSize = 12.sp,
+        )
+        Text(
+            "Driver Adreno: ${vulkanDriverLabel ?: "driver padrão do Android"}",
+            color = GameColors.text,
+            fontSize = 13.sp,
+        )
+        if (vulkanDriverLabel != null) {
+            SettingsSwitchRow(
+                label = "Usar driver externo Adreno (Turnip)",
+                checked = externalVulkanDriverEnabled,
+                onToggle = onToggleExternalVulkanDriver,
+            )
+        }
+        GameButton(
+            label = if (vulkanDriverLabel == null) "Importar driver Turnip (.zip)" else "Substituir driver Turnip (.zip)",
+            onClick = onImportVulkanDriver,
+        )
+        if (vulkanDriverLabel != null) {
+            GameButton("Remover driver externo", onRemoveVulkanDriver, danger = true)
+        }
+        if (vulkanDriverStatus.isNotBlank()) {
+            Text(vulkanDriverStatus, color = GameColors.textDim, fontSize = 12.sp)
+        }
+        Text(
+            "Importe um pacote ZIP compatível com Android ARM64 que contenha libvulkan_freedreno.so. Recurso destinado a GPUs Adreno (Snapdragon); os ajustes são aplicados na próxima sessão.",
             color = GameColors.textDim,
             fontSize = 12.sp,
         )

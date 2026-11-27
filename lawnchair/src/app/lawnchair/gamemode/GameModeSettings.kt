@@ -1,6 +1,8 @@
 package app.lawnchair.gamemode
 
 import android.content.Context
+import java.io.File
+import com.swordfish.libretrodroid.VulkanDriver
 import androidx.core.content.edit
 
 /**
@@ -23,6 +25,10 @@ object GameModeSettings {
     private const val KEY_VIRTUAL_GAMEPAD_SCALE = "virtual_gamepad_scale"
     private const val KEY_VIRTUAL_GAMEPAD_OFFSET_X = "virtual_gamepad_offset_x"
     private const val KEY_VIRTUAL_GAMEPAD_OFFSET_Y = "virtual_gamepad_offset_y"
+    private const val KEY_PREFER_VULKAN = "prefer_vulkan"
+    private const val KEY_EXTERNAL_VULKAN_DRIVER_ENABLED = "external_vulkan_driver_enabled"
+    private const val KEY_VULKAN_DRIVER_DIRECTORY = "vulkan_driver_directory"
+    private const val KEY_VULKAN_DRIVER_LIBRARY = "vulkan_driver_library"
 
     fun isVirtualGamepadEnabled(context: Context): Boolean = context.getSharedPreferences(FILE, Context.MODE_PRIVATE).getBoolean(KEY_VIRTUAL_GAMEPAD_ENABLED, true)
 
@@ -58,6 +64,39 @@ object GameModeSettings {
 
     fun setVirtualGamepadOffsetY(context: Context, value: Float) {
         context.getSharedPreferences(FILE, Context.MODE_PRIVATE).edit { putFloat(KEY_VIRTUAL_GAMEPAD_OFFSET_Y, value.coerceIn(-0.08f, 0.08f)) }
+    }
+
+    fun isVulkanPreferred(context: Context): Boolean =
+        context.getSharedPreferences(FILE, Context.MODE_PRIVATE).getBoolean(KEY_PREFER_VULKAN, false)
+
+    fun setVulkanPreferred(context: Context, preferred: Boolean) {
+        context.getSharedPreferences(FILE, Context.MODE_PRIVATE).edit { putBoolean(KEY_PREFER_VULKAN, preferred) }
+    }
+
+    fun isExternalVulkanDriverEnabled(context: Context): Boolean =
+        context.getSharedPreferences(FILE, Context.MODE_PRIVATE).getBoolean(KEY_EXTERNAL_VULKAN_DRIVER_ENABLED, false)
+
+    fun setExternalVulkanDriverEnabled(context: Context, enabled: Boolean) {
+        context.getSharedPreferences(FILE, Context.MODE_PRIVATE).edit { putBoolean(KEY_EXTERNAL_VULKAN_DRIVER_ENABLED, enabled) }
+    }
+
+    fun vulkanDriver(context: Context): VulkanDriver? {
+        val prefs = context.getSharedPreferences(FILE, Context.MODE_PRIVATE)
+        val directory = prefs.getString(KEY_VULKAN_DRIVER_DIRECTORY, null)?.takeIf { it.isNotBlank() } ?: return null
+        val library = prefs.getString(KEY_VULKAN_DRIVER_LIBRARY, null)?.takeIf { it.isNotBlank() } ?: return null
+        return VulkanDriver(directory, library).takeIf { File(directory, library).isFile }
+    }
+
+    fun setVulkanDriver(context: Context, driver: VulkanDriver?) {
+        context.getSharedPreferences(FILE, Context.MODE_PRIVATE).edit {
+            if (driver == null) {
+                remove(KEY_VULKAN_DRIVER_DIRECTORY)
+                remove(KEY_VULKAN_DRIVER_LIBRARY)
+            } else {
+                putString(KEY_VULKAN_DRIVER_DIRECTORY, driver.directory)
+                putString(KEY_VULKAN_DRIVER_LIBRARY, driver.libraryName)
+            }
+        }
     }
 
     /** Exibição do Rich Presence do RetroAchievements durante a sessão; ativada por padrão. */

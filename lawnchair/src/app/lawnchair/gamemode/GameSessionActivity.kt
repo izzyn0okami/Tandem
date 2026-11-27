@@ -189,6 +189,12 @@ class GameSessionActivity : ComponentActivity() {
             gameFilePath = loadPath
             systemDirectory = GameFolders.dir(this@GameSessionActivity, FolderKind.Bios).absolutePath
             savesDirectory = effectiveSavesDirectory.absolutePath
+            preferVulkan = GameModeSettings.isVulkanPreferred(this@GameSessionActivity)
+            vulkanDriver = if (GameModeSettings.isExternalVulkanDriverEnabled(this@GameSessionActivity)) {
+                GameModeSettings.vulkanDriver(this@GameSessionActivity)
+            } else {
+                null
+            }
             saveRAMState = store.readSram()
             // Opções que o usuário salvou para este núcleo.
             variables = CoreRegistry.variables(this@GameSessionActivity, coreId)

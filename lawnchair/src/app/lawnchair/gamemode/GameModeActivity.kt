@@ -196,6 +196,27 @@ private fun GameModeRoot(refreshKey: Int, onExit: () -> Unit) {
     }
     val detail = entries.firstOrNull { it.key == detailKey }
     val networkRequest = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {}
+    var preferVulkan by remember { mutableStateOf(GameModeSettings.isVulkanPreferred(context)) }
+    var externalVulkanDriverEnabled by remember { mutableStateOf(GameModeSettings.isExternalVulkanDriverEnabled(context)) }
+    var vulkanDriverLabel by remember { mutableStateOf(GameModeSettings.vulkanDriver(context)?.libraryName) }
+    var vulkanDriverStatus by remember { mutableStateOf("") }
+    val vulkanDriverPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        if (uri != null) {
+            scope.launch {
+                vulkanDriverStatus = "Importando pacote do driver…"
+                val result = withContext(Dispatchers.IO) { VulkanDriverManager.importTurnipDriver(context, uri) }
+                result.onSuccess { driver ->
+                    GameModeSettings.setVulkanDriver(context, driver)
+                    GameModeSettings.setExternalVulkanDriverEnabled(context, true)
+                    externalVulkanDriverEnabled = true
+                    vulkanDriverLabel = driver.libraryName
+                    vulkanDriverStatus = "Driver Turnip importado. Será aplicado na próxima sessão."
+                }.onFailure { error ->
+                    vulkanDriverStatus = error.message ?: "Não foi possível importar o driver."
+                }
+            }
+        }
+    }
 
     DisposableEffect(Unit) {
         onDispose { GameThemeMusic.stop("modo jogos encerrado") }
@@ -597,6 +618,33 @@ private fun GameModeRoot(refreshKey: Int, onExit: () -> Unit) {
                         onOpenCores = { showCores = true },
                         onOpenScraper = { showScraper = true },
                         onOpenServer = { showServer = true },
+                        preferVulkan = preferVulkan,
+                        externalVulkanDriverEnabled = externalVulkanDriverEnabled,
+                        vulkanDriverLabel = vulkanDriverLabel,
+                        vulkanDriverStatus = vulkanDriverStatus,
+                        onTogglePreferVulkan = {
+                            preferVulkan = !preferVulkan
+                            GameModeSettings.setVulkanPreferred(context, preferVulkan)
+                        },
+                        onToggleExternalVulkanDriver = {
+                            externalVulkanDriverEnabled = !externalVulkanDriverEnabled
+                            GameModeSettings.setExternalVulkanDriverEnabled(context, externalVulkanDriverEnabled)
+                        },
+                        onImportVulkanDriver = {
+                            vulkanDriverPicker.launch(arrayOf("application/zip", "application/x-zip-compressed"))
+                        },
+                        onRemoveVulkanDriver = {
+                            runCatching {
+                                VulkanDriverManager.remove(context)
+                                GameModeSettings.setVulkanDriver(context, null)
+                                GameModeSettings.setExternalVulkanDriverEnabled(context, false)
+                                externalVulkanDriverEnabled = false
+                                vulkanDriverLabel = null
+                                vulkanDriverStatus = "Driver externo removido. O driver do Android será usado."
+                            }.onFailure { error ->
+                                vulkanDriverStatus = error.message ?: "Não foi possível remover o driver."
+                            }
+                        },
                         onExit = onExit,
                     )
 
