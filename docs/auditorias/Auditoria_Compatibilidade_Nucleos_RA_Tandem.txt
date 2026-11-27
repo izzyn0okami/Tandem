@@ -1,0 +1,145 @@
+AUDITORIA DE COMPATIBILIDADE — NÚCLEOS LIBRETRO x RETROACHIEVEMENTS
+Data: 2026-11-27
+Repositório: izzyn0okami/Tandem
+Branch: game-mode-m2-dev
+HEAD consultado: a48628e80573b25ac48e07bc02e2a3bae676a613
+Escopo: verificar todas as plataformas/núcleos presentes no catálogo Tandem que constam na lista oficial atual de emuladores/núcleos compatíveis com RetroAchievements.
+
+1. VEREDITO
+[REPROVADO — COBERTURA DE PLATAFORMAS INCOMPLETA]
+O Tandem não reconhece todas as plataformas RA para as quais já possui núcleos compatíveis. O cadastro GamePlatforms.kt deixa raConsoleId nulo em várias plataformas, impedindo completamente a inicialização da sessão RA, mesmo quando o CoreRegistry oferece um núcleo oficialmente suportado.
+
+Os dois casos apontados pelo usuário foram confirmados:
+- PlayStation (psx): raConsoleId ausente. Beetle PSX, Beetle PSX HW e SwanStation constam como núcleos libretro suportados pelo RA, mas nenhuma sessão RA é iniciada.
+- Nintendo DS (nds): raConsoleId ausente. melonDS, melonDS DS e DeSmuME constam na documentação RA, mas nenhuma sessão RA é iniciada. O núcleo padrão atual melonds_ds é oficialmente suportado.
+
+2. DEFEITO ARQUITETURAL — NÃO EXISTE FILTRO DE COMPATIBILIDADE POR NÚCLEO
+Arquivos:
+- lawnchair/src/app/lawnchair/gamemode/GamePlatforms.kt
+- lawnchair/src/app/lawnchair/gamemode/CoreRegistry.kt
+- lawnchair/src/app/lawnchair/gamemode/GameSessionActivity.kt
+- lawnchair/src/app/lawnchair/gamemode/RetroAchievements.kt
+
+Comportamento observado:
+- GameSessionActivity inicia a sessão RA quando platform.raConsoleId != null e há login.
+- A condição não consulta coreId nem a compatibilidade oficial do núcleo selecionado.
+- RaSession.start() calcula o hash com o Console ID da plataforma, mas também não valida o identificador do núcleo.
+Consequência:
+1) plataformas sem Console ID não usam RA, mesmo com núcleo suportado (PSX/DS e outros);
+2) plataformas com Console ID podem iniciar RA com qualquer núcleo selecionável, inclusive núcleos que não constam como suportados ou que a documentação marca como incompatíveis.
+3) a elegibilidade Hardcore pode ser calculada com base na plataforma/conta sem garantir que o núcleo selecionado seja oficialmente compatível.
+
+A presença de um núcleo no CoreRegistry não significa compatibilidade RA. A compatibilidade precisa ser uma matriz explícita por plataforma + coreId.
+
+3. PLATAFORMAS TANDem COM NÚCLEOS RA OFICIALMENTE SUPORTADOS, MAS SEM raConsoleId
+A documentação oficial atual do RetroAchievements lista os seguintes núcleos e plataformas que também existem no catálogo Tandem:
+
+- Atari 2600 — Stella / Stella 2014. Tandem oferece stella e stella2014. Sem Console ID.
+- Atari Jaguar — Virtual Jaguar. Tandem oferece virtualjaguar. A própria RA alerta que o suporte é extremamente limitado. Sem Console ID.
+- Sega 32X — PicoDrive. Tandem oferece picodrive. Sem Console ID.
+- 3DO — Opera. Tandem oferece opera. Sem Console ID.
+- Dreamcast — Flycast. Tandem oferece flycast. Sem Console ID.
+- Neo Geo CD — NeoCD. Tandem oferece neocd. Sem Console ID.
+- Neo Geo Pocket/Color — Beetle NeoPop. Tandem oferece mednafen_ngp. Sem Console ID.
+- Nintendo 64 — Mupen64Plus-Next. Tandem oferece versões GLES2/GLES3. Sem Console ID.
+- Nintendo DS/DSi — melonDS, melonDS DS e DeSmuME. Tandem oferece melonds_ds, melonds e desmume. Sem Console ID.
+- PC Engine/TurboGrafx — Beetle PCE Fast. Tandem oferece mednafen_pce_fast. Sem Console ID.
+- SuperGrafx — Beetle SuperGrafx. Tandem oferece mednafen_supergrafx. Sem Console ID.
+- PC-FX — Beetle PC-FX. Tandem oferece mednafen_pcfx. Sem Console ID.
+- PlayStation — Beetle PSX, Beetle PSX HW e SwanStation. Tandem oferece mednafen_psx, mednafen_psx_hw e swanstation. Sem Console ID.
+- PlayStation Portable — PPSSPP. Tandem oferece ppsspp. Sem Console ID.
+- Sega Saturn — Beetle Saturn. Tandem oferece mednafen_saturn. Sem Console ID.
+- Sega CD/Mega-CD — Genesis Plus GX e PicoDrive. Tandem oferece ambos em scd. Sem Console ID. A documentação RA alerta que esses núcleos ainda podem ter RAM não mapeada; habilitar com essa ressalva e validar jogos reais.
+- SG-1000 — Genesis Plus GX e blueMSX. Tandem oferece genesis_plus_gx e bluemsx. Sem Console ID.
+- WonderSwan/Color — Beetle Wonderswan. Tandem oferece mednafen_wswan. Sem Console ID.
+- Vectrex — VecX. Tandem oferece vecx. Sem Console ID.
+- Magnavox Odyssey2/Videopac — O2EM. Tandem oferece o2em. Sem Console ID.
+- WASM-4 — WASM-4. Tandem oferece wasm4. Sem Console ID.
+- Arduboy — Ardens. Tandem oferece ardens. Sem Console ID.
+- Uzebox — Uzem. Tandem oferece uzem. Sem Console ID.
+- Watara Supervision — Potator. Tandem oferece potator, mas o cadastro atual agrupa Mega Duck e Watara na mesma plataforma megaduck. Não atribuir suporte RA ao Mega Duck por engano; separar a plataforma/identidade Watara antes de habilitar.
+- PC-8000/8800 — QUASI88. Tandem oferece quasi88. A página oficial RA lista o núcleo, mas a página Libretro Memory Monitoring marca QUASI88 como não suportado. Manter pendente até resolver a divergência documental; não habilitar Hardcore por suposição.
+
+Arcade/Neo Geo:
+- RA lista FinalBurn Neo para Arcade. Tandem oferece fbneo em arcade e neogeo.
+- Não aplicar automaticamente um Console ID genérico a todo conteúdo arcade. A identificação deve respeitar o sistema/hash efetivamente aceito pelo RA e os conjuntos de ROM suportados.
+- MAME e variantes não devem ser tratados como compatíveis; a documentação Libretro diz que não há suporte RA para MAME.
+- A plataforma Neo Geo CD é separada e usa NeoCD, não FBNeo.
+
+4. PLATAFORMAS JÁ MAPEADAS — MAS COM RISCO DE NÚCLEO INCOMPATÍVEL
+O código atual tem Console ID para NES, SNES, Game Boy, Game Boy Color, Game Boy Advance, Mega Drive/Genesis, Master System, Game Gear, Atari 7800, Atari Lynx, Virtual Boy, ColecoVision, MSX e Intellivision.
+
+A condição atual, porém, permite RA para qualquer núcleo da plataforma. Foram identificados exemplos que precisam de bloqueio explícito:
+- NES: FCEUmm, Mesen e QuickNES são listados como compatíveis; Nestopia não é.
+- SNES: Snes9x é listado como compatível; Snes9x 2010 e variantes bsnes não devem ser habilitados sem confirmação oficial. Mesen-S aparece como compatível na tabela Libretro, mas não na lista atual de núcleos RA; manter como pendente de confirmação.
+- GB/GBC: mGBA, Gambatte, Gearboy e VBA-M constam na lista RA; SameBoy é marcado como incompatível na documentação Libretro.
+- GBA: mGBA, VBA-M, VBA Next e Beetle GBA são listados; gpSP não é.
+- Genesis: Genesis Plus GX e PicoDrive são listados; BlastEm é incompatível com achievements segundo Libretro.
+- Master System/Game Gear: Genesis Plus GX e Gearsystem são listados. SMS Plus GX é listado para Master System, não deve ser liberado automaticamente para Game Gear.
+- Atari Lynx: Handy e Beetle Lynx são listados. Gearlynx não consta na lista oficial atual do RA.
+- ColecoVision: a lista oficial RA inclui blueMSX, mas não Gearcoleco. O núcleo padrão atual do Tandem é gearcoleco; a alternativa bluemsx é a que possui correspondência explícita na lista RA.
+- MSX: blueMSX é listado; openMSX não consta na lista oficial atual.
+- NGP: Beetle NeoPop é listado; RACE não é.
+- Saturn: Beetle Saturn é listado; Yabause e YabaSanshiro não são listados como núcleos libretro compatíveis na documentação RA atual.
+- PSX: Beetle PSX, Beetle PSX HW e SwanStation são listados; PCSX ReARMed não consta na lista oficial RA atual e a documentação Libretro o marca como não suportado para achievements.
+- DS: melonDS, melonDS DS e DeSmuME são listados. NooDS não consta. DeSmuME 2015 aparece como suportado na tabela Libretro Memory Monitoring, mas não na lista atual de emuladores RA; requer confirmação antes de ser liberado.
+- N64: Mupen64Plus-Next é listado na página RA atual. ParaLLEl N64 aparece na tabela Libretro Memory Monitoring, mas não na lista RA atual; manter pendente.
+- PCE: Beetle PCE Fast e Beetle SuperGrafx são listados pela RA. Beetle PCE (preciso) é marcado como não suportado na tabela Libretro; Geargrafx não consta na lista atual RA.
+- Coleco/Outros: não inferir suporte de um núcleo apenas porque a API de memória do Libretro existe; usar a lista oficial RA como critério de liberação.
+
+5. PLATAFORMAS COM NÚCLEOS NÃO-LIBRETRO OU FORA DO ESCOPO
+- GameCube e Wii: a página RA lista Dolphin standalone, não um core libretro; o registro de núcleo Dolphin no Tandem não deve ativar RA sem integração standalone específica.
+- PS2, PS3, PS Vita, Switch, Wii U, Xbox 360 e PC GameNative: os emuladores disponíveis no Tandem não aparecem como núcleos libretro RA suportados na lista oficial consultada.
+- Outros núcleos experimentais do catálogo não devem receber suporte RA automaticamente só por implementarem libretro.
+
+6. MATRIZ E POLÍTICA RECOMENDADAS
+Criar uma fonte única RaCoreCompatibility com:
+- slug/plataforma;
+- Console ID obtido da API oficial GetConsoleIDs (não adivinhar nem copiar IDs de listas de terceiros);
+- coreId permitido;
+- nível de suporte (oficial, limitado, pendente);
+- observações/restrições específicas (por exemplo, Sega CD RAM, Jaguar limitado, DSi, Arcade por hash).
+
+A sessão RA e Hardcore só podem iniciar quando:
+- usuário autenticado;
+- Console ID ativo confirmado;
+- ROM/hash reconhecido;
+- coreId selecionado estiver na allowlist oficial daquela plataforma;
+- opções do core forem compatíveis com Hardcore.
+
+Núcleo não suportado:
+- jogo continua iniciando normalmente;
+- RA fica desativado apenas naquela sessão;
+- UI informa claramente que o núcleo selecionado não é compatível com RA;
+- não exibir Hardcore como ativo nem bloquear estados por uma falsa elegibilidade.
+
+IDs:
+- PSX e DS são plataformas suportadas, mas os IDs devem ser confirmados pela API oficial API_GetConsoleIDs.php (com filtro de sistemas ativos/de jogos) antes de gravar a matriz.
+- Não usar IDs estimados nem associar IDs de plataformas vizinhas.
+
+7. TESTES NECESSÁRIOS
+- Testes unitários para cada par platform/coreId permitido e negado.
+- Teste explícito: PSX + Beetle PSX inicia RA; PSX + PCSX ReARMed não declara RA/Hardcore elegível.
+- Teste explícito: DS + melonDS DS inicia RA; DS + melonDS e DeSmuME iniciam apenas após confirmação do core e hash; NooDS não inicia RA.
+- Testes de plataformas atualmente mapeadas com núcleos incompatíveis (NES/Nestopia, GBA/gpSP, Genesis/BlastEm, Coleco/Gearcoleco, etc.).
+- Teste que troca de núcleo na mesma ROM e garante que elegibilidade RA recalcula antes do primeiro frame.
+- Teste de regressão garantindo que núcleo não suportado não bloqueia save states nem mostra Hardcore ativo.
+- Teste online em hardware com PSX e DS, com ROMs reconhecidas, conta RA conectada e desbloqueio real.
+
+8. CONCLUSÃO
+[CONFIRMADO — FALHA FUNCIONAL DE CADASTRO]
+O usuário está correto: PSX e DS não têm suporte RA ativo no Tandem. A causa é a ausência de raConsoleId em GamePlatforms, e não falta de capacidade nos núcleos Beetle PSX/melonDS DS.
+
+[CONFIRMADO — FALHA DE ARQUITETURA]
+O Tandem não verifica compatibilidade RA por coreId. A integração atual é apenas por plataforma e pode ativar RA/Hardcore para núcleos que não constam como compatíveis.
+
+[ESCOPO DE CORREÇÃO]
+É necessária uma etapa específica de compatibilidade RA por plataforma + núcleo, incluindo todos os sistemas suportados presentes no catálogo Tandem. Não é suficiente adicionar apenas IDs para PSX e DS.
+
+Nenhum código de produção foi alterado nesta auditoria. O relatório registra os achados e a proposta de correção. Não declara PSX/DS corrigidos nem qualquer teste físico concluído.
+
+9. FONTES
+- RetroAchievements — Emulator Support (lista oficial atual de emuladores/núcleos): https://docs.retroachievements.org/general/emulator-support-and-issues.html
+- RetroAchievements — Unsupported Emulators and Cores: https://docs.retroachievements.org/developer-docs/unsupported-emulators-and-cores.html
+- Libretro — Memory Monitoring / Cores Compatibility: https://docs.libretro.com/guides/memorymonitoring/
+- RetroAchievements API — Get All Systems / Console IDs: https://api-docs.retroachievements.org/v1/get-console-ids.html
