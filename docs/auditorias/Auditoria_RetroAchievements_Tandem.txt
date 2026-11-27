@@ -1,0 +1,167 @@
+AUDITORIA FINAL — RETROACHIEVEMENTS (RA) — TANDEM
+Data: 2026-11-27
+Repositório: izzyn0okami/Tandem
+Branch auditada: game-mode-m2-dev
+HEAD consultado: b48e35b74bef4f48e5e0ba942f6073deb7531857
+HEAD de código validado pela CI integrada: 67493daac58cfebf9be6e0120f3f4a37c78837f2
+Escopo: integração RetroAchievements ponta a ponta com LibretroDroid, UI, persistência local, Hardcore, rede, callbacks JNI, overlays e governança.
+
+1. MÉTODO E LIMITES
+- Inspeção estática dos arquivos:
+  - lawnchair/src/app/lawnchair/gamemode/RetroAchievements.kt
+  - lawnchair/src/app/lawnchair/gamemode/RaTokenKeyStore.kt
+  - lawnchair/src/app/lawnchair/gamemode/RaWebApiKeyStore.kt
+  - lawnchair/src/app/lawnchair/gamemode/GameSessionActivity.kt
+  - lawnchair/src/app/lawnchair/gamemode/GameSessionCoordinator.kt
+  - lawnchair/src/app/lawnchair/gamemode/SaveStore.kt
+  - libretrodroid/src/main/cpp/achievements.cpp
+  - libretrodroid/src/main/cpp/achievements_extra.cpp
+  - libretrodroid/src/main/cpp/achievements.h
+  - libretrodroid/src/main/cpp/achievements_test.cpp
+  - libretrodroid/src/main/cpp/tests/CMakeLists.txt e test_runner.cpp
+  - .github/workflows/ci.yml
+- Consultados o log integrado dos três pilares, a PR #3, o estado das PRs abertas, o HEAD da branch e a CI #2074.
+- PR #3 está fechada e mesclada. Nenhuma PR aberta foi encontrada nesta consulta.
+- CI #2074 / run 46081732728 foi registrada como SUCCESS para o HEAD 67493daac58cfebf9be6e0120f3f4a37c78837f2: Spotless, testes unitários Gradle, APK Debug, upload do artefato, final-status e publicação tandem-release aprovados.
+- O HEAD atual b48e35b74bef4f48e5e0ba942f6073deb7531857 é um commit documental sobre o HEAD de código validado; a comparação mostrou apenas atualização do log integrado. Não foi encontrada execução CI associada ao commit documental.
+- Auditoria estática. Não foi criado/instalado APK novo nem realizada sessão online no telefone nesta auditoria. As confirmações anteriores do usuário no Motorola Edge 30 Fusion continuam válidas, mas não substituem os testes adicionais listados abaixo.
+- Nenhuma credencial, ROM, save, progresso local ou dado remoto foi alterado durante a inspeção.
+
+2. VEREDITO EXECUTIVO
+[CONCLUÍDO — INTEGRAÇÃO PRINCIPAL]
+- Tandem usa rc_client/rcheevos oficial durante a sessão Libretro, em vez de manter um motor próprio de avaliação de conquistas.
+- Autenticação por token, hash de ROM, processamento por frame, conquistas, Hardcore, Softcore, Rich Presence, leaderboards, reconexão e overlays estão implementados.
+- Token e Web API Key têm armazenamento separado, criptografado com AES-GCM e chave Android Keystore; arquivos ficam em noBackupFilesDir.
+- Progresso interno do rc_client é salvo localmente por jogo/conta e pode acompanhar o estado rápido. Não é enviado ao RomM.
+- A integração visual (notificações/overlays) foi anteriormente testada e aprovada pelo usuário no Motorola Edge 30 Fusion.
+
+[ATENÇÃO — PENDÊNCIAS CONCRETAS]
+- Foi encontrado um caminho em que a falha de carregamento do SRAM impede também a gravação do progresso local do RetroAchievements. É uma falha de isolamento entre duas persistências independentes e deve ser corrigida.
+- A prévia de conquistas depende do Game ID armazenado por caminho da ROM; mover ou renomear a ROM pode quebrar a prévia até a próxima sessão reconhecida.
+- A lista serializada de conquistas solicita somente a categoria CORE. O tratamento de conclusão de subsets existe, mas a enumeração/listagem das conquistas de subsets não foi comprovada.
+- A cobertura automatizada Kotlin do ciclo RA não foi encontrada. O harness C++ existente cobre lógica rc_runtime, não o fluxo rc_client/JNI/Android, e não é executado pelo workflow CI padrão.
+- README ainda declara que Hardcore não está implementado, em contradição com o código atual.
+
+3. COMPONENTES CONCLUÍDOS
+3.1 Autenticação e credenciais
+- [x] Login com usuário e senha através da API clássica; a senha não é persistida.
+- [x] Sessão durante o jogo usa begin_login_with_token do rc_client oficial.
+- [x] Migração do token legado em SharedPreferences para armazenamento criptografado.
+- [x] Token e Web API Key têm chaves AES independentes no Android Keystore.
+- [x] Arquivos criptografados ficam em noBackupFilesDir, evitando restauração de backup sem a chave correspondente.
+- [x] Logout limpa token, Web API Key e preferências RA.
+- [!] Se a migração do token legado falhar por indisponibilidade do Keystore, a falha é silenciosa e o token legado permanece nas SharedPreferences. Não há perda automática do token, mas o caso precisa de tratamento/diagnóstico explícito.
+
+3.2 Identificação e sessão
+- [x] Hash calculado pelo motor LibretroDroid após inicialização do núcleo, com Console ID associado à plataforma.
+- [x] Login e carregamento do jogo são operações assíncronas.
+- [x] Jogos sem hash reconhecido ou com falha definitiva de autenticação desativam Hardcore apenas naquela sessão.
+- [x] Falhas transitórias de login têm retry com backoff crescente até intervalo máximo de 30 segundos.
+- [x] rc_client recebe chamadas de servidor por callback JNI; as respostas são devolvidas ao callback pendente correspondente.
+- [x] O ciclo de vida cancela tarefas de Rich Presence/retry e encerra a sessão RA ao destruir a sessão nativa.
+- [x] Há tratamento de desconexão e reconexão pelo rc_client.
+- [!] A prévia fora da sessão usa a API clássica e requer Web API Key. Isso é um caminho auxiliar deliberado, mas não constitui migração completa para rc_client.
+
+3.3 Hardcore e Softcore
+- [x] Hardcore é configurável e vem ligado por padrão.
+- [x] O estado de bloqueio de save states é calculado antes do primeiro frame, evitando janela inicial em que o menu poderia permitir carregar estado.
+- [x] O carregamento de estado tem defesa adicional no método final: bloqueia quando Hardcore está ativo ou quando o núcleo não suporta estados.
+- [x] Opções de núcleo incompatíveis com Hardcore impedem a ativação desse modo na sessão.
+- [x] O modo é repassado ao rc_client oficial; o evento de reset solicitado pelo motor é encaminhado para reiniciar o núcleo.
+- [x] Pausa é condicionada à capacidade informada pelo motor.
+- [!] Hardcore só pode ser garantido quando conta autenticada, hash reconhecido, Console ID RA e opções compatíveis estão presentes. ROMs modificadas, traduções e hacks sem hash aceito não têm garantia de conquistas/Hardcore.
+- [!] A auditoria não repetiu uma sessão conectada para comprovar o estado Hardcore atual; a confirmação funcional anterior permanece como evidência.
+
+3.4 Conquistas, progresso e overlays
+- [x] Lista inclui título, descrição, pontos, badge e estado desbloqueado.
+- [x] Evento de desbloqueio é convertido em overlay nativo do Tandem.
+- [x] Indicadores de desafio ativo e progresso medido são encaminhados para a UI.
+- [x] Eventos de leaderboard (início, falha, tracker, submissão e scoreboard) são tratados.
+- [x] Eventos de jogo completo e subset completo geram aviso de Mastery/Completed.
+- [x] Rich Presence é obtido diretamente do rc_client; não existe parser paralelo no Kotlin.
+- [x] Progresso serializado do rc_client é separado do estado de emulação e armazenado localmente por usuário.
+- [x] Envelope de estado rápido pode preservar também o progresso RA, mantendo o vínculo com o estado restaurado.
+- [!] A listagem nativa chama rc_client_create_achievement_list apenas com RC_CLIENT_ACHIEVEMENT_CATEGORY_CORE. O callback de subset concluído existe, mas a exibição/listagem dos achievements pertencentes a subsets/DLC não foi comprovada. Verificar se a UI deve incluir essas categorias.
+
+3.5 Rich Presence e rede
+- [x] O texto é consultado localmente no rc_client a cada 2 segundos e só atualizado na UI quando muda; isso não significa uma chamada HTTP a cada 2 segundos.
+- [x] O rc_client continua responsável por avaliar scripts e enviar atualizações ao serviço.
+- [x] A implementação respeita a separação entre sessão de jogo e API auxiliar de prévia.
+- [!] A UI apresenta mensagens de erro recebidas do servidor. Não foi observado registro explícito de token nas mensagens examinadas, mas recomenda-se limitar/tornar segura a mensagem exibida e nunca registrar URL ou payload autenticado integral.
+- [!] A prévia depende de gameId previamente reconhecido e guardado como gameid:<romPath>. Renomear, mover ou reimportar a ROM para outro caminho pode deixar a prévia vazia até nova sessão RA reconhecida.
+
+4. ACHADO P1 — PROGRESSO RA PODE NÃO SER SALVO QUANDO SRAM FALHA
+Arquivo: lawnchair/src/app/lawnchair/gamemode/GameSessionActivity.kt
+Método: persistSram()
+
+Comportamento observado:
+- persistSram() verifica view.sramLoadFailed no início.
+- Quando o núcleo rejeitou o SRAM existente, a função registra a ocorrência e executa return.
+- A serialização de progresso RA (view.serializeAchievementsProgress()) está depois desse return.
+- Portanto, uma falha ao carregar SRAM bloqueia também a persistência independente do progresso RA, mesmo que a sessão RetroAchievements esteja ativa e ainda possa serializar seu estado.
+
+Impacto:
+- Pode perder progresso local de indicadores/condições em andamento do rc_client ao pausar/encerrar uma sessão em que o SRAM foi rejeitado.
+- A proteção contra sobrescrever o SRAM original está correta e deve ser mantida; o problema é o retorno antecipado impedir a segunda persistência.
+
+Correção recomendada:
+- Separar a persistência SRAM da persistência RA.
+- Se SRAM falhar, pular somente serializeSRAM()/writeSramIfChanged().
+- Continuar tentando salvar progresso RA quando raSession estiver ativa, independentemente de sramLoadFailed.
+- Adicionar teste de regressão para: SRAM rejeitado + progresso RA serializável => SRAM original preservado e arquivo de progresso RA atualizado.
+Status: [PENDENTE — CORREÇÃO DE CÓDIGO E TESTE]
+
+5. COBERTURA AUTOMATIZADA
+- [x] Existe achievements_test.cpp com casos de leitura de memória, tamanhos/endianness, comparações, delta, AND/OR e operações de bits.
+- [!] Esse harness exercita rc_runtime e condições de conquistas; não cobre rc_client, login/token, callbacks JNI, respostas HTTP, retries, Hardcore, persistência por conta, restauração ou ciclo de vida Android.
+- [!] tests/CMakeLists.txt define um executável host achievement_tests, mas o workflow .github/workflows/ci.yml executa apenas ./gradlew testLawnWithQuickstepGithubDebugUnitTest, Spotless e build APK. Não há etapa que compile/execute o harness C++ host.
+- [!] Não foram encontrados testes Kotlin específicos para RaSession, RaSettings, RaTokenKeyStore ou RaWebApiKeyStore.
+- [ ] Criar testes de unidade para políticas Hardcore, retry, estado de conexão, cache de Game ID, armazenamento criptografado/migração e persistência independente de RA.
+- [ ] Criar teste de integração controlado para callback JNI/rc_client com servidor simulado, sem depender da conta real do usuário.
+- [ ] Incluir explicitamente o harness C++ de conquistas na CI, se ele continuar sendo mantido como teste suportado.
+
+6. DOCUMENTAÇÃO E UX
+- [!] README.md ainda diz: “Modo Hardcore ainda não implementado”. A afirmação está desatualizada e contradiz a implementação atual e o log integrado.
+- [ ] Corrigir README para descrever login, conquistas, Rich Presence, leaderboards e Hardcore com as limitações reais de hash/compatibilidade.
+- [ ] Deixar explícito na tela de detalhes que a prévia só aparece depois que o jogo foi reconhecido pelo menos uma vez e requer Web API Key.
+- [ ] Se subsets/DLC forem suportados na listagem, separar visualmente conquistas Core e Subset; se não forem, informar a limitação.
+
+7. TESTES FÍSICOS AINDA NECESSÁRIOS
+Não executar nem declarar concluído sem confirmação do usuário:
+- [ ] Sessão online em jogo conhecido: hash, login, lista e status de conquistas.
+- [ ] Hardcore: tentar carregar estado deve ser bloqueado; alternar configuração e reiniciar sessão deve refletir corretamente.
+- [ ] Softcore: carregar estado deve continuar permitido.
+- [ ] Desbloqueio real: overlay, som, atualização da lista e confirmação no perfil RA.
+- [ ] Leaderboard: iniciar, atualizar tracker, submeter e receber scoreboard.
+- [ ] Rich Presence: verificar texto em jogo com script conhecido e ausência em jogo sem script.
+- [ ] Offline durante sessão e retorno da rede: sessão não deve travar, eventos pendentes devem ser reenviados pelo rc_client.
+- [ ] Troca de conta: progresso local não pode misturar usuários.
+- [ ] SRAM rejeitado pelo núcleo: preservar SRAM e confirmar que progresso RA ainda é persistido após a correção P1.
+- [ ] ROM movida/renomeada: reconhecer novamente e confirmar recuperação da prévia.
+- [ ] Jogo com subset/DLC: verificar se as conquistas do subset aparecem na lista.
+
+8. PLANO DE AÇÃO PRIORIZADO
+P1 — Corrigir o retorno antecipado de persistSram() para que a falha de SRAM não impeça salvar progresso RA; adicionar teste de regressão.
+P1 — Criar cobertura de teste do fluxo Kotlin/rc_client para autenticação, callbacks, Hardcore e persistência.
+P2 — Incluir execução do harness C++ host na CI ou remover a ambiguidade sobre sua manutenção.
+P2 — Corrigir README e esclarecer os requisitos da prévia.
+P2 — Verificar suporte e apresentação de conquistas em subsets/DLC.
+P3 — Melhorar mensagens de erro e diagnóstico sem expor dados autenticados.
+P3 — Avaliar cache de Game ID por identidade estável/fingerprint da ROM em vez de somente caminho.
+
+9. RESULTADO FINAL
+[APROVADO COM PENDÊNCIAS — NÃO BLOQUEIA O USO NORMAL JÁ VALIDADO]
+A integração principal RetroAchievements está implementada e foi validada anteriormente no telefone para os fluxos de notificações/overlays. O uso de rc_client oficial, o processamento de conquistas, o Hardcore, Rich Presence, leaderboards e o armazenamento local de progresso estão presentes.
+
+A auditoria encontrou um defeito concreto de persistência P1: a falha de leitura do SRAM interrompe também a gravação do progresso RA. Esse ponto deve ser corrigido antes de declarar a persistência RA totalmente robusta.
+
+A cobertura automatizada específica do RA é insuficiente: o harness existente não valida a integração rc_client/JNI/Android e não é executado pela CI padrão. A prévia pré-jogo, a listagem de subsets e o README também permanecem com limitações/documentação pendentes.
+
+Nenhum código foi alterado nesta auditoria. O arquivo registra o estado, as evidências e o plano de correção; não declara concluídos os testes físicos ainda não executados.
+
+10. FONTES TÉCNICAS
+- RetroAchievements Docs — https://docs.retroachievements.org/
+- rc_client integration — https://github-wiki-see.page/m/RetroAchievements/rcheevos/wiki/rc_client-integration
+- Rich Presence — https://docs.retroachievements.org/developer-docs/rich-presence.html
+- RetroAchievements API Docs — https://api-docs.retroachievements.org/
+- Log integrado do Tandem — docs/auditorias/Auditoria_Integrada_3_Pilares_Tandem.txt
