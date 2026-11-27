@@ -797,3 +797,16 @@ ATUALIZAÇÃO — MULTITOUCH, CANCELAMENTO E CI #1670–#1672 — 2026-11-27
 - [ ] Validar simultaneamente os dois analógicos e botões, inclusive retorno dos eixos a zero.
 - [ ] Revisar geometria/áreas de toque e acessibilidade em diferentes proporções e tamanhos de tela.
 - [x] PR #57 continua aberta e draft, sem merge; tandem-latest não foi alterada; PR #41 permanece intocada.
+
+
+ATUALIZAÇÃO — CI #1673 APROVADA — 2026-11-26
+- [x] CI #1673 — https://github.com/izzyn0okami/Tandem/actions/runs/45926628281 — conclusão success no HEAD 4b67059356e5cbf7bf4c15b5a80542d4f3dd1d37.
+- [x] check-style / Spotless: sucesso, incluindo verificação após formatação automática.
+- [x] Testes unitários: sucesso.
+- [x] Build assembleLawnWithQuickstepGithubDebug: sucesso.
+- [x] Upload do artefato APK: sucesso.
+- [x] Jobs tandem-release e nightly-release ignorados; nenhuma publicação em tandem-latest.
+- [x] Estado da PR #57 conferido: aberta, draft, não mesclada; base game-mode-m2-dev e head feat/libretro-stage-i.
+- [ ] Testes no aparelho de multitouch misto, dois analógicos simultâneos, botões + analógicos, ACTION_CANCEL, pausa/retomada, rotação e ocultação por controle físico permanecem pendentes.
+- [ ] Interface acessível para alterar ativação, ocultação automática, opacidade, escala e posição do gamepad virtual permanece pendente; as preferências já existem e são persistidas no código.
+- [ ] Não mesclar nem publicar em tandem-latest sem autorização explícita; PR #41 permanece intocada.
