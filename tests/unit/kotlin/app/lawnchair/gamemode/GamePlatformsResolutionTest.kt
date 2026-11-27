@@ -126,4 +126,19 @@ class GamePlatformsResolutionTest {
         assertFalse(wii.supportsRomMSaveSync)
     }
 
+    @Test
+    fun saturnCoresDeclareSaveTransportCompatibilityExplicitly() {
+        val platform = GamePlatforms.bySlug("saturn")!!
+        val beetle = CoreRegistry.info(platform, "mednafen_saturn")
+        val yabasanshiro = CoreRegistry.info(platform, "yabasanshiro")
+        val yabause = CoreRegistry.info(platform, "yabause")
+
+        assertTrue(beetle.supportsStates)
+        assertFalse(beetle.supportsRomMSaveSync)
+        assertTrue(yabasanshiro.supportsStates)
+        assertFalse(yabasanshiro.supportsRomMSaveSync)
+        assertTrue(yabause.supportsStates)
+        assertTrue(yabause.supportsRomMSaveSync)
+    }
+
 }
