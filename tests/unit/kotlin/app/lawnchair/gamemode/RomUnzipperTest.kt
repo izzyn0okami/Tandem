@@ -158,6 +158,28 @@ class RomUnzipperTest {
     }
 
     @Test
+    fun rejectsAbsoluteWindowsAndDotSegmentEntryPaths() {
+        val unsafeNames = listOf(
+            "/absolute/game.nes",
+            "\\absolute\\game.nes",
+            "C:\\roms\\game.nes",
+            "folder/../game.nes",
+            "folder\\..\\game.nes",
+            "folder/./game.nes",
+            "folder//game.nes",
+        )
+
+        unsafeNames.forEachIndexed { index, entryName ->
+            val archive = zip("unsafe-$index.zip", entryName to byteArrayOf(1, 2, 3))
+            expectFailure<IllegalArgumentException> {
+                RomUnzipper.extract(archive, setOf("nes"), cache)
+            }
+        }
+
+        assertEquals(emptyList<File>(), cache.walkTopDown().filter { it.isFile }.toList())
+    }
+
+    @Test
     fun rejectsCentralDirectoryCrcMismatch() {
         val archive = zip("bad-crc.zip", "game.nes" to byteArrayOf(10, 20, 30))
         corruptCentralDirectoryCrc(archive)
