@@ -97,10 +97,12 @@ object DeviceSyncProtocolJson {
         file: File,
         updatedAt: String,
         remoteSlot: String = "autosave",
+        expectedExtension: String = "srm",
     ): DeviceSyncSave? {
         require(romId > 0L)
-        require(fileName.substringAfterLast('.', "").lowercase() in setOf("srm", "dsv")) {
-            "O Device Sync aceita somente formatos de save explicitamente suportados."
+        require(expectedExtension.lowercase() in setOf("srm", "dsv"))
+        require(fileName.endsWith(".$expectedExtension", ignoreCase = true)) {
+            "A extensão do arquivo não corresponde ao formato de save declarado pelo núcleo."
         }
         require(emulator.isNotBlank())
         require(updatedAt.isNotBlank())
@@ -353,12 +355,14 @@ class RomMDeviceSyncClient(
         emulator: String,
         fileName: String,
         file: File,
+        expectedExtension: String = "srm",
     ): JSONObject {
         require(romId > 0L && sessionId > 0L)
         require(deviceId.isNotBlank() && emulator.isNotBlank())
         require(slot == null || slot.isNotBlank())
-        require(fileName.substringAfterLast('.', "").lowercase() in setOf("srm", "dsv")) {
-            "O upload Device Sync aceita somente formatos de save explicitamente suportados."
+        require(expectedExtension.lowercase() in setOf("srm", "dsv"))
+        require(fileName.endsWith(".$expectedExtension", ignoreCase = true)) {
+            "A extensão do arquivo não corresponde ao formato de save declarado pelo núcleo."
         }
         require(file.isFile && file.length() > 0L) { "O save local está ausente ou vazio." }
         val contentHash = md5(file)
