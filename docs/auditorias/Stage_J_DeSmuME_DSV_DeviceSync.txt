@@ -1,6 +1,6 @@
 AUDITORIA — STAGE J: DeSmuME DSV / RomM Device Sync
 Data: 2026-11-27
-Branch: integration/stage-j-desmume-dsv-sync-v2
+Branch: integration/stage-j-desmume-dsv-sync-final
 Base pretendida: game-mode-m2-dev
 Origem da lacuna: diferenças funcionais exclusivas identificadas na PR #58 (feat/arm64-core-expansion).
 
@@ -41,3 +41,9 @@ HISTÓRICO / ESCOPO
 - tandem-latest não foi alterada.
 - game-mode-m2-dev não foi alterada diretamente por esta branch.
 - Não mesclar esta PR até CI completa e testes físicos de DSV/RomM.
+
+REBASE DE ESCOPO APÓS MERGE DA PR #62 — 2026-11-27
+- [x] PR #62 foi mesclada em game-mode-m2-dev com squash commit 11c0e35f4ae950657b146673e37b39c930b0f9af.
+- [x] Esta branch foi reconstruída sobre o novo head de game-mode-m2-dev para remover do diff os commits de teste já mesclados.
+- [x] Os testes de inventário/seleção da PR #62 permanecem na base; esta PR mantém apenas testes adicionais de manifesto, upload e download DSV.
+- [ ] Nova CI após reconstrução da branch.
