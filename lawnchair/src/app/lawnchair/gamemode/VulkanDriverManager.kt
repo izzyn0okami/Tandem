@@ -41,6 +41,18 @@ object VulkanDriverManager {
 
     fun driversDir(context: Context) = File(context.filesDir, "gpu-drivers").apply { mkdirs() }
 
+    internal fun safeArchiveOutput(staging: File, fileName: String): File {
+        require(fileName.matches(Regex("[A-Za-z0-9_.+-]+")) && fileName !in setOf(".", "..")) {
+            "Nome de arquivo inválido no pacote"
+        }
+        val canonicalRoot = staging.canonicalFile
+        val output = File(canonicalRoot, fileName).canonicalFile
+        require(output.parentFile == canonicalRoot && output.path.startsWith(canonicalRoot.path + File.separator)) {
+            "O pacote tenta gravar fora da pasta temporária do driver"
+        }
+        return output
+    }
+
     fun isLikelyAdreno(): Boolean {
         val identifiers = buildString {
             append(Build.MANUFACTURER).append(' ')
@@ -129,7 +141,7 @@ object VulkanDriverManager {
                         }
                         check(fileName.matches(Regex("[A-Za-z0-9_.+-]+"))) { "Nome de arquivo inválido no pacote" }
                         check(files.add(fileName)) { "Arquivo duplicado no pacote: $fileName" }
-                        val target = File(staging, fileName)
+                        val target = safeArchiveOutput(staging, fileName)
                         var written = 0L
                         target.outputStream().buffered().use { output ->
                             val buffer = ByteArray(64 * 1024)
@@ -194,16 +206,19 @@ object VulkanDriverManager {
                 check(mainLibrary.setReadable(true, true)) { "Não foi possível preparar a biblioteca principal" }
 
                 val backup = File(driversDir(context), ".$id.backup")
-                if (backup.exists()) backup.deleteRecursively()
+                if (backup.exists()) check(backup.deleteRecursively()) { "Não foi possível limpar o backup anterior do driver" }
                 if (installedDir.exists()) check(installedDir.renameTo(backup)) { "Não foi possível preservar a versão anterior do driver" }
                 try {
                     check(staging.renameTo(installedDir)) { "Não foi possível concluir a instalação do driver" }
+                    val verified = readInstalled(installedDir)
+                        ?: error("Driver instalado não passou pela verificação final")
+                    if (backup.exists()) check(backup.deleteRecursively()) { "Não foi possível limpar o backup do driver anterior" }
+                    verified
                 } catch (error: Throwable) {
-                    if (backup.exists()) backup.renameTo(installedDir)
+                    if (installedDir.exists()) check(installedDir.deleteRecursively()) { "Não foi possível remover a instalação inválida do driver" }
+                    if (backup.exists()) check(backup.renameTo(installedDir)) { "Falha ao restaurar o driver anterior" }
                     throw error
                 }
-                backup.deleteRecursively()
-                readInstalled(installedDir) ?: error("Driver instalado não passou pela verificação final")
             } catch (error: Throwable) {
                 staging.deleteRecursively()
                 throw error
