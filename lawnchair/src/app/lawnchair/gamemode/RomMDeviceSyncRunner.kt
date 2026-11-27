@@ -475,7 +475,6 @@ object RomMDeviceSyncRunner {
                         it.action in setOf(DeviceSyncAction.Conflict, DeviceSyncAction.Download, DeviceSyncAction.Upload)
                 }
                 if (remoteHead != null) {
-                    val expectedExtension = DeviceSyncArtifactPolicy.fileExtensionForCore(coreId)
                     if (!DeviceSyncArtifactPolicy.isCompatibleFileName(coreId, remoteHead.fileName) ||
                         !DeviceSyncArtifactPolicy.isCompatibleRemote(coreId, remoteHead.emulator)
                     ) {
