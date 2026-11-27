@@ -1015,3 +1015,18 @@ RESULTADO — CI APÓS EXTRAÇÃO DAS POLÍTICAS DE CICLO DE VIDA — 2026-11-27
 - [x] Publicações tandem-release e nightly-release ignoradas; nenhum APK foi publicado em tandem-latest.
 - [ ] Continuam pendentes testes instrumentados/funcionais reais de GL thread, callbacks SRAM, pausa/retomada, recriação Activity e encerramento abrupto; CI JVM não substitui esses testes.
 - PR #57 continua aberta como Draft, sem merge. PR #41 e PR #55 permanecem intocadas.
+
+ 
+AUDITORIA E CORREÇÃO — FONTES LEGADAS NO DEVICE SYNC PRÉ-JOGO — 2026-11-27
+- [x] Identificada a discrepância: GameModeActivity calculava e passava migrationSources/siblingCores para prepareSession, mas GameSessionCoordinator não utilizava migrationSources no RomMDeviceSyncRunner.
+- [x] Confirmado que o runner construía SaveStore com migrationSourcesOverride vazio e sem siblingCores; portanto, o manifesto local usado na negociação podia ignorar saves legados explicitamente aprovados e saves de núcleos irmãos.
+- [x] Ajustado GameSessionCoordinator.prepareSession para encaminhar as fontes de migração e a lista de núcleos irmãos.
+- [x] Ajustado RomMDeviceSyncRunner.synchronizeLocalSave para construir SaveStore com as mesmas fontes legadas e núcleos irmãos que serão usados pela sessão. Os novos parâmetros foram colocados depois dos parâmetros existentes para preservar compatibilidade com chamadas posicionais anteriores.
+- [x] GameModeActivity agora fornece a lista de núcleos irmãos já calculada para a preparação pré-jogo.
+- [x] Adicionado teste SaveStoreTest.approvedLegacySourcesAreMigratedForCurrentAndSiblingCoresBeforeSync, que confirma migração verificada para o núcleo selecionado e para núcleos irmãos, mantendo as pastas originais.
+- Commits: GameSessionCoordinator c5462f2fabc36945ef8d3aea5e741baa3fa59f15; RomMDeviceSyncRunner a9595dbd90952c6fa23ca6bbbacb46a8d940a29e e 127123d2d901e97aefe39294c1fb892eedf39013; GameModeActivity e06e0c7a74e4df17ebc44d902759718f9f8c8622; teste 47166497cda96b70af9108e60126697238835f52.
+- [ ] Aguardar CI de compilação, testes unitários e Spotless.
+- [ ] Confirmar no aparelho um jogo com save legado e vínculo RomM: sincronização pré-jogo, download remoto, upload local e seleção correta do save após a preparação.
+- [ ] Confirmar cenário com save de núcleo irmão e ausência de save no núcleo selecionado.
+- A correção não apaga arquivos legados; migração continua preservando a origem e recusando sobrescrita silenciosa em colisões.
+- PR #57 permanece aberta como Draft. Sem merge ou publicação em tandem-latest.
