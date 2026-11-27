@@ -1066,6 +1066,9 @@ class SaveStore internal constructor(
 
     private val dir: File = directoryForCore(coreId)
 
+    /** Diretório isolado deste núcleo/jogo, usado por cores que gravam saves nativos. */
+    val coreSaveDirectory: File get() = dir
+
     init {
         siblingCores.filter { it != coreId }.forEach(::directoryForCore)
     }
