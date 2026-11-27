@@ -95,3 +95,16 @@ TERCEIRA TENTATIVA DE REBASE — 2026-11-27
 - [ ] Depois da reconciliação, reexecutar rebase Git real, validar histórico e diff, atualizar a base da PR somente após validação e executar CI completa no novo head.
 - [ ] Permanecem pendentes testes físicos de cores avançados, BIOS/firmware, Vulkan/Turnip, integração de saves/RomM e RetroAchievements.
 - [x] Nenhum merge ou publicação em tandem-latest foi realizado.
+
+ANÁLISE DE RECONCILIAÇÃO — VULKAN DRIVER MANAGER — 2026-11-27
+- [x] Reexaminado o resultado bruto da CI temporária #46034945737 (run 46034945737, job 140627860480): o rebase avançou até o commit 452f9ba3af (quinto item da sequência), depois de preservar o log Stage I e reconciliar CoreInstaller.
+- [x] Confirmado no log do job que o único conflito que interrompeu essa tentativa foi add/add em lawnchair/src/app/lawnchair/gamemode/VulkanDriverManager.kt; a automação abortou o rebase e restaurou a branch de trabalho ao commit original a8f64fe5003293d8f3ce70eedca5da01b7170e16 antes do commit documental de auditoria.
+- [x] Revisada a implementação da base: importação de ZIP para armazenamento privado, normalização de separadores, contenção por caminho canônico, rejeição de traversal/absolutos/unidades Windows, limite de 512 entradas e 384 MiB, validação ELF64/AArch64, staging e backup/rollback.
+- [x] Revisada a implementação Stage J: AdrenoTools meta.json schemaVersion 1, detecção Qualcomm/Adreno, seleção persistida, validação de API mínima, vendor, biblioteca principal e SHA-256, validação de todas as bibliotecas .so, limites mais restritos (64 entradas, 256 MiB total e 128 MiB por arquivo), suporte a bundle Turnip com pasta android/ e exclusão de componentes linux/ e LICENSES/.
+- [x] Mapeada a integração de runtime: a base usa GameModeSettings para fornecer VulkanDriver à GameSessionActivity e expõe importação simples em GameModeActivity; Stage J substitui isso por VulkanDriverManager.selected() em GameSessionActivity e adiciona a UI de importação/seleção em CoresScreen.
+- [ ] Implementar uma versão combinada do VulkanDriverManager que preserve contenção canônica, validação de caminhos, staging e rollback da base, junto com o parser AdrenoTools, metadados, hash, seleção e suporte a bundles Android do Stage J.
+- [ ] A implementação combinada deve manter o armazenamento em diretório privado do app, limitar entradas/tamanhos, validar cada .so como ELF64/AArch64 e nunca permitir que um pacote malformado substitua um driver instalado válido.
+- [ ] Adicionar testes de regressão para ZIP com raiz android/, bundle multi-plataforma, caminho traversal/absoluto, entradas duplicadas, .so inválida, meta.json ausente/inválido, hash divergente e rollback após falha.
+- [ ] Auditar a sequência posterior de commits de GameSessionActivity, GameModeActivity, GameModeSettings e CoresScreen para resolver as integrações de forma consistente; não assumir que a resolução do arquivo do gerenciador isoladamente conclui a migração.
+- [x] A PR #58 permanece aberta, não mesclada e com base ainda feat/libretro-stage-i. O head contém apenas commits documentais de auditoria após a tentativa; não foi publicado em game-mode-m2-dev nem tandem-latest.
+- [x] Nenhuma alteração em PR #41 ou PR #55.
