@@ -1060,3 +1060,16 @@ RESULTADO E CORREÇÕES DE CI — DEVICE SYNC E PROTEÇÃO SRAM — 2026-11-27
 - [x] CI #1746 — run 45936634135 — commit f7768bacbd78c4f7d80533cbe43987974aa22ae9: mesma falha de compilação em commit intermediário; não é validação final da proteção SRAM.
 - [ ] Teste em aparelho da SRAM incompatível permanece pendente; CI JVM não prova comportamento do núcleo real nem a preservação física do arquivo no dispositivo.
 - PR #57 segue aberta como Draft, sem merge/publicação. PR #41 e #55 intocadas.
+
+ 
+PROTEÇÃO COMPLETA — SRAM REJEITADO NÃO É ENVIADO AO ROMM — 2026-11-27
+- [x] Revisão do onPause revelou que, embora persistSram bloqueasse a gravação quando sramLoadFailed=true, o fluxo ainda enfileirava sincronização pós-sessão.
+- [x] A política GameSessionLifecyclePolicy.shouldEnqueuePostSessionSync agora recebe sramLoadFailed e impede o agendamento de Device Sync pós-sessão quando o núcleo rejeitou o SRAM inicial.
+- [x] GameSessionActivity passa o estado real retroView?.sramLoadFailed para a política; marcação de sessão inativa continua ocorrendo normalmente.
+- [x] Teste JVM ampliado para verificar que núcleo compatível + caminho válido ainda não enfileiram sincronização quando sramLoadFailed=true.
+- Commits: Activity 32f6b1e229e69089953dd0e0d7c95791ebeaa88a; política 0f8e348451bbebed6bb63ba7bfb35e4b7979aaf3; teste a62d781e7e3dbe2e9974634e4e39bc1756db3e40.
+- [ ] CIs #1756 (run 45937889900) e #1757 (run 45937896430) validando os commits de política e teste; estavam em execução.
+- [ ] CI #1753 (run 45937735863) validando a correção anterior de recursos/log; estava em execução.
+- [x] Revisão estática de GLRetroView confirmou que a rejeição de SRAM ocorre no GL thread durante initializeCore e é marcada em propriedade volatile; a Activity só exibe aviso após FrameRendered, evitando consultar antes do carregamento.
+- [ ] Validar em aparelho a SRAM rejeitada: arquivo local deve permanecer byte a byte intacto; nenhuma sincronização de saída deve ser agendada; save compatível deve continuar salvando e sincronizando normalmente.
+- PR #57 continua aberta como Draft, sem merge ou publicação em tandem-latest.
