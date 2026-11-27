@@ -517,4 +517,14 @@ class SaveStoreTest {
         assertTrue(siblingLegacy.isDirectory)
     }
 
+    @Test
+    fun deviceSyncTargetUsesNativeDeSmuMeFileAndGenericSramForOtherCores() {
+        val dsStore = SaveStore(root, "desmume", File("Pokemon.nds"), gameIdentity = "ds-game")
+        val genericStore = SaveStore(root, "melonds", File("Pokemon.nds"), gameIdentity = "ds-game")
+
+        assertEquals(dsStore.nativeSaveFile, dsStore.deviceSyncSaveFile)
+        assertEquals("Pokemon.dsv", dsStore.deviceSyncSaveFile.name)
+        assertEquals(genericStore.sramFile, genericStore.deviceSyncSaveFile)
+        assertEquals("sram.srm", genericStore.deviceSyncSaveFile.name)
+    }
 }
