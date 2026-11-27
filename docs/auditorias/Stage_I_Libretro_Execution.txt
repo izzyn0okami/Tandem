@@ -1600,3 +1600,15 @@ Commits:
 ACOMPANHAMENTO DE CI — 2026-11-27
 - [ ] CIs #1833, #1834, #1836, #1839, #1841 e #1844 ainda precisam de consulta final.
 - [ ] Aguardar CI para commits PCE 705fc52 e c3cdcb7.
+
+
+RECONSULTA DE CI — 2026-11-27 — ÚLTIMO ESTADO OBSERVADO
+- [ ] CI #1833 — run 45993858399: check-style aprovado; build-debug-apk ainda em andamento.
+- [ ] CI #1834 — run 45993944137: check-style aprovado; build-debug-apk ainda em andamento.
+- [ ] CI #1836 — run 45994006501: check-style e build-debug-apk em andamento.
+- [ ] CI #1839 — run 45994059394: check-style e build-debug-apk em andamento.
+- [ ] CI #1841 — run 45994116230: check-style e build-debug-apk em andamento.
+- [ ] CI #1844 — run 45994156068: build-debug-apk em andamento; check-style aguardando execução.
+- [ ] CI #1847 — run 45994198638 — commit c3cdcb72617130e324f2108d06f7d73f7dba6098: workflow na fila.
+- [ ] Nenhuma dessas execuções pode ser marcada como sucesso integral até final-status completar.
+- PR #57 continua sem merge e sem publicação em tandem-latest.
