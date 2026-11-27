@@ -75,7 +75,7 @@ object CoreRegistry {
         "sms" to masterSystemCores(),
         "gg" to masterSystemCores(),
         "scd" to listOf(
-            core("genesis_plus_gx", "Genesis Plus GX", "Preciso e completo"),
+            core("genesis_plus_gx", "Genesis Plus GX", "Preciso e completo; Sega CD usa arquivos BRM de backup RAM, fora do sync SRAM RomM", supportsRomMSaveSync = false),
             core("picodrive", "PicoDrive", "Leve"),
         ),
         "n64" to listOf(
