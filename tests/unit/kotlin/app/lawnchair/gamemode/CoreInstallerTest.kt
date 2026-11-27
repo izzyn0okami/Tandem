@@ -18,6 +18,26 @@ class CoreInstallerTest {
     }
 
     @Test
+    fun updateDetectionFindsChangedEtagEvenWhenLastModifiedIsUnchanged() {
+        assertEquals(
+            true,
+            CoreInstaller.updateAvailableFromMetadata(10_000L, 10_000L, "\"new\"", "\"old\""),
+        )
+    }
+
+    @Test
+    fun updateDetectionUsesLastModifiedAndEtagTogether() {
+        assertEquals(false, CoreInstaller.updateAvailableFromMetadata(10_000L, 10_000L, "\"same\"", "\"same\""))
+        assertEquals(true, CoreInstaller.updateAvailableFromMetadata(12_000L, 10_000L, "\"same\"", "\"same\""))
+    }
+
+    @Test
+    fun updateDetectionReturnsUnknownWithoutComparableMetadata() {
+        assertEquals(null, CoreInstaller.updateAvailableFromMetadata(10_000L, 0L, "\"remote\"", null))
+        assertEquals(null, CoreInstaller.updateAvailableFromMetadata(0L, 0L, null, null))
+    }
+
+    @Test
     fun sha256MatchesKnownDigest() {
         val file = Files.createTempFile("core-digest", ".bin").toFile()
         try {
