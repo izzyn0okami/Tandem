@@ -146,3 +146,13 @@ REGRESSÃO DE SAVES DS DETECTADA E CORRIGIDA — 2026-11-27
 - [ ] A correção foi feita após a CI #1934; precisa de nova CI no head atualizado 537ff8ac1e95cc4ff4f6edb867884d602feb588a antes de rebase.
 - [x] Comparação de auditoria confirmou que Stage_I_Libretro_Execution.txt agora é byte a byte idêntico ao arquivo da base game-mode-m2-dev.
 - [ ] PR #58 segue com base antiga feat/libretro-stage-i. Não mudar a base até reconciliar todos os conflitos e confirmar CI.
+
+
+FALHA DE CI E CORREÇÃO DE COMPATIBILIDADE COM STAGE I — 2026-11-27
+- [x] CI #1935 (run 46039381394) analisada: Spotless passou, mas a compilação Kotlin falhou em GameSessionActivity.kt nas linhas 192 e 210 porque SaveStore.coreSaveDirectory não existia na branch Stage J.
+- [x] Restaurada em SaveStore.kt a propriedade pública coreSaveDirectory, apontando para o diretório isolado do jogo/núcleo já resolvido pelo próprio SaveStore; isso mantém DeSmuME/DeSmuME 2015 no diretório por-core sem alterar o caminho dos demais cores.
+- [x] Correção registrada no commit 05d5ee7d835aa3ac4ec601996683b2777891feb2.
+- [ ] Nova CI ainda necessária: a CI #1935 validou o head anterior 548e76d0c0f0d9817afe1f1efd91c75663f16d08 e não valida esta correção.
+- [ ] Auditoria comparativa adicional identificou que game-mode-m2-dev também contém nativeSaveFile (incluindo .dsv para núcleos compatíveis) e sua inclusão no inventário SaveArtifact; esses elementos não existem na versão Stage J de SaveStore.kt. A integração depende de CoreSaveAdapterRegistry e dos arquivos de suporte presentes na base Stage I, portanto deve ser recuperada durante o rebase real, não referenciada isoladamente antes de importar suas dependências.
+- [ ] Não iniciar novo rebase até a CI do head corrigido passar e até a reconciliação dos arquivos Stage I/Stage J estar planejada.
+- [x] PR #58 permanece aberta, sem merge e sem alteração de base; game-mode-m2-dev e tandem-latest permanecem intocadas.
