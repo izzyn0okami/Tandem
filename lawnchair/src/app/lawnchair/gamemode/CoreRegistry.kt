@@ -194,8 +194,7 @@ object CoreRegistry {
         return listOf(default) + list.filter { it.id != platform.coreId }
     }
 
-    fun info(platform: GamePlatform, coreId: String): CoreInfo =
-        cores(platform).firstOrNull { it.id == coreId } ?: core(platform.coreId, platform.coreId, "Padrão")
+    fun info(platform: GamePlatform, coreId: String): CoreInfo = cores(platform).firstOrNull { it.id == coreId } ?: core(platform.coreId, platform.coreId, "Padrão")
 
     private fun prefs(context: Context) = context.getSharedPreferences(FILE, Context.MODE_PRIVATE)
 

@@ -21,8 +21,7 @@ object BiosManager {
     /** O nome pode trazer uma subpasta (ex.: "dc/dc_boot.bin"); o arquivo escolhido só precisa ter o mesmo nome final. */
     private fun BiosFile.fileOnly(): String = File(name).name.lowercase()
 
-    private fun rootDir(context: Context, file: BiosFile): File =
-        if (file.location == BiosLocation.SAVES) GameFolders.dir(context, FolderKind.Saves) else systemDir(context)
+    private fun rootDir(context: Context, file: BiosFile): File = if (file.location == BiosLocation.SAVES) GameFolders.dir(context, FolderKind.Saves) else systemDir(context)
 
     fun has(context: Context, file: BiosFile): Boolean = File(rootDir(context, file), file.name).isFile
 
