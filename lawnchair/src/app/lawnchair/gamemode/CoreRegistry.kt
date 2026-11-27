@@ -111,8 +111,8 @@ object CoreRegistry {
             core("race", "RACE", "Leve"),
         ),
         "saturn" to listOf(
-            core("mednafen_saturn", "Beetle Saturn", "Preciso, pesado"),
-            core("yabasanshiro", "YabaSanshiro", "Mais leve"),
+            core("mednafen_saturn", "Beetle Saturn", "Preciso, pesado; saves em arquivos .bcr/.bkr/.smpc, fora do transporte SRAM RomM", supportsRomMSaveSync = false),
+            core("yabasanshiro", "YabaSanshiro", "Mais leve; formato/caminho de save ainda não confirmado para sync SRAM", supportsRomMSaveSync = false),
             core("yabause", "Yabause", "Alternativa"),
         ),
         "wswan" to listOf(
