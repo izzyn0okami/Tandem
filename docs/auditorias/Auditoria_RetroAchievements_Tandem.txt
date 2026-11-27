@@ -165,3 +165,15 @@ Nenhum código foi alterado nesta auditoria. O arquivo registra o estado, as evi
 - Rich Presence — https://docs.retroachievements.org/developer-docs/rich-presence.html
 - RetroAchievements API Docs — https://api-docs.retroachievements.org/
 - Log integrado do Tandem — docs/auditorias/Auditoria_Integrada_3_Pilares_Tandem.txt
+
+
+11. AUDITORIA COMPLEMENTAR — COBERTURA DE NÚCLEOS POR PLATAFORMA (2026-11-27)
+- Foi confirmado que PSX e Nintendo DS não iniciam sessão RA porque GamePlatforms.kt não define raConsoleId para essas plataformas.
+- Beetle PSX, Beetle PSX HW, SwanStation, melonDS, melonDS DS e DeSmuME aparecem na lista oficial RA; o núcleo padrão DS melonds_ds é suportado.
+- GameSessionActivity verifica somente platform.raConsoleId != null e login; não verifica coreId selecionado.
+- Consequência adicional: núcleos não suportados podem iniciar RA/Hardcore em plataformas que já possuem Console ID.
+- Outras plataformas Tandem com núcleos RA oficiais e sem Console ID incluem Atari 2600, Jaguar, 32X, 3DO, Dreamcast, Neo Geo CD/Pocket, N64, PCE/SuperGrafx, PC-FX, PSP, Saturn, Sega CD, SG-1000, WonderSwan, Vectrex, Odyssey2, WASM-4, Arduboy, Uzebox e Watara Supervision, além de casos especiais/pendentes como Arcade e PC-8800.
+- Há falsos positivos potenciais na seleção de núcleo: PCSX ReARMed (PSX), Nestopia (NES), gpSP (GBA), BlastEm (Genesis), SameBoy (GB/GBC), RACE (NGP), Yabause/YabaSanshiro (Saturn), NooDS (DS), Gearcoleco (Coleco) e outros não devem ser presumidos compatíveis.
+- Correção requerida: matriz explícita de compatibilidade platform + coreId + Console ID; obter IDs da API oficial GetConsoleIDs; bloquear somente RA/Hardcore para núcleos não suportados, sem impedir a execução do jogo.
+- Relatório detalhado: docs/auditorias/Auditoria_Compatibilidade_Nucleos_RA_Tandem.txt
+- Status: [PENDENTE — CORREÇÃO DE CÓDIGO, TESTES UNITÁRIOS E TESTE FÍSICO PSX/DS]
