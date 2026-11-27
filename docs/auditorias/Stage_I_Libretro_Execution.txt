@@ -1553,3 +1553,27 @@ ACOMPANHAMENTO DE CI — 2026-11-27 — PENDENTE
 - [ ] CI #1836 — run 45994006501.
 - [ ] CI #1839 — run 45994059394 — commit 19b5e3bd98b220b11d4997cc821c0e3f82447080.
 - [ ] Aguardar CIs para commits Atari d9e06ca e ae35c84; atualizar após conclusão integral.
+
+
+AUDITORIA DE SAVES — NINTENDO 64 — 2026-11-27
+- [x] Mupen64Plus-Next GLES2 e GLES3: documentação Libretro declara Saves e States; save de cartucho fica em *.srm no Save directory. Sync SRAM RomM e save states permanecem habilitados.
+- [x] ParaLLEl N64: documentação oficial lista States, mas não lista Saves entre os recursos frontend-level nem define caminho de SaveRAM. Save states permanecem habilitados; sync SRAM RomM desativado até confirmação.
+- [x] Teste JVM adicionado para garantir as capacidades distintas dos três IDs de core N64.
+- [ ] Confirmar no aparelho saves locais com Mupen64Plus-Next e compatibilidade real dos núcleos GLES2/GLES3.
+- [ ] Verificar se ParaLLEl N64 expõe RETRO_MEMORY_SAVE_RAM apesar da documentação incompleta antes de reabilitar sync.
+
+Fontes:
+- https://docs.libretro.com/library/mupen64plus/ — Saves e States; *.srm no Save directory.
+- https://docs.libretro.com/library/parallel_n64/ — States listado; Saves não listado.
+
+Commits:
+- 9423f870043dbfddf585773749df4c6cdcb10053 — capacidades N64.
+- 96a538aa4d3ff63f90da74f961d5283c474dc418 — teste N64.
+
+ACOMPANHAMENTO DE CI — 2026-11-27 — REVISÃO
+- [ ] CI #1833 — run 45993858399.
+- [ ] CI #1834 — run 45993944137.
+- [ ] CI #1836 — run 45994006501.
+- [ ] CI #1839 — run 45994059394.
+- [ ] CI #1841 — run 45994116230 — commit ae35c84633eb9e4bc7a9270c5140d6ef86785430.
+- [ ] Aguardar CIs para commits N64 9423f87 e 96a538a.
