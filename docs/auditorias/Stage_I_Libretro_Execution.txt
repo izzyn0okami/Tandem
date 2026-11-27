@@ -1444,3 +1444,33 @@ ACOMPANHAMENTO DE CI — 2026-11-27 — RESULTADOS CONFIRMADOS
 - PR #57 permanece aberta como Draft e não mesclada. Nenhuma publicação em tandem-latest foi executada.
 - Observação de publicação: os jobs tandem-release e nightly-release foram ignorados nessas execuções; o APK de debug foi gerado e enviado como artefato de CI, sem publicação de release.
 
+
+
+AUDITORIA DE SAVES — NINTENDO DS — 2026-11-27
+- [x] melonDS (core legado): documentação Libretro indica Saves e States, mas localiza o arquivo de bateria *.sav no Cache directory do frontend; o transporte atual do Tandem sincroniza a região SRAM persistida pelo SaveStore, não arquivos arbitrários do Cache. RomM SRAM Device Sync desativado para evitar classificar *.sav como SRAM sem prova de integração.
+- [x] DeSmuME: documentação indica Saves e States; saves de cartucho são *.dsv no Save directory e firmware.dfc é outro artefato. O transporte atual não sincroniza arquivos *.dsv por nome/formato; RomM SRAM Device Sync desativado.
+- [x] DeSmuME 2015: documentação indica Saves e States; saves de cartucho são *.dsv no Save directory. RomM SRAM Device Sync desativado.
+- [x] NooDS: documentação lista States, mas não declara o recurso frontend-level Saves. Por segurança, RomM SRAM Device Sync desativado; save states continuam habilitados conforme documentação.
+- [x] Os quatro núcleos continuam com save states habilitados no catálogo; a mudança não desativa persistência local nativa do core, apenas o upload/download SRAM RomM.
+- [x] CoreRegistry atualizado com capacidades explícitas e notas explicativas para os quatro núcleos DS.
+- [x] Teste JVM adicionado para garantir supportsStates=true e supportsRomMSaveSync=false nos quatro núcleos Nintendo DS.
+- [ ] Confirmar no aparelho o comportamento real de gravação/restauração local de cada core DS e verificar que nenhum arquivo local é perdido.
+- [ ] Avaliar adaptador de transporte RomM específico para *.sav/.dsv, com identificação estável, cópia atômica, conflitos e migração segura; não improvisar conversão para SRAM.
+- [ ] Verificar se o build LibretroDroid expõe região RETRO_MEMORY_SAVE_RAM para cada core DS; a documentação dos caminhos de arquivo não prova que serializeSRAM() contenha esses arquivos.
+
+Fontes oficiais:
+- https://docs.libretro.com/library/melonds/ — melonDS legado: Saves/States e *.sav no Cache directory.
+- https://docs.libretro.com/library/desmume/ — DeSmuME: Saves/States e *.dsv no Save directory.
+- https://docs.libretro.com/library/desmume_2015/ — DeSmuME 2015: Saves/States e *.dsv no Save directory.
+- https://docs.libretro.com/library/noods/ — NooDS: States documentado; recurso Saves não listado.
+- https://github.com/Swordfish90/LibretroDroid — API do frontend; a serialização SRAM não deve ser confundida com captura de todos os arquivos do core.
+
+Commits:
+- 8f29f1b81928a4938994926d43da26f89e212bf9 — metadados conservadores de save transport DS.
+- 56703a4373e4754e25f5b5b3b864d473b7bff5c7 — teste de capacidades DS.
+
+ACOMPANHAMENTO DE CI — 2026-11-27 — REVISÃO
+- [x] CIs #1822–#1827: check-style, testes unitários, build-debug-apk, upload de artefato e final-status concluídos com sucesso.
+- [ ] CI #1833 — run 45993858399 — commit 2978eeaed60ae9deed6c27c78e9ec10012a2b7e2: em andamento na última consulta; corresponde ao registro de auditoria anterior às mudanças Nintendo DS.
+- [ ] Aguardar CIs dos commits 8f29f1b e 56703a4; não declarar as mudanças DS validadas até a conclusão integral dos workflows.
+- PR #57 continua aberta como Draft, sem merge e sem publicação em tandem-latest.
