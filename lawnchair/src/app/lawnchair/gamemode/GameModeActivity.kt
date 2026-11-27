@@ -339,7 +339,7 @@ private fun GameModeRoot(refreshKey: Int, onExit: () -> Unit) {
             try {
                 // A partida só começa depois que o pull terminou de verdade.
                 withContext(Dispatchers.IO) {
-                    GameSessionCoordinator.prepareSession(context, romPath, coreId, platform?.slug, gameIdentity, migrationSources)
+                    GameSessionCoordinator.prepareSession(context, romPath, coreId, platform?.slug, gameIdentity, migrationSources, siblings)
                 }
             } catch (error: Exception) {
                 if (error is kotlinx.coroutines.CancellationException) throw error
