@@ -1242,3 +1242,22 @@ STATUS DE CI — RECONSULTA — 2026-11-27
 
 Fonte da correção SMS Plus:
 - Índice oficial Buildbot Android ARM64: https://buildbot.libretro.com/nightly/android/latest/arm64-v8a/ (entrada smsplus_libretro_android.so.zip).
+
+
+AUDITORIA DE COBERTURA ENTRE GAMEPLATFORMS E COREREGISTRY — 2026-11-27
+- [x] Comparados os identificadores das plataformas em GamePlatforms.kt com as chaves e alternativas explícitas de CoreRegistry.kt.
+- [x] Identificadas plataformas com núcleo padrão declarado, mas sem entrada explícita própria em CoreRegistry: WonderSwan (mednafen_wswan), Dreamcast (flycast), PSP (ppsspp) e Virtual Boy (mednafen_vb). O método cores() recorre a uma opção genérica quando não há catálogo para o slug.
+- [x] Confirmado que CoreRegistry.info() também recorre a CoreInfo genérico para núcleo não listado. Como os defaults de CoreInfo são supportsStates=true e supportsRomMSaveSync=true, a ausência de metadados explícitos pode classificar recursos como disponíveis sem auditoria específica. GameSessionActivity consome esses dois valores para habilitar estados e sincronização de saves.
+- [ ] Corrigir a cobertura do catálogo: cada plataforma LIBRETRO precisa de metadados explícitos de compatibilidade e recursos, ou de um estado conservador/desconhecido; não assumir suporte a save states e RomM Device Sync por padrão.
+- [ ] Verificar no índice Buildbot ARM64 os pacotes flycast e ppsspp, além de confirmar a disponibilidade de cada núcleo da lista (mednafen_wswan e mednafen_vb aparecem no índice). A ausência de um resultado em busca parcial não será tratada como prova de inexistência.
+- [ ] Definir corretamente PSP caso PPSSPP não tenha pacote Libretro Android ARM64: encaminhamento para emulador externo ou estado indisponível, em vez de tentar instalação de um core não publicado.
+- [ ] Validar que a plataforma Dreamcast usa pacote ARM64 disponível e que suas capacidades de saves/estados são compatíveis com a implementação efetiva do core.
+- [ ] Conferir também plataformas com coreId vazio (Switch e PC/GameNative), que não devem entrar no instalador Libretro.
+
+STATUS DE CI — ÚLTIMA RECONSULTA — 2026-11-27
+- [x] CI #1791 — run 45989509316: check-style aprovado.
+- [ ] CI #1791: build-debug-apk ainda em execução na etapa Run unit tests; Build APK e Upload artifact pendentes.
+- [x] CI #1793 — run 45989772089: check-style aprovado.
+- [ ] CI #1793: build-debug-apk ainda em execução na etapa Run unit tests; Build APK e Upload artifact pendentes.
+- [ ] Commit c0a406180089421e7ceb3b3c1eab11eb89fc256c (correção SMS Plus ARM64) ainda sem workflow associado retornado pelo endpoint de workflows de commit filtrado para eventos pull_request; verificar execução push separadamente se necessário.
+- PR #57 segue aberta como Draft, sem merge. Nenhum artefato foi publicado em tandem-latest.
