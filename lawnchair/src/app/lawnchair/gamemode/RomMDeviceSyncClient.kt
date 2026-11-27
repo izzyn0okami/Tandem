@@ -86,8 +86,8 @@ data class DeviceSyncNegotiation(
 object DeviceSyncProtocolJson {
     /**
      * Constrói a entrada de negociação a partir do arquivo de save local aceito nesta etapa.
-     * A extensão .srm é exigida; para PSX, o conteúdo pode ser cartão de memória transportado
-     * como Save comum do RomM. O filtro de emuladores é opcional: null permite ao cliente
+     * A extensão declarada pelo adaptador do núcleo é exigida; para PSX, o conteúdo pode ser cartão
+     * de memória transportado como Save comum do RomM. O filtro de emuladores é opcional: null permite ao cliente
      * detectar saves de outros núcleos no mesmo slot e validar a compatibilidade localmente.
      */
     fun localSave(
@@ -342,7 +342,7 @@ class RomMDeviceSyncClient(
     }
 
     /**
-     * Envia um arquivo .srm como Save comum do Device Sync. Nunca sobrescreve e desativa a limpeza
+     * Envia o arquivo nativo declarado pelo núcleo como Save comum do Device Sync. Nunca sobrescreve e desativa a limpeza
      * automática do servidor para preservar versões anteriores.
      */
     fun uploadSave(
