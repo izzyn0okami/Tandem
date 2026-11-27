@@ -1097,3 +1097,15 @@ I7/I8 — COBERTURA ADICIONAL DE CAMINHOS DE ENTRADA ZIP — 2026-11-27
 - [ ] Depois de concluir as execuções, consolidar resultado final da branch; não considerar os commits intermediários aprovados individualmente como validação da ponta mais recente.
 
 - Atualização de fila na última consulta: CIs #1753, #1756, #1757, #1760, #1761, #1762, #1763, #1764 e #1767 em execução; CI #1768 ainda aguardando. Nenhuma dessas execuções havia concluído na consulta.
+
+
+RESULTADO DAS CIs E CORREÇÃO DO RECURSO SRAM — 2026-11-27
+- [x] CIs #1753 (run 45937735863), #1756 (45937889900), #1757 (45937896430), #1760 (45937994022), #1761 (45938012682), #1762 (45938017859) e #1763 (45938029770): concluídas com sucesso.
+- [x] CIs #1764 (run 45938086388), #1767 (45938129925) e #1768 (45938133145): falharam na compilação Kotlin antes do build APK.
+- [x] Causa confirmada nos logs: GameSessionActivity.kt não encontrava R.string.game_session_sram_load_failed; a mensagem de erro secundária em Toast.show era consequência da expressão sem tipo válido.
+- [x] Corrigida a localização do recurso: o build Gradle inclui quickstep/res, mas não go/quickstep/res. A string foi movida para quickstep/res/values/strings.xml e removida de go/quickstep/res/values/strings.xml.
+- Commits da correção: quickstep resource 12bc14a18cf846602831b1217e3938185dce6185; remoção da cópia fora do source set 75a81e69e93368f83e455f6f203e58d3d79365be.
+- [ ] Aguardar CI da correção de recursos e da ponta atual da branch; não considerar ZIP nem APK validados até build + testes passarem.
+- [ ] Corrigir a nota histórica anterior que dizia que go/quickstep/res era o source set efetivo: essa conclusão estava incorreta; o source set ativo é quickstep/res.
+- [ ] Testes funcionais no aparelho continuam pendentes, inclusive SRAM rejeitado, sync pré/pós-jogo, erro real de inicialização, ZIPs e playlists M3U.
+- PR #57 permanece aberta como Draft. Nenhum merge ou publicação em tandem-latest foi realizado; PR #41 e #55 permanecem intocadas.
