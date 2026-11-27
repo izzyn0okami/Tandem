@@ -108,3 +108,12 @@ ANÁLISE DE RECONCILIAÇÃO — VULKAN DRIVER MANAGER — 2026-11-27
 - [ ] Auditar a sequência posterior de commits de GameSessionActivity, GameModeActivity, GameModeSettings e CoresScreen para resolver as integrações de forma consistente; não assumir que a resolução do arquivo do gerenciador isoladamente conclui a migração.
 - [x] A PR #58 permanece aberta, não mesclada e com base ainda feat/libretro-stage-i. O head contém apenas commits documentais de auditoria após a tentativa; não foi publicado em game-mode-m2-dev nem tandem-latest.
 - [x] Nenhuma alteração em PR #41 ou PR #55.
+
+INTEGRAÇÃO DE UI E SESSÃO — VULKAN — 2026-11-27
+- [x] Inspecionado o patch do commit Stage J 71709e03fc: GameSessionActivity passa a derivar coreId por CoreInstaller.coreIdFromFile(), ativa preferVulkan somente para os cores Vulkan definidos e injeta VulkanDriverManager.selected() na sessão LibretroDroid.
+- [x] Inspecionado o patch do commit Stage J 6822e06dcf: CoresScreen recebe o seletor AdrenoTools, importação ZIP, lista de drivers instalados e opção explícita de voltar ao driver do sistema.
+- [x] Identificado conflito de integração que não aparece como add/add: game-mode-m2-dev ainda contém o painel antigo de Vulkan em GameModeActivity/GameScreens e GameModeSettings; a branch Stage J usa CoresScreen como interface e não contém essas chamadas antigas.
+- [ ] Ao reconciliar, remover o painel antigo de Vulkan de GameModeActivity/GameScreens e suas chamadas/estados, para evitar UI duplicada e chamadas ao método legado importTurnipDriver que não existem no gerenciador AdrenoTools.
+- [ ] Remover ou deixar explicitamente obsoletas as preferências globais antigas de Vulkan/driver em GameModeSettings; a fonte de verdade passa a ser VulkanDriverManager.selected()/selectedId(), com preferência Vulkan aplicada por core no GameSessionActivity.
+- [ ] Preservar integralmente as demais configurações e a lógica da base em GameModeActivity/GameScreens/GameModeSettings; a remoção deve limitar-se ao bloco antigo de Vulkan.
+- [ ] Revisar GameSessionActivity após aplicar o commit 71709e03fc, confirmando que a regra de saves de DeSmuME da base continua intacta e que o novo driver selecionado é aplicado apenas aos cores Vulkan suportados.
