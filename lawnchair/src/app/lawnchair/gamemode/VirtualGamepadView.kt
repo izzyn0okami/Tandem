@@ -248,12 +248,11 @@ internal class VirtualGamepadView @JvmOverloads constructor(
                 val control = hitControl(event.getX(index), event.getY(index))
                 val pointerId = event.getPointerId(index)
                 if (control == null) {
-                    val hadPassthroughPointer = passthroughPointerIds.isNotEmpty()
+                    // Own the first pointer even outside controls so later pointers can
+                    // activate virtual buttons while the original touch is forwarded to DS.
                     passthroughPointerIds += pointerId
-                    if (pointerControls.isNotEmpty() || hadPassthroughPointer) {
-                        forwardPassthroughTouch(event)
-                    }
-                    return pointerControls.isNotEmpty() || hadPassthroughPointer
+                    forwardPassthroughTouch(event)
+                    return true
                 }
                 if (pointerControls.values.contains(control)) return true
                 pointerControls[pointerId] = control
