@@ -1079,6 +1079,9 @@ class SaveStore internal constructor(
         .takeIf { it.fileExtension == "dsv" }
         ?.let { File(dir, "${romFile.nameWithoutExtension}.dsv") }
 
+    /** Arquivo nativo que deve ser atualizado quando o RomM envia um save sem baseline local. */
+    val deviceSyncSaveFile: File get() = nativeSaveFile ?: sramFile
+
     private fun raProgressFile(user: String): File {
         val digest = MessageDigest.getInstance("SHA-256").digest(user.toByteArray(Charsets.UTF_8))
         val accountKey = digest.take(12).joinToString("") { "%02x".format(it.toInt() and 0xFF) }
