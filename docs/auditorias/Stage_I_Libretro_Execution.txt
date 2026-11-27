@@ -1501,3 +1501,29 @@ ACOMPANHAMENTO DE CI — 2026-11-27 — MUDANÇAS EM ANDAMENTO
 - [ ] CI #1834 — run 45993944137 — commit 56703a4373e4754e25f5b5b3b864d473b7bff5c7: em andamento na última consulta; inclui a mudança de capacidades Nintendo DS.
 - [ ] Aguardar CI para os commits PSX 49e9cbd e 7bdb0b7.
 - [ ] CI dos commits de documentação posteriores também deve ser conferida antes de encerrar esta rodada.
+
+
+AUDITORIA DE SAVES — SEGA / MEGA DRIVE / MEGA CD — 2026-11-27
+- [x] Genesis Plus GX em Mega Drive, Master System, Game Gear e SG-1000: documentação declara *.srm como save de cartucho; capacidades existentes de states e SRAM RomM permanecem habilitadas nessas plataformas.
+- [x] Genesis Plus GX em Sega CD: já permanece com sync SRAM desativado porque backup RAM usa arquivos BRM específicos.
+- [x] PicoDrive em Sega CD: documentação consultada lista *.srm como cartridge backup save, mas não confirma explicitamente o transporte da backup RAM do Sega CD; sync RomM agora desativado até confirmação. Save states permanecem habilitados.
+- [x] BlastEm: a página oficial Libretro não declara tabela de Saves/States nem formato/caminho de persistência. Capacidades de save states e RomM SRAM agora desativadas por segurança até confirmação documental ou teste controlado; execução do core não é bloqueada.
+- [x] Teste JVM atualizado para garantir PicoDrive Sega CD sem sync e BlastEm com capacidades de save conservadoramente desativadas.
+- [ ] Confirmar se PicoDrive Sega CD expõe a BRAM como RETRO_MEMORY_SAVE_RAM ou usa arquivos próprios.
+- [ ] Verificar documentação/código upstream do BlastEm para descobrir suporte real a save states e save RAM; reabilitar somente recursos comprovados.
+- [ ] Validar no aparelho Genesis Plus GX e PicoDrive em Mega Drive e Sega CD, incluindo gravação e restauração de saves locais.
+
+Fontes:
+- https://docs.libretro.com/library/genesis_plus_gx/ — *.srm para cartuchos MS/GG/MD/Pico/SG-1000; BRM específico para Sega/Mega CD.
+- https://docs.libretro.com/library/picodrive/ — *.srm listado como cartridge backup save; não especifica formato de backup RAM do Sega CD.
+- https://docs.libretro.com/library/blastem/ — documentação atual descreve core/BIOS, mas não lista Saves/States nem diretórios de save.
+
+Commits:
+- 9768c1b015d28a4da67c074265b9ef94cddd1cc9 — capacidades conservadoras Sega CD / BlastEm.
+- 19b5e3bd98b220b11d4997cc821c0e3f82447080 — testes de capacidades.
+
+ACOMPANHAMENTO DE CI — 2026-11-27
+- [ ] CI #1833 — run 45993858399: em andamento na última consulta.
+- [ ] CI #1834 — run 45993944137: em andamento na última consulta.
+- [ ] CI #1836 — run 45994006501 — commit 7bdb0b71bc429f178480c39936e982650546a3ed: em andamento na última consulta.
+- [ ] Aguardar CIs dos commits 9768c1b e 19b5e3b.
