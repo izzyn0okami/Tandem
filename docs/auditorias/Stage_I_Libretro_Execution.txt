@@ -742,7 +742,7 @@ COMPLEMENTO — SINCRONIZAÇÃO DURANTE PAUSA TRANSITÓRIA — 2026-11-26
 ATUALIZAÇÃO — CORREÇÃO DA RECUPERAÇÃO DE BACKUP E CI #1650 — 2026-11-27
 - [x] Corrigida a expectativa do teste que falhava: quando o destino corresponde ao SHA-256 confirmado, ele é mantido e o backup residual inválido é removido.
 - [x] Teste renomeado para removesInvalidBackupWhenTargetMatchesConfirmedDigest; verifica o SHA-256 preservado no destino e a ausência do backup.
-- [x] CI #1650 — https://github.com/izzyn0okami/Tandem/actions/runs/45915151100 — sucesso no commit 4e4712c30f6a6dc305b8405e42664363f21544fe.
+- [x] CI #1650 — https://github.com/izzyn0okami/Tandem/actions/runs/45915151100 — sucesso no commit 4e4712c30f6a6dc305b8405e42641469e068526b.
 - [x] check-style / Spotless: sucesso; testes unitários: sucesso; build assembleLawnWithQuickstepGithubDebug: sucesso; upload do APK: sucesso.
 - [x] Os cenários de recuperação para destino inválido + backup inválido e destino ausente + backup inválido também passaram na mesma suíte.
 - [x] Nenhuma publicação tandem-release/nightly-release foi executada; tandem-latest não foi alterada.
