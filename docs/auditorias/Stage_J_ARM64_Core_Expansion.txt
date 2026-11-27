@@ -53,3 +53,14 @@ CI APROVADA — PR #58 — atualização 2026-11-27
 - [ ] Permanecem pendentes as validações de catálogo, BIOS/firmware, instalação/execução dos novos cores, importação e fallback de driver Vulkan, integração de saves/RomM/RetroAchievements e teste físico no Snapdragon 888+.
 - [ ] PR #58 continua draft, aberta e não mergeável contra sua base atual; depende da PR #57 e a branch está divergente da base (65 commits à frente e 228 atrás do head atual da #57). Rebase/atualização deve ocorrer somente depois da conclusão e merge autorizado da #57.
 - [x] Nenhum merge ou publicação em tandem-latest foi realizado nesta atualização.
+
+
+DEPENDÊNCIA CONCLUÍDA — MERGE DO ESTÁGIO I / PR #57 — 2026-11-27
+- [x] PR #57 foi mesclada em game-mode-m2-dev pelo commit f2ad315eedd814547bb47cfd060aaa87d27e0df5.
+- [x] A base definitiva do Estágio I agora é game-mode-m2-dev; a PR #58 não deve continuar dependendo da branch de feature já integrada.
+- [ ] Rebase/atualização da branch feat/arm64-core-expansion sobre game-mode-m2-dev, preservando integralmente os 66 commits de trabalho do Estágio J.
+- [ ] Resolver e revisar eventuais conflitos, especialmente em GamePlatforms.kt, CoreRegistry.kt, CoreInstaller.kt, BiosManager.kt, GameSessionActivity.kt e no log do Estágio I.
+- [ ] Após a atualização da branch, conferir diff da PR #58 para garantir que não reapresente alterações do Estágio I nem reverta correções já mescladas.
+- [ ] Executar CI completa sobre o novo head; a CI #1554 aprovada no commit 79d9f56453b48e771acbf79c2ebaecea73a96f8c é histórica e não valida a branch atualizada.
+- [ ] Continuam pendentes todos os testes físicos de cores avançados, BIOS/firmware, Vulkan/Turnip, saves/RomM e RetroAchievements listados neste log.
+- [x] PR #58 permanece aberta e draft; nenhum merge ou publicação em tandem-latest foi realizado.
