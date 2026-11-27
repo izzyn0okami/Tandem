@@ -1928,3 +1928,13 @@ CI APROVADA — FECHAMENTO DA VALIDAÇÃO DO ESTÁGIO I — 2026-11-27
 - [x] Combinada a CI #1922 aprovada com a confirmação final do usuário sobre todos os testes funcionais no aparelho, não restam pendências conhecidas dentro do escopo atual do Estágio I.
 - [ ] Merge da PR #57 permanece pendente de autorização explícita; a PR continua aberta e draft.
 - [ ] Nenhuma publicação em tandem-latest foi realizada.
+
+
+CORREÇÃO DE RESOLUÇÃO DO PLUGIN KSP — CI #1925 — 2026-11-27
+- [x] CI #1925 (run 46019465698): testes unitários, compilação do APK e upload do artefato passaram; check-style falhou antes de executar Spotless e final-status falhou por consequência.
+- [x] Causa identificada no log: Gradle não encontrou o marcador do plugin com.google.devtools.ksp versão 2.3.13 nos repositórios configurados (Google e Gradle Plugin Portal).
+- [x] Confirmado que o marcador com.google.devtools.ksp.gradle.plugin:2.3.13 está publicado no Maven Central; a versão KSP 2.3.13 é válida e não deve ser rebaixada.
+- [x] Corrigido settings.gradle adicionando mavenCentral() aos repositórios de pluginManagement, sem alterar versões de plugins ou dependências.
+- [x] Commit corretivo: 7cb5f57da47951406c66e9a8a128f95d0cdb120f.
+- [ ] Aguardar nova CI disparada pelo commit corretivo; exigir check-style/Spotless, testes, APK e final-status aprovados.
+- [ ] A PR #57 permanece aberta e draft; nenhum merge ou publicação em tandem-latest foi realizado.
