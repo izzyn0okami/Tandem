@@ -201,3 +201,14 @@ DISTINÇÃO DOS FORMATOS DOS CORES NINTENDO DS — 2026-11-27
 - [ ] O núcleo legado melonds ainda exige auditoria separada: a sessão atual passa a pasta Save, mas a documentação Libretro aponta a pasta Cache e extensão .sav. Não presumir que o suporte .srm genérico cubra esse core.
 - [ ] Antes de implementar melonds legado, confirmar a propriedade de diretório Cache disponível no GLRetroViewData/LibretroDroid e desenhar migração/isolamento por ROM para .sav, sem misturar com saves de melonDS DS.
 - [ ] CI do conjunto DSV/Device Sync continua pendente no head atual; não há run posterior aos commits de ampliação.
+
+
+DESTINO NATIVO DE DOWNLOAD E ESTADO DE SINCRONIZAÇÃO — 2026-11-27
+- [x] SaveStore agora expõe deviceSyncSaveFile: usa o arquivo nativo declarado pelo adaptador (por exemplo .dsv) ou sram.srm nos cores convencionais.
+- [x] RomMDeviceSyncRunner usa deviceSyncSaveFile como destino quando ainda não existe artefato local, evitando descarregar um save DeSmuME em sram.srm e deixá-lo invisível ao core.
+- [x] Arquivos temporários de captura do Device Sync usam a extensão declarada pelo núcleo.
+- [x] SavePathDiagnostics agora mostra o arquivo nativo do core e o destino efetivo do Device Sync.
+- [x] SaveSync.status consulta deviceSyncSaveFile, permitindo que o estado de sincronização seja exibido também quando o único save local é um arquivo nativo como .dsv.
+- [ ] markPending ainda depende do fluxo de agendamento do Worker para refletir a mudança de saves nativos; revisar se a UI precisa antecipar o estado PENDING antes do enfileiramento.
+- [ ] CI permanece pendente no head 08b888bd43a53b653e9a9989c45d494d383f612d; não há execução nova confirmada.
+- [ ] Testes físicos continuam necessários para upload/download/conflict do .dsv no DeSmuME.
