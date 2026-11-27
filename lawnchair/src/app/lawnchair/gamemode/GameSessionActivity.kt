@@ -112,6 +112,7 @@ class GameSessionActivity : ComponentActivity() {
     private var coreIdForOptions = ""
     private var coreSupportsStates = true
     private var coreSupportsRomMSaveSync = true
+    private var sramLoadFailureLogged = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -231,6 +232,17 @@ class GameSessionActivity : ComponentActivity() {
             addView(gamepad, ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
         }
         setContentView(sessionHost)
+
+        lifecycleScope.launch {
+            view.getGLRetroEvents().first { it is GLRetroView.GLRetroEvents.FrameRendered }
+            if (view.sramLoadFailed) {
+                Toast.makeText(
+                    this@GameSessionActivity,
+                    R.string.game_session_sram_load_failed,
+                    Toast.LENGTH_LONG,
+                ).show()
+            }
+        }
 
         if (coreId == "melonds") {
             lifecycleScope.launch {
@@ -512,6 +524,13 @@ class GameSessionActivity : ComponentActivity() {
     private fun persistSram() {
         val view = retroView ?: return
         val store = saveStore ?: return
+        if (!GameSessionSavePolicy.shouldPersistSram(view.sramLoadFailed)) {
+            if (!sramLoadFailureLogged) {
+                GameLog.error("saves", "o núcleo rejeitou o SRAM existente; persistência bloqueada para preservar o arquivo original")
+                sramLoadFailureLogged = true
+            }
+            return
+        }
         runCatching {
             val bytes = view.serializeSRAM()
             if (bytes.isNotEmpty()) {
