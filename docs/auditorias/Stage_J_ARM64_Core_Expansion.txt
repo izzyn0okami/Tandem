@@ -237,3 +237,20 @@ CORREÇÃO DO DESTINO NATIVO E DETECÇÃO DE PENDÊNCIA — 2026-11-27
 - [ ] Teste físico necessário no DeSmuME: criação do .dsv, upload RomM, download em instalação sem arquivo local, conflito, restauração de histórico e comparação byte a byte.
 - [ ] Auditoria separada do núcleo legado melonds permanece pendente: documentação consultada aponta .sav em Cache, diferente do .srm do melonDS DS e do .dsv do DeSmuME. Não alterar o adaptador sem confirmar o diretório Cache efetivamente disponível ao LibretroDroid.
 - [x] PR #58 continua aberta, não mesclada e baseada em feat/libretro-stage-i; seu estado Ready/Draft não foi alterado. Nenhuma alteração em game-mode-m2-dev, tandem-latest, PR #41 ou PR #55.
+
+
+AUDITORIA DO NÚCLEO LEGADO MELONDS E MARCAÇÃO DE PENDÊNCIA — 2026-11-27
+- [x] Confirmado no código local de LibretroDroid que GLRetroViewData expõe systemDirectory e savesDirectory, mas não possui cacheDirectory; o objeto é passado a LibretroDroid.create() somente com esses dois caminhos.
+- [x] Confirmada na documentação Libretro a diferença entre os dois núcleos: melonDS legado grava *.sav no Cache do frontend; melonDS DS grava *.srm no Save do frontend. O fluxo de saves DSV é exclusivo de DeSmuME/DeSmuME 2015.
+- [x] Não foi redirecionado systemDirectory para tentar simular Cache: esse caminho também é usado para BIOS/firmware e dados de sistema, portanto misturá-lo ao cache de saves pode quebrar o carregamento dos jogos.
+- [ ] Suporte ao .sav do melonDS legado permanece pendente até ampliar LibretroDroid com um caminho Cache explícito e confirmar no código nativo como o core recebe esse diretório; não tratar .sav como .srm nem como .dsv.
+- [x] Corrigido SaveSync.markPending para comparar também RemoteFileKind.Save em store.deviceSyncSaveFile; agora alterações em .dsv podem marcar a sincronização como pendente antes do Worker.
+- [x] Criado teste JVM para seleção do destino Device Sync nativo do DeSmuME e fallback sram.srm nos demais núcleos.
+- [ ] CI ainda não executada para o conjunto completo. Head de código após as últimas correções: fca8f04151979533a236b4a9d15ec06ffa43530b; a CI #1936 não cobre nenhum desses commits posteriores.
+- [ ] Teste físico permanece pendente para DeSmuME: criação do .dsv, upload, download sem arquivo local, conflito e restauração de histórico.
+- [x] PR #58 continua aberta e sem merge; base antiga feat/libretro-stage-i, estado Ready mantido. Nenhuma alteração em game-mode-m2-dev, tandem-latest, PR #41 ou PR #55.
+
+Referências técnicas consultadas:
+- https://docs.libretro.com/library/melonds/
+- https://docs.libretro.com/library/melonds_ds/
+- libretrodroid/src/main/java/com/swordfish/libretrodroid/GLRetroViewData.kt (blob f9c9e61c5d3669a8fc7b34bc535a289728174825 na branch feat/arm64-core-expansion)
