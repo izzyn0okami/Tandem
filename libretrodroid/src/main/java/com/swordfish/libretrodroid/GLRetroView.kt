@@ -296,7 +296,7 @@ class GLRetroView(
     private var previewModeEnabled = false
 
     private val retroGLEventsSubject = MutableSharedFlow<GLRetroEvents>(1)
-    private val retroGLIssuesErrors = MutableSharedFlow<Int>(1)
+    private val retroGLIssuesErrors = MutableSharedFlow<Int>(replay = 1)
 
     /** True if the on-disk SRAM couldn't be applied to the core at load (e.g. size mismatch). */
     @Volatile
