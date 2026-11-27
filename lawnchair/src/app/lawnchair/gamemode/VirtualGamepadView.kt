@@ -17,8 +17,8 @@ import com.swordfish.libretrodroid.GLRetroView
 import kotlin.math.hypot
 
 /**
- * Touch-only controller overlay. It only consumes touches that start inside a control,
- * leaving ordinary screen touches available to GLRetroView (including DS touch input).
+ * Touch-only controller overlay. It tracks the complete multitouch sequence and forwards
+ * pointers that start outside controls to GLRetroView (including DS touchscreen input).
  */
 internal class VirtualGamepadView @JvmOverloads constructor(
     context: Context,
