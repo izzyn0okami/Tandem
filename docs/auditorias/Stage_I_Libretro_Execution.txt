@@ -1357,3 +1357,27 @@ ACOMPANHAMENTO DE CI — APÓS CORREÇÕES DE FALLBACK E DOLPHIN — 2026-11-27
 - [ ] CI #1814 — run 45990915300 — commit ca420f54fb6fdf6d4955986aa7750daa08ba35cd: workflow na fila.
 - [ ] CI #1815 — run 45990925869 — commit c0b26f81fae74a85b0217521b3c9e40cab4d2434: workflow na fila; valida a ponta atual da PR.
 - PR #57 permanece aberta como Draft, não mesclada. Head consultado: c0b26f81fae74a85b0217521b3c9e40cab4d2434. Sem publicação em tandem-latest.
+
+
+AUDITORIA DE FORMATO DE SAVE — SEGA SATURN — 2026-11-27
+- [x] Beetle Saturn (mednafen_saturn): documentação oficial lista saves em arquivos separados *.bcr (backup externo), *.bkr (save interno) e *.smpc (RTC); não é o formato SRAM único gerenciado pelo fluxo RomM atual. Sync RomM desativado; save states permanecem habilitados.
+- [x] Yabause (yabause): documentação oficial lista '<content-name>.srm' na Save directory e states no State directory; sync SRAM permanece habilitado.
+- [x] YabaSanshiro (yabasanshiro): documentação oficial consultada não especifica o formato/caminho de save; sync SRAM desativado de forma conservadora até confirmação. Save states continuam habilitados conforme catálogo atual, ainda sujeitos a teste funcional.
+- [x] Teste JVM cobre separadamente as três variantes Saturn e verifica que apenas Yabause mantém RomM SRAM sync.
+- [ ] Testar Beetle Saturn/YabaSanshiro no aparelho e avaliar sincronização própria de .bcr/.bkr, se desejada.
+
+Fontes:
+- https://docs.libretro.com/library/beetle_saturn/
+- https://docs.libretro.com/library/yabause/
+- https://docs.libretro.com/library/yabasanshiro/
+
+Commits:
+- 161792073c7cf7c55008b9fd688c59162db002e3 — metadados de sincronização Saturn.
+- 702c866a5db22e6b29fb0a519f2896ce2038bbb4 — teste das variantes Saturn.
+
+
+ACOMPANHAMENTO DE CI — RESULTADOS CONFIRMADOS — 2026-11-27
+- [x] CIs #1811–#1821 concluídas com sucesso integral: check-style, build-debug-apk e final-status aprovados. Isso cobre os commits de fallback conservador, teste correspondente, registro de auditoria, metadados Dolphin e testes Dolphin.
+- [ ] CI #1822 — run 45991507650 — commit ecb5547d2bc30ad843c30001b8615c09bd652378: check-style aprovado; build-debug-apk ainda em etapa Build APK; artefato e final-status pendentes.
+- [ ] Commits Saturn 1617920 e 702c866 ainda aguardam CI da ponta atual.
+- PR #57 continua aberta como Draft e não mesclada. Ponta atual após as alterações Saturn: 702c866a5db22e6b29fb0a519f2896ce2038bbb4. Nenhuma publicação em tandem-latest.
