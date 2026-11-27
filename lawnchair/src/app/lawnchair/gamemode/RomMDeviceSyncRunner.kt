@@ -476,7 +476,7 @@ object RomMDeviceSyncRunner {
                 }
                 if (remoteHead != null) {
                     val expectedExtension = DeviceSyncArtifactPolicy.fileExtensionForCore(coreId)
-                    if (remoteHead.fileName?.endsWith(".$expectedExtension", ignoreCase = true) != true ||
+                    if (!DeviceSyncArtifactPolicy.isCompatibleFileName(coreId, remoteHead.fileName) ||
                         !DeviceSyncArtifactPolicy.isCompatibleRemote(coreId, remoteHead.emulator)
                     ) {
                         throw IOException("O save remoto não corresponde ao formato/núcleo compatível; baseline não confirmado.")
@@ -611,8 +611,8 @@ object RomMDeviceSyncRunner {
                     ?: throw IOException("A versão escolhida não está mais disponível nesse slot.")
                 val latest = versions.firstOrNull()
                     ?: throw IOException("O RomM não retornou uma versão ativa para este slot.")
-                if (selected.fileName?.endsWith(".$fileExtension", ignoreCase = true) != true ||
-                    latest.fileName?.endsWith(".$fileExtension", ignoreCase = true) != true
+                if (!DeviceSyncArtifactPolicy.isCompatibleFileName(coreId, selected.fileName) ||
+                    !DeviceSyncArtifactPolicy.isCompatibleFileName(coreId, latest.fileName)
                 ) {
                     throw IOException("A versão remota não corresponde à extensão de save esperada por este núcleo.")
                 }
