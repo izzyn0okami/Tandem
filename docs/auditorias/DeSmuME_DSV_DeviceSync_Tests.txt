@@ -24,3 +24,11 @@ ESCOPO/SEGURANÇA
 - [x] Apenas testes e documentação; nenhum arquivo de produção alterado.
 - [x] Nenhuma PR foi mesclada.
 - [x] game-mode-m2-dev e tandem-latest não foram modificadas diretamente.
+
+
+CORREÇÃO DA CI #1987 — 2026-11-27
+- [x] CI #1987 falhou na compilação dos testes unitários, não no código de produção: os testes portados referenciavam APIs antigas que não existem na base game-mode-m2-dev (fileExtensionForCore, isCompatibleFileName, expectedExtension e deviceSyncSaveFile).
+- [x] Reescritos os testes para usar a API vigente: CoreSaveAdapterRegistry, SaveArtifactCatalog, DeviceSyncArtifactPolicy e SaveStore.nativeSaveFile/inventory.
+- [x] Cobertura agora verifica que o DSV nativo do DeSmuME é inventariado e selecionado para Device Sync como CORE_SAVE/autosave, e que o arquivo DSV não é aceito como save de melonDS.
+- [x] Mantida a separação de adapters entre DeSmuME, DeSmuME 2015 e melonDS nos testes existentes de SaveArtifactCatalog.
+- [ ] Nova CI no head corrigido: Spotless, testes unitários, APK Debug e upload do artefato.
