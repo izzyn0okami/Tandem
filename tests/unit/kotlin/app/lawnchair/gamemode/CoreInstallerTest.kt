@@ -211,6 +211,47 @@ class CoreInstallerTest {
         }
     }
 
+    @Test
+    fun preservesBothValidFilesWhenNeitherMatchesConfirmedDigest() {
+        val directory = Files.createTempDirectory("core-recovery-mismatched-digest").toFile()
+        val target = File(directory, "core.so")
+        val backup = File(directory, "core.so.backup")
+        try {
+            writeArm64Elf(target, 1)
+            writeArm64Elf(backup, 2)
+            val targetDigest = CoreInstaller.sha256(target)
+            val backupDigest = CoreInstaller.sha256(backup)
+            val unrelatedDigest = "0".repeat(64)
+
+            CoreInstaller.recoverBackup(target, backup, unrelatedDigest)
+
+            assertEquals(targetDigest, CoreInstaller.sha256(target))
+            assertEquals(backupDigest, CoreInstaller.sha256(backup))
+        } finally {
+            directory.deleteRecursively()
+        }
+    }
+
+    @Test
+    fun restoresOnlyValidBackupWhenItsDigestDoesNotMatch() {
+        val directory = Files.createTempDirectory("core-recovery-valid-backup-mismatch").toFile()
+        val target = File(directory, "core.so")
+        val backup = File(directory, "core.so.backup")
+        try {
+            target.writeText("corrupt target")
+            writeArm64Elf(backup, 3)
+            val backupDigest = CoreInstaller.sha256(backup)
+            val unrelatedDigest = "0".repeat(64)
+
+            CoreInstaller.recoverBackup(target, backup, unrelatedDigest)
+
+            assertEquals(backupDigest, CoreInstaller.sha256(target))
+            assertFalse(backup.exists())
+        } finally {
+            directory.deleteRecursively()
+        }
+    }
+
     private fun writeArm64Elf(file: File, marker: Int = 0) {
         val header = ByteArray(20)
         header[0] = 0x7F
