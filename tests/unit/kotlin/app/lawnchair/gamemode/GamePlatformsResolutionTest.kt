@@ -95,4 +95,24 @@ class GamePlatformsResolutionTest {
         assertFalse(xenia.supportsStates)
         assertTrue(pcsx2.preferVulkan == true)
     }
+    @Test
+    fun unknownCoreCapabilitiesDefaultToDisabledWithoutChangingCatalogEntries() {
+        val platform = GamePlatforms.bySlug("nes")!!
+        val unknownAlternative = CoreRegistry.info(platform, "unlisted_core")
+        val unknownPlatform = CoreRegistry.cores(
+            GamePlatform("unknown", "Unknown", "unknown_core", setOf("rom"), setOf("unknown"), 999),
+        ).first()
+
+        assertEquals("unlisted_core", unknownAlternative.id)
+        assertFalse(unknownAlternative.supportsStates)
+        assertFalse(unknownAlternative.supportsRomMSaveSync)
+        assertEquals("unknown_core", unknownPlatform.id)
+        assertFalse(unknownPlatform.supportsStates)
+        assertFalse(unknownPlatform.supportsRomMSaveSync)
+
+        val knownCore = CoreRegistry.info(platform, "fceumm")
+        assertTrue(knownCore.supportsStates)
+        assertTrue(knownCore.supportsRomMSaveSync)
+    }
+
 }
