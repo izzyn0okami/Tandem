@@ -18,6 +18,11 @@ internal object DeviceSyncArtifactPolicy {
 
     fun remoteSlotForCore(coreId: String): String = CoreSaveAdapterRegistry.resolve(coreId).remoteSlot
 
+    /** Extensão nativa permitida para o núcleo; nunca inferida apenas pelo nome do arquivo. */
+    fun fileExtensionForCore(coreId: String): String = CoreSaveAdapterRegistry.resolve(coreId).fileExtension
+
+    fun isCompatibleFileName(coreId: String, fileName: String?): Boolean = fileName?.substringAfterLast('.', "")?.equals(fileExtensionForCore(coreId), ignoreCase = true) == true
+
     /**
      * RomM pode devolver o identificador original do núcleo (ex.: snes9x) ou
      * o identificador namespaced do cliente (ex.: tandem_snes9x). Aceitamos
