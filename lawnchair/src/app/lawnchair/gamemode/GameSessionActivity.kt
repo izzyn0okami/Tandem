@@ -731,7 +731,7 @@ class GameSessionActivity : ComponentActivity() {
         // Só libere e agende o upload depois que o GL foi pausado e o save local persistido.
         romPath?.let { path ->
             GameSessionCoordinator.markSessionInactive(this, path, intent.getStringExtra(EXTRA_PLATFORM), gameIdentity)
-            if (GameSessionLifecyclePolicy.shouldEnqueuePostSessionSync(coreSupportsRomMSaveSync, path.isNotBlank())) {
+            if (GameSessionLifecyclePolicy.shouldEnqueuePostSessionSync(coreSupportsRomMSaveSync, path.isNotBlank(), retroView?.sramLoadFailed == true)) {
                 coreIdOf()?.let { GameSessionCoordinator.enqueuePostSessionSync(this, path, it, intent.getStringExtra(EXTRA_PLATFORM), gameIdentity) }
             }
         }
