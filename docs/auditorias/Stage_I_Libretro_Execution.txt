@@ -1612,3 +1612,25 @@ RECONSULTA DE CI — 2026-11-27 — ÚLTIMO ESTADO OBSERVADO
 - [ ] CI #1847 — run 45994198638 — commit c3cdcb72617130e324f2108d06f7d73f7dba6098: workflow na fila.
 - [ ] Nenhuma dessas execuções pode ser marcada como sucesso integral até final-status completar.
 - PR #57 continua sem merge e sem publicação em tandem-latest.
+
+
+CORREÇÃO DE INTERPRETAÇÃO — COMPATIBILIDADE NINTENDO DS COM ROMM — 2026-11-27
+A conclusão anterior "os quatro núcleos DS não sincronizam saves RomM" foi ampla demais. A incompatibilidade não é do RomM com os formatos DS; é do adaptador atual do Tandem, que captura um artefato tipado do SaveStore (SRAM/PSX) e não inventaria arquivos de save arbitrários do núcleo.
+- [x] RomM Device Sync aceita saves identificados por ROM, nome de arquivo, slot, hash e conteúdo; o protocolo não exige extensão .srm. O cliente pode transferir arquivos .sav e .dsv preservando o nome e bytes.
+- [x] melonDS DS usa *.srm no Save directory: formato diretamente compatível com a representação SRAM padrão e candidato à integração atual, desde que o ID do core e o diretório real usados pelo Tandem sejam confirmados.
+- [x] melonDS legado usa *.sav no Cache directory: compatível com RomM como arquivo, mas exige adaptador que encontre/copie esse arquivo e preserve extensão/destino.
+- [x] DeSmuME e DeSmuME 2015 usam *.dsv no Save directory: compatíveis com o protocolo RomM como arquivos, mas exigem transporte de arquivo por core; não devem ser convertidos cegamente para .srm.
+- [ ] NooDS: suporte frontend-level Saves ainda não confirmado; investigar implementação upstream antes de habilitar.
+- [ ] Revisar CoreRegistry: não usar supportsRomMSaveSync=false como afirmação de incompatibilidade com RomM; o campo descreve apenas compatibilidade com o transporte SRAM atual. Preferível separar "save local", "SRAM Libretro" e "adaptador de arquivo RomM".
+- [ ] Projetar Device Sync multi-formato: inventário de artefatos por ROM/core, extensão preservada, slot/emulator estáveis, hash do arquivo, snapshot imutável, staging + substituição atômica, backup local, conflitos e validação de core/formato.
+- [ ] Confirmar IDs e paths exatos dos cores Nintendo DS usados pelo catálogo; a documentação atual também descreve melonDS DS, core distinto do melonDS legado.
+
+Fontes:
+- https://docs.romm.app/5.4.0/developers/device-sync-protocol/ — negociação por file_name, slot, hash, upload/download e conflitos; protocolo não limita extensão a .srm.
+- https://docs.romm.app/5.4.0/using/saves-and-states/ — RomM suporta formatos de save variados e device sync.
+- https://docs.libretro.com/library/melonds_ds/ — *.srm no Save directory; migração .sav -> .srm.
+- https://docs.libretro.com/library/melonds/ — melonDS legado usa *.sav no Cache directory.
+- https://docs.libretro.com/library/desmume/ — *.dsv no Save directory.
+- https://docs.libretro.com/library/desmume_2015/ — *.dsv no Save directory.
+
+Conclusão revisada: Nintendo DS pode sincronizar com RomM. melonDS DS tem caminho de menor esforço por usar .srm; melonDS legado e DeSmuME precisam de adaptador de arquivo. A implementação atual do Tandem ainda não sincroniza esses arquivos DS específicos.
