@@ -69,3 +69,8 @@ RESULTADO FINAL DA CI — 2026-11-27
 - [x] APK Debug assembleLawnWithQuickstepGithubDebug compilado.
 - [x] Artefato APK enviado com sucesso.
 - [ ] Permanecem pendentes testes físicos de sessões Vulkan, Turnip e fallback para driver do sistema.
+
+REBASE APÓS MERGE DA PR #62 — 2026-11-27
+- [x] Branch reconstruída sobre game-mode-m2-dev após o merge da PR #62; nenhuma alteração de produção da PR #62 foi copiada para esta PR.
+- [x] CI #2012 (run 46071830237) passou no head 79b265b37efc8e8a94b6c8b065c7f0f4ebf745d9: Spotless, testes unitários, APK Debug e upload do artefato.
+- [ ] Nova CI no head reconstruído.
