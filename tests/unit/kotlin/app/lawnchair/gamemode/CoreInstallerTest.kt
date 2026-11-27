@@ -1,9 +1,15 @@
 package app.lawnchair.gamemode
 
+import java.io.ByteArrayInputStream
+import java.io.ByteArrayOutputStream
 import java.io.File
 import java.nio.file.Files
+import java.util.zip.ZipEntry
+import java.util.zip.ZipOutputStream
+import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.fail
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -328,6 +334,63 @@ class CoreInstallerTest {
             assertFalse(CoreInstaller.isArm64Elf(file))
         } finally {
             file.delete()
+        }
+    }
+
+    @Test
+    fun extractsMelonDsCoreFromReleaseZipRootDirectory() {
+        val directory = Files.createTempDirectory("melonds-zip-nested").toFile()
+        val target = File(directory, "melondsds_libretro_android.so")
+        val payload = ByteArray(32) { it.toByte() }
+        val archive = ByteArrayOutputStream().also { bytes ->
+            ZipOutputStream(bytes).use { zip ->
+                zip.putNextEntry(ZipEntry("melondsds_libretro-android-Release/"))
+                zip.closeEntry()
+                zip.putNextEntry(ZipEntry("melondsds_libretro-android-Release/melondsds_libretro_android.so"))
+                zip.write(payload)
+                zip.closeEntry()
+            }
+        }.toByteArray()
+
+        try {
+            CoreInstaller.extractCoreFromArchive(
+                ByteArrayInputStream(archive),
+                target,
+                "melondsds_libretro_android.so",
+            )
+
+            assertArrayEquals(payload, target.readBytes())
+        } finally {
+            directory.deleteRecursively()
+        }
+    }
+
+    @Test
+    fun rejectsUnsafeZipEntryPathsDuringCoreExtraction() {
+        val directory = Files.createTempDirectory("melonds-zip-traversal").toFile()
+        val target = File(directory, "melondsds_libretro_android.so")
+        val archive = ByteArrayOutputStream().also { bytes ->
+            ZipOutputStream(bytes).use { zip ->
+                zip.putNextEntry(ZipEntry("../melondsds_libretro_android.so"))
+                zip.write(byteArrayOf(1, 2, 3))
+                zip.closeEntry()
+            }
+        }.toByteArray()
+
+        try {
+            try {
+                CoreInstaller.extractCoreFromArchive(
+                    ByteArrayInputStream(archive),
+                    target,
+                    "melondsds_libretro_android.so",
+                )
+                fail("ZIP com traversal deveria ser rejeitado")
+            } catch (expected: IllegalStateException) {
+                assertTrue(expected.message.orEmpty().contains("caminho inseguro"))
+            }
+            assertFalse(target.exists())
+        } finally {
+            directory.deleteRecursively()
         }
     }
 
