@@ -161,27 +161,7 @@ object CoreInstaller {
                 } else {
                     connection.inputStream
                 }
-                ZipInputStream(archiveInput).use { zip ->
-                    val entry = zip.nextEntry
-                    check(entry != null && entry.name == target.name && !entry.isDirectory) {
-                        "ZIP inesperado: esperava ${target.name}, veio ${entry?.name}"
-                    }
-                    FileOutputStream(part).use { output ->
-                        val buffer = ByteArray(64 * 1024)
-                        var written = 0L
-                        while (true) {
-                            val read = zip.read(buffer)
-                            if (read < 0) break
-                            output.write(buffer, 0, read)
-                            written += read
-                            onProgress(written)
-                        }
-                        output.flush()
-                        output.fd.sync()
-                    }
-                    zip.closeEntry()
-                    check(zip.nextEntry == null) { "ZIP contém entradas adicionais inesperadas" }
-                }
+                extractCoreFromArchive(archiveInput, part, target.name, onProgress)
                 check(isArm64Elf(part)) {
                     "${target.name} não é uma biblioteca ELF ARM64 válida"
                 }
@@ -252,6 +232,55 @@ object CoreInstaller {
                 archivePart.delete()
             }
         }.onFailure { GameLog.error("núcleos", "falha ao instalar/atualizar $coreId", it) }
+    }
+
+    /**
+     * Extrai o binário esperado de um ZIP que pode conter diretório-raiz.
+     * Aceita somente diretórios seguros e um único arquivo com o nome exato do núcleo.
+     */
+    internal fun extractCoreFromArchive(
+        archiveInput: java.io.InputStream,
+        target: File,
+        expectedFileName: String,
+        onProgress: (Long) -> Unit = {},
+    ) {
+        ZipInputStream(archiveInput).use { zip ->
+            var foundCore = false
+            var entry = zip.nextEntry
+            while (entry != null) {
+                val normalizedName = entry.name.replace('\\\\', '/')
+                val segments = normalizedName.split('/').filter { it.isNotEmpty() }
+                check(
+                    normalizedName.isNotBlank() &&
+                        !normalizedName.startsWith('/') &&
+                        !Regex("^[A-Za-z]:").containsMatchIn(normalizedName) &&
+                        segments.none { it == "." || it == ".." },
+                ) { "ZIP contém caminho inseguro: ${entry.name}" }
+
+                if (!entry.isDirectory) {
+                    check(!foundCore && segments.lastOrNull() == expectedFileName) {
+                        "ZIP inesperado: esperava um único arquivo ${expectedFileName}, veio ${entry.name}"
+                    }
+                    FileOutputStream(target).use { output ->
+                        val buffer = ByteArray(64 * 1024)
+                        var written = 0L
+                        while (true) {
+                            val read = zip.read(buffer)
+                            if (read < 0) break
+                            output.write(buffer, 0, read)
+                            written += read
+                            onProgress(written)
+                        }
+                        output.flush()
+                        output.fd.sync()
+                    }
+                    foundCore = true
+                }
+                zip.closeEntry()
+                entry = zip.nextEntry
+            }
+            check(foundCore) { "ZIP não contém o núcleo esperado: ${expectedFileName}" }
+        }
     }
 
     /**
