@@ -971,3 +971,12 @@ STATUS CI — ATUALIZAÇÃO DE CONTINUIDADE
 - PR #57 continua aberta e draft; não mesclar nem publicar em tandem-latest sem autorização explícita. PR #41 e PR #55 permanecem intocadas.
 
 - CI #1713 — https://github.com/izzyn0okami/Tandem/actions/runs/45932927391 — iniciada para o commit do teste de recuperação de SRAM 8e8e217409352a91c3186286120b8c1e45b5e2a5; jobs check-style e build-debug-apk em execução, sem resultado final até esta consulta.
+
+ 
+RESULTADOS DE CI — 2026-11-26
+- [x] CI #1705 — run 45932394279 — commit 6cae366fe82bf563a84029d098bc0ed9367447a2: check-style/Spotless, testes unitários, build Debug APK e final-status aprovados. Publicações release/nightly ignoradas.
+- [x] CI #1706 — run 45932419148 — commit 8887a0ba00c2a8d5607cfb363571ef9cb85a916d: check-style/Spotless, testes unitários, build Debug APK e final-status aprovados. Publicações release/nightly ignoradas.
+- [x] CI #1713 — run 45932927391 — commit 8e8e217409352a91c3186286120b8c1e45b5e2a5: check-style/Spotless, testes unitários (incluindo interruptedTemporarySramDoesNotReplaceOrHideLastCommittedSave), build Debug APK, upload de artefato e final-status aprovados. Publicações release/nightly ignoradas.
+- [x] Testes ELF e teste de recuperação de SRAM agora têm validação CI verde.
+- PR #57 continua aberta e Draft; nenhuma mesclagem ou publicação em tandem-latest foi feita.
+- PR #41 e PR #55 não foram alteradas.
