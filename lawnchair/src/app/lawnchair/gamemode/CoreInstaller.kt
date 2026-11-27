@@ -128,7 +128,7 @@ object CoreInstaller {
         onProgress: (Long) -> Unit,
     ): Result<File> = withContext(Dispatchers.IO) {
         runCatching {
-            require(coreId.matches(Regex("[a-zA-Z0-9_]+"))) { "Identificador de núcleo inválido" }
+            require(coreId.matches(Regex("[a-zA-Z0-9_-]+"))) { "Identificador de núcleo inválido" }
             val target = coreFile(context, coreId)
             val part = File(target.parentFile, "${target.name}.part")
             val backup = File(target.parentFile, "${target.name}.backup")
