@@ -63,3 +63,7 @@ CI APROVADA — PR #63 — 2026-11-27
 - [x] final-status: sucesso; etapas condicionais de publicação/notificação foram ignoradas conforme esperado.
 - [ ] Testes físicos específicos desta PR permanecem pendentes; CI não comprova compatibilidade real no Motorola Edge 30 Fusion.
 - [ ] Não mesclar antes da validação física correspondente e revisão final do diff.
+
+- [x] CI pós-atualização documental #2046 (run 46075516759) concluída com sucesso no commit cfcca87bf21a8efe4638a524edce15516be5d91d; Spotless, testes unitários, APK Debug, upload do artefato e final-status passaram.
+- [x] Artefato assembleLawnWithQuickstepGithubDebug disponível (46.630.607 bytes; run 46075516759). Jobs condicionais de release/notificação foram ignorados conforme esperado.
+- [ ] Esta validação automatizada não substitui os testes físicos específicos descritos acima.
