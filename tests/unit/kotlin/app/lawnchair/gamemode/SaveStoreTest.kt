@@ -72,6 +72,27 @@ class SaveStoreTest {
     }
 
     @Test
+    fun interruptedTemporarySramDoesNotReplaceOrHideLastCommittedSave() {
+        val store = SaveStore(root, "melonds", File("Pokemon.nds"))
+        val committed = byteArrayOf(1, 2, 3, 4)
+        val partial = byteArrayOf(9, 9)
+
+        store.writeSram(committed)
+        val staleTemp = File(store.sramFile.parentFile, "sram.srm.tmp")
+        staleTemp.writeBytes(partial)
+
+        // A process interruption may leave the temporary file behind. It is not a committed save.
+        assertArrayEquals(committed, store.readSram())
+        assertTrue(staleTemp.exists())
+
+        // The next successful write replaces the stale temporary file without deleting the old save first.
+        val nextCommitted = byteArrayOf(5, 6, 7, 8)
+        store.writeSram(nextCommitted)
+        assertArrayEquals(nextCommitted, store.readSram())
+        assertFalse(staleTemp.exists())
+    }
+
+    @Test
     fun readsNewestSiblingCoreSramWhenCurrentCoreHasNoSave() {
         val older = File(root, "older/Pokemon/sram.srm")
         val newer = File(root, "newer/Pokemon/sram.srm")
