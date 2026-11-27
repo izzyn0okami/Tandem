@@ -115,4 +115,15 @@ class GamePlatformsResolutionTest {
         assertTrue(knownCore.supportsRomMSaveSync)
     }
 
+    @Test
+    fun dolphinSaveFilesAreNotMisclassifiedAsRomMSramSync() {
+        val gameCube = CoreRegistry.info(GamePlatforms.bySlug("gc")!!, "dolphin")
+        val wii = CoreRegistry.info(GamePlatforms.bySlug("wii")!!, "dolphin")
+
+        assertTrue(gameCube.supportsStates)
+        assertFalse(gameCube.supportsRomMSaveSync)
+        assertTrue(wii.supportsStates)
+        assertFalse(wii.supportsRomMSaveSync)
+    }
+
 }
