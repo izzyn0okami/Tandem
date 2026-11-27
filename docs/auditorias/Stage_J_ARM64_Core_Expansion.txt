@@ -139,3 +139,10 @@ CI #1934 APROVADA — HARDENING VULKAN — 2026-11-27
 - [ ] Conferir o diff novamente e executar CI após a sincronização documental se a mudança disparar workflow; confirmar que o log Stage I está idêntico à base.
 - [ ] Prosseguir com rebase real somente depois de planejar a reconciliação de VulkanDriverManager e a remoção do painel Vulkan legado de GameModeActivity/GameScreens, sem descartar recursos não relacionados da base.
 - [x] PR #58 permanece aberta, não mesclada, ainda baseada em feat/libretro-stage-i; nenhuma publicação em tandem-latest.
+REGRESSÃO DE SAVES DS DETECTADA E CORRIGIDA — 2026-11-27
+- [x] Na comparação linha a linha de GameSessionActivity entre game-mode-m2-dev e Stage J, detectado que a implementação Stage J substituía savesDirectory pelo diretório global, removendo a exceção necessária para DeSmuME/DeSmuME 2015.
+- [x] Restaurada na branch Stage J a regra da base: cores desmume e desmume2015 continuam usando store.coreSaveDirectory; demais cores usam GameFolders.dir(FolderKind.Saves).
+- [x] SavePathDiagnostics.effectiveDirectory também voltou a refletir o diretório por core para DeSmuME, evitando diagnóstico divergente do caminho real.
+- [ ] A correção foi feita após a CI #1934; precisa de nova CI no head atualizado 537ff8ac1e95cc4ff4f6edb867884d602feb588a antes de rebase.
+- [x] Comparação de auditoria confirmou que Stage_I_Libretro_Execution.txt agora é byte a byte idêntico ao arquivo da base game-mode-m2-dev.
+- [ ] PR #58 segue com base antiga feat/libretro-stage-i. Não mudar a base até reconciliar todos os conflitos e confirmar CI.
