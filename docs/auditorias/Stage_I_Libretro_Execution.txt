@@ -1829,3 +1829,38 @@ Commits desta correção:
 Governança:
 - PR #57 continua aberta e draft.
 - Não houve merge nem publicação em tandem-latest.
+
+
+CORREÇÃO DE INSTALAÇÃO — MELONDS DS / ARQUIVO DE LICENÇA NO ZIP — 2026-11-27
+- [x] Recebido e analisado o log do aparelho tandem-log (17).txt: Tandem 16.Dev. (#1914), sessão c2a8afb3, Motorola Edge 30 Fusion / Android 17.
+- [x] Confirmado que a falha anterior com o arquivo .info foi superada: o instalador avançou até encontrar o arquivo de licença do pacote upstream.
+- [x] Nova causa confirmada no aparelho: o ZIP oficial contém `melondsds_libretro-android-Release/cores/melondsds-LICENSE.txt`, que era rejeitado como arquivo auxiliar não permitido.
+- [x] Confirmado que a biblioteca .so ainda não foi instalada/carregada; não há evidência de falha de execução do melonDS DS nem de problema com saves.
+- [x] Timeouts para RomM em 192.168.0.102:8080 ignorados conforme orientação do usuário; aparelho estava fora da rede local.
+- [x] Atualizado o extrator para aceitar arquivos de licença com nome LICENSE, -LICENSE ou _LICENSE e extensão opcional, sem extraí-los para a pasta de núcleos.
+- [x] Mantida a rejeição de bibliotecas .so adicionais, arquivos auxiliares desconhecidos, caminhos absolutos, traversal e entradas inseguras.
+- [x] Mantidas a verificação SHA-256 do ZIP upstream, validação ELF ARM64, staging e rollback da instalação.
+- [x] Atualizado o teste de regressão para incluir simultaneamente o metadado .info, o arquivo melondsds-LICENSE.txt e a biblioteca esperada; o teste exige extração somente da biblioteca.
+- [ ] CI da correção de licença ainda pendente; verificar check-style, testes unitários, APK e final-status.
+- [ ] Após CI aprovada, repetir download/instalação do melonDS DS e abrir The Legend of Zelda: Phantom Hourglass.
+- [ ] Após primeiro boot, validar áudio/vídeo, disposição das duas telas, controles/touch e save local .srm.
+- [ ] Device Sync RomM deve ser testado somente quando o aparelho estiver na rede local.
+
+Evidência do aparelho:
+- 2026-11-27T09:50:53.598-0400: instalação falhou com `ZIP contém arquivo auxiliar não permitido: melondsds_libretro-android-Release/cores/melondsds-LICENSE.txt`.
+- Stack trace: `CoreInstaller.extractCoreFromArchive(CoreInstaller.kt:292)`.
+- O erro aconteceu após iniciar o download do núcleo; não foi registrada mensagem de sucesso de instalação ou carregamento do core.
+- 2026-11-27T09:50:40–09:50:51: timeouts de rede RomM para 192.168.0.102:8080, ignorados nesta auditoria.
+
+CI anterior:
+- [x] CI #1912 — run 46008214700 — commit ac2ed33c22e3d7e7a640640e5bbb3d47c9126f10: check-style, testes unitários, build-debug-apk, upload do artefato e final-status aprovados.
+- [x] Artefato CI #1912: ID 15202666441; tamanho 46.629.646 bytes; SHA-256 91b1c422c803c7d8e60f7ff3add726a16509652be11fef59985a1db39590e5e0.
+- [x] O teste físico do build #1914 reproduziu um caso não coberto pela fixture anterior: licença upstream não reconhecida. A CI #1912 não valida esta nova correção.
+
+Commits:
+- Correção do extrator: 548bbafec2323ac6509da34b4e3c071abd32fb0f
+- Teste de regressão: 0076be382802e38744cffa180ff739d6cffb2eae
+
+Governança:
+- PR #57 permanece aberta e draft, base game-mode-m2-dev.
+- Não houve merge nem publicação em tandem-latest.
