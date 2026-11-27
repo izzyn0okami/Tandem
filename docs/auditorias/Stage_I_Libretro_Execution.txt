@@ -48,7 +48,7 @@ CONCLUÍDO NESTA ABERTURA
 - [x] Inspecionados os arquivos-base listados acima e registrados os achados preliminares.
 
 PENDÊNCIAS
-- [ ] Concluir auditoria de código e contratos por I7–I16.\n- [x] I7 — reforçar seleção segura de entrada ZIP, rejeitando caminhos absolutos, traversal, segmentos inválidos e entradas sem metadados de tamanho/CRC; manter erro explícito para zero ou múltiplas ROMs compatíveis.\n- [x] I8 — manter bypass de extração para plataformas discBased e ZIPs nativos; confirmar preservação no código.\n- [ ] I7/I8 — testes automatizados e validação funcional dos casos ZIP ainda pendentes.
+- [ ] Concluir auditoria de código e contratos por I7–I16.\n- [x] I7 — reforçar seleção segura de entrada ZIP, rejeitando caminhos absolutos, traversal, segmentos inválidos e entradas sem metadados de tamanho/CRC; manter erro explícito para zero ou múltiplas ROMs compatíveis.\n- [x] I8 — manter bypass de extração para plataformas discBased e ZIPs nativos; confirmar preservação no código.\n- [x] I7/I8 — suíte automatizada de ZIP adicionada para extração única, múltiplas/zero candidatas, duplicatas, CRC/tamanho inválidos, limite de tamanho, corrupção, recuperação de backup, cache corrompido, caminhos inseguros e bypass discBased/ZIP nativo. CI da ponta corrigida e validação funcional no aparelho ainda pendentes.
 - [ ] Implementar correções comprovadas, preservando compatibilidade e comportamento existente.
 - [ ] Adicionar testes automatizados determinísticos para casos válidos, ambíguos e inválidos.
 - [ ] Executar CI completa (Spotless, testes unitários e build APK).
@@ -102,7 +102,7 @@ I10 — CONJUNTOS MULTIDISCO:
 - [ ] Validar no aparelho com uma playlist M3U real e com jogos independentes na mesma pasta.
 
 PENDÊNCIAS GERAIS ATUALIZADAS
-- [ ] I7/I8: adicionar testes automatizados específicos de extração ZIP (válido, múltiplas ROMs, zero candidatas, traversal, CRC/tamanho incorretos e ZIP corrompido).
+- [x] I7/I8: testes automatizados específicos de extração ZIP adicionados (válido, múltiplas ROMs, zero candidatas, entradas duplicadas, traversal, CRC/tamanho incorretos, limite de tamanho e ZIP corrompido). Aguardar CI da correção de source set; validação funcional no aparelho pendente.
 - [ ] I7/I8: validação funcional no aparelho.
 - [ ] I9: considerar extensãoless somente quando surgir uma plataforma real com contrato explícito; catálogo atual não contém esse caso.
 - [ ] I10: validar no aparelho a abertura de playlists multidisco e a preservação de jogos independentes.
@@ -247,9 +247,7 @@ CI APROVADA — 2026-11-26 (ATUALIZAÇÃO)
 - [x] assembleLawnWithQuickstepGithubDebug: sucesso.
 - [x] Upload do APK de debug: sucesso.
 - Observação: o workflow aplicou/verificou Spotless e completou o build; esta execução valida o commit de documentação/escopo anterior à implementação funcional de I17.
-
-I17 — AUDITORIA DO CAMINHO DE ENTRADA — 2026-11-26
-- [x] Inspecionada a implementação local de LibretroDroid e GLRetroView.
+I17 — AUDITORIA DO CAMINHO DE ENTRADA — 2026-11-26- [x] Inspecionada a implementação local de LibretroDroid e GLRetroView.
 - [x] Confirmado que GLRetroView expõe sendKeyEvent(action, keyCode, port) e sendMotionEvent(source, xAxis, yAxis, port).
 - [x] Confirmados os canais nativos: MOTION_SOURCE_DPAD, MOTION_SOURCE_ANALOG_LEFT e MOTION_SOURCE_ANALOG_RIGHT. Portanto, os dois analógicos podem emitir eixos distintos sem alteração do JNI.
 - [x] Confirmado que o caminho de controle físico já usa os eixos X/Y para o analógico esquerdo e Z/RZ para o direito; o gamepad virtual pode enviar diretamente os dois canais nativos.
@@ -411,10 +409,1557 @@ ESTADO DA PR
 - Não mesclar nem publicar em tandem-latest sem autorização explícita.
 
 
-CORREÇÃO DE AUDITORIA — CATÁLOGO ARM64 — 2026-11-26
-A revisão direta do índice oficial Buildbot Android ARM64 em Stage_J_ARM64_Core_Expansion.txt refinou e corrigiu a auditoria complementar anterior:
-- ARMSX2, PCEE2, PCSX2, Azahar, Panda3DS, Vita3K, RPCS3 e Xenia Edge aparecem no índice.
-- Correção posterior: Dolphin e Cemu aparecem no índice Android ARM64 (linhas 94–95 e 65–66, respectivamente). Ambos foram integrados na PR #58; a leitura anterior não alcançou essas linhas.
-- Azahar usa o artefato azahar_libretro.so.zip, sem o sufixo _android no nome.
-- A lista anterior tratava alguns projetos documentados como se o pacote Android estivesse confirmado; o inventário Stage J foi revisado com leitura integral do índice, confirmando também Dolphin e Cemu.
-- O arquivo Stage_J_ARM64_Core_Expansion.txt passa a ser a referência para novos cores e estado de disponibilidade.
+ATUALIZAÇÃO DE VALIDAÇÃO — 2026-11-26
+- [x] CI #1483 concluída com sucesso para o commit 2d6ba3cc1e7ef1a4978907ed121b6e6f1c57e5d7.
+- Run: https://github.com/izzyn0okami/Tandem/actions/runs/45743549532
+- [x] Job check-style / Spotless: sucesso.
+- [x] Job de testes unitários: sucesso.
+- [x] Build assembleLawnWithQuickstepGithubDebug: sucesso.
+- [x] Upload do artefato APK: sucesso.
+- Observação: a aprovação da CI confirma somente os testes automatizados executados e a compilação; não substitui testes funcionais no aparelho.
+
+I17 — GAMEPAD VIRTUAL DE TOQUE (ESCOPO APROVADO PELO USUÁRIO)
+- [x] Implementada primeira camada visual com D-pad, A/B/X/Y, Start/Select e dois analógicos independentes.
+- [x] Preferências persistentes de ativação, ocultação automática ao conectar controle físico, opacidade, escala e deslocamento.
+- [x] Encaminhamento de toques fora dos controles para a superfície do jogo, preservando uso de tela de toque em sistemas como Nintendo DS.
+- [x] CI #1483 passou com a implementação atual.
+- [ ] Testes instrumentados específicos de multitouch, eixos analógicos, deadzone e retorno ao centro.
+- [ ] Verificar cancelamento de entradas e liberação dos botões ao pausar, sair ou rotacionar a tela.
+- [ ] Teste funcional/ergonômico no aparelho, em retrato e paisagem, ainda pendente.
+- [ ] Revisar acessibilidade e comportamento com controle físico conectado/desconectado.
+
+ESTADO DA PR — 2026-11-26
+- PR #57 permanece aberta e em draft; base game-mode-m2-dev.
+- Head validado pela CI: 2d6ba3cc1e7ef1a4978907ed121b6e6f1c57e5d7.
+- CI #1483 é a execução de referência aprovada para esse head.
+- Nenhum merge ou publicação em tandem-latest foi realizado.
+- Próxima etapa: revisão estática do gamepad virtual e testes instrumentados; depois, disponibilizar o APK para validação no aparelho se não houver novas alterações pendentes.
+
+
+ATUALIZAÇÃO DE CI E REVISÃO — 2026-11-26
+- [x] CI #1558 — run https://github.com/izzyn0okami/Tandem/actions/runs/45753928221 — sucesso no commit bda07cc6728cfcd29059373d6c7aeb902d904eec.
+- [x] CI #1559 — run https://github.com/izzyn0okami/Tandem/actions/runs/45754017943 — sucesso no mesmo commit; testes unitários, Spotless, build APK e upload do artefato concluídos.
+- [x] CI #1560 — run https://github.com/izzyn0okami/Tandem/actions/runs/45754101718 — sucesso no mesmo commit; testes unitários, Spotless, build APK e upload do artefato concluídos.
+- [x] Correção de multitouch: ACTION_POINTER_UP agora é consumido mesmo quando o último ponteiro de controle virtual é solto; releaseAll também limpa os IDs de ponteiros passthrough.
+- [ ] Ainda faltam testes instrumentados para multitouch misto (controle + touchscreen), duas entradas analógicas simultâneas, rotação e interrupção da sessão.
+- [ ] Ainda falta teste manual no aparelho; CI não comprova ergonomia nem compatibilidade com todos os cores.
+
+ESTADO ATUAL DA PR #57
+- Branch: feat/libretro-stage-i; base: game-mode-m2-dev; PR aberta e draft.
+- Head: bda07cc6728cfcd29059373d6c7aeb902d904eec.
+- Última CI completa de referência: #1560, sucesso.
+- APK debug construído e artefato carregado na execução #1560. Disponibilizar somente para teste na branch da PR; não confundir com build tandem-latest.
+- Nenhum merge ou publicação em tandem-latest foi realizado.
+
+
+ATUALIZAÇÃO — VALIDAÇÃO DO GAMEPAD PELO USUÁRIO — 2026-11-26
+- [x] Usuário confirmou que o gamepad virtual de toque funcionou no aparelho.
+- [x] A validação confirma funcionamento básico do gamepad na configuração testada.
+- [ ] Não considerar automaticamente validados todos os casos avançados: dois analógicos simultâneos sob carga, multitouch misto com touchscreen do DS, retrato/paisagem, reconexão de controle físico e liberação em todas as transições de ciclo de vida.
+- [ ] Preferências avançadas de layout ainda precisam de interface completa.
+- CI #1561 — https://github.com/izzyn0okami/Tandem/actions/runs/45755929007:
+  - [x] check-style / Spotless: sucesso.
+  - [x] testes unitários: sucesso.
+  - [ ] build APK e upload do artefato: em andamento no momento deste registro.
+  - Head submetido à execução: f1a29b7ff873e5ef02f3ca28891cbab97ce3071d.
+- PR #57 continua aberta e draft; nenhum merge ou publicação em tandem-latest foi realizado.
+
+
+ATUALIZAÇÃO — CI #1563 — 2026-11-26
+- [x] CI #1563 — https://github.com/izzyn0okami/Tandem/actions/runs/45756741623 — conclusão success.
+- [x] check-style / Spotless: sucesso.
+- [x] Testes unitários: sucesso.
+- [x] Build assembleLawnWithQuickstepGithubDebug: sucesso.
+- [x] Upload do artefato APK: sucesso.
+- [x] Workflow final: sucesso.
+- Commit validado: 1d58c436c32452b23f273aa7d6468584bbe6abb2.
+- A CI confirma a suíte unitária atualmente configurada e a compilação; não substitui validação funcional no aparelho.
+- [ ] I7/I8: testes dedicados de RomUnzipper continuam pendentes (ZIP válido, múltiplas entradas, zero candidatas, traversal, CRC/tamanho incorretos e ZIP corrompido).
+- [ ] I17: usuário confirmou funcionamento básico no aparelho; testes avançados de multitouch misto, dois analógicos simultâneos, rotação, ciclo de vida e personalização permanecem pendentes.
+- PR #57 permanece aberta e draft, sem merge e sem publicação em tandem-latest.
+
+
+I7/I8 — PRIMEIRA SUÍTE DEDICADA DE ROMUNZIPPER — 2026-11-26
+- [x] Extraída a lógica de ZIP para receber diretamente o diretório de cache, mantendo prepare(Context, ...) como ponto de integração Android.
+- [x] Criado RomUnzipperTest.kt no diretório efetivo tests/unit/kotlin/app/lawnchair/gamemode/.
+- [x] Casos adicionados: extração válida e reuso de cache, múltiplas ROMs compatíveis, ausência de ROM compatível, path traversal, CRC central-directory alterado e ZIP corrompido.
+- [ ] Aguardar CI para confirmar compilação e execução dos novos testes.
+- [ ] Adicionar cobertura de tamanho declarado incorreto, entradas duplicadas e bypass de ZIP nativo/discBased, conforme viabilidade do contrato atual.
+- Commit de refatoração: aec4132b5afa34a1abdd87dfeaa846724506d680.
+- Commit de testes: 3a626ba24513f4db849d2708fc7bd4a485a74b1b.
+- PR #57 permanece aberta e draft; PR #41 não foi alterada.
+
+
+ATUALIZAÇÃO — CI #1566 E CI #1567 — 2026-11-26
+- [x] CI #1566 — https://github.com/izzyn0okami/Tandem/actions/runs/45758644342 — conclusão success.
+- [x] Commit validado pela execução #1566: aec4132b5afa34a1abdd87dfeaa846724506d680 (refatoração da extração ZIP).
+- [x] check-style / Spotless: sucesso.
+- [x] Testes unitários: sucesso.
+- [x] Build assembleLawnWithQuickstepGithubDebug: sucesso.- [x] Upload do artefato APK: sucesso.
+- [x] CI #1567 — https://github.com/izzyn0okami/Tandem/actions/runs/45758666128 — conclusão success.- [x] Commit validado pela execução #1567: 3a626ba24513f4db849d2708fc7bd4a485a74b1b (suíte dedicada RomUnzipperTest).
+- [x] check-style / Spotless: sucesso.
+- [x] Testes unitários: sucesso.
+- [x] Build assembleLawnWithQuickstepGithubDebug: sucesso.
+- [x] Upload do artefato APK: sucesso.
+- [x] Confirmada a inclusão de tests/unit/kotlin no sourceSet Gradle "test" do build.gradle; a CI executa testLawnWithQuickstepGithubDebugUnitTest. Portanto, a nova suíte está no caminho de compilação/execução dos testes unitários.
+- [x] Não houve publicação em tandem-latest: os jobs tandem-release/nightly-release foram ignorados para estas execuções de PR.
+- [ ] A cobertura adicional de tamanho declarado incorreto, entradas duplicadas e bypass de ZIP nativo/discBased continua pendente.
+- [ ] Validação funcional dos casos ZIP no aparelho continua pendente.
+- PR #57 permanece aberta e draft, sem merge; PR #41 permanece intocada.
+
+
+ATUALIZAÇÃO — CI #1574 — 2026-11-26
+- [x] CI #1574 — https://github.com/izzyn0okami/Tandem/actions/runs/45809020368 — conclusão success.
+- [x] Commit validado: 2f149192f0b285dc07e299aee5f8bdd3d893137e.
+- [x] check-style / Spotless: sucesso.
+- [x] Testes unitários: sucesso, incluindo a suíte RomUnzipperTest atualizada.
+- [x] Build assembleLawnWithQuickstepGithubDebug: sucesso.
+- [x] Upload do artefato APK: sucesso.
+- [x] Jobs de publicação tandem-release e nightly-release ignorados; nenhuma publicação em tandem-latest.
+- [x] Correção de limpeza do arquivo temporário .part em falhas de validação e teste para divergência de tamanho declarado cobertos pela CI.
+- [ ] Validação funcional no aparelho dos cenários ZIP ainda pendente.
+- [ ] Cobertura de entradas ZIP duplicadas e bypass de ZIP nativo/discBased ainda pendente.
+- PR #57 permanece aberta e draft, sem merge; PR #41 permanece intocada.
+
+
+ATUALIZAÇÃO — CI #1577 E CI #1578 — 2026-11-26
+- [x] CI #1577 — https://github.com/izzyn0okami/Tandem/actions/runs/45816875807 — conclusão success.
+- [x] Commit validado pela execução #1577: df0011307e5cbc4a8aefe617014cabaa8cb1cc0b (atualização documental do log).
+- [x] CI #1578 — https://github.com/izzyn0okami/Tandem/actions/runs/45816948888 — conclusão success.
+- [x] Commit validado pela execução #1578: 57f200e735abe88a2cefe447a77697cececd9b8d (verificação CRC do cache ZIP e teste de recuperação).
+- [x] Em ambas: check-style / Spotless, testes unitários, build assembleLawnWithQuickstepGithubDebug e upload do artefato APK concluídos com sucesso.
+- [x] Jobs tandem-release e nightly-release ignorados; nenhuma publicação em tandem-latest.
+- [x] Cache ZIP agora é validado também pelo CRC antes de reutilização; cache corrompido com tamanho preservado é reextraído, coberto por teste unitário.
+- [ ] Entradas ZIP duplicadas e testes específicos de bypass para ZIP nativo/discBased ainda precisam de revisão/cobertura.
+- [ ] A validação no aparelho de casos ZIP específicos permanece pendente, salvo os cenários efetivamente exercitados pelo usuário.
+
+ATUALIZAÇÃO — RETORNO FUNCIONAL DO USUÁRIO — 2026-11-26
+- [x] Usuário confirmou que tudo está funcionando corretamente nos testes realizados no aparelho.
+- [x] Resultado registrado como validação funcional positiva do conjunto testado nesta etapa.
+- [ ] Casos não exercitados explicitamente (por exemplo, ZIP com entradas duplicadas, ZIP nativo e plataformas discBased) não são presumidos como testados individualmente.
+- PR #57 permanece aberta e draft, sem merge e sem publicação em tandem-latest; PR #41 permanece intocada.
+
+
+ATUALIZAÇÃO — TESTES ZIP ADICIONAIS E CI — 2026-11-26
+- [x] Extraída a política de preparação de ROM para uma sobrecarga interna testável sem Android Context; a entrada pública continua delegando ao mesmo fluxo.
+- [x] Adicionado teste que constrói ZIP com duas entradas centrais de mesmo nome e confirma rejeição de entradas ROM duplicadas.
+- [x] Adicionados testes que confirmam o bypass de extração para plataformas discBased e ZIPs nativos; os testes usam ZIP propositalmente inválido para garantir que não haja tentativa de extração.
+- [x] CI #1583 — https://github.com/izzyn0okami/Tandem/actions/runs/45842635879 — sucesso no commit 43f26a0b33b1a17be422aa03f75385ed8cb8d0de.
+- [x] CI #1582 — https://github.com/izzyn0okami/Tandem/actions/runs/45842589470 — sucesso no commit aa0e86a3e74a3e71ea00fc54faa87ec3a08268a1.
+- [x] CI #1581 — https://github.com/izzyn0okami/Tandem/actions/runs/45842338750 — sucesso no commit aa0e86a3e74a3e71ea00fc54faa87ec3a08268a1.
+- [x] CI #1584 — https://github.com/izzyn0okami/Tandem/actions/runs/45842869093 — sucesso no commit ecd4e2811bc5366e599178157eeeae47a9a4e0b5; check-style/Spotless, testes unitários, assembleLawnWithQuickstepGithubDebug e upload do APK concluídos.
+- [x] Os jobs tandem-release e nightly-release da CI #1584 foram ignorados; nenhuma publicação em tandem-latest ocorreu.
+- [ ] A execução automática de PR #1585 terminou com action_required por exigência de aprovação do workflow; não foi classificada como falha de build. A CI manual #1584 no mesmo HEAD validou estilo, testes e APK.
+- [ ] Revisar casos adicionais de recuperação/rollback do cache ZIP e limites de extração.
+- [ ] Validação manual individual de ZIP duplicado, ZIP nativo e plataforma discBased no aparelho permanece pendente; o usuário já confirmou funcionamento geral do conjunto testado, mas não declarou esses três cenários isoladamente.
+- PR #57 permanece aberta e draft, sem merge ou publicação em tandem-latest; PR #41 permanece intocada.
+
+
+ATUALIZAÇÃO — RECUPERAÇÃO DE CACHE ZIP E CI — 2026-11-26
+- [x] Corrigida a recuperação de promoção de cache interrompida: se o arquivo final estiver ausente e houver backup, o backup é restaurado antes de nova extração.
+- [x] Se o arquivo final já foi promovido e restou um backup, o backup residual é removido antes de prosseguir.
+- [x] A criação do diretório de cache agora é verificada explicitamente; falha não segue silenciosamente.
+- [x] Novo teste automatizado simula interrupção após mover a ROM válida para .backup, altera o conteúdo do ZIP e confirma que a extração seguinte recupera/substitui o cache sem deixar .backup ou .part.
+- [x] CI #1586 — https://github.com/izzyn0okami/Tandem/actions/runs/45846759634 — sucesso; Spotless, testes unitários, build e upload do APK.
+- [x] CI #1587 — https://github.com/izzyn0okami/Tandem/actions/runs/45846870235 — sucesso; Spotless, testes unitários, build e upload do APK.
+- [x] CI #1588 — https://github.com/izzyn0okami/Tandem/actions/runs/45846898710 — sucesso no HEAD 713c1892ad71ad390a23caca10743542baf6eb66; Spotless, testes unitários, build e upload do APK.
+- [x] CI #1589, #1590 e #1591 — https://github.com/izzyn0okami/Tandem/actions/runs/45847025305 ; https://github.com/izzyn0okami/Tandem/actions/runs/45847128784 ; https://github.com/izzyn0okami/Tandem/actions/runs/45847262850 — todas concluídas com sucesso no mesmo HEAD 713c1892ad71ad390a23caca10743542baf6eb66.
+- [x] Jobs tandem-release e nightly-release ignorados; nenhuma publicação em tandem-latest.
+- [ ] Revisar limites de extração ZIP (tamanho máximo, razão de compressão e consumo de armazenamento) e demais cenários de rollback.
+- [ ] Validação manual isolada da recuperação de backup e dos cenários ZIP duplicado/nativo/discBased no aparelho permanece pendente.
+- PR #57 permanece aberta e draft, sem merge ou publicação em tandem-latest; PR #41 permanece intocada.
+
+
+ATUALIZAÇÃO — LIMITE DE EXTRAÇÃO ZIP E CIs #1592–#1594 — 2026-11-26
+- [x] Definido limite máximo de ROM extraída de 8 GiB para impedir consumo excessivo de armazenamento por entradas ZIP desproporcionais.
+- [x] O tamanho declarado é validado antes de iniciar a extração ou criar arquivos no cache.
+- [x] Adicionado teste que simula entrada ZIP com tamanho descompactado acima do limite e confirma rejeição antes de qualquer gravação no cache.
+- [x] CI #1592 — https://github.com/izzyn0okami/Tandem/actions/runs/45852253342 — sucesso; Spotless, testes unitários, build APK e upload do artefato.
+- [x] CI #1593 — https://github.com/izzyn0okami/Tandem/actions/runs/45852289746 — sucesso; Spotless, testes unitários, build APK e upload do artefato.
+- [x] CI #1594 — https://github.com/izzyn0okami/Tandem/actions/runs/45852309716 — sucesso no HEAD a8378faffbcef5647732e9a4f50f437bd1a60faf; Spotless, testes unitários, build APK e upload do artefato.
+- [x] Jobs tandem-release e nightly-release ignorados; nenhuma publicação em tandem-latest.
+- [ ] Considerar limite adicional para quantidade de entradas ZIP e consumo total de cache; razão de compressão não deve bloquear ROMs legítimas sem evidência.
+- [ ] Revisar e testar recuperação/rollback do instalador de núcleos (CoreInstaller).
+- [ ] Validar no aparelho casos específicos de ZIP e recuperação de cache, além dos testes automatizados.
+- PR #57 permanece aberta e draft, sem merge ou publicação em tandem-latest; PR #41 permanece intocada.
+
+
+ATUALIZAÇÃO — RECUPERAÇÃO DO INSTALADOR DE NÚCLEOS E CIs — 2026-11-26
+- [x] CoreInstaller agora verifica destino e backup antes de iniciar uma nova instalação.
+- [x] Se o destino estiver ausente ou não passar na validação ELF ARM64 e o backup for válido, o backup é restaurado.
+- [x] Se o destino já for válido, backup residual de uma promoção concluída é removido.
+- [x] Se destino e backup forem inválidos, ambos são preservados para diagnóstico até que um novo pacote validado esteja pronto para substituição.
+- [x] Testes unitários adicionados para backup válido com destino ausente, backup válido com destino inválido e backup residual com destino válido.
+- [x] CI #1598 — https://github.com/izzyn0okami/Tandem/actions/runs/45856337891 — sucesso: check-style, testes unitários e build APK.
+- [x] CI #1599 — https://github.com/izzyn0okami/Tandem/actions/runs/45856408145 — sucesso: check-style, testes unitários e build APK.
+- [x] CI #1601 — https://github.com/izzyn0okami/Tandem/actions/runs/45856579102 — sucesso no commit 79ac5535b57131a891075c02fcff589d9861dca9; check-style, testes unitários e build APK.
+- [ ] CI #1602 — https://github.com/izzyn0okami/Tandem/actions/runs/45856653958 — o build APK passou, mas check-style não conseguiu resolver o plugin KSP 2.3.13; falha de resolução de dependência no ambiente CI, sem erro de formatação identificado. Job check-style reenviado para nova tentativa.
+- [ ] CI #1600 — https://github.com/izzyn0okami/Tandem/actions/runs/45856427780 — build APK passou; push automático do commit Spotless foi rejeitado por non-fast-forward devido a atualização concorrente da branch. A execução posterior #1601 passou.
+- [ ] CI #1603 terminou action_required por aprovação de workflow; não foi considerada validação nem falha de compilação.
+- [x] Jobs tandem-release e nightly-release ignorados nas CIs de PR; nenhuma publicação em tandem-latest.
+- [ ] Teste funcional no aparelho para instalação interrompida/recuperação de backup permanece pendente.
+- [ ] Revisar demais caminhos de rollback, falha de rede, ZIP de núcleo inválido e consistência dos metadados SHA-256/ETag após interrupção.
+- PR #57 permanece aberta e draft, sem merge ou publicação em tandem-latest; PR #41 permanece intocada.
+
+
+ATUALIZAÇÃO — CIs #1602 E #1604 CONCLUÍDAS — 2026-11-26
+- [x] CI #1602 — https://github.com/izzyn0okami/Tandem/actions/runs/45856653958 — conclusão success na tentativa 2; check-style/Spotless, testes e build APK aprovados.
+- [x] CI #1604 — https://github.com/izzyn0okami/Tandem/actions/runs/45879205231 — conclusão success; validou a atualização documental anterior no commit 90f498e984f41bbce68eabab89c4691e9fb08e3b.
+- [x] A falha inicial de resolução do plugin KSP foi transitória; a nova tentativa terminou com sucesso, sem alteração de código para contornar dependência.
+- [x] Nenhum job de publicação foi executado; tandem-latest não foi atualizado.
+
+ATUALIZAÇÃO — RECUPERAÇÃO TRANSACIONAL POR SHA-256 — 2026-11-26
+- [x] CoreInstaller passa a ler o SHA-256 confirmado nas preferências antes de recuperar arquivos .backup.
+- [x] Se o destino corresponder ao digest confirmado, o destino é mantido e o backup residual é removido.
+- [x] Se o backup corresponder ao digest confirmado e o destino for diferente, o backup confirmado é restaurado.
+- [x] Se destino e backup forem ELF válidos, mas nenhum corresponder ao digest (ou não houver digest registrado), ambos são preservados para diagnóstico até que um novo pacote validado esteja pronto.
+- [x] Se o destino estiver ausente/inválido e o backup for a única cópia ELF válida, o backup é restaurado; divergência do digest é registrada.
+- [x] Testes adicionados para backup confirmado com destino não confirmado, destino confirmado com backup residual, ausência de digest com ambos válidos e recuperação do backup confirmado com destino ausente.
+- Commits de implementação/testes: 799f53f4922eb5e6053f80e4c5eb42d0c8bf5528; 8c23713b66dae56a2a9df3b597c32a72429b6ee9; 8dc2c8443ce6c61a8de4a0f7e6d6f78629c45f1e.
+- [ ] CI dos commits de recuperação por digest pendente.
+- [ ] Após CI verde, revisar logs e testar no aparelho uma instalação interrompida/recuperação de backup.
+- PR #57 permanece aberta e draft, sem merge; nenhuma publicação em tandem-latest; PR #41 permanece intocada.
+
+
+ATUALIZAÇÃO — VALIDAÇÃO DA RECUPERAÇÃO POR SHA-256 — 2026-11-26
+- [x] CI #1609 — https://github.com/izzyn0okami/Tandem/actions/runs/45880767398 — sucesso no HEAD a117d6c7270289ccce356870fff3ed15e361a14e; check-style/Spotless e build APK concluídos.
+- [x] Os testes unitários executaram sem falhas na CI #1609; a falha observada nas execuções #1606 e #1607 era um teste legado que esperava apagar backup sem digest, comportamento agora intencionalmente proibido. O teste foi substituído por cenários que verificam a decisão com digest explícito e preservação quando o digest é desconhecido.
+- [x] CI #1606 e #1607 falharam somente no teste legado `removesResidualBackupWhenTargetIsAlreadyValid`; não houve falha de compilação do código de produção.
+- [x] CI #1608 falhou durante a instalação do NDK no runner (arquivo ZIP inválido/corrompido), não por falha de formatação; a execução #1609 subsequente passou.
+- [x] CI #1609 confirma formatação, testes unitários e compilação do APK. A validação não substitui teste funcional no aparelho.
+- [ ] Teste funcional no aparelho para instalação interrompida/recuperação de backup permanece pendente.
+- [ ] Revisar caminhos adicionais de rollback, falha de rede, ZIP inválido e consistência de metadados SHA-256/ETag.
+- PR #57 permanece aberta e draft, sem merge; nenhuma publicação em tandem-latest; PR #41 permanece intocada.
+
+
+REVISÃO I14–I16 — DIAGNÓSTICOS DE SALVAMENTO — 2026-11-26
+- [x] Identificado que falhas em `serializeSRAM()`/gravação local eram capturadas sem registro, dificultando distinguir falha de serialização, gravação e SRAM vazia.
+- [x] Adicionado registro explícito para SRAM vazia (sem sobrescrever arquivo existente) e log de exceção quando serialização/gravação falhar.
+- [x] Adicionado log de exceção ao falhar criação ou carregamento de estado rápido.
+- Commit: 357bc14047ab55ba2af6df6cc7e2cea6fe4c9a4c.
+- [x] CI de diagnóstico aprovada: CIs #1613, #1614 e #1615 concluídas com sucesso.
+- [ ] Testes instrumentados de encerramento forçado, perda de processo e falha nativa ainda pendentes.
+- Observação: revisão estática do ciclo de vida indica que a Activity persiste SRAM em `onPause`, libera entradas virtuais, encerra RA/Core antes da suspensão do GL ao finalizar/recriar e evita dupla destruição com `nativeDestroyed`; ainda falta validação automatizada/instrumentada dessas transições.
+
+
+ATUALIZAÇÃO — CIs #1613–#1615 CONCLUÍDAS — 2026-11-26
+- [x] CI #1613 — https://github.com/izzyn0okami/Tandem/actions/runs/45882831827 — sucesso: check-style/Spotless, testes unitários, build APK e upload do artefato.
+- [x] CI #1614 — https://github.com/izzyn0okami/Tandem/actions/runs/45882875689 — sucesso: check-style/Spotless, testes unitários, build APK e upload do artefato.
+- [x] CI #1615 — https://github.com/izzyn0okami/Tandem/actions/runs/45882895559 — sucesso: check-style/Spotless, testes unitários, build APK e upload do artefato.
+- [x] As três execuções validaram os commits de código indicados acima; todos os jobs de publicação tandem-release/nightly-release foram ignorados.
+- [x] A atualização deste log foi um commit exclusivamente documental; não houve alteração de código. O workflow de PR não gerou uma nova execução associada a esse commit.
+- [x] Nenhuma publicação em tandem-latest foi realizada.
+- [ ] Testes instrumentados de encerramento forçado, perda de processo e falha nativa permanecem pendentes.
+- [ ] Validar no aparelho recuperação de backup após instalação interrompida, falha de rede, ZIP inválido e integridade dos metadados SHA-256/ETag.
+- [ ] Testar no aparelho a persistência/recuperação de SRAM e estados rápidos em cenários reais de pausa, retomada e encerramento.
+- PR #57 permanece aberta e draft, sem merge; PR #41 permanece intocada.
+
+
+ATUALIZAÇÃO — DIAGNÓSTICO DE ESTADOS RÁPIDOS — 2026-11-26
+- [x] Registrada a ausência de estado serializável fornecido pelo núcleo.
+- [x] Registrada falha de leitura do arquivo de estado rápido e ausência de estado legível.
+- [x] Registrada rejeição de cabeçalho TNDM inválido ou payload truncado.
+- [x] Registrada recusa do estado pelo núcleo sem exceção.
+- [x] CI #1619 — https://github.com/izzyn0okami/Tandem/actions/runs/45902974577 — sucesso: check-style, testes unitários e build APK.
+- [x] CI #1620 — https://github.com/izzyn0okami/Tandem/actions/runs/45903012751 — sucesso: check-style, testes unitários e build APK.
+- [x] CI #1621 — https://github.com/izzyn0okami/Tandem/actions/runs/45903080681 — sucesso: check-style, testes unitários e build APK.
+- [x] Jobs tandem-release e nightly-release ignorados; nenhuma publicação em tandem-latest.
+- [ ] Testes instrumentados de encerramento forçado, perda de processo e falha nativa.
+- [ ] Validar no aparelho a recuperação após instalação interrompida, falha de rede, ZIP inválido e divergência de SHA-256/ETag.
+- [ ] Validar no aparelho persistência e restauração de SRAM e estados rápidos em pausa, retomada e encerramento.
+- [ ] Confirmar recuperação de saves em cenários de conflito e sincronização com RomM.
+- PR #57 permanece aberta e draft, sem merge; PR #41 permanece intocada.
+
+
+ATUALIZAÇÃO — VALIDAÇÃO DO ENVELOPE E PERSISTÊNCIA DE ESTADO — 2026-11-26
+- [x] Identificada uma lacuna: payload iniciado por TNDM com menos de 8 bytes era tratado como estado legado, sem rejeição explícita.
+- [x] Extraído o codec QuickStateEnvelope para isolar codificação e validação do formato TNDM.
+- [x] O decoder preserva compatibilidade com estados legados sem envelope.
+- [x] O decoder rejeita cabeçalho TNDM incompleto, comprimento unsigned maior que o payload e envelope sem bytes de estado do emulador.
+- [x] Adicionados testes unitários para estado legado, round-trip, cabeçalho truncado, comprimento acima do payload, comprimento unsigned inválido e ausência de estado de emulação.
+- [x] CI #1627 — https://github.com/izzyn0okami/Tandem/actions/runs/45904366623 — sucesso: Spotless, testes unitários, build APK e upload do artefato.
+- [x] CI #1628 — https://github.com/izzyn0okami/Tandem/actions/runs/45904377691 — sucesso após repetição do job de build; Spotless, testes unitários, build APK e upload do artefato.
+- [x] CI #45906181283 — https://github.com/izzyn0okami/Tandem/actions/runs/45906181283 — sucesso: Spotless, testes unitários e build APK. Jobs de release ignorados.
+- [x] CI #45906308798 — https://github.com/izzyn0okami/Tandem/actions/runs/45906308798 — sucesso: Spotless, testes unitários e build APK. Jobs de release ignorados.
+- [x] Persistência SRAM sincronizada na Activity para evitar serializações concorrentes entre autosave periódico e pausa/encerramento; compilação e testes unitários aprovados.
+- [ ] Testes instrumentados de ciclo de vida, encerramento forçado, perda de processo e falha nativa continuam pendentes.
+- [ ] Validação funcional no aparelho da persistência/restauração de SRAM e estados rápidos em pausa, retomada e encerramento continua pendente.
+- [ ] Validar no aparelho recuperação do instalador após interrupção, falha de rede, ZIP inválido e divergência de SHA-256/ETag.
+- [ ] Confirmar recuperação de saves em cenários de conflito e sincronização com RomM.
+- PR #57 permanece aberta e draft, sem merge; PR #41 permanece intocada.
+
+
+ATUALIZAÇÃO — CI #45907953883 APROVADA — 2026-11-26
+- [x] CI #45907953883 — https://github.com/izzyn0okami/Tandem/actions/runs/45907953883 — conclusão success no HEAD 11edf8f8e88a6ba80e4cc69b59abb2b02105734d.
+- [x] check-style / Spotless: sucesso, incluindo verificação após formatação automática.
+- [x] Testes unitários: sucesso.
+- [x] Build assembleLawnWithQuickstepGithubDebug: sucesso.
+- [x] Upload do artefato APK: sucesso.
+- [x] Jobs tandem-release e nightly-release ignorados; nenhuma publicação em tandem-latest.
+- PR #57 permanece aberta e draft, sem merge; PR #41 permanece intocada.
+- [ ] Testes instrumentados e validação funcional no aparelho continuam pendentes conforme os itens acima.
+
+
+REVISÃO DE COBERTURA I7/I8 — 2026-11-26
+- [x] Reinspecionados RomUnzipper.kt e RomUnzipperTest.kt no HEAD da PR #57.
+- [x] Confirmados testes para extração de uma ROM compatível e reutilização de cache validado.
+- [x] Confirmados testes para múltiplas ROMs compatíveis, ausência de ROM compatível, entrada duplicada, traversal, ZIP corrompido, CRC divergente, tamanho declarado divergente e limite de tamanho.
+- [x] Confirmados testes de bypass para ZIPs nativos e plataformas baseadas em disco.
+- [x] Confirmada cobertura de recuperação de backup após promoção interrompida e reparo de cache corrompido.
+- [x] CI #45907953883 aprovou os testes unitários e build APK após essa cobertura estar presente no HEAD validado.
+- [ ] Validação funcional no aparelho com ZIPs reais de sistemas baseados em arquivo e disco continua pendente.
+- [ ] Confirmar comportamento de ROMs multidisco reais (M3U/CUE) no aparelho.
+- [ ] A cobertura não substitui validação com arquivos reais grandes e armazenamento limitado no telefone.
+
+
+ATUALIZAÇÃO — CI #1642 E REVISÃO ESTÁTICA DO CICLO DE VIDA — 2026-11-26
+- [x] CI #1642 — https://github.com/izzyn0okami/Tandem/actions/runs/45909370118 — sucesso no commit documental anterior.
+- [x] check-style / Spotless: sucesso.
+- [x] Testes unitários: sucesso.
+- [x] Build debug APK e upload do artefato: sucesso.
+- [x] Jobs tandem-release e nightly-release ignorados; nenhuma publicação.
+- [x] Reinspecionado GameSessionActivity: persistência SRAM em onPause, liberação do gamepad virtual, encerramento RA/Core antes da suspensão da superfície GL quando a Activity termina ou é recriada, e proteção contra dupla destruição nativa.
+- [x] Reinspecionada persistência de SRAM: @Synchronized serializa a rotina de autosave periódico com os caminhos de pausa/encerramento; SRAM vazia não sobrescreve o arquivo existente.
+- [x] Reinspecionada sessão RomM: a sincronização de fundo usa snapshot e identidade/conta verificadas; conflitos preservados não são tratados como sucesso de upload.
+- [ ] Testes instrumentados de pausa/retomada, rotação, encerramento forçado, perda de processo e falha nativa continuam pendentes.
+- [ ] Confirmar no aparelho a persistência/restauração de SRAM e estados rápidos em pausa, retomada e encerramento.
+- [ ] Validar se a sincronização pós-pausa deve ocorrer também em pausa transitória (app em segundo plano), ou se deve ficar restrita ao encerramento real da sessão; revisar sem alterar o contrato de Device Sync até confirmar o comportamento desejado.
+- PR #57 permanece aberta e draft, sem merge; PR #41 permanece intocada; tandem-latest não foi alterada.
+
+
+COMPLEMENTO — SINCRONIZAÇÃO DURANTE PAUSA TRANSITÓRIA — 2026-11-26
+- [x] Revisado SaveSync.pushAsync: antes de enfileirar o Worker, captura uma cópia/snapshot do artefato de save selecionado; o Worker usa o snapshot identificado pelo job, não uma leitura posterior do arquivo vivo.
+- [x] Os trabalhos são serializados por identidade do jogo, núcleo e fingerprint da conta, com política APPEND_OR_REPLACE; uma pausa seguida de retomada não faz o Worker enviar diretamente um arquivo que o núcleo esteja modificando.
+- [x] A sincronização disparada em onPause também ocorre em pausa transitória do Android; a implementação usa snapshot imutável e pode manter a fila pendente para a próxima execução.
+- [ ] Testar no aparelho pausa/retomada rápida com rede lenta, verificando que o snapshot antigo não substitui o save mais recente e que o segundo job é processado depois.
+- [ ] Verificar comportamento real de conflito quando uma pausa transitória gera upload enquanto o usuário retoma a sessão.
+
+
+ATUALIZAÇÃO — CORREÇÃO DA RECUPERAÇÃO DE BACKUP E CI #1650 — 2026-11-27
+- [x] Corrigida a expectativa do teste que falhava: quando o destino corresponde ao SHA-256 confirmado, ele é mantido e o backup residual inválido é removido.
+- [x] Teste renomeado para removesInvalidBackupWhenTargetMatchesConfirmedDigest; verifica o SHA-256 preservado no destino e a ausência do backup.
+- [x] CI #1650 — https://github.com/izzyn0okami/Tandem/actions/runs/45915151100 — sucesso no commit 4e4712c30f6a6dc305b8405e42641469e068526b.
+- [x] check-style / Spotless: sucesso; testes unitários: sucesso; build assembleLawnWithQuickstepGithubDebug: sucesso; upload do APK: sucesso.
+- [x] Os cenários de recuperação para destino inválido + backup inválido e destino ausente + backup inválido também passaram na mesma suíte.
+- [x] Nenhuma publicação tandem-release/nightly-release foi executada; tandem-latest não foi alterada.
+- [ ] Validar no aparelho recuperação após instalação interrompida, falha de rede e pacote inválido.
+- [ ] Testes instrumentados de ciclo de vida e validação funcional de SRAM/estados rápidos continuam pendentes.- [ ] Ampliar auditoria integral do catálogo Buildbot e confirmar compatibilidade funcional por núcleo/plataforma/BIOS no aparelho.
+- [ ] Refinamentos avançados do gamepad virtual (multitouch misto, eixos simultâneos/deadzone, rotação, acessibilidade e personalização completa) continuam pendentes; funcionamento básico foi confirmado pelo usuário.
+- PR #57 permanece aberta e draft, sem merge ou publicação em tandem-latest; PR #41 permanece intocada.
+
+ATUALIZAÇÃO — CI #1655 E COBERTURA ADICIONAL DE RECUPERAÇÃO — 2026-11-26
+- [x] CI #1655 — https://github.com/izzyn0okami/Tandem/actions/runs/45918240330 — sucesso no commit 840fe607f98581b0d6214f944b09e31f124ad0d1.
+- [x] check-style / Spotless: sucesso, incluindo verificação após formatação automática.
+- [x] Testes unitários: sucesso; os dois novos cenários de recuperação do CoreInstaller passaram.
+- [x] Build assembleLawnWithQuickstepGithubDebug: sucesso.
+- [x] Upload do artefato APK: sucesso.
+- [x] Jobs tandem-release e nightly-release ignorados; nenhuma publicação em tandem-latest.
+- [x] Teste preservesBothValidFilesWhenNeitherMatchesConfirmedDigest: mantém destino e backup quando ambos são ELF ARM64 válidos, mas nenhum corresponde ao digest confirmado.
+- [x] Teste restoresOnlyValidBackupWhenItsDigestDoesNotMatch: restaura o único backup ELF ARM64 válido quando o destino está corrompido, registrando a divergência do digest.
+- [ ] Teste funcional no aparelho da recuperação após instalação interrompida, falha de rede e pacote inválido continua pendente.
+- [ ] Revisar caminhos adicionais de rollback e consistência dos metadados SHA-256/ETag após interrupção.
+- PR #57 permanece aberta e draft, sem merge ou publicação em tandem-latest; PR #41 permanece intocada.
+
+
+ATUALIZAÇÃO — CORREÇÃO DE MULTITOUCH E CI #1661 — 2026-11-27
+- [x] Corrigido o encaminhamento do primeiro toque iniciado fora dos controles: o overlay passa a capturar a sequência de ponteiros e encaminha os ponteiros de passthrough à superfície Libretro, permitindo iniciar a interação no touchscreen e depois tocar nos controles virtuais.
+- [x] Commit: bd7e3beb849a148085b7db2e0d6fdf63efb498a7.
+- [x] CI #1661 — https://github.com/izzyn0okami/Tandem/actions/runs/45919737061 — sucesso.
+- [x] check-style / Spotless: sucesso; testes unitários: sucesso; build debug APK: sucesso; upload do artefato: sucesso.
+- [x] Jobs tandem-release e nightly-release ignorados; nenhuma publicação em tandem-latest.
+- [ ] Teste no aparelho de multitouch misto (primeiro toque na tela DS e segundo toque em botão/stick virtual) permanece pendente.
+- [ ] Testes instrumentados de toque simultâneo nos dois analógicos, botões + analógicos, cancelamento e ciclo de vida permanecem pendentes.
+- [ ] Confirmar no aparelho retorno dos eixos a zero ao levantar cada dedo, inclusive ao cancelar/pausar/sair/rotacionar.
+- PR #57 permanece aberta e draft, sem merge nem publicação em tandem-latest; PR #41 permanece intocada.
+
+
+ATUALIZAÇÃO — MULTITOUCH, CANCELAMENTO E CI #1670–#1672 — 2026-11-27
+- [x] CI #1666 — https://github.com/izzyn0okami/Tandem/actions/runs/45922524310 — sucesso no commit a6132131a0b140e10e56a8d0e1aefdcfed902a9b.
+- [x] CI #1667 — https://github.com/izzyn0okami/Tandem/actions/runs/45922637419 — sucesso no mesmo commit.
+- [x] CI #1668 — https://github.com/izzyn0okami/Tandem/actions/runs/45922666953 — sucesso no mesmo commit.
+- [x] CI #1669 — https://github.com/izzyn0okami/Tandem/actions/runs/45922768479 — sucesso no commit 90913bbb4d6af74bc26d21cd4c4ccb98a198e05c.
+- [x] CI #1670 — https://github.com/izzyn0okami/Tandem/actions/runs/45922786583 — sucesso no commit bc735cf2f4df7a15c010bfae30b7869885984b65.
+- [x] CI #1671 — https://github.com/izzyn0okami/Tandem/actions/runs/45922882296 — sucesso no mesmo commit.
+- [x] CI #1672 — https://github.com/izzyn0okami/Tandem/actions/runs/45922927555 — sucesso no mesmo commit.
+- [x] Em todas as CIs acima, check-style / Spotless e build assembleLawnWithQuickstepGithubDebug concluíram com sucesso; artefato APK foi gerado nas execuções finais.
+- [x] Ajustada a documentação de propriedade dos toques no VirtualGamepadView e GameSessionActivity: a Activity classifica a sequência completa e encaminha ao GLRetroView somente os ponteiros iniciados fora dos controles.
+- [x] Adicionado cancelamento do gesto de touchscreen encaminhado quando o overlay é liberado, evitando toque DS preso em pausa, ocultação ou desmontagem da view.
+- [x] Snapshot do último evento encaminhado é atualizado após ACTION_POINTER_UP para manter apenas os ponteiros ainda pressionados; eventos MotionEvent armazenados são reciclados ao limpar.
+- [x] Commit final validado: bc735cf2f4df7a15c010bfae30b7869885984b65.
+- [ ] Não existem testes instrumentados específicos para VirtualGamepadView; cobertura automatizada atual de matemática/deadzone não comprova eventos Android multitouch.
+- [ ] Testar no aparelho multitouch misto (touchscreen DS + controles), ACTION_CANCEL, pausa/retomada, rotação, ocultação por controle físico e desmontagem da Activity.
+- [ ] Validar simultaneamente os dois analógicos e botões, inclusive retorno dos eixos a zero.
+- [ ] Revisar geometria/áreas de toque e acessibilidade em diferentes proporções e tamanhos de tela.
+- [x] PR #57 continua aberta e draft, sem merge; tandem-latest não foi alterada; PR #41 permanece intocada.
+
+
+ATUALIZAÇÃO — CI #1673 APROVADA — 2026-11-26
+- [x] CI #1673 — https://github.com/izzyn0okami/Tandem/actions/runs/45926628281 — conclusão success no HEAD 4b67059356e5cbf7bf4c15b5a80542d4f3dd1d37.
+- [x] check-style / Spotless: sucesso, incluindo verificação após formatação automática.
+- [x] Testes unitários: sucesso.
+- [x] Build assembleLawnWithQuickstepGithubDebug: sucesso.
+- [x] Upload do artefato APK: sucesso.
+- [x] Jobs tandem-release e nightly-release ignorados; nenhuma publicação em tandem-latest.
+- [x] Estado da PR #57 conferido: aberta, draft, não mesclada; base game-mode-m2-dev e head feat/libretro-stage-i.
+- [ ] Testes no aparelho de multitouch misto, dois analógicos simultâneos, botões + analógicos, ACTION_CANCEL, pausa/retomada, rotação e ocultação por controle físico permanecem pendentes.
+- [ ] Interface acessível para alterar ativação, ocultação automática, opacidade, escala e posição do gamepad virtual permanece pendente; as preferências já existem e são persistidas no código.
+- [ ] Não mesclar nem publicar em tandem-latest sem autorização explícita; PR #41 permanece intocada.
+
+
+CORREÇÃO DE AUDITORIA — INTERFACE DO GAMEPAD VIRTUAL — 2026-11-26
+- [x] Reinspecionada integralmente a SettingsScreen em GameScreens.kt e a navegação da GameModeActivity.
+- [x] Confirmado que a seção "Controles virtuais" já está acessível na aba Configurações do Modo Jogos.
+- [x] Confirmados controles para ativar/desativar o gamepad, ocultação automática ao conectar controle físico, opacidade, escala e deslocamentos horizontal/vertical.
+- [x] Confirmada persistência automática por GameModeSettings e indicação na interface de que os ajustes passam a valer na próxima sessão.
+- [x] Corrigida a pendência registrada após a CI #1673: não é necessário implementar uma nova tela de configurações do gamepad.
+- [ ] Testes no aparelho da aplicação dos ajustes (incluindo reiniciar sessão, opacidade, escala, deslocamentos e ocultação com controle físico) permanecem pendentes.
+- [ ] Testes de multitouch avançado e dos dois analógicos simultâneos permanecem pendentes.
+
+
+ATUALIZAÇÃO — CIs E SUPORTE VULKAN/DRIVERS EXTERNOS — 2026-11-26
+- [x] CI #1674 — https://github.com/izzyn0okami/Tandem/actions/runs/45926770292 — check-style, testes unitários, build debug APK, upload e final-status aprovados.
+- [x] CI #1675 — https://github.com/izzyn0okami/Tandem/actions/runs/45927425556 — check-style aprovado; build falhou antes da compilação porque o Gradle não conseguiu resolver o plugin KSP 2.3.13. Falha de resolução de dependência; não foi identificada falha de código.
+- [x] CI #1676 — https://github.com/izzyn0okami/Tandem/actions/runs/45927483638 — check-style, testes unitários, build debug APK e final-status aprovados.
+- [x] CI #1677 — https://github.com/izzyn0okami/Tandem/actions/runs/45927551658 — check-style, testes unitários, build debug APK e final-status aprovados.
+- [x] CI #1678 — https://github.com/izzyn0okami/Tandem/actions/runs/45927617217 — check-style, testes unitários e build debug APK aprovados; final-status em conclusão no momento do registro.
+- [x] CI #1679 — https://github.com/izzyn0okami/Tandem/actions/runs/45927791564 — check-style, testes unitários, build debug APK, upload e final-status aprovados. Build do código inicial de configuração Vulkan/drivers.
+- [x] CI #1680 — https://github.com/izzyn0okami/Tandem/actions/runs/45927810826 — Spotless aplicou formatação, mas o passo automático de commit falhou porque a branch avançou simultaneamente; não foi falha de compilação. O build ainda estava em andamento no momento do registro.
+- [x] CI #1681 — https://github.com/izzyn0okami/Tandem/actions/runs/45927951412 — check-style aprovado no HEAD formatado d7a7149ffd7ca02f3b35c36db1679dab41ff8f0a; testes/build ainda em andamento no momento do registro.
+
+IMPLEMENTAÇÃO — VULKAN E DRIVER ADRENO
+- [x] Inspecionada a integração nativa existente: LibretroDroid já dispõe de backend Vulkan e configuração de driver externo via libadrenotools.
+- [x] Adicionada preferência persistente para usar Vulkan quando disponível.
+- [x] Adicionada interface para importar pacote ZIP Turnip/Adreno, ativar/desativar o driver externo e removê-lo, com aplicação na próxima sessão.
+- [x] Criado importador privado e seguro: bloqueia caminhos ZIP fora da pasta, limita entradas e tamanho extraído, valida ELF64 little-endian AArch64 e preserva a instalação anterior se a importação falhar.
+- [x] GameSessionActivity agora encaminha a preferência Vulkan e a configuração do driver externo ao GLRetroViewData.
+- [ ] Validar em aparelho real: importação de pacote Turnip compatível com Adreno, fallback para driver do Android, inicialização Vulkan e estabilidade em sessões prolongadas.
+- [ ] Aguardar conclusão da CI #1681 antes de considerar a versão corrigida plenamente validada.
+- [ ] Ampliar catálogo ARM64 com ARMSX2, Dolphin, Azahar/Panda3DS, Cemu, RPCS3 e Vita3K, incluindo BIOS/firmware e particularidades de renderização.
+- [ ] Não mesclar PR #57 nem publicar em tandem-latest sem autorização explícita; PR #41 permanece intocada.
+
+
+ATUALIZAÇÃO — CI #1681 CONCLUÍDA COM SUCESSO — 2026-11-26
+- [x] CI #1681 — https://github.com/izzyn0okami/Tandem/actions/runs/45927951412 — check-style/Spotless, testes unitários, build assembleLawnWithQuickstepGithubDebug, upload do APK e final-status aprovados no commit d7a7149ffd7ca02f3b35c36db1679dab41ff8f0a.
+- [x] A versão corrigida do importador de driver externo foi compilada e passou nos testes automatizados. A importação real de pacote Turnip e a inicialização Vulkan em Adreno ainda exigem teste em aparelho.
+- [x] CI #1682 — https://github.com/izzyn0okami/Tandem/actions/runs/45927955835 — evento pull_request gerado pelo bot terminou em action_required sem executar jobs; a validação efetiva por push da mesma revisão ocorreu na CI #1681 e passou.
+- [ ] CI #1683 — https://github.com/izzyn0okami/Tandem/actions/runs/45928460318 — check-style aprovado; testes/build ainda em andamento no momento do registro.
+- [ ] Validar em aparelho: importar pacote ZIP Turnip ARM64, ativar/desativar driver externo, usar Vulkan com núcleo compatível e confirmar fallback para driver do Android.
+
+
+ATUALIZAÇÃO — EXPANSÃO DE CORES ARM64 E CI — 2026-11-26
+- [x] CI #1683 — https://github.com/izzyn0okami/Tandem/actions/runs/45928460318 — check-style, testes unitários, build debug APK, upload e final-status aprovados.
+- [x] CI #1684 — https://github.com/izzyn0okami/Tandem/actions/runs/45928613668 — check-style, testes unitários, build debug APK e final-status aprovados.
+- [x] CI #1685 — https://github.com/izzyn0okami/Tandem/actions/runs/45928670215 — check-style, testes unitários, build debug APK e final-status aprovados.
+- [x] CI #1686 — https://github.com/izzyn0okami/Tandem/actions/runs/45928826403 — check-style, testes unitários, build debug APK e final-status aprovados.
+- [x] CI #1687 — https://github.com/izzyn0okami/Tandem/actions/runs/45929117325 — check-style falhou ao tentar enviar Spotless por concorrência de commits; build também falhou por erro de tipo no desvio de migração de saves.
+- [x] CI #1688 — https://github.com/izzyn0okami/Tandem/actions/runs/45929161056 — mesma disputa de envio do Spotless e mesmo erro de tipo no build; sem falha adicional identificada.
+- [x] CI #1689 — https://github.com/izzyn0okami/Tandem/actions/runs/45929245419 — check-style aprovado; build identificou incompatibilidade de tipo na coleção vazia do mapa de migração. Corrigido depois para usar mapa vazio.
+- [x] CI #1690 — https://github.com/izzyn0okami/Tandem/actions/runs/45929385393 — check-style aprovado; build executado no commit anterior à correção de tipo e falhou pelo mesmo motivo.
+- [x] CI #1691 — https://github.com/izzyn0okami/Tandem/actions/runs/45929392577 — check-style aprovado; build executado no commit anterior à correção e falhou pelo mesmo motivo.
+- [ ] CI #1692 — https://github.com/izzyn0okami/Tandem/actions/runs/45929592219 — check-style aprovado; testes/build em andamento no commit corrigido 67c6874d5faf7dcd5e6b917269815d657660b7b5.
+- [ ] CI #1693 — https://github.com/izzyn0okami/Tandem/actions/runs/45929606966 — check-style aprovado; testes/build em andamento no mesmo commit corrigido.
+
+IMPLEMENTAÇÃO — CATÁLOGO ARM64
+- [x] PS2: ARMSX2 como núcleo padrão; BIOS e recursos PCSX2 organizados em pastas aninhadas.
+- [x] GameCube/Wii: Dolphin; kit Sys e validação do codehandler; IPL opcional no diretório de saves.
+- [x] Nintendo 3DS: Azahar padrão e Panda3DS alternativo; chave AES opcional importada para o diretório correto de saves.
+- [x] Wii U: Cemu; chaves opcionais e download de conteúdo multi-arquivo.
+- [x] PS3: RPCS3; firmware PS3 obrigatório.
+- [x] PS Vita: Vita3K; firmware principal e pacote pré-instalado obrigatórios, fontes opcionais; conteúdo multi-arquivo.
+- [x] CoreInstaller reconhece a nomenclatura específica do Azahar (azahar_libretro.so) além do padrão Android.
+- [x] Núcleos sem save states não oferecem os comandos de estado; núcleos com armazenamento próprio não iniciam sincronização RomM nem ficam bloqueados por conflitos de saves incompatíveis.
+- [ ] Aguardar CI #1692/#1693 corrigida e corrigir eventuais erros restantes.
+- [ ] Expandir o catálogo com Xenia Edge (Xbox 360) e Supermodel (Sega Model 3), ambos encontrados no Buildbot ARM64, além de oferecer PCSX2 como alternativa ao ARMSX2.
+- [ ] Testes em aparelho: verificar inicialização real dos novos núcleos, renderização Vulkan/Turnip, BIOS/firmware e compatibilidade dos jogos.
+- [ ] Não mesclar PR #57 nem publicar em tandem-latest sem autorização explícita; PR #41 permanece intocada.
+
+
+ATUALIZAÇÃO — CORREÇÃO DE BIOS E NOVOS NÚCLEOS — 2026-11-26
+- [x] CI #1692 — https://github.com/izzyn0okami/Tandem/actions/runs/45929592219 — check-style aprovado; testes falharam no teste de importação de kits aninhados. A promoção não criava a pasta pai do destino.
+- [x] CI #1693 — https://github.com/izzyn0okami/Tandem/actions/runs/45929606966 — check-style aprovado; mesma falha no teste de importação de kits aninhados.
+- [x] CI #1694 — https://github.com/izzyn0okami/Tandem/actions/runs/45929749855 — falha no mesmo teste, em revisão anterior à correção.
+- [x] CI #1695 — https://github.com/izzyn0okami/Tandem/actions/runs/45929960336 — check-style aprovado; build ainda em andamento no momento do registro.
+- [x] CI #1696 — https://github.com/izzyn0okami/Tandem/actions/runs/45930092297 — check-style aprovado; build ainda em andamento no momento do registro.
+- [x] CI #1697 — https://github.com/izzyn0okami/Tandem/actions/runs/45930158686 — check-style aprovado; build ainda em andamento no momento do registro.
+- [x] CI #1698 — https://github.com/izzyn0okami/Tandem/actions/runs/45930294030 — check-style aprovado; build ainda em andamento no momento do registro.
+- [ ] CI #1699 — https://github.com/izzyn0okami/Tandem/actions/runs/45930367792 — check-style e testes/build ainda em andamento no momento do registro; inclui correção para criar a pasta pai antes de promover kits aninhados.
+
+CORREÇÕES E EXPANSÃO
+- [x] Corrigida a instalação de kits aninhados: cria o diretório pai do destino antes de mover a pasta preparada.
+- [x] A validação local de firmware agora respeita a localização definida por BIOS, incluindo arquivos armazenados na pasta de saves.
+- [x] Xbox 360 adicionado via Xenia Edge; Vulkan 1.1 obrigatório, sem save states e sem sincronização RomM.
+- [x] Sega Model 3 adicionado via Supermodel; OpenGL ES 3.0, com Games.xml e Supermodel.ini obrigatórios.
+- [x] PCSX2 adicionado como alternativa ao ARMSX2; preferência de renderizador agora permite que núcleos que exigem OpenGL ignorem a preferência global por Vulkan.
+- [ ] Confirmar conclusão das CIs #1695–#1699 e corrigir qualquer falha restante.
+- [ ] Testar em aparelho: importação dos kits BIOS, inicialização de cada núcleo, Vulkan/Turnip em Snapdragon e estabilidade.
+- [ ] PR #57 permanece aberta; não mesclar nem publicar em tandem-latest sem autorização explícita. PR #41 permanece intocada.
+
+ATUALIZAÇÃO — CONCLUSÃO DA CORREÇÃO DE KITS ANINHADOS / CI #1699 — 2026-11-26
+- [x] Conferidos os jobs da CI #1699 (run 45930367792): check-style/Spotless, testes unitários, build assembleLawnWithQuickstepGithubDebug, upload do APK e final-status concluídos com sucesso.
+- [x] A CI #1699 confirma a correção de criação do diretório pai antes da promoção dos kits BIOS/firmware aninhados.
+- [x] CIs #1695–#1698 executaram revisões anteriores à correção final e falharam nos testes unitários; não foram consideradas validação positiva.
+- [x] Jobs tandem-release e nightly-release ignorados na CI #1699; nenhuma publicação em tandem-latest.
+- [ ] Testar no aparelho a importação de kits BIOS/firmware aninhados e a localização dos arquivos instalados.
+- [ ] Validar inicialização dos núcleos adicionados/alternativos, BIOS/firmware e renderização Vulkan/Turnip em Adreno.
+- [ ] Prosseguir com a revisão dos testes instrumentados de ciclo de vida, SRAM/estados rápidos e recuperação do CoreInstaller.
+- PR #57 permanece aberta e draft, sem merge; PR #41 permanece intocada.
+- Nenhuma alteração em tandem-latest foi realizada.
+
+ATUALIZAÇÃO — COBERTURA ADICIONAL DO VALIDADOR ELF — 2026-11-26
+- [x] Adicionados dois testes unitários para rejeitar ELF com classe incorreta (ELF32), endianness incorreto, arquitetura diferente de AArch64 e assinatura ELF inválida.
+- [x] Adicionado teste para arquivo vazio não ser aceito como núcleo ARM64.
+- [ ] CI da revisão de testes ainda não foi localizada/confirmada; não considerar esta alteração validada até execução bem-sucedida dos testes unitários e build.
+- Commit: 6cae366fe82bf563a84029d098bc0ed9367447a2.
+
+
+AUDITORIA — PERSISTÊNCIA SRAM E ESTADOS RÁPIDOS — 2026-11-26
+- [x] Revisado o ciclo de persistência em GameSessionActivity.
+- [x] SRAM é serializada periodicamente a cada 60 segundos enquanto a Activity está RESUMED.
+- [x] SRAM também é persistida em onPause e antes da saída normal da sessão; a persistência de pausa ocorre antes de suspender a superfície GL.
+- [x] O método persistSram é sincronizado para serializar autosave periódico e gravação de pausa/encerramento; retorno vazio do núcleo não substitui nem apaga o arquivo local existente.
+- [x] SaveStore.writeSramIfChanged evita regravar bytes idênticos; a gravação usa arquivo temporário e rename para reduzir risco de corrupção em interrupção.
+- [x] Saves são organizados por identidade estável do jogo e por núcleo; SRAM pode ser lida de um núcleo irmão quando o núcleo atual ainda não possui arquivo próprio, mas estados rápidos não são compartilhados entre núcleos.
+- [x] Revisados os testes existentes de SaveStore: leitura/gravação SRAM e estado, substituição temporária, prioridade do save do núcleo atual, fallback explícito entre núcleos, isolamento por identidade, snapshots imutáveis para retry e prevenção de regravação de SRAM idêntica.
+- [x] Estados rápidos usam state1.state e o envelope TNDM preserva compatibilidade com estados antigos; QuickStateEnvelopeTest cobre round-trip, formato legado, cabeçalho truncado, tamanho unsigned inválido e ausência de payload de emulação.
+- [x] Confirmado no contrato de SaveSync e nos testes GameSessionCoordinator que estados rápidos não são enviados/baixados pelo transporte RomM; permanecem locais. A SRAM/cartão de memória é o artefato de sincronização pelo RomM Device Sync.
+- [ ] Testes instrumentados ainda necessários para confirmar serializeSRAM/unserialize no GL thread real, pausa/retomada, encerramento inesperado e restauração de estado em aparelho.
+- [ ] Confirmar em aparelho que o Device Sync baixa a SRAM remota mais recente no fluxo de abertura e grava a SRAM local antes de iniciar o núcleo; CI unitária não prova o comportamento real do servidor.
+- [ ] Avaliar futuramente recuperação de gravação temporária após encerramento abrupto, sem apagar ou sobrescrever arquivos de save existentes.
+- Conclusão desta revisão estática: não foi identificado defeito comprovado que justifique alterar o fluxo de persistência nesta etapa; as lacunas restantes dependem de testes instrumentados/funcionais, portanto nenhuma alteração especulativa foi feita.
+
+CI DA CABEÇA — TESTES ELF
+- CI #1705 — run 45932394279, commit 6cae366fe82bf563a84029d098bc0ed9367447a2: em andamento no momento desta atualização.
+- CI #1706 — run 45932419148, commit 8887a0ba00c2a8d5607cfb363571ef9cb85a916d (atualização documental): em andamento no momento desta atualização.
+- [ ] Aguardar conclusão das CIs #1705/#1706; não marcar os novos testes ELF como validados antes de resultado verde.
+- PR #57 continua aberta e draft; não mesclar nem publicar em tandem-latest sem autorização explícita. PR #41 permanece intocada.
+
+
+REVISÃO COMPLEMENTAR — CICLO DE VIDA DA SESSÃO E ENCERRAMENTO ABRUPTO — 2026-11-26
+- [x] Revisado onPause: libera os inputs do gamepad virtual e serializa SRAM antes de super.onPause(), enquanto a superfície GL ainda está ativa.
+- [x] Em encerramento ou mudança de configuração, o cliente RetroAchievements e o núcleo nativo são destruídos antes de a superfície GL suspender o thread.
+- [x] Em pausa comum, a sessão nativa é preservada; onResume restaura o comportamento de menu/retomada e reinicia o acompanhamento de controle.
+- [x] Depois de super.onPause(), a sessão é marcada inativa e a sincronização pós-sessão é enfileirada somente para núcleos compatíveis com RomM.
+- [x] onDestroy possui proteção contra destruição nativa duplicada; exitGame também persiste SRAM antes de finish().
+- [x] Confirmado que a recuperação após encerramento abrupto não pode depender de onPause/onDestroy: o autosave periódico de 60 segundos é a proteção disponível; morte forçada do processo pode perder alterações posteriores ao último autosave.
+- [x] Revisado o conjunto de arquivos alterados da PR #57: ainda não há testes instrumentados androidTest específicos para ciclo de vida real/GLRetroView; a validação existente é unitária e revisão estática.
+- [ ] Adicionar/viabilizar testes instrumentados que simulem pausa/retomada, recriação da Activity, falha/encerramento do processo e callbacks de serializeSRAM/unserialize no GL thread.
+- [ ] Avaliar se o intervalo de autosave de 60 segundos é adequado para o risco de perda em encerramento forçado; não alterar sem decisão de produto e sem medir custo/performance.
+- [ ] Validar em aparelho: encerrar pelo menu, alternar para segundo plano, girar tela e provocar encerramento forçado; confirmar SRAM recuperada e logs de diagnóstico.
+- Conclusão: o fluxo normal de pausa/saída tem persistência explícita antes da suspensão GL. Encerramento abrupto permanece limitado ao último autosave periódico, não há garantia de captura final do progresso. Nenhuma alteração de código foi feita nesta revisão.
+
+STATUS CI #1705
+- [x] check-style/Spotless aprovado.
+- [ ] Job build-debug-apk ainda executava testes unitários; build APK e upload ainda não iniciados na última consulta. Run: https://github.com/izzyn0okami/Tandem/actions/runs/45932394279.
+- PR #57 segue aberta e draft. Sem merge e sem publicação em tandem-latest.
+
+
+REVISÃO — RECUPERAÇÃO DE SRAM APÓS INTERRUPÇÃO DE GRAVAÇÃO — 2026-11-26
+- [x] Revisada a implementação real de SaveStore.write: grava no mesmo diretório em arquivo temporário com sufixo .tmp e promove por rename, sem apagar primeiro o save comprometido.
+- [x] Confirmado que readSram lê somente sram.srm; um .tmp deixado por interrupção não é tratado como save válido nem substitui o último arquivo comprometido.
+- [x] Confirmado que a próxima gravação reutiliza/substitui o temporário obsoleto e só retorna após a promoção bem-sucedida; falha de rename gera erro e mantém o destino anterior como referência.
+- [x] Adicionado teste unitário interruptedTemporarySramDoesNotReplaceOrHideLastCommittedSave: simula temporário parcial deixado por encerramento, confirma leitura do save anterior e confirma promoção de uma nova gravação sem resgatar bytes parciais.
+- Commit do teste: 8e8e217409352a91c3186286120b8c1e45b5e2a5.
+- [ ] Aguardar CI do novo teste e validar que SaveStoreTest continua verde.
+- [ ] Não implementar recuperação automática a partir de .tmp: sem checksum/tamanho esperado/metadado de commit, não é possível distinguir com segurança um temporário completo de um parcial. Promovê-lo automaticamente poderia substituir um save válido por dados incompletos.
+- [ ] Considerar futuramente fsync/flush explícito e um protocolo de temporário com metadados/digest, somente se houver evidência de necessidade e testes específicos de durabilidade; rename atômico protege contra substituição parcial, mas não garante por si só persistência física após perda abrupta de energia.
+- Conclusão: o comportamento atual preserva o último save comprometido e descarta implicitamente temporários órfãos; não foi identificado motivo seguro para alterar o código de produção.
+
+STATUS CI — ATUALIZAÇÃO DE CONTINUIDADE
+- [ ] CI #1705 — run 45932394279, commit 6cae366fe82bf563a84029d098bc0ed9367447a2: ainda in_progress; check-style/Spotless passou; testes unitários continuam em execução; build APK e upload pendentes.
+- [ ] CI #1706 — run 45932419148, commit 8887a0ba00c2a8d5607cfb363571ef9cb85a916d: ainda in_progress na última consulta.
+- [ ] A nova alteração de teste (commit 8e8e217409352a91c3186286120b8c1e45b5e2a5) ainda precisa de CI própria.
+- PR #57 continua aberta e draft; não mesclar nem publicar em tandem-latest sem autorização explícita. PR #41 e PR #55 permanecem intocadas.
+
+- CI #1713 — https://github.com/izzyn0okami/Tandem/actions/runs/45932927391 — iniciada para o commit do teste de recuperação de SRAM 8e8e217409352a91c3186286120b8c1e45b5e2a5; jobs check-style e build-debug-apk em execução, sem resultado final até esta consulta.
+
+ 
+RESULTADOS DE CI — 2026-11-26
+- [x] CI #1705 — run 45932394279 — commit 6cae366fe82bf563a84029d098bc0ed9367447a2: check-style/Spotless, testes unitários, build Debug APK e final-status aprovados. Publicações release/nightly ignoradas.
+- [x] CI #1706 — run 45932419148 — commit 8887a0ba00c2a8d5607cfb363571ef9cb85a916d: check-style/Spotless, testes unitários, build Debug APK e final-status aprovados. Publicações release/nightly ignoradas.
+- [x] CI #1713 — run 45932927391 — commit 8e8e217409352a91c3186286120b8c1e45b5e2a5: check-style/Spotless, testes unitários (incluindo interruptedTemporarySramDoesNotReplaceOrHideLastCommittedSave), build Debug APK, upload de artefato e final-status aprovados. Publicações release/nightly ignoradas.
+- [x] Testes ELF e teste de recuperação de SRAM agora têm validação CI verde.
+- PR #57 continua aberta e Draft; nenhuma mesclagem ou publicação em tandem-latest foi feita.
+- PR #41 e PR #55 não foram alteradas.
+
+ 
+AUDITORIA — INFRAESTRUTURA DE TESTES DE CICLO DE VIDA — 2026-11-26
+- [x] Verificada a estrutura de testes na branch feat/libretro-stage-i: os testes específicos do Game Mode estão em tests/unit/kotlin/app/lawnchair/gamemode; não existe diretório dedicado androidTest/instrumented no módulo do app.
+- [x] Verificado build.gradle do módulo raiz: dependência de testes locais JUnit está configurada; não há testInstrumentationRunner, bloco androidTest/testOptions, dependências AndroidX Test/Espresso nem configuração de source set androidTest.
+- [x] A árvore tests/ existente é a suíte de testes de plataforma/AOSP (Android.bp, manifests e TAPL), não é uma suíte Gradle Android instrumentada pronta para testar GameSessionActivity.
+- [x] Busca por GameSessionActivityTest, ActivityScenario, InstrumentationRegistry e AndroidJUnit4 não encontrou testes correspondentes no repositório indexado; a revisão da árvore do branch confirma a ausência de um pacote instrumentado dedicado ao Game Mode.
+- [ ] Para testar Activity/GLRetroView em dispositivo será necessário criar infraestrutura Android instrumentada compatível com o build híbrido AOSP/Gradle, selecionar runner e dependências adequadas e verificar se o libretrodroid permite inicialização controlada em teste. Não adicionar configuração especulativa sem validar impacto no build.
+- [ ] Alternativa de menor risco: extrair lógica pura de ciclo de vida/persistência para um coordenador testável em JVM e manter os testes de GL/thread/Activity como validação manual no aparelho até a infraestrutura instrumentada estar comprovada.
+- Conclusão: a lacuna não é apenas ausência de casos de teste; falta uma source set Android instrumentada configurada no módulo. Nenhuma alteração de código de produção ou configuração Gradle foi feita nesta revisão.
+
+ 
+AVANÇO — EXTRAÇÃO DE POLÍTICAS PURAS DO CICLO DE VIDA — 2026-11-26
+- [x] Extraídas decisões sem dependência Android para GameSessionLifecyclePolicy: destruir núcleo ao pausar somente ao finalizar Activity ou mudar configuração; registrar fim normal somente em finalização; enfileirar Device Sync pós-sessão somente para núcleo compatível e caminho ROM presente.
+- [x] GameSessionActivity passou a consumir essas políticas, preservando as mesmas condições e ordem do fluxo existente. Persistência SRAM continua antes de super.onPause(); destruição nativa continua antes da suspensão GL em finalização/recriação; sincronização continua depois de super.onPause().
+- [x] Adicionados testes JVM para todas as combinações de destruição nativa, registro de encerramento e elegibilidade de sincronização.
+- Commits: Activity 92d840040214364684198a76621db5f81827a3f1; política pura d6b9a0adc4fdc33d55085e9f5f0fe3f49a862b03; testes fe0b4ef178195390ee0a4b580fd382f2fcf51f2f.
+- [ ] Aguardar CI dos commits de refatoração/testes; não considerar validado até testes e build passarem.
+- [ ] Ainda não cobre callbacks reais GL/serializeSRAM/unserialize nem morte abrupta do processo; esses pontos continuam dependentes de teste instrumentado ou aparelho.
+- [x] Nenhuma alteração no intervalo de autosave (60 segundos), no protocolo RomM, na política de conflito ou na sincronização de estados rápidos.
+- PR #57 permanece aberta como Draft; não mesclar nem publicar em tandem-latest sem autorização. PR #41 e PR #55 intocadas.
+
+- CI #1722 — run 45934128551 — commit 92d840040214364684198a76621db5f81827a3f1: check-style e build-debug-apk em andamento na última consulta.
+- CI #1723 — run 45934135434 — commit d6b9a0adc4fdc33d55085e9f5f0fe3f49a862b03: check-style e build-debug-apk em andamento na última consulta.
+- CI #1724 — run 45934143095 — commit fe0b4ef178195390ee0a4b580fd382f2fcf51f2f: check-style e build-debug-apk em andamento na última consulta; inclui os novos testes JVM de política de ciclo de vida.
+
+ 
+RESULTADO — CI APÓS EXTRAÇÃO DAS POLÍTICAS DE CICLO DE VIDA — 2026-11-27
+- [x] CI #1729 — run 45934330859 — commit final b2e458525fb7cfc7ec04885873ee446b2b84835b: check-style/Spotless, build-debug-apk (incluindo testes unitários) e final-status aprovados.
+- [x] A execução Spotless aplicou a formatação e a revisão final foi validada pela CI #1729.
+- [x] O build da CI #1729 compilou GameSessionLifecyclePolicy e executou os testes JVM novos sem falhas.
+- [x] As CIs #1722, #1723 e #1724 falharam durante a concorrência de commits automáticos do Spotless; #1722 também compilou um commit intermediário anterior à inclusão da política. A branch recebeu a formatação e a CI consolidada #1729 passou integralmente.
+- [x] Publicações tandem-release e nightly-release ignoradas; nenhum APK foi publicado em tandem-latest.
+- [ ] Continuam pendentes testes instrumentados/funcionais reais de GL thread, callbacks SRAM, pausa/retomada, recriação Activity e encerramento abrupto; CI JVM não substitui esses testes.
+- PR #57 continua aberta como Draft, sem merge. PR #41 e PR #55 permanecem intocadas.
+
+ 
+AUDITORIA E CORREÇÃO — FONTES LEGADAS NO DEVICE SYNC PRÉ-JOGO — 2026-11-27
+- [x] Identificada a discrepância: GameModeActivity calculava e passava migrationSources/siblingCores para prepareSession, mas GameSessionCoordinator não utilizava migrationSources no RomMDeviceSyncRunner.
+- [x] Confirmado que o runner construía SaveStore com migrationSourcesOverride vazio e sem siblingCores; portanto, o manifesto local usado na negociação podia ignorar saves legados explicitamente aprovados e saves de núcleos irmãos.
+- [x] Ajustado GameSessionCoordinator.prepareSession para encaminhar as fontes de migração e a lista de núcleos irmãos.
+- [x] Ajustado RomMDeviceSyncRunner.synchronizeLocalSave para construir SaveStore com as mesmas fontes legadas e núcleos irmãos que serão usados pela sessão. Os novos parâmetros foram colocados depois dos parâmetros existentes para preservar compatibilidade com chamadas posicionais anteriores.
+- [x] GameModeActivity agora fornece a lista de núcleos irmãos já calculada para a preparação pré-jogo.
+- [x] Adicionado teste SaveStoreTest.approvedLegacySourcesAreMigratedForCurrentAndSiblingCoresBeforeSync, que confirma migração verificada para o núcleo selecionado e para núcleos irmãos, mantendo as pastas originais.
+- Commits: GameSessionCoordinator c5462f2fabc36945ef8d3aea5e741baa3fa59f15; RomMDeviceSyncRunner a9595dbd90952c6fa23ca6bbbacb46a8d940a29e e 127123d2d901e97aefe39294c1fb892eedf39013; GameModeActivity e06e0c7a74e4df17ebc44d902759718f9f8c8622; teste 47166497cda96b70af9108e60126697238835f52.
+- [ ] Aguardar CI de compilação, testes unitários e Spotless.
+- [ ] Confirmar no aparelho um jogo com save legado e vínculo RomM: sincronização pré-jogo, download remoto, upload local e seleção correta do save após a preparação.
+- [ ] Confirmar cenário com save de núcleo irmão e ausência de save no núcleo selecionado.
+- A correção não apaga arquivos legados; migração continua preservando a origem e recusando sobrescrita silenciosa em colisões.
+- PR #57 permanece aberta como Draft. Sem merge ou publicação em tandem-latest.
+
+ 
+AUDITORIA E CORREÇÃO — PROTEÇÃO CONTRA SRAM REJEITADO PELO NÚCLEO — 2026-11-27
+- [x] Identificada a lacuna em GLRetroView: quando LibretroDroid.unserializeSRAM retorna false, a propriedade sramLoadFailed é marcada, mas GameSessionActivity não a consultava.
+- [x] Confirmado que persistSram continuava chamando serializeSRAM e writeSramIfChanged mesmo após a rejeição do arquivo existente; isso poderia substituir um save incompatível preservado por uma SRAM recém-gerada.
+- [x] Adicionada GameSessionSavePolicy.shouldPersistSram e integrada a persistSram: quando o núcleo rejeita o SRAM inicial, a sessão não grava nem agenda upload dessa SRAM.
+- [x] Adicionado aviso visível após o primeiro frame informando que o save existente foi preservado e não será sobrescrito nesta sessão.
+- [x] Adicionado teste JVM rejectedExistingSramIsNeverPersistedOverByFreshCoreMemory.
+- Commits: GameSessionActivity 7b47a7d002f26051187c42065edb09e45ac3f7d1; GameSessionSavePolicy 64c2ccd12d81e0bfa020b4419a150ac071571055; teste f7768bacbd78c4f7d80533cbe43987974aa22ae9; recurso de aviso dff9de753974ddb761605a691af2cdab26ef1779.
+- [ ] Aguardar CI final da alteração de proteção SRAM e do recurso visual.
+- [ ] Testar no aparelho com SRAM deliberadamente incompatível: confirmar aviso, arquivo original intacto e ausência de upload da SRAM rejeitada.
+- [ ] Testar com SRAM compatível: confirmar que gravação e sincronização continuam normais.
+- CI #1733 (run 45936360324) falhou no commit intermediário c5462f2fabc36945ef8d3aea5e741baa3fa59f15 porque o runner ainda não tinha recebido os novos parâmetros siblingCores/migrationSources; as alterações correspondentes chegaram nos commits subsequentes.
+- CIs #1734 (45936370107), #1735 (45936377936), #1736 (45936396976), #1737 (45936418345), #1745 (45936631117) e #1746 (45936634135) estavam em execução na última consulta; #1734–#1737 cobrem a integração de fontes legadas, #1745–#1746 cobrem a proteção contra sobrescrita de SRAM rejeitado.
+- Não houve merge nem publicação em tandem-latest. PR #57 permanece aberta como Draft; PR #41 e PR #55 permanecem intocadas.
+
+ 
+RESULTADO E CORREÇÕES DE CI — DEVICE SYNC E PROTEÇÃO SRAM — 2026-11-27
+- [x] CI #1734 — run 45936370107 — commit a9595dbd90952c6fa23ca6bbbacb46a8d940a29e: Spotless, testes unitários, build Debug APK e final-status aprovados.
+- [x] CI #1735 — run 45936377936 — commit e06e0c7a74e4df17ebc44d902759718f9f8c8622: Spotless, testes unitários, build Debug APK e final-status aprovados.
+- [x] CI #1736 — run 45936396976 — commit 127123d2d901e97aefe39294c1fb892eedf39013: Spotless, testes unitários, build Debug APK e final-status aprovados.
+- [x] CI #1737 — run 45936418345 — commit 47166497cda96b70af9108e60126697238835f52: Spotless, testes unitários, build Debug APK e final-status aprovados. A migração de fontes legadas e núcleos irmãos passou em CI.
+- [x] Diagnóstico das CIs #1745/#1746: a compilação revelou que o novo texto de aviso estava em arquivo de recursos fora do source set efetivo do R do launcher; também havia chamada a GameLog.error sem o Throwable obrigatório.
+- [x] Corrigido o registro para GameLog.log e movido o texto do aviso para go/quickstep/res/values/strings.xml, que integra os recursos do módulo que gera com.android.launcher3.R.
+- Commits de correção: GameSessionActivity 389192896287d143f1331b114cc17cc854ba7ca3; recurso do launcher c9a919fa46b9872ec8ff2b8606b772a88571b154.
+- [ ] CI #1753 — run 45937735863 — commit c9a919fa46b9872ec8ff2b8606b772a88571b154: validar Spotless, testes unitários e build após as correções; estava in_progress na última consulta.
+- [x] CI #1745 — run 45936631117 — commit 64c2ccd12d81e0bfa020b4419a150ac071571055: falhou por referência de recurso não resolvida e argumento Throwable ausente; correções aplicadas nos commits seguintes.
+- [x] CI #1746 — run 45936634135 — commit f7768bacbd78c4f7d80533cbe43987974aa22ae9: mesma falha de compilação em commit intermediário; não é validação final da proteção SRAM.
+- [ ] Teste em aparelho da SRAM incompatível permanece pendente; CI JVM não prova comportamento do núcleo real nem a preservação física do arquivo no dispositivo.
+- PR #57 segue aberta como Draft, sem merge/publicação. PR #41 e #55 intocadas.
+
+ 
+PROTEÇÃO COMPLETA — SRAM REJEITADO NÃO É ENVIADO AO ROMM — 2026-11-27
+- [x] Revisão do onPause revelou que, embora persistSram bloqueasse a gravação quando sramLoadFailed=true, o fluxo ainda enfileirava sincronização pós-sessão.
+- [x] A política GameSessionLifecyclePolicy.shouldEnqueuePostSessionSync agora recebe sramLoadFailed e impede o agendamento de Device Sync pós-sessão quando o núcleo rejeitou o SRAM inicial.
+- [x] GameSessionActivity passa o estado real retroView?.sramLoadFailed para a política; marcação de sessão inativa continua ocorrendo normalmente.
+- [x] Teste JVM ampliado para verificar que núcleo compatível + caminho válido ainda não enfileiram sincronização quando sramLoadFailed=true.
+- Commits: Activity 32f6b1e229e69089953dd0e0d7c95791ebeaa88a; política 0f8e348451bbebed6bb63ba7bfb35e4b7979aaf3; teste a62d781e7e3dbe2e9974634e4e39bc1756db3e40.
+- [ ] CIs #1756 (run 45937889900) e #1757 (run 45937896430) validando os commits de política e teste; estavam em execução.
+- [ ] CI #1753 (run 45937735863) validando a correção anterior de recursos/log; estava em execução.
+- [x] Revisão estática de GLRetroView confirmou que a rejeição de SRAM ocorre no GL thread durante initializeCore e é marcada em propriedade volatile; a Activity só exibe aviso após FrameRendered, evitando consultar antes do carregamento.
+- [ ] Validar em aparelho a SRAM rejeitada: arquivo local deve permanecer byte a byte intacto; nenhuma sincronização de saída deve ser agendada; save compatível deve continuar salvando e sincronizando normalmente.
+- PR #57 continua aberta como Draft, sem merge ou publicação em tandem-latest.
+
+ 
+AUDITORIA — ENTREGA DE ERROS DE INICIALIZAÇÃO DO NÚCLEO — 2026-11-27
+- [x] Revisado GLRetroView.catchExceptions e a coleta getGLRetroErrors em GameSessionActivity.
+- [x] Identificada janela de corrida: retroGLIssuesErrors usava MutableSharedFlow com replay=0; se a inicialização GL falhasse antes de o collector da Activity assinar, o erro poderia não ser entregue, deixando a sessão sem o aviso/encerramento previsto.
+- [x] Alterado o fluxo para MutableSharedFlow(replay = 1), preservando o último erro de inicialização até que a Activity o observe. A Activity continua exibindo o código de erro e encerrando a sessão.
+- Commit: a8dc4085c24848dd81c1d48ca21081ebf001811a.
+- [ ] Aguardar CI de estilo, testes e build para a alteração de retenção de erro.
+- [ ] Teste funcional no aparelho provocando falha real de inicialização de núcleo: confirmar aviso de erro e saída controlada, sem tela preta travada.
+- Esta correção não altera o comportamento de sessão saudável nem o ciclo de vida normal.
+
+- [x] Limpeza de recursos: removida a cópia redundante do texto de aviso do arquivo lawnchair/res/values/strings_game_mode.xml; o recurso foi inicialmente colocado em go/quickstep/res/values/strings.xml, mas a auditoria de CI demonstrou que esse diretório não integra o source set Gradle; corrigido depois para quickstep/res/values/strings.xml. Evita duplicação entre source sets AOSP/Gradle.
+- Commit: 8a23456de35111456e38c43ea985d3fa8e991f35.
+
+ 
+I7/I8 — COBERTURA ADICIONAL DE CAMINHOS DE ENTRADA ZIP — 2026-11-27
+- [x] Ampliados os testes de segurança para nomes de entrada absolutos POSIX, caminhos absolutos com barra invertida, caminhos com unidade Windows, traversal com separadores POSIX/Windows, segmentos "." e segmentos vazios.
+- [x] Teste verifica que nenhum arquivo é criado no cache para qualquer nome inseguro.
+- Commit: RomUnzipperTest af3954826d6301ed30549d4c4225b819e54cd43f.
+- [ ] CI #1767 (run 45938129925) e #1768 (run 45938133145) aguardando fila para validar os testes ZIP.
+- [ ] CIs #1753 (45937735863), #1756 (45937889900), #1757 (45937896430), #1760 (45937994022), #1761 (45938012682), #1762 (45938017859), #1763 (45938029770) e #1764 (45938086388) estavam em execução; múltiplos commits sequenciais da mesma PR provocaram execuções concorrentes.
+- [ ] Depois de concluir as execuções, consolidar resultado final da branch; não considerar os commits intermediários aprovados individualmente como validação da ponta mais recente.
+
+- Atualização de fila na última consulta: CIs #1753, #1756, #1757, #1760, #1761, #1762, #1763, #1764 e #1767 em execução; CI #1768 ainda aguardando. Nenhuma dessas execuções havia concluído na consulta.
+
+
+RESULTADO DAS CIs E CORREÇÃO DO RECURSO SRAM — 2026-11-27
+- [x] CIs #1753 (run 45937735863), #1756 (45937889900), #1757 (45937896430), #1760 (45937994022), #1761 (45938012682), #1762 (45938017859) e #1763 (45938029770): concluídas com sucesso.
+- [x] CIs #1764 (run 45938086388), #1767 (45938129925) e #1768 (45938133145): falharam na compilação Kotlin antes do build APK.
+- [x] Causa confirmada nos logs: GameSessionActivity.kt não encontrava R.string.game_session_sram_load_failed; a mensagem de erro secundária em Toast.show era consequência da expressão sem tipo válido.
+- [x] Corrigida a localização do recurso: o build Gradle inclui quickstep/res, mas não go/quickstep/res. A string foi movida para quickstep/res/values/strings.xml e removida de go/quickstep/res/values/strings.xml.
+- Commits da correção: quickstep resource 12bc14a18cf846602831b1217e3938185dce6185; remoção da cópia fora do source set 75a81e69e93368f83e455f6f203e58d3d79365be.
+- [ ] Aguardar CI da correção de recursos e da ponta atual da branch; não considerar ZIP nem APK validados até build + testes passarem.
+- [ ] Corrigir a nota histórica anterior que dizia que go/quickstep/res era o source set efetivo: essa conclusão estava incorreta; o source set ativo é quickstep/res.
+- [ ] Testes funcionais no aparelho continuam pendentes, inclusive SRAM rejeitado, sync pré/pós-jogo, erro real de inicialização, ZIPs e playlists M3U.
+- PR #57 permanece aberta como Draft. Nenhum merge ou publicação em tandem-latest foi realizado; PR #41 e #55 permanecem intocadas.
+
+
+REVISÃO DE COBERTURA I7/I8 — 2026-11-27
+- [x] Inspecionada a suíte RomUnzipperTest e confirmada cobertura automatizada para: extração de uma ROM compatível; cache validado e reutilização; cache corrompido; recuperação de backup após interrupção; entradas duplicadas; ZIP discBased e ZIP nativo sem extração; zero e múltiplas candidatas; traversal, caminhos absolutos POSIX/Windows, unidade Windows, segmentos dot/vazios; CRC e tamanho divergentes; limite de 8 GiB; ZIP corrompido e limpeza de arquivo temporário.
+- [x] Revisado RomUnzipper: saída é achatada para nome controlado pelo arquivo ZIP de origem, portanto nomes internos não definem caminhos de escrita; extração valida tamanho e CRC antes da promoção; substituição preserva backup anterior.
+- [ ] CI #1777 (run 45979600683) e #1778 (run 45979631712) ainda em andamento na última consulta; #1778 inclui a atualização do log.
+- [ ] Teste manual no aparelho continua necessário para confirmar comportamento com arquivos reais e sistemas de disco/multiarquivo.
+
+
+ATUALIZAÇÃO DE CI E ESTADO DA PONTA — 2026-11-27
+- [x] CI #1777 — run 45979600683 — commit 75a81e69e93368f83e455f6f203e58d3d79365be: Spotless, testes unitários, build Debug APK e final-status aprovados.
+- [x] CI #1778 — run 45979631712 — commit 88ac2d000c75172feb136fd1c84255cffd062934: Spotless, testes unitários, build Debug APK e final-status aprovados. A atualização do log e a revisão de cobertura ZIP foram incluídas nessa sequência.
+- [x] CI #1779 — run 45979702977 — commit atual 09b56005619ac4d39ce212d1fd27b618fc8027c7: Spotless, build Debug APK e final-status aprovados.
+- [x] CI #1781 — run 45979840805 — commit atual 09b56005619ac4d39ce212d1fd27b618fc8027c7: Spotless, build Debug APK e final-status aprovados.
+- [x] CI #1782 — run 45979919195 — commit atual 09b56005619ac4d39ce212d1fd27b618fc8027c7: Spotless, build Debug APK e final-status aprovados.
+- [x] CI #1780 — run 45979793105 — falha isolada no job check-style durante spotlessApply: Gradle não conseguiu resolver o plugin com.google.devtools.ksp:2.3.13 nos repositórios Google/Gradle Plugin Portal. O build Debug APK da mesma execução passou; a causa é resolução de dependência/plugin no ambiente CI, não erro de formatação ou compilação do código. As execuções #1781 e #1782 na mesma ponta concluíram com sucesso.
+- [x] Confirmado que as execuções de release tandem-release e nightly-release foram ignoradas; nenhum APK foi publicado em tandem-latest.
+- [ ] Validar no aparelho os casos ZIP, playlists M3U, SRAM rejeitada, Device Sync pré/pós-jogo, erro real de inicialização e compatibilidade funcional dos núcleos.
+- [ ] Completar a conferência integral do catálogo CoreRegistry contra os binários Android ARM64 publicados.
+- [ ] Definir e validar uma chave pública/fingerprint oficial confiável antes de habilitar verificação OpenPGP dos pacotes Buildbot; SHA-256 local detecta alterações posteriores, mas não autentica a origem do primeiro download.
+- PR #57 permanece aberta como Draft, base game-mode-m2-dev, head 09b56005619ac4d39ce212d1fd27b618fc8027c7. Nenhum merge ou publicação em tandem-latest foi autorizado ou realizado.
+
+
+I11 — DETECÇÃO DE ATUALIZAÇÃO POR ETAG — 2026-11-27
+- [x] Revisada a comparação de metadados HTTP do CoreInstaller.
+- [x] Identificada lacuna: quando Last-Modified era comparável nos dois lados, a lógica anterior ignorava completamente uma mudança de ETag; uma substituição publicada com timestamp preservado poderia não ser detectada.
+- [x] Extraída a decisão para updateAvailableFromMetadata, que considera tanto Last-Modified quanto ETag quando ambos os lados fornecem o respectivo metadado; retorna desconhecido quando nenhum par é comparável.
+- [x] Adicionados testes para ETag alterado com Last-Modified idêntico, metadados iguais, Last-Modified avançado e metadados insuficientes.
+- Commits: CoreInstaller 65ed020f8cd310ce389411611a0ece2507757f4e; CoreInstallerTest 296c9745059f5446fc4f423d10765466e1110835.
+- [ ] Aguardar CI de Spotless, testes unitários e build Debug APK para os commits de comparação de metadados.
+- Observação: ETag/Last-Modified continuam sendo indicadores de atualização, não autenticação criptográfica da origem. A verificação OpenPGP com fingerprint oficial confiável permanece pendente.
+
+
+I11/I12 — CONFERÊNCIA COMPLEMENTAR DO BUILDBOT — 2026-11-27
+- [x] Reconfirmado que o endpoint atualmente configurado em CoreInstaller (https://buildbot.libretro.com/nightly/android/latest/arm64-v8a/) continua acessível e lista pacotes Android ARM64 atualizados em 2026-11-27.
+- [x] A rota alternativa android/arm64-v8a/latest/ não foi acessível na consulta; não alterar BASE_URL com base apenas na proposta de reestruturação de diretórios aberta no issue libretro/RetroArch#19354. O caminho antigo permanece o endpoint funcional observado.
+- [x] Amostra adicional de pacotes confirmados no índice: fceumm, nestopia, mesen, quicknes, snes9x, snes9x2010, bsnes, armsx2, azahar, panda3ds, cemu, dolphin, pcsx2, rpcs3, parallel_n64, freeintv, noods, race, stella, stella2014 e smsplus.
+- [ ] A conferência acima é amostral e não valida todos os IDs do CoreRegistry. Alguns nomes pesquisados não apareceram no índice na consulta; antes de alterar catálogo, verificar se são IDs antigos, aliases, builds ausentes temporariamente ou nomes de pacote diferentes.
+- [ ] Comparar integralmente cada coreId com o nome exato do ZIP e da biblioteca interna. A regra padrão do CoreInstaller é ${coreId}_libretro_android.so.zip; Azahar é exceção já tratada como azahar_libretro.so.zip.
+- [ ] Não oferecer núcleo como disponível apenas por constar no catálogo; separar disponibilidade de pacote, instalação válida e compatibilidade funcional no dispositivo.
+- Fonte: índice oficial Android ARM64 do Buildbot, consultado em 2026-11-27; documentação Libretro orienta instalar o ZIP correspondente à arquitetura e manter os arquivos .info para metadados de recursos.
+- CI da correção ETag: #1783 (run 45981419368, commit b87c48f26e7aca4e0450d126a23e45a238a0ede8) e #1784 (run 45981475627, commit 296c9745059f5446fc4f423d10765466e1110835) estavam em execução na consulta; o commit de log atual também aguarda CI.
+
+
+RESULTADO FINAL DAS CIs DE I11 — 2026-11-27
+- [x] CI #1783 — run 45981419368 — commit b87c48f26e7aca4e0450d126a23e45a238a0ede8: check-style, build Debug APK e final-status aprovados.
+- [x] CI #1784 — run 45981475627 — commit 296c9745059f5446fc4f423d10765466e1110835: check-style, build Debug APK e final-status aprovados.
+- [x] CI #1785 — run 45981493835 — commit 4cb69a39aae33c85ae4297ad2eb08f9e235f1ca9: check-style, build Debug APK e final-status aprovados.
+- [x] CI #1786 — run 45981562512 — commit bfe24b568e27640a22110b78d9c90e6d05841884: check-style, build Debug APK e final-status aprovados.
+- [x] CI #1787 — run 45981654004 — commit bfe24b568e27640a22110b78d9c90e6d05841884: check-style, build Debug APK e final-status aprovados.
+- [x] CI #1788 — run 45981685127 — commit bfe24b568e27640a22110b78d9c90e6d05841884: check-style, build Debug APK e final-status aprovados.
+- [x] CI #1789 — run 45981718864 — commit bfe24b568e27640a22110b78d9c90e6d05841884: check-style, build Debug APK e final-status aprovados.
+- [x] CI #1790 — run 45981757613 — commit bfe24b568e27640a22110b78d9c90e6d05841884: check-style, build Debug APK e final-status aprovados.
+- [x] Execuções tandem-release e nightly-release foram ignoradas em todos esses runs; nenhum release foi publicado.
+
+I12/I13 — COMPARAÇÃO DO CATÁLOGO COM O ÍNDICE ARM64 — 2026-11-27
+- [x] O índice oficial Android ARM64 foi aberto e conferido diretamente; o padrão de nomes ${coreId}_libretro_android.so.zip é válido para os pacotes Libretro padrão, com exceção Azahar, que publica azahar_libretro.so.zip.
+- [x] Correspondências confirmadas no índice: fceumm, nestopia, mesen, quicknes, snes9x, snes9x2010, bsnes, mgba, gambatte, sameboy, gearboy, gpsp, vbam, vba_next, genesis_plus_gx, picodrive, blastem, mupen64plus_next_gles2/gles3, parallel_n64, pcsx_rearmed, swanstation, mednafen_psx, mednafen_pce_fast, mednafen_pce, geargrafx, stella, stella2014, a5200, atari800, handy, mednafen_lynx, gearlynx, mednafen_ngp, race, mednafen_saturn, yabasanshiro, yabause, melonds, desmume, desmume2015, noods, armsx2, pcsx2, dolphin, azahar, panda3ds, cemu, rpcs3, flycast, opera, prosystem, freeintv, gearcoleco, bluemsx, easyrpg, supermodel e fbneo.
+- [ ] IDs sem confirmação no índice atual devem ser tratados como não verificados, não como disponíveis: xenia_edge, vita3k, virtualjaguar e qualquer outro que não tenha sido localizado no índice. Não alterar ou remover esses IDs até verificar origem alternativa, pacote oficial separado ou alias.
+- [ ] Verificar especificamente a exceção de nomes e pacotes para cada coreId sem confirmação; o instalador atualmente aponta exclusivamente para Buildbot oficial, portanto um ID sem pacote nessa origem não pode ser instalado por esse fluxo.
+- [ ] Separar no produto estados: listado no catálogo, pacote disponível na origem, pacote baixado/ELF ARM64 validado e núcleo funcional no aparelho. CI não comprova a última etapa.
+- Fonte: índice oficial Buildbot Android ARM64 consultado em 2026-11-27: https://buildbot.libretro.com/nightly/android/latest/arm64-v8a/ . O índice apresenta arquivos .zip e .sig com nomes de bibliotecas, incluindo Azahar sem sufixo _android.
+- Nota de precisão: a conferência confirma presença de pacotes no índice, não compatibilidade funcional ou suporte oficial de cada fork/plataforma.
+
+
+ATUALIZAÇÃO — REVISÃO COMPLEMENTAR DO CATÁLOGO E INSTALADOR — 2026-11-27
+- [x] Reaberto o log desta auditoria antes de continuar; PR #57 permanece aberta, Draft e não mesclada.
+- [x] Reinspecionado CoreRegistry.kt: o catálogo inclui alternativas SMS Plus GX (smsplus) e Gearsystem (gearsystem); ambas possuem ZIP ARM64 no índice Buildbot consultado nesta data. Isso corrige a ausência dessas duas correspondências na lista resumida anterior.
+- [x] Reinspecionado CoreInstaller.kt: o fluxo baixa somente do endpoint Android ARM64 configurado; exige nome interno exato, valida ELF64 little-endian/AArch64, grava em .part, preserva backup, faz rollback em falha de promoção e registra SHA-256 local após instalação.
+- [x] Revisada a recuperação de backup: quando o digest confirmado identifica destino ou backup, a recuperação escolhe a cópia correspondente; quando não há evidência suficiente e ambos são ELF válidos, preserva ambos e registra erro em vez de descartar arbitrariamente uma cópia.
+- [x] Confirmado que SHA-256 armazenado localmente detecta alteração posterior, mas não autentica o primeiro pacote recebido. Assinatura OpenPGP com chave/fingerprint independente continua pendente.
+- [x] Documentação oficial Libretro consultada: Vita3K possui build Android arm64-v8a e exige Vulkan 1.1; repositório do core Xenia Edge informa builds Android ARM64. Isso confirma que esses projetos têm builds Android em algum canal, mas ainda não confirma o nome e a disponibilidade no endpoint específico usado pelo CoreInstaller.
+- [x] Índice oficial ARM64 consultado novamente em 2026-11-27; smsplus e gearsystem encontrados. Os IDs xenia_edge, vita3k e virtualjaguar continuam sem correspondência confirmada pelo nome exato no endpoint atual; não foram removidos nem alterados.
+- [ ] Investigar o nome de pacote exato publicado para Xenia Edge, Vita3K e Virtual Jaguar no índice Android ARM64; validar se o CoreInstaller consegue obtê-los pelo padrão atual ou precisa de mapeamento específico/origem alternativa confiável.
+- [ ] Comparar todos os IDs do CoreRegistry (incluindo cada alternativa) com o índice, não apenas os IDs já verificados em amostras anteriores.
+- [ ] Validar conteúdo interno dos ZIPs e ELF ARM64 para cada exceção de nomenclatura, sem instalar/atualizar núcleos automaticamente durante a auditoria.
+- [ ] I13 continua pendente: disponibilidade do pacote não equivale a compatibilidade funcional no Motorola Edge 30 Fusion; testar individualmente vídeo, áudio, input, BIOS e recursos específicos.
+- [ ] I11 continua pendente: obter fingerprint público oficial por canal independente e verificar assinaturas .sig antes de tratar a origem como autenticada.
+- [ ] Testes no aparelho continuam pendentes para ZIP/M3U, ciclo de vida GL/nativo, SRAM rejeitada, Device Sync e gamepad virtual multitouch/eixos.
+
+CI — PONTA ANTERIOR DO LOG
+- [ ] CI #1791 — run 45989509316 — commit bd773e9e0051e4e0a91125d339f3a52992572431: ainda em execução na consulta de 2026-11-27. check-style estava executando Spotless automático; job build-debug-apk estava executando testes unitários. Não registrar sucesso até conclusão.
+- A atualização deste registro gera um novo commit e pode disparar outra CI; atualizar este log novamente após a conclusão do workflow correspondente.
+- PR #57 segue aberta como Draft, base game-mode-m2-dev. Nenhum merge, publicação ou alteração em tandem-latest foi realizado.
+
+Fontes consultadas nesta revisão:
+- Índice Buildbot Android ARM64: https://buildbot.libretro.com/nightly/android/latest/arm64-v8a/
+- Documentação Libretro Vita3K: https://docs.libretro.com/library/vita3k/
+- Repositório do core Xenia Edge: https://github.com/WizzardSK/xenia-libretro
+- Documentação Libretro sobre instalação manual de núcleos: https://docs.libretro.com/guides/download-cores/
+
+
+CORREÇÃO DE CONFERÊNCIA DO BUILDBOT — 2026-11-27
+- [x] Consulta dirigida ao índice ARM64 confirmou os três IDs anteriormente tratados como não verificados: xenia_edge_libretro_android.so.zip, vita3k_libretro_android.so.zip e virtualjaguar_libretro_android.so.zip estão publicados em bot.libretro.com/nightly/android/latest/arm64-v8a/. Portanto, o padrão atual do CoreInstaller gera o nome de pacote correto para esses três IDs; não é necessária origem alternativa para obtê-los no endpoint equivalente.
+- [x] A documentação do core Vita3K confirma build Android arm64-v8a, requisito de GPU Vulkan 1.1 (ou backend OpenGL via glcore), firmware PS Vita e dados/shaders próprios; saves ficam no armazenamento virtual Vita e save states não são suportados. O catálogo já desativa save states e Device Sync RomM, mas ainda precisa de validação funcional e configuração de pré-requisitos no app.
+- [x] O repositório do Xenia Edge confirma pacote Android xenia_edge_libretro_android.so e descreve backend Vulkan, dados internos em system/Xenia-Edge e instalação de DLC/updates; o CoreRegistry já sinaliza Vulkan e ausência de states/Device Sync. Ainda é necessária validação no aparelho.
+- [x] O índice ARM64 também confirma gearsystem_libretro_android.so.zip.
+- [ ] smsplus_libretro_android.so.zip foi localizado no Buildbot Android armeabi-v7a, mas não foi confirmado no índice arm64-v8a consultado. Não tratar smsplus como disponível para a arquitetura ARM64 até confirmação direta; a lista do catálogo pode continuar mostrando-o como alternativa apenas se o instalador distinguir ABI ou se houver pacote ARM64 publicado.
+- [ ] Reconciliar a afirmação anterior deste log que listava smsplus como pacote ARM64 confirmado: essa conclusão não está sustentada pela consulta dirigida atual e deve ser considerada corrigida por esta anotação.
+- [ ] Embora os três pacotes xenia_edge, vita3k e virtualjaguar estejam no índice, ainda não foi feito download/inspeção interna dos ZIPs nesta auditoria; a presença no índice não substitui validação do nome interno, ELF ARM64, assinatura ou execução real.
+- [ ] Concluir comparação sistemática de todos os coreIds e alternativas de CoreRegistry, registrando explicitamente pacote ARM64 confirmado, ausente ou arquitetura diferente.
+
+Fontes desta correção:
+- Índice Buildbot Android ARM64: https://bot.libretro.com/nightly/android/latest/arm64-v8a/
+- Índice Buildbot Android ARMv7 (SMS Plus): https://bot.libretro.com/nightly/android/latest/armeabi-v7a/
+- Documentação Vita3K: https://docs.libretro.com/library/vita3k/
+- Core Xenia Edge: https://github.com/WizzardSK/xenia-libretro
+- Core Virtual Jaguar: https://github.com/libretro/virtualjaguar-libretro/releases
+
+
+STATUS DE CI — CONSULTA POSTERIOR — 2026-11-27
+- [x] CI #1791 — run 45989509316 — commit bd773e9e0051e4e0a91125d339f3a52992572431: job check-style concluiu com sucesso.
+- [ ] CI #1791: job build-debug-apk ainda estava em execução; resultado final da suíte unitária/build APK não confirmado.
+- [ ] CI #1793 — run 45989772089 — commit 5556bf7a1ba0339d73ab7548aabc30e7b1ee8b7d: check-style e build-debug-apk ainda em execução na consulta. Não registrar sucesso prematuramente.
+- [ ] Commit documental ae3f0d77fd0dec3d6d175ddd0bf44419b0fdc7c0 (correção de disponibilidade ARM64) ainda não apresentava workflow associado na consulta.
+- PR #57 permanece aberta, Draft e não mesclada. Sem merge ou publicação em tandem-latest.
+
+
+CORREÇÃO ADICIONAL — DISPONIBILIDADE ARM64 DO SMS PLUS — 2026-11-27
+- [x] Nova consulta direta ao índice oficial Buildbot Android ARM64 confirmou smsplus_libretro_android.so.zip (67 KB, atualizado em 2026-11-26 08:24). Portanto, o SMS Plus GX está disponível no endpoint arm64-v8a e pode ser baixado pelo padrão de nome atual do CoreInstaller.
+- [x] A afirmação anterior de que SMS Plus só havia sido localizado em ARMv7 estava incorreta/incompleta. A ausência na consulta dirigida anterior não era evidência de ausência no índice ARM64; esta anotação a corrige.
+- [x] Os três núcleos de Master System/Game Gear agora têm pacote ARM64 confirmado no índice consultado: genesis_plus_gx, smsplus e gearsystem. Nenhuma alteração de catálogo é necessária por disponibilidade ABI neste ponto.
+- [ ] A presença do ZIP não substitui inspeção do conteúdo interno, validação ELF ARM64 e teste funcional no dispositivo.
+
+STATUS DE CI — RECONSULTA — 2026-11-27
+- [x] CI #1791 — run 45989509316: check-style aprovado.
+- [ ] CI #1791 — build-debug-apk: ainda executando testes unitários; etapa de build APK e artefato ainda não iniciada na consulta.
+- [x] CI #1793 — run 45989772089: check-style aprovado.
+- [ ] CI #1793 — build-debug-apk: ainda executando testes unitários; etapa de build APK e artefato ainda não iniciada na consulta.
+- A branch feat/libretro-stage-i permanece na ponta f37635b56e0e0f65b4586893b7ef09fecbf37482 durante esta atualização. PR #57 permanece aberta e Draft; não houve merge nem publicação.
+
+Fonte da correção SMS Plus:
+- Índice oficial Buildbot Android ARM64: https://buildbot.libretro.com/nightly/android/latest/arm64-v8a/ (entrada smsplus_libretro_android.so.zip).
+
+
+AUDITORIA DE COBERTURA ENTRE GAMEPLATFORMS E COREREGISTRY — 2026-11-27
+- [x] Comparados os identificadores das plataformas em GamePlatforms.kt com as chaves e alternativas explícitas de CoreRegistry.kt.
+- [x] Identificadas plataformas com núcleo padrão declarado, mas sem entrada explícita própria em CoreRegistry: WonderSwan (mednafen_wswan), Dreamcast (flycast), PSP (ppsspp) e Virtual Boy (mednafen_vb). O método cores() recorre a uma opção genérica quando não há catálogo para o slug.
+- [x] Confirmado que CoreRegistry.info() também recorre a CoreInfo genérico para núcleo não listado. Como os defaults de CoreInfo são supportsStates=true e supportsRomMSaveSync=true, a ausência de metadados explícitos pode classificar recursos como disponíveis sem auditoria específica. GameSessionActivity consome esses dois valores para habilitar estados e sincronização de saves.
+- [ ] Corrigir a cobertura do catálogo: cada plataforma LIBRETRO precisa de metadados explícitos de compatibilidade e recursos, ou de um estado conservador/desconhecido; não assumir suporte a save states e RomM Device Sync por padrão.
+- [ ] Verificar no índice Buildbot ARM64 os pacotes flycast e ppsspp, além de confirmar a disponibilidade de cada núcleo da lista (mednafen_wswan e mednafen_vb aparecem no índice). A ausência de um resultado em busca parcial não será tratada como prova de inexistência.
+- [ ] Definir corretamente PSP caso PPSSPP não tenha pacote Libretro Android ARM64: encaminhamento para emulador externo ou estado indisponível, em vez de tentar instalação de um core não publicado.
+- [ ] Validar que a plataforma Dreamcast usa pacote ARM64 disponível e que suas capacidades de saves/estados são compatíveis com a implementação efetiva do core.
+- [ ] Conferir também plataformas com coreId vazio (Switch e PC/GameNative), que não devem entrar no instalador Libretro.
+
+STATUS DE CI — ÚLTIMA RECONSULTA — 2026-11-27
+- [x] CI #1791 — run 45989509316: check-style aprovado.
+- [ ] CI #1791: build-debug-apk ainda em execução na etapa Run unit tests; Build APK e Upload artifact pendentes.
+- [x] CI #1793 — run 45989772089: check-style aprovado.
+- [ ] CI #1793: build-debug-apk ainda em execução na etapa Run unit tests; Build APK e Upload artifact pendentes.
+- [ ] Commit c0a406180089421e7ceb3b3c1eab11eb89fc256c (correção SMS Plus ARM64) ainda sem workflow associado retornado pelo endpoint de workflows de commit filtrado para eventos pull_request; verificar execução push separadamente se necessário.
+- PR #57 segue aberta como Draft, sem merge. Nenhum artefato foi publicado em tandem-latest.
+
+
+CATÁLOGO — CONFIRMAÇÃO ARM64 E METADADOS EXPLÍCITOS — 2026-11-27
+- [x] Índice oficial Buildbot Android ARM64 confirmou os pacotes flycast_libretro_android.so.zip, ppsspp_libretro_android.so.zip, mednafen_wswan_libretro_android.so.zip e mednafen_vb_libretro_android.so.zip.
+- [x] A disponibilidade dos quatro pacotes foi confirmada no índice, mas ainda não equivale a validação de conteúdo interno, ELF, assinatura ou execução no dispositivo.
+- [x] Documentação Libretro confirma Flycast com save states e saves via arquivos VMU próprios em system/dc; a implementação atual do Tandem sincroniza SRAM pelo fluxo RomM, então Device Sync foi explicitamente desativado para Flycast.
+- [x] Documentação Libretro confirma PPSSPP com save states e saves em PSP/SAVEDATA, além de assets necessários em system/PPSSPP. Como o Device Sync atual do Tandem não sincroniza esse diretório estruturado, RomM Device Sync foi explicitamente desativado para PPSSPP.
+- [x] Documentação Libretro confirma Beetle Cygne (WonderSwan) com SRAM .srm e save states.
+- [x] Documentação Libretro confirma Beetle VB com SRAM .srm e save states.
+- [x] CoreRegistry agora declara entradas explícitas para wswan, dreamcast, psp e vb; os recursos deixam de depender do fallback genérico.
+- [x] Teste unitário adicionado em GamePlatformsResolutionTest para garantir capabilities explícitas e distinguir cores com save states mas sem RomM SRAM sync.
+- [ ] Testar os quatro núcleos no aparelho e confirmar assets, desempenho, leitura/gravação dos saves e comportamento de estados.
+- [ ] Implementar futuramente transporte RomM próprio para VMU do Flycast e dados PSP/SAVEDATA, caso desejado; não classificar esses formatos como SRAM.
+- [ ] Revisar os demais núcleos que usam formatos de save não-SRAM ou arquivos auxiliares, para evitar sincronização falsa/ineficaz.
+
+Commits de implementação:
+- ccd2e7897ce153164a59cb5e4c6ab3cc1371b970 — CoreRegistry: capacidades explícitas de WonderSwan, Dreamcast, PSP e Virtual Boy.
+- 44221f574848a9a8fb5311c45b0d8f934a4d9595 — teste das capacidades explícitas.
+
+CIs e estado da PR:
+- [x] CI #1791 (run 45989509316): check-style aprovado; build-debug-apk continuava em execução na última consulta.
+- [x] CI #1793 (run 45989772089): check-style aprovado; build-debug-apk continuava em execução na última consulta.
+- [ ] CI #1800 (run 45990219076), acionada pelo commit documental 78c14e1: check-style e build-debug-apk ainda em execução na última consulta.
+- [ ] CIs para os commits ccd2e78 e 44221f5 ainda precisam ser acompanhadas.
+- PR #57 permanece aberta e Draft, com head 44221f574848a9a8fb5311c45b0d8f934a4d9595. Não houve merge nem publicação em tandem-latest.
+
+Fontes técnicas:
+- Índice Buildbot Android ARM64: https://buildbot.libretro.com/nightly/android/latest/arm64-v8a/
+- PPSSPP: https://docs.libretro.com/library/ppsspp/
+- Flycast: https://docs.libretro.com/library/flycast/
+- Beetle Cygne: https://docs.libretro.com/library/beetle_cygne/
+- Beetle VB: https://docs.libretro.com/library/beetle_vb/
+
+
+ACOMPANHAMENTO DE CI — ATUALIZAÇÃO — 2026-11-27
+- [x] CI #1801 — run 45990307128 — commit ccd2e7897ce153164a59cb5e4c6ab3cc1371b970: workflow iniciado; check-style e build-debug-apk em execução na etapa checkout na última consulta.
+- [x] CI #1802 — run 45990313964 — commit 44221f574848a9a8fb5311c45b0d8f934a4d9595: workflow iniciado; check-style e build-debug-apk em execução na etapa checkout na última consulta.
+- [x] CI #1791: check-style aprovado; build-debug-apk avançou para Build APK, ainda sem conclusão.
+- [x] CI #1793: check-style aprovado; build-debug-apk ainda executando Run unit tests.
+- [ ] CI #1800: check-style estava executando Apply Spotless automatically e build-debug-apk executando Run unit tests; sem resultado final.
+- A atualização documental 27c3e3e3f2dcfba7b07c493657d03425ebdea44c ainda não apresentou workflow associado na consulta.
+- Não declarar nenhuma dessas CIs como integralmente aprovada enquanto build-debug-apk, artefato e final-status não concluírem.
+
+
+CORREÇÃO DE SEGURANÇA — FALLBACK CONSERVADOR DE CAPACIDADES — 2026-11-27
+- [x] Corrigido CoreRegistry: núcleo alternativo não catalogado não herda mais o ID/capacidades do núcleo padrão; passa a receber o próprio ID e capacidades desconhecidas desativadas.
+- [x] Corrigido fallback de plataforma sem entrada no catálogo: save states e RomM Device Sync ficam desativados até auditoria explícita.
+- [x] CoreInfo agora usa defaults conservadores (false) quando instanciado sem capacidades declaradas; entradas do catálogo continuam preservando os valores explícitos/atuais do helper catalogado.
+- [x] GameSessionActivity também inicia com capacidades desativadas e mantém esse estado quando não consegue resolver a plataforma/núcleo.
+- [x] Teste JVM adicionado: núcleo alternativo desconhecido e plataforma desconhecida não habilitam save states nem sincronização RomM; núcleo conhecido FCEUmm mantém capacidades declaradas.
+- [ ] Aguardar CI completa para validar formatação, testes e build APK.
+- [ ] Validar em aparelho os núcleos alternativos e formatos especiais; esta correção é uma proteção de fallback, não certificação funcional dos cores.
+
+Commits:
+- d58b160bbf8022e20dcf2cc70fc38323c4674222 — CoreRegistry: capacidades desativadas para cores sem auditoria.
+- 4d76e02b26f5c0e55ecd36625391894f6c376a90 — teste de fallback conservador.
+- 17c87f82de16e4bf76e9e28a88448235a2a4768f — GameSessionActivity: capacidades desconhecidas desativadas também na sessão.
+
+
+ACOMPANHAMENTO DE CI — RECONSULTA — 2026-11-27
+- [x] CI #1791 — run 45989509316 — commit bd773e9e0051e4e0a91125d339f3a52992572431: check-style, build-debug-apk, upload do artefato e final-status concluídos com sucesso. Artefato assembleLawnWithQuickstepGithubDebug disponível (46.624.561 bytes; SHA-256 informado pelo GitHub: ca740c90629ca71a97e465feb39e863959c3fce628e1e30bafbb86caa246fb70).
+- [ ] CI #1793 — run 45989772089: check-style aprovado; Build APK em execução, upload e final-status pendentes.
+- [ ] CI #1800 — run 45990219076: check-style aprovado; testes unitários em execução, build APK e final-status pendentes.
+- [ ] CI #1801 — run 45990307128: check-style aprovado; testes unitários em execução, build APK e final-status pendentes.
+- [ ] CI #1802 — run 45990313964: check-style aprovado; testes unitários em execução, build APK e final-status pendentes.
+- [ ] CI #1804 — run 45990371323 — commit e536ed662cb8622155d3c3235eea99ccbf364a98: check-style aprovado; testes unitários em execução, build APK e final-status pendentes.
+- [ ] A correção conservadora de capacidades (head atual 93df6e0ade57509716f0f99efa2fe478120b2a46) ainda não apresentou status/execução CI associado no endpoint consultado; monitorar novo workflow da PR.
+- PR #57 permanece aberta, Draft e não mesclada; head atual 93df6e0ade57509716f0f99efa2fe478120b2a46. Sem publicação em tandem-latest.
+
+
+AUDITORIA DE FORMATO DE SAVE — DOLPHIN (GAMECUBE/WII) — 2026-11-27
+- [x] Documentação oficial Libretro confirma suporte a Saves e States no Dolphin.
+- [x] Documentação oficial confirma estrutura própria de arquivos em `<save_dir>/dolphin-emu/User`, semelhante ao emulador Dolphin standalone; inclui arquivos de save e configuração.
+- [x] Interface Libretro distingue SRAM exposta ao frontend de saves que o core grava diretamente na pasta de saves; nem todo core consegue expor todos os dados como SRAM.
+- [x] GameCube e Wii agora mantêm save states habilitados, mas RomM SRAM Device Sync desativado para Dolphin, evitando classificar memory cards/arquivos próprios como SRAM.
+- [x] Teste JVM adicionado para garantir essa separação nas duas plataformas.
+- [ ] Avaliar futuramente sincronização específica da árvore Dolphin User, com inventário/identidade por jogo e prevenção de conflitos; não enviar a pasta inteira como se fosse SRAM.
+- [ ] Testar saves e states do Dolphin no aparelho e confirmar os caminhos efetivos usados pela versão Android do core.
+
+Commits:
+- e41d6e43c91c07295c63970aff61cd9a60ee62bd — metadados Dolphin GameCube/Wii.
+- ca420f54fb6fdf6d4955986aa7750daa08ba35cd — teste de capacidades e formato de save.
+
+
+ACOMPANHAMENTO DE CI — APÓS CORREÇÕES DE FALLBACK E DOLPHIN — 2026-11-27
+- [x] CI #1793 — run 45989772089: check-style e build-debug-apk concluídos com sucesso; final-status ainda em fila na última consulta. Não marcar workflow integralmente concluído enquanto final-status não encerrar.
+- [ ] CI #1800 — run 45990219076: check-style aprovado; build APK ainda em execução.
+- [ ] CI #1801 — run 45990307128: check-style aprovado; testes unitários ainda em execução.
+- [ ] CI #1802 — run 45990313964: check-style aprovado; testes unitários ainda em execução.
+- [ ] CI #1804–#1810: execuções da PR em andamento; aguardam conclusão dos jobs de compilação/testes e final-status.
+- [ ] CI #1811 — run 45990796318 — commit 4d76e02b26f5c0e55ecd36625391894f6c376a90: check-style executando Spotless automático; build-debug-apk em preparação/execução.
+- [ ] CI #1812 — run 45990826612 — commit 93df6e0ade57509716f0f99efa2fe478120b2a46: workflow na fila.
+- [ ] CI #1813 — run 45990895729 — commit b48bed1864e83dc8982b0bbf71a433c6566275fe: workflow na fila.
+- [ ] CI #1814 — run 45990915300 — commit ca420f54fb6fdf6d4955986aa7750daa08ba35cd: workflow na fila.
+- [ ] CI #1815 — run 45990925869 — commit c0b26f81fae74a85b0217521b3c9e40cab4d2434: workflow na fila; valida a ponta atual da PR.
+- PR #57 permanece aberta como Draft, não mesclada. Head consultado: c0b26f81fae74a85b0217521b3c9e40cab4d2434. Sem publicação em tandem-latest.
+
+
+AUDITORIA DE FORMATO DE SAVE — SEGA SATURN — 2026-11-27
+- [x] Beetle Saturn (mednafen_saturn): documentação oficial lista saves em arquivos separados *.bcr (backup externo), *.bkr (save interno) e *.smpc (RTC); não é o formato SRAM único gerenciado pelo fluxo RomM atual. Sync RomM desativado; save states permanecem habilitados.
+- [x] Yabause (yabause): documentação oficial lista '<content-name>.srm' na Save directory e states no State directory; sync SRAM permanece habilitado.
+- [x] YabaSanshiro (yabasanshiro): documentação oficial consultada não especifica o formato/caminho de save; sync SRAM desativado de forma conservadora até confirmação. Save states continuam habilitados conforme catálogo atual, ainda sujeitos a teste funcional.
+- [x] Teste JVM cobre separadamente as três variantes Saturn e verifica que apenas Yabause mantém RomM SRAM sync.
+- [ ] Testar Beetle Saturn/YabaSanshiro no aparelho e avaliar sincronização própria de .bcr/.bkr, se desejada.
+
+Fontes:
+- https://docs.libretro.com/library/beetle_saturn/
+- https://docs.libretro.com/library/yabause/
+- https://docs.libretro.com/library/yabasanshiro/
+
+Commits:
+- 161792073c7cf7c55008b9fd688c59162db002e3 — metadados de sincronização Saturn.
+- 702c866a5db22e6b29fb0a519f2896ce2038bbb4 — teste das variantes Saturn.
+
+
+ACOMPANHAMENTO DE CI — RESULTADOS CONFIRMADOS — 2026-11-27
+- [x] CIs #1811–#1821 concluídas com sucesso integral: check-style, build-debug-apk e final-status aprovados. Isso cobre os commits de fallback conservador, teste correspondente, registro de auditoria, metadados Dolphin e testes Dolphin.
+- [ ] CI #1822 — run 45991507650 — commit ecb5547d2bc30ad843c30001b8615c09bd652378: check-style aprovado; build-debug-apk ainda em etapa Build APK; artefato e final-status pendentes.
+- [ ] Commits Saturn 1617920 e 702c866 ainda aguardam CI da ponta atual.
+- PR #57 continua aberta como Draft e não mesclada. Ponta atual após as alterações Saturn: 702c866a5db22e6b29fb0a519f2896ce2038bbb4. Nenhuma publicação em tandem-latest.
+
+
+AUDITORIA DE FORMATO DE SAVE — SEGA CD / MEGA CD — 2026-11-27
+- [x] Documentação oficial Genesis Plus GX distingue *.srm (cartuchos MS/GG/MD/Pico/SG-1000) de cart.brm e scd_U.brm (backup RAM Sega/Mega CD).
+- [x] No catálogo da plataforma Sega CD, Genesis Plus GX agora mantém save states, mas desativa RomM SRAM Device Sync; o backup RAM do CD exige transporte de arquivo BRM próprio.
+- [x] PicoDrive permanece com sincronização habilitada conforme documentação atual que lista *.srm como cartridge backup save; a compatibilidade funcional ainda depende de teste no aparelho.
+- [x] Teste JVM garante comportamento distinto entre Genesis Plus GX e PicoDrive na plataforma Sega CD.
+- [ ] Avaliar sincronização específica de arquivos BRM para Sega CD, com identificação por região/BIOs e proteção contra conflito.
+- [ ] Confirmar no aparelho se PicoDrive Sega CD realmente expõe save compatível com o fluxo SRAM atual.
+
+Fonte:
+- https://docs.libretro.com/library/genesis_plus_gx/
+- https://docs.libretro.com/library/picodrive/
+
+Commits:
+- 4d232a83690984a33ca7f2cace4107075f582792 — metadados Sega CD.
+- 9d19d8b20b285cbc4327555c3631063b817e1689 — teste Sega CD.
+
+
+ACOMPANHAMENTO DE CI — 2026-11-27
+- [x] CIs #1811–#1821: check-style, build-debug-apk e final-status aprovados integralmente.
+- [ ] CI #1822 — run 45991507650 — commit ecb5547d2bc30ad843c30001b8615c09bd652378: check-style aprovado; build-debug-apk ainda em execução.
+- [ ] CI #1823 — run 45992619101 — commit 702c866a5db22e6b29fb0a519f2896ce2038bbb4: em andamento.
+- [ ] CI #1824 — run 45992647409 — commit 2372bc1d1a6325ca8c2f4cf2ffbbeb1f7665caca: em andamento.
+- [ ] Aguardando CIs para os commits Sega CD 4d232a8 e 9d19d8b; monitorar workflow da ponta atual.
+- PR #57 permanece aberta como Draft, não mesclada; head consultado 9d19d8b20b285cbc4327555c3631063b817e1689. Sem publicação em tandem-latest.
+
+
+COMPLEMENTO DA AUDITORIA DE SAVE — LIMITES DO TRANSPORTE SRAM
+- O transporte atual de Tandem é baseado no bloco SRAM retornado pelo núcleo via LibretroDroid e persistido em um arquivo próprio do jogo; não sincroniza automaticamente todos os arquivos que o núcleo grava diretamente em GameFolders/Saves.
+- Por isso, a tabela "Saves = suportado" da documentação Libretro não basta, isoladamente, para provar compatibilidade com RomM Device Sync.
+- Beetle Saturn e Genesis Plus GX Sega CD têm arquivos de backup específicos (.bcr/.bkr/.smpc e .brm, respectivamente); essas plataformas/combinações agora não anunciam sync SRAM até haver adaptador de arquivos dedicado.
+- Esta separação não desativa saves locais ou save states; apenas evita sincronização RomM por uma interface/formato não comprovado.
+
+Fontes:
+- https://docs.libretro.com/library/beetle_saturn/
+- https://docs.libretro.com/library/genesis_plus_gx/
+- https://docs.libretro.com/development/cores/developing-cores/
+
+
+ACOMPANHAMENTO DE CI — 2026-11-27 — RECONSULTA
+- [x] CIs #1811–#1821: concluídas com sucesso integral (check-style, build-debug-apk e final-status).
+- [ ] CI #1822 — run 45991507650 — commit ecb5547d2bc30ad843c30001b8615c09bd652378: check-style e build-debug-apk aprovados; final-status ainda em fila.
+- [ ] CI #1823 — run 45992619101 — commit 702c866a5db22e6b29fb0a519f2896ce2038bbb4: em andamento.
+- [ ] CI #1824 — run 45992647409 — commit 2372bc1d1a6325ca8c2f4cf2ffbbeb1f7665caca: em andamento.
+- [ ] CI #1825 — run 45992668128 — commit 9d19d8b20b285cbc4327555c3631063b817e1689: em andamento.
+- [ ] CI #1826 — run 45992691513 — commit 3c6a522a287f7769d61b5ae3e2dce036b48f59ad: em andamento; ponta atual consultada.
+- PR #57 segue aberta como Draft e sem merge. Head 3c6a522a287f7769d61b5ae3e2dce036b48f59ad. Sem publicação em tandem-latest.
+
+
+ACOMPANHAMENTO DE CI — 2026-11-27 — RESULTADOS CONFIRMADOS
+- [x] CI #1822 — run 45991507650 — commit ecb5547d2bc30ad843c30001b8615c09bd652378: check-style, testes unitários, build-debug-apk, upload do artefato e final-status concluídos com sucesso.
+- [x] CI #1823 — run 45992619101 — commit 702c866a5db22e6b29fb0a519f2896ce2038bbb4: check-style, testes unitários, build-debug-apk, upload do artefato e final-status concluídos com sucesso.
+- [x] CI #1824 — run 45992647409 — commit 2372bc1d1a6325ca8c2f4cf2ffbbeb1f7665caca: check-style, testes unitários, build-debug-apk, upload do artefato e final-status concluídos com sucesso.
+- [x] CI #1825 — run 45992668128 — commit 9d19d8b20b285cbc4327555c3631063b817e1689: check-style, testes unitários, build-debug-apk, upload do artefato e final-status concluídos com sucesso.
+- [x] CI #1826 — run 45992691513 — commit 3c6a522a287f7769d61b5ae3e2dce036b48f59ad: check-style, testes unitários, build-debug-apk, upload do artefato e final-status concluídos com sucesso.
+- [x] CI #1827 — run 45992733583 — associada ao commit de auditoria ed857288c9c59d4dc79386523f7c3536ca0d5229: check-style, testes unitários, build-debug-apk, upload do artefato e final-status concluídos com sucesso.
+- [ ] A validação funcional no aparelho continua pendente; CI verde não comprova compatibilidade real de cada núcleo, BIOS, saves, áudio/vídeo, multitouch ou ergonomia do gamepad virtual.
+- [ ] A validação de assinatura do APK com a instalação atual do aparelho continua pendente.
+- [ ] A inspeção interna dos ZIPs Buildbot e a validação independente das assinaturas OpenPGP continuam pendentes.
+- PR #57 permanece aberta como Draft e não mesclada. Nenhuma publicação em tandem-latest foi executada.
+- Observação de publicação: os jobs tandem-release e nightly-release foram ignorados nessas execuções; o APK de debug foi gerado e enviado como artefato de CI, sem publicação de release.
+
+
+
+AUDITORIA DE SAVES — NINTENDO DS — 2026-11-27
+- [x] melonDS (core legado): documentação Libretro indica Saves e States, mas localiza o arquivo de bateria *.sav no Cache directory do frontend; o transporte atual do Tandem sincroniza a região SRAM persistida pelo SaveStore, não arquivos arbitrários do Cache. RomM SRAM Device Sync desativado para evitar classificar *.sav como SRAM sem prova de integração.
+- [x] DeSmuME: documentação indica Saves e States; saves de cartucho são *.dsv no Save directory e firmware.dfc é outro artefato. O transporte atual não sincroniza arquivos *.dsv por nome/formato; RomM SRAM Device Sync desativado.
+- [x] DeSmuME 2015: documentação indica Saves e States; saves de cartucho são *.dsv no Save directory. RomM SRAM Device Sync desativado.
+- [x] NooDS: documentação lista States, mas não declara o recurso frontend-level Saves. Por segurança, RomM SRAM Device Sync desativado; save states continuam habilitados conforme documentação.
+- [x] Os quatro núcleos continuam com save states habilitados no catálogo; a mudança não desativa persistência local nativa do core, apenas o upload/download SRAM RomM.
+- [x] CoreRegistry atualizado com capacidades explícitas e notas explicativas para os quatro núcleos DS.
+- [x] Teste JVM adicionado para garantir supportsStates=true e supportsRomMSaveSync=false nos quatro núcleos Nintendo DS.
+- [ ] Confirmar no aparelho o comportamento real de gravação/restauração local de cada core DS e verificar que nenhum arquivo local é perdido.
+- [ ] Avaliar adaptador de transporte RomM específico para *.sav/.dsv, com identificação estável, cópia atômica, conflitos e migração segura; não improvisar conversão para SRAM.
+- [ ] Verificar se o build LibretroDroid expõe região RETRO_MEMORY_SAVE_RAM para cada core DS; a documentação dos caminhos de arquivo não prova que serializeSRAM() contenha esses arquivos.
+
+Fontes oficiais:
+- https://docs.libretro.com/library/melonds/ — melonDS legado: Saves/States e *.sav no Cache directory.
+- https://docs.libretro.com/library/desmume/ — DeSmuME: Saves/States e *.dsv no Save directory.
+- https://docs.libretro.com/library/desmume_2015/ — DeSmuME 2015: Saves/States e *.dsv no Save directory.
+- https://docs.libretro.com/library/noods/ — NooDS: States documentado; recurso Saves não listado.
+- https://github.com/Swordfish90/LibretroDroid — API do frontend; a serialização SRAM não deve ser confundida com captura de todos os arquivos do core.
+
+Commits:
+- 8f29f1b81928a4938994926d43da26f89e212bf9 — metadados conservadores de save transport DS.
+- 56703a4373e4754e25f5b5b3b864d473b7bff5c7 — teste de capacidades DS.
+
+ACOMPANHAMENTO DE CI — 2026-11-27 — REVISÃO
+- [x] CIs #1822–#1827: check-style, testes unitários, build-debug-apk, upload de artefato e final-status concluídos com sucesso.
+- [ ] CI #1833 — run 45993858399 — commit 2978eeaed60ae9deed6c27c78e9ec10012a2b7e2: em andamento na última consulta; corresponde ao registro de auditoria anterior às mudanças Nintendo DS.
+- [ ] Aguardar CIs dos commits 8f29f1b e 56703a4; não declarar as mudanças DS validadas até a conclusão integral dos workflows.
+- PR #57 continua aberta como Draft, sem merge e sem publicação em tandem-latest.
+
+
+AUDITORIA DE SAVES — PLAYSTATION 1 — 2026-11-27
+- [x] PCSX ReARMed: cartão de memória primário usa formato Libretro *.srm e é elegível ao transporte SRAM; cartão secundário, quando habilitado, usa pcsx-card2.mcd e não é coberto pelo transporte atual.
+- [x] Beetle PSX: cartão de memória 0 usa *.srm por padrão; cartão 1 usa *.1.mcr no formato Mednafen. Somente o cartão primário é elegível ao transporte SRAM RomM.
+- [x] SwanStation: código oficial do core define cartão primário como Libretro (.srm) por padrão e cartão secundário desativado; formatos alternativos por jogo usam .mcd. O transporte atual cobre somente a região SRAM principal.
+- [x] Notas do CoreRegistry atualizadas para explicar limites dos slots de cartão, sem desativar sync da região Libretro principal.
+- [x] Teste JVM adicionado para garantir save states e transporte SRAM primário habilitados nos três núcleos PSX.
+- [ ] Validar no aparelho criação/restauração de cartão primário com cada core e confirmar que cartão secundário não é confundido com SRAM sincronizada.
+- [ ] Verificar a interação entre save states e cartão de memória: a documentação alerta que restaurar um estado antigo pode sobrescrever o cartão atual; avaliar uma proteção equivalente ao "Don't overwrite SaveRAM on loading savestate" antes de liberar comportamento adicional.
+- [ ] Testar playlists M3U multidisco: a identidade do save deve permanecer vinculada ao conjunto/playlist, não alternar indevidamente entre arquivos de disco.
+
+Fontes:
+- https://docs.libretro.com/library/pcsx_rearmed/ — slot 0 *.srm; slot 1 pcsx-card2.mcd.
+- https://docs.libretro.com/library/beetle_psx/ — slot 0 *.srm; slot 1 *.1.mcr.
+- https://github.com/libretro/swanstation/blob/main/src/libretro/libretro_core_options.h — cartão 1 Libretro (.srm) como padrão; cartão 2 desativado por padrão; formatos alternativos .mcd.
+- https://docs.libretro.com/library/beetle_psx_hw/ — documentação complementar de slots e risco de save states sobrescreverem cartões.
+
+Commits:
+- 49e9cbd7e4ab7787a2324aa69e48c83dee9cda92 — notas de slots PSX.
+- 7bdb0b71bc429f178480c39936e982650546a3ed — teste de capacidades PSX.
+
+ACOMPANHAMENTO DE CI — 2026-11-27 — MUDANÇAS EM ANDAMENTO
+- [ ] CI #1833 — run 45993858399 — commit 2978eeaed60ae9deed6c27c78e9ec10012a2b7e2: em andamento na última consulta.
+- [ ] CI #1834 — run 45993944137 — commit 56703a4373e4754e25f5b5b3b864d473b7bff5c7: em andamento na última consulta; inclui a mudança de capacidades Nintendo DS.
+- [ ] Aguardar CI para os commits PSX 49e9cbd e 7bdb0b7.
+- [ ] CI dos commits de documentação posteriores também deve ser conferida antes de encerrar esta rodada.
+
+
+AUDITORIA DE SAVES — SEGA / MEGA DRIVE / MEGA CD — 2026-11-27
+- [x] Genesis Plus GX em Mega Drive, Master System, Game Gear e SG-1000: documentação declara *.srm como save de cartucho; capacidades existentes de states e SRAM RomM permanecem habilitadas nessas plataformas.
+- [x] Genesis Plus GX em Sega CD: já permanece com sync SRAM desativado porque backup RAM usa arquivos BRM específicos.
+- [x] PicoDrive em Sega CD: documentação consultada lista *.srm como cartridge backup save, mas não confirma explicitamente o transporte da backup RAM do Sega CD; sync RomM agora desativado até confirmação. Save states permanecem habilitados.
+- [x] BlastEm: a página oficial Libretro não declara tabela de Saves/States nem formato/caminho de persistência. Capacidades de save states e RomM SRAM agora desativadas por segurança até confirmação documental ou teste controlado; execução do core não é bloqueada.
+- [x] Teste JVM atualizado para garantir PicoDrive Sega CD sem sync e BlastEm com capacidades de save conservadoramente desativadas.
+- [ ] Confirmar se PicoDrive Sega CD expõe a BRAM como RETRO_MEMORY_SAVE_RAM ou usa arquivos próprios.
+- [ ] Verificar documentação/código upstream do BlastEm para descobrir suporte real a save states e save RAM; reabilitar somente recursos comprovados.
+- [ ] Validar no aparelho Genesis Plus GX e PicoDrive em Mega Drive e Sega CD, incluindo gravação e restauração de saves locais.
+
+Fontes:
+- https://docs.libretro.com/library/genesis_plus_gx/ — *.srm para cartuchos MS/GG/MD/Pico/SG-1000; BRM específico para Sega/Mega CD.
+- https://docs.libretro.com/library/picodrive/ — *.srm listado como cartridge backup save; não especifica formato de backup RAM do Sega CD.
+- https://docs.libretro.com/library/blastem/ — documentação atual descreve core/BIOS, mas não lista Saves/States nem diretórios de save.
+
+Commits:
+- 9768c1b015d28a4da67c074265b9ef94cddd1cc9 — capacidades conservadoras Sega CD / BlastEm.
+- 19b5e3bd98b220b11d4997cc821c0e3f82447080 — testes de capacidades.
+
+ACOMPANHAMENTO DE CI — 2026-11-27
+- [ ] CI #1833 — run 45993858399: em andamento na última consulta.
+- [ ] CI #1834 — run 45993944137: em andamento na última consulta.
+- [ ] CI #1836 — run 45994006501 — commit 7bdb0b71bc429f178480c39936e982650546a3ed: em andamento na última consulta.
+- [ ] Aguardar CIs dos commits 9768c1b e 19b5e3b.
+
+
+AUDITORIA DE SAVES — ATARI 2600 / 5200 — 2026-11-27
+- [x] Stella: documentação Libretro declara Saves = não e States = sim; sync SRAM RomM desativado, save states mantidos.
+- [x] Stella 2014: documentação Libretro declara Saves = não e States = sim; sync SRAM RomM desativado, save states mantidos.
+- [x] Atari800: documentação Libretro declara Saves = não e States = sim; sync SRAM RomM desativado, save states mantidos.
+- [x] a5200: não foi localizada documentação oficial Libretro suficiente para comprovar saves ou states; ambos os recursos permanecem desativados até confirmação.
+- [x] CoreRegistry e teste JVM atualizados para refletir essas diferenças.
+- [ ] Teste no aparelho não deve ser interpretado como autorização para sincronizar arquivos internos de armazenamento sem adaptador explícito.
+
+Fontes:
+- https://docs.libretro.com/library/stella/ — Stella: Saves ✕, States ✔.
+- https://docs.libretro.com/library/stella2014/ — Stella 2014: Saves ✕, States ✔.
+- https://docs.libretro.com/library/atari800/ — Atari800: Saves ✕, States ✔; inclui sistema Atari 5200.
+- https://docs.libretro.com/guides/core-list/ — identifica a5200 como core Atari 5200, mas não descreve capacidades de persistência.
+
+Commits:
+- d9e06caa854ba73ff834cf173d6826c45938ba1c — capacidades Atari.
+- ae35c84633eb9e4bc7a9270c5140d6ef86785430 — testes Atari.
+
+ACOMPANHAMENTO DE CI — 2026-11-27 — PENDENTE
+- [ ] CI #1833 — run 45993858399.
+- [ ] CI #1834 — run 45993944137.
+- [ ] CI #1836 — run 45994006501.
+- [ ] CI #1839 — run 45994059394 — commit 19b5e3bd98b220b11d4997cc821c0e3f82447080.
+- [ ] Aguardar CIs para commits Atari d9e06ca e ae35c84; atualizar após conclusão integral.
+
+
+AUDITORIA DE SAVES — NINTENDO 64 — 2026-11-27
+- [x] Mupen64Plus-Next GLES2 e GLES3: documentação Libretro declara Saves e States; save de cartucho fica em *.srm no Save directory. Sync SRAM RomM e save states permanecem habilitados.
+- [x] ParaLLEl N64: documentação oficial lista States, mas não lista Saves entre os recursos frontend-level nem define caminho de SaveRAM. Save states permanecem habilitados; sync SRAM RomM desativado até confirmação.
+- [x] Teste JVM adicionado para garantir as capacidades distintas dos três IDs de core N64.
+- [ ] Confirmar no aparelho saves locais com Mupen64Plus-Next e compatibilidade real dos núcleos GLES2/GLES3.
+- [ ] Verificar se ParaLLEl N64 expõe RETRO_MEMORY_SAVE_RAM apesar da documentação incompleta antes de reabilitar sync.
+
+Fontes:
+- https://docs.libretro.com/library/mupen64plus/ — Saves e States; *.srm no Save directory.
+- https://docs.libretro.com/library/parallel_n64/ — States listado; Saves não listado.
+
+Commits:
+- 9423f870043dbfddf585773749df4c6cdcb10053 — capacidades N64.
+- 96a538aa4d3ff63f90da74f961d5283c474dc418 — teste N64.
+
+ACOMPANHAMENTO DE CI — 2026-11-27 — REVISÃO
+- [ ] CI #1833 — run 45993858399.
+- [ ] CI #1834 — run 45993944137.
+- [ ] CI #1836 — run 45994006501.
+- [ ] CI #1839 — run 45994059394.
+- [ ] CI #1841 — run 45994116230 — commit ae35c84633eb9e4bc7a9270c5140d6ef86785430.
+- [ ] Aguardar CIs para commits N64 9423f87 e 96a538a.
+
+
+AUDITORIA DE SAVES — PC ENGINE / SUPERGRAFX — 2026-11-27
+- [x] Beetle PCE Fast: documentação Libretro declara Saves e States; mantém sincronização SRAM RomM habilitada.
+- [x] Beetle PCE (preciso): documentação lista States, mas não lista Saves frontend-level; sync SRAM RomM desativado até confirmação. Save states permanecem habilitados.
+- [x] Geargrafx: documentação declara Saves e States; backup RAM por jogo usa *.srm, elegível ao transporte SRAM. Memory Base 128 usa arquivo compartilhado geargrafx_mb128.sav e não é sincronizada pelo fluxo atual.
+- [x] CoreRegistry atualizado com notas dos formatos e capacidades.
+- [x] Teste JVM adicionado para diferenciar os três núcleos PCE.
+- [ ] Validar no aparelho backup RAM por jogo e comportamento de CD nos três núcleos.
+- [ ] Se houver interesse em sincronizar Memory Base 128, implementar adaptador próprio com identidade compartilhada; não tratar o .sav global como SRAM por jogo.
+
+Fontes:
+- https://docs.libretro.com/library/beetle_pce_fast/ — Saves e States suportados.
+- https://docs.libretro.com/library/mednafen_pce/ — States listado; Saves não listado.
+- https://docs.libretro.com/library/geargrafx/ — *.srm de backup RAM e geargrafx_mb128.sav compartilhado.
+
+Commits:
+- 705fc52b324c58b73d82f1e7bf5f43dc730d60ca — metadados PCE.
+- c3cdcb72617130e324f2108d06f7d73f7dba6098 — teste PCE.
+
+ACOMPANHAMENTO DE CI — 2026-11-27
+- [ ] CIs #1833, #1834, #1836, #1839, #1841 e #1844 ainda precisam de consulta final.
+- [ ] Aguardar CI para commits PCE 705fc52 e c3cdcb7.
+
+
+RECONSULTA DE CI — 2026-11-27 — ÚLTIMO ESTADO OBSERVADO
+- [ ] CI #1833 — run 45993858399: check-style aprovado; build-debug-apk ainda em andamento.
+- [ ] CI #1834 — run 45993944137: check-style aprovado; build-debug-apk ainda em andamento.
+- [ ] CI #1836 — run 45994006501: check-style e build-debug-apk em andamento.
+- [ ] CI #1839 — run 45994059394: check-style e build-debug-apk em andamento.
+- [ ] CI #1841 — run 45994116230: check-style e build-debug-apk em andamento.
+- [ ] CI #1844 — run 45994156068: build-debug-apk em andamento; check-style aguardando execução.
+- [ ] CI #1847 — run 45994198638 — commit c3cdcb72617130e324f2108d06f7d73f7dba6098: workflow na fila.
+- [ ] Nenhuma dessas execuções pode ser marcada como sucesso integral até final-status completar.
+- PR #57 continua sem merge e sem publicação em tandem-latest.
+
+
+CORREÇÃO DE INTERPRETAÇÃO — COMPATIBILIDADE NINTENDO DS COM ROMM — 2026-11-27
+A conclusão anterior "os quatro núcleos DS não sincronizam saves RomM" foi ampla demais. A incompatibilidade não é do RomM com os formatos DS; é do adaptador atual do Tandem, que captura um artefato tipado do SaveStore (SRAM/PSX) e não inventaria arquivos de save arbitrários do núcleo.
+- [x] RomM Device Sync aceita saves identificados por ROM, nome de arquivo, slot, hash e conteúdo; o protocolo não exige extensão .srm. O cliente pode transferir arquivos .sav e .dsv preservando o nome e bytes.
+- [x] melonDS DS usa *.srm no Save directory: formato diretamente compatível com a representação SRAM padrão e candidato à integração atual, desde que o ID do core e o diretório real usados pelo Tandem sejam confirmados.
+- [x] melonDS legado usa *.sav no Cache directory: compatível com RomM como arquivo, mas exige adaptador que encontre/copie esse arquivo e preserve extensão/destino.
+- [x] DeSmuME e DeSmuME 2015 usam *.dsv no Save directory: compatíveis com o protocolo RomM como arquivos, mas exigem transporte de arquivo por core; não devem ser convertidos cegamente para .srm.
+- [ ] NooDS: suporte frontend-level Saves ainda não confirmado; investigar implementação upstream antes de habilitar.
+- [ ] Revisar CoreRegistry: não usar supportsRomMSaveSync=false como afirmação de incompatibilidade com RomM; o campo descreve apenas compatibilidade com o transporte SRAM atual. Preferível separar "save local", "SRAM Libretro" e "adaptador de arquivo RomM".
+- [ ] Projetar Device Sync multi-formato: inventário de artefatos por ROM/core, extensão preservada, slot/emulator estáveis, hash do arquivo, snapshot imutável, staging + substituição atômica, backup local, conflitos e validação de core/formato.
+- [ ] Confirmar IDs e paths exatos dos cores Nintendo DS usados pelo catálogo; a documentação atual também descreve melonDS DS, core distinto do melonDS legado.
+
+Fontes:
+- https://docs.romm.app/5.4.0/developers/device-sync-protocol/ — negociação por file_name, slot, hash, upload/download e conflitos; protocolo não limita extensão a .srm.
+- https://docs.romm.app/5.4.0/using/saves-and-states/ — RomM suporta formatos de save variados e device sync.
+- https://docs.libretro.com/library/melonds_ds/ — *.srm no Save directory; migração .sav -> .srm.
+- https://docs.libretro.com/library/melonds/ — melonDS legado usa *.sav no Cache directory.
+- https://docs.libretro.com/library/desmume/ — *.dsv no Save directory.
+- https://docs.libretro.com/library/desmume_2015/ — *.dsv no Save directory.
+
+Conclusão revisada: Nintendo DS pode sincronizar com RomM. melonDS DS tem caminho de menor esforço por usar .srm; melonDS legado e DeSmuME precisam de adaptador de arquivo. A implementação atual do Tandem ainda não sincroniza esses arquivos DS específicos.
+
+
+IMPLEMENTAÇÃO — DEVICE SYNC DE SAVES NATIVOS DO NINTENDO DS — 2026-11-27
+- [x] Confirmado no protocolo RomM 5.4 que Device Sync transporta arquivos de save identificados por nome, slot, emulador e hash; não exige que todo arquivo seja .srm.
+- [x] Criado suporte explícito ao formato .dsv de DeSmuME e DeSmuME 2015.
+- [x] Os dois núcleos escrevem em diretório isolado por jogo/conta/núcleo, usando o Save directory efetivo passado ao Libretro.
+- [x] O inventário tipado identifica somente o arquivo .dsv do núcleo DeSmuME; firmware.dfc, states e outros arquivos não entram na sincronização.
+- [x] Device Sync preserva a extensão nativa .dsv no manifesto, snapshot, upload, download e arquivo de arquivo de conflitos.
+- [x] Download remoto exige extensão .dsv e ID de emulador exatamente compatível com o núcleo local; DeSmuME e DeSmuME 2015 não são considerados intercambiáveis automaticamente.
+- [x] Download sem save local tem como destino o arquivo .dsv nativo, e não sram.srm.
+- [x] Núcleos DeSmuME/DeSmuME 2015 habilitados para sync de arquivo nativo; melonDS legado e NooDS permanecem desativados.
+- [x] Testes JVM adicionados para inventário .dsv, seleção de artefato, isolamento de compatibilidade entre os dois núcleos e validação de extensão no protocolo.
+- [ ] CI da implementação .dsv ainda não executada/confirmada.
+- [ ] Testar no aparelho: salvar dentro do jogo DeSmuME, sair normalmente, confirmar upload no RomM; apagar somente a cópia local de teste, sincronizar novamente e confirmar restauração antes do primeiro frame.
+- [ ] Testar conflito local/remoto e confirmar que backup local é preservado.
+- [ ] Verificar ROM em ZIP: o nome-base usado pelo núcleo para gerar .dsv deve corresponder ao arquivo nativo identificado pelo SaveStore; caso a extração altere o nome, adaptar a resolução ao loadPath.
+- [ ] melonDS legado permanece pendente: a documentação coloca *.sav no Cache directory. É necessário um mecanismo persistente e isolado por conta/jogo para o diretório de cache antes de habilitar sync; não sincronizar cache global diretamente.
+- [ ] melonDS DS é um núcleo distinto, não presente no catálogo atual; sua documentação usa *.srm no Save directory e poderá ser integrado quando o catálogo oferecer esse binário.
+- [ ] NooDS permanece sem sync de save de cartucho até comprovação de arquivo frontend-level.
+
+Arquivos alterados:
+- CoreSaveAdapter.kt — formato nativo .dsv e compatibilidade estrita por core.
+- SaveArtifactCatalog.kt — inventário de arquivos .dsv sem classificar arquivos auxiliares.
+- DeviceSyncArtifactPolicy.kt — seleção pelo formato declarado pelo adaptador.
+- RomMDeviceSyncClient.kt — protocolo aceita .dsv além de .srm e valida extensão esperada em downloads.
+- RomMDeviceSyncRunner.kt — snapshots, uploads, downloads e arquivos de conflito preservam .dsv.
+- SaveStore.kt — arquivo .dsv e diretório por jogo.
+- GameSessionActivity.kt — Save directory específico por jogo para DeSmuME/DeSmuME 2015 e diagnóstico do caminho real.
+- CoreRegistry.kt — capacidades atualizadas.
+- GamePlatformsResolutionTest.kt e NintendoDsDeviceSyncTest.kt — cobertura JVM.
+
+Commits:
+- ea2d00378f3c91e98e746a305ba787035cea55aa — metadados de formato nativo do adaptador.
+- 75d118687992faf000c1da50c976c020edb05631 — inventário .dsv.
+- 91af45eef8d9dd48dd38dcc3458737042216e085 — seleção do artefato.
+- e0fadd36fb9304b768e81848c75912c75a42ab9e — protocolo .dsv.
+- 731b63ca705f68e9f781a8a310a9f2c74740cb6f — fluxo inicial de snapshot .dsv.
+- 7da177c64cdb141211b9460152f3a53342c35beb — armazenamento por jogo.
+- d1817c010982f2fb290d51104580b8ec3709dd86 — diretório nativo por jogo na sessão.
+- 24653aff94bab776fbf18dcfa28bdc0db111c8be — capacidades DeSmuME.
+- a4947db9f5aea69c87b7d638b3ba7cde0a238d37 — destino nativo de download e nomes de arquivo.
+- 35b4c9c498c0a7f1158c9101098ecb28be91286e — teste de capacidades.
+- af8dc0d27989c481bbbf67f61f92efea7b294e48 — testes do Device Sync DS.
+- b25992233863db6f62d1f9b55412ce38d468620c — diagnóstico do diretório.
+
+CI:
+- Nenhum workflow foi retornado para o commit de teste no momento da consulta. Aguardar disparo/execução e registrar resultado integral antes de declarar a implementação validada.
+- PR #57 permanece aberta, draft e sem merge. Não publicar em tandem-latest.
+
+
+ACOMPANHAMENTO CI — IMPLEMENTAÇÃO .DSV — 2026-11-27
+- [ ] CI #1868 — run 45995160455 — commit af8dc0d27989c481bbbf67f61f92efea7b294e48: build-debug-apk e check-style na fila.
+- [ ] CI #1871 — run 45995224326 — commit b25992233863db6f62d1f9b55412ce38d468620c: build-debug-apk e check-style na fila.
+- [ ] Aguardar conclusão integral de ambas; não marcar implementação aprovada antes do final-status do workflow.
+
+
+INCLUSÃO DO MELONDS DS COMO NÚCLEO PADRÃO DE NINTENDO DS — 2026-11-27
+- [x] Confirmada a recomendação oficial Libretro: melonDS DS é a versão mais nova; melonDS legado é obsoleto e sem manutenção.
+- [x] Confirmado que melonDS DS possui build Android ARM64 oficial no release upstream JesseTG/melonds-ds.
+- [x] CoreInstaller agora reconhece o ID lógico melonds_ds e o nome binário upstream melondsds_libretro_android.so (diferente do padrão melonds_ds_libretro_android.so).
+- [x] Instalador baixa o release oficial v1.4.0, exige exatamente o arquivo melondsds_libretro_android.so no ZIP e verifica SHA-256 do pacote antes de extrair/substituir o core.
+- [x] O core anterior permanece preservado por backup/rollback do instalador.
+- [x] HEAD de atualização usa a URL upstream específica; os demais cores continuam usando o Buildbot Android ARM64.
+- [x] GamePlatforms agora define melonds_ds como núcleo padrão de Nintendo DS e aceita extensão .ids.
+- [x] CoreRegistry apresenta melonDS DS como recomendado e mantém melonDS legado como alternativa manual; DeSmuME/DeSmuME 2015 e NooDS permanecem como alternativas.
+- [x] melonDS DS declara save states e RomM SRAM Device Sync habilitados; usa o Save directory e arquivo .srm conforme documentação Libretro.
+- [x] Testes JVM cobrem nome de binário, ID reverso, URL upstream, SHA-256 fixado, core padrão e compatibilidade de save.
+- [x] Ajuste de layout DS foi estendido ao novo core, respeitando preferências salvas e as opções que o núcleo realmente declara.
+- [ ] CI de instalação/compilação ainda precisa concluir.
+- [ ] Validar no aparelho: download do core, ELF ARM64, primeiro boot, BIOS opcional, layout/touchscreen, áudio/vídeo, save .srm e upload/download RomM.
+- [ ] A release v1.4.0 informa que o renderer compute shader ainda não é suportado no Android; o core deve usar fallback de renderização disponível. Confirmar desempenho real no Edge 30 Fusion.
+- [ ] O save .sav existente do melonDS legado no Cache directory não é apagado nem migrado automaticamente. O core antigo permanece disponível para abrir jogos e saves legados; testar eventual migração separadamente antes de automatizar.
+- [ ] A origem é um release upstream externo ao Buildbot; atualização de versão/URL/hash requer atualização explícita do app enquanto o SHA está fixado. Não há atualização dinâmica sem hash autenticado.
+
+Fontes:
+- https://docs.libretro.com/library/melonds_ds/ — núcleo mais novo; saves .srm no Save directory; save states; DS/DSi; extensões .nds/.dsi/.ids.
+- https://docs.libretro.com/library/melonds/ — núcleo legado obsoleto/sem manutenção e save .sav no Cache directory.
+- https://github.com/JesseTG/melonds-ds/releases/tag/v1.4.0 — release upstream v1.4.0, Android Release ZIP e SHA-256 publicado.
+- https://github.com/JesseTG/melonds-ds — projeto upstream confirma Android arm64 e suporte para frontends Libretro.
+- https://docs.libretro.com/guides/download-cores/ — convenções para instalação manual de núcleos.
+
+Release fixado:
+- Asset: melondsds_libretro-android-Release.zip
+- Biblioteca interna esperada: melondsds_libretro_android.so
+- SHA-256 do ZIP: 555568396dd5cf230030e4dd0ff0b0c6ca7118231fe562bc50680fefa7ad8594
+- Versão: v1.4.0 (27-09-2026)
+
+Commits:
+- ba8da0e25efd5fc9854cf98c8c256b89705d87ca — instalador com origem upstream, SHA fixado e nome de biblioteca específico.
+- ba5e98d146e35ec116bcdb2b603aed2366402b6a — melonDS DS como núcleo padrão da plataforma.
+- 26f570474570266399da55a3f1d2d5ad1b044c0d — registro do núcleo e capacidades.
+- e1da73efbe2697bbda4ccd50aadf2040ed84bdcc — integração da sessão DS.
+- 087d1e172ef14d04028237c4bffaef0e60a07656 — layout lado a lado compatível com as opções do melonDS DS.
+- 77d270c1df09d2f12fd17aac68389d300706c60b — testes de instalação e hash.
+- 9d0c2f086252911d12282777999807fa217f0d8a — teste de plataforma e núcleo padrão.
+- d063941a759f725c50f84c08ba4d37aa01294847 — teste de Device Sync .srm.
+- 4ef8cd980787723e9a369fdd73c0a3180ba1c61f — documentação das fontes upstream.
+
+PR #57 permanece aberta/draft, sem merge e sem publicação em tandem-latest.
+
+
+ACOMPANHAMENTO CI — MELONDS DS — 2026-11-27
+- [ ] CI #1886 — run 45996130478 — commit d063941a759f725c50f84c08ba4d37aa01294847: check-style e build-debug-apk na fila.
+- [ ] CI #1887 — run 45996155964 — commit 4ef8cd980787723e9a369fdd73c0a3180ba1c61f: check-style e build-debug-apk na fila.
+- [ ] O commit de atualização do log não gerou workflow próprio.
+- [ ] Aguardar conclusão integral das CIs; validar build, testes e final-status antes de considerar esta integração aprovada.
+
+
+CORREÇÃO DE COMPILAÇÃO — FLUXOS DE CONFLITO E HISTÓRICO DO DEVICE SYNC — 2026-11-27
+- [x] Investigadas as falhas das CIs #1886 (run 45996130478) e #1887 (run 45996155964): ambas passaram em check-style, mas falharam na compilação Kotlin do app.
+- [x] Causa confirmada nos logs: quatro referências a `localArtifact?.format` estavam fora do escopo da variável, nos fluxos de resolução de conflito e restauração de histórico do RomM.
+- [x] Corrigidas as quatro referências para usar o artefato selecionado no escopo (`artifact?.format`), preservando a extensão real (.srm/.dsv) no nome enviado ao RomM.
+- [ ] CI do commit corretivo ainda não apareceu na consulta de workflows; confirmar execução e resultado integral.
+- [ ] Após a CI passar, revisar qualquer novo erro de compilação/teste antes de avançar para validação final.
+
+Commits:
+- 1068abbaaebe5ca8b4ec9d3b5e5f63b9cebcefa0 — correção de referências fora de escopo em RomMDeviceSyncRunner.kt.
+
+CIs com falha:
+- #1886 — run 45996130478 — falha em compileLawnWithQuickstepGithubDebugKotlin; quatro unresolved reference localArtifact.
+- #1887 — run 45996155964 — mesma falha; check-style passou em ambas.
+
+
+RESULTADO FINAL DA CI #1897 — CORREÇÃO DEVICE SYNC — 2026-11-27
+- [x] CI #1897 — run 45996973440 — commit 1068abbaaebe5ca8b4ec9d3b5e5f63b9cebcefa0: workflow concluído com sucesso.
+- [x] check-style: Spotless automático executado e verificação final aprovada.
+- [x] build-debug-apk: Run unit tests aprovado.
+- [x] build-debug-apk: assembleLawnWithQuickstepGithubDebug aprovado.
+- [x] Upload do artefato aprovado: assembleLawnWithQuickstepGithubDebug; artifact ID 15196557284; tamanho 46.629.004 bytes; SHA-256 6b822eb77050dea8e5fc60aab94518dcefd65a5929e2977a27a71271c5798ba5.
+- [x] final-status aprovado.
+- [x] As falhas de compilação das CIs #1886 e #1887 foram corrigidas e a revisão corrigida passou na CI #1897.
+- [ ] Validação funcional no aparelho permanece obrigatória: instalação/assinatura, inicialização de cores, áudio/vídeo, BIOS quando aplicável, controles, gamepad virtual e fluxos de save.
+- [ ] Testes de Nintendo DS permanecem pendentes: DeSmuME .dsv upload/download/conflito; melonDS DS .srm upload/download; teste de ROM compactada e identidade do save.
+- [ ] Validação de compatibilidade real por core permanece separada da CI; sucesso de compilação não comprova todos os sistemas.
+- [ ] Não houve publicação tandem-release/nightly-release nesta execução; PR #57 continua sem merge e tandem-latest não foi alterada.
+
+Resumo para fechamento do Estágio I:
+- CI automatizada da ponta corretiva: APROVADA.
+- Gamepad virtual: usuário já confirmou funcionamento; validação final de ergonomia/ciclo de vida ainda não documentada integralmente.
+- Pendências restantes concentram-se em validação funcional no aparelho e compatibilidade/save por núcleo; não criar novas funcionalidades antes de concluir essa rodada.
+
+
+CORREÇÃO DE INSTALAÇÃO — MELONDS DS / ZIP COM DIRETÓRIO-RAIZ — 2026-11-27
+- [x] Analisado o log de teste do aparelho (Tandem 16.Dev. #1900, sessão b4dc7c77): o usuário estava fora da rede local; timeouts para o RomM em 192.168.0.102:8080 foram classificados como esperados e excluídos desta validação.
+- [x] Erro independente confirmado na instalação do núcleo: o pacote foi baixado e passou pela etapa de verificação SHA-256, mas o instalador rejeitou a primeira entrada do ZIP porque ela era o diretório `melondsds_libretro-android-Release/`, enquanto o código esperava a biblioteca diretamente na raiz.
+- [x] Corrigido o extrator para percorrer entradas do ZIP, ignorar diretórios seguros e aceitar a biblioteca esperada dentro de uma pasta-raiz, mantendo a exigência de um único arquivo de núcleo com nome exato.
+- [x] Mantidas proteções contra caminhos absolutos, unidades Windows, segmentos "."/".." e arquivos adicionais inesperados; a validação ELF ARM64, hash do pacote e rollback continuam ocorrendo antes da substituição da instalação funcional.
+- [x] Adicionado teste JVM para extrair a biblioteca de um ZIP com diretório-raiz.
+- [x] Adicionado teste JVM para rejeitar tentativa de traversal em caminho de entrada ZIP.
+- [ ] CI da correção de extração ainda precisa concluir integralmente (check-style, testes unitários, build APK e final-status).
+- [ ] Após CI aprovada, repetir instalação do melonDS DS no aparelho e confirmar que o núcleo é carregado e inicia The Legend of Zelda: Phantom Hourglass.
+- [ ] Depois de instalado, validar jogabilidade, áudio/vídeo, layout das duas telas e persistência local .srm; Device Sync RomM deve ser reavaliado quando o aparelho estiver na rede local.
+- [ ] Não classificar como falha de rede do usuário o erro de ZIP; não classificar como falha do núcleo em execução, pois o binário ainda não chegou a ser instalado/carregado.
+
+Evidência do aparelho:
+- 2026-11-27T08:39:31.397-0400: início do download de `melondsds_libretro_android.so`.
+- 2026-11-27T08:39:35.055-0400: rejeição explícita: `ZIP inesperado: esperava melondsds_libretro_android.so, veio melondsds_libretro-android-Release/`.
+- Stack trace: `CoreInstaller.install(CoreInstaller.kt:166)`; falha durante validação da primeira entrada do ZIP.
+- O log também registra timeouts para o servidor RomM privado 192.168.0.102:8080; ignorados nesta auditoria conforme contexto informado pelo usuário.
+
+Commits:
+- 6730c562f0aff3c8429674221aa1b557b1835d18 — extrator passou a aceitar núcleo dentro de diretório-raiz.
+- d0812678e67b4a1ed8966de938b34a7e52e82dab — normalização segura dos separadores de caminho ZIP.
+- f27508bd8dc8f0f6400df2aca328122743226915 — testes de ZIP aninhado e rejeição de traversal.
+
+
+
+RETESTE NO APARELHO — MELONDS DS / BUILD #1910 — 2026-11-27
+- [x] Recebido e analisado novo log do aparelho: Tandem 16.Dev. (#1910), sessão b0a60348.
+- [x] Teste realizado com The Legend of Zelda: Phantom Hourglass; a seleção do core melonds_ds ocorreu, mas a instalação falhou antes de carregar a biblioteca.
+- [x] A falha anterior do diretório-raiz foi superada: o instalador agora percorre o ZIP e identifica entradas internas.
+- [x] Nova causa confirmada: o pacote upstream inclui o metadado Libretro `melondsds_libretro_android.info` em `cores/`; o extrator o tratava incorretamente como arquivo executável inesperado.
+- [x] Confirmado que o arquivo .so ainda não foi instalado/carregado; portanto este log não demonstra defeito de execução do melonDS DS nem perda de saves.
+- [x] Timeouts de rede para RomM em 192.168.0.102:8080 foram ignorados conforme orientação do usuário, pois o aparelho estava fora da rede local.
+- [x] Corrigido o extrator: aceita o único .so com nome exato, ignora arquivos .info sem extraí-los, continua validando CRC ao fechar cada entrada e rejeita bibliotecas .so adicionais, arquivos auxiliares desconhecidos e caminhos inseguros.
+- [x] Adicionado teste JVM com ZIP aninhado contendo .info antes da biblioteca esperada.
+- [x] Adicionado teste JVM para rejeitar uma biblioteca .so adicional inesperada.
+- [ ] CI completa da nova correção ainda pendente.
+- [ ] Após CI aprovada, instalar o novo APK e repetir o download/instalação do melonDS DS; confirmar carregamento do core e abertura de Phantom Hourglass.
+- [ ] Depois do primeiro boot, testar áudio/vídeo, duas telas, controles/touch e save local .srm.
+- [ ] Device Sync RomM deve ser testado novamente somente quando o aparelho estiver na rede local.
+
+Histórico de CI relacionado:
+- [x] CI #1906 — run 46001067964 — commit f27508bd8dc8f0f6400df2aca328122743226915: testes unitários e build APK passaram; check-style falhou porque o passo automático tentou enviar a formatação enquanto a branch já havia avançado (push não fast-forward). Artefato #15199146166 foi gerado, mas a CI global ficou com falha e não foi tratado como validação final.
+- [x] CI #1909 — run 46001330892 — commit 9ac2687f27e198452184051809b9546924087778: check-style, testes unitários, build APK, upload e final-status passaram.
+- [x] Artefato da CI #1909: ID 15199931106; 46.629.732 bytes; SHA-256 4274142a22626d7456d09d88559ca234821b6eef9645f0db4ab96af3057f772e. O usuário testou a versão 16.Dev. (#1910), correspondente à rodada, e reproduziu o problema de metadados .info.
+- [ ] A CI #1909 aprovou o código anterior à correção de metadados; não valida os commits corretivos desta atualização.
+
+Commits desta correção:
+- bee6ad4337ef2facc54cf59f7056fc94534cea8c — extrator passa a ignorar metadados .info, sem extrair arquivos auxiliares.
+- 4bbec4a28cf912b425686f748065600a81d257f3 — testes para metadado .info e rejeição de biblioteca adicional.
+
+Governança:
+- PR #57 continua aberta e draft.
+- Não houve merge nem publicação em tandem-latest.
+
+
+CORREÇÃO DE INSTALAÇÃO — MELONDS DS / ARQUIVO DE LICENÇA NO ZIP — 2026-11-27
+- [x] Recebido e analisado o log do aparelho tandem-log (17).txt: Tandem 16.Dev. (#1914), sessão c2a8afb3, Motorola Edge 30 Fusion / Android 17.
+- [x] Confirmado que a falha anterior com o arquivo .info foi superada: o instalador avançou até encontrar o arquivo de licença do pacote upstream.
+- [x] Nova causa confirmada no aparelho: o ZIP oficial contém `melondsds_libretro-android-Release/cores/melondsds-LICENSE.txt`, que era rejeitado como arquivo auxiliar não permitido.
+- [x] Confirmado que a biblioteca .so ainda não foi instalada/carregada; não há evidência de falha de execução do melonDS DS nem de problema com saves.
+- [x] Timeouts para RomM em 192.168.0.102:8080 ignorados conforme orientação do usuário; aparelho estava fora da rede local.
+- [x] Atualizado o extrator para aceitar arquivos de licença com nome LICENSE, -LICENSE ou _LICENSE e extensão opcional, sem extraí-los para a pasta de núcleos.
+- [x] Mantida a rejeição de bibliotecas .so adicionais, arquivos auxiliares desconhecidos, caminhos absolutos, traversal e entradas inseguras.
+- [x] Mantidas a verificação SHA-256 do ZIP upstream, validação ELF ARM64, staging e rollback da instalação.
+- [x] Atualizado o teste de regressão para incluir simultaneamente o metadado .info, o arquivo melondsds-LICENSE.txt e a biblioteca esperada; o teste exige extração somente da biblioteca.
+- [ ] CI da correção de licença ainda pendente; verificar check-style, testes unitários, APK e final-status.
+- [ ] Após CI aprovada, repetir download/instalação do melonDS DS e abrir The Legend of Zelda: Phantom Hourglass.
+- [ ] Após primeiro boot, validar áudio/vídeo, disposição das duas telas, controles/touch e save local .srm.
+- [ ] Device Sync RomM deve ser testado somente quando o aparelho estiver na rede local.
+
+Evidência do aparelho:
+- 2026-11-27T09:50:53.598-0400: instalação falhou com `ZIP contém arquivo auxiliar não permitido: melondsds_libretro-android-Release/cores/melondsds-LICENSE.txt`.
+- Stack trace: `CoreInstaller.extractCoreFromArchive(CoreInstaller.kt:292)`.
+- O erro aconteceu após iniciar o download do núcleo; não foi registrada mensagem de sucesso de instalação ou carregamento do core.
+- 2026-11-27T09:50:40–09:50:51: timeouts de rede RomM para 192.168.0.102:8080, ignorados nesta auditoria.
+
+CI anterior:
+- [x] CI #1912 — run 46008214700 — commit ac2ed33c22e3d7e7a640640e5bbb3d47c9126f10: check-style, testes unitários, build-debug-apk, upload do artefato e final-status aprovados.
+- [x] Artefato CI #1912: ID 15202666441; tamanho 46.629.646 bytes; SHA-256 91b1c422c803c7d8e60f7ff3add726a16509652be11fef59985a1db39590e5e0.
+- [x] O teste físico do build #1914 reproduziu um caso não coberto pela fixture anterior: licença upstream não reconhecida. A CI #1912 não valida esta nova correção.
+
+Commits:
+- Correção do extrator: 548bbafec2323ac6509da34b4e3c071abd32fb0f
+- Teste de regressão: 0076be382802e38744cffa180ff739d6cffb2eae
+
+Governança:
+- PR #57 permanece aberta e draft, base game-mode-m2-dev.
+- Não houve merge nem publicação em tandem-latest.
+
+
+CORREÇÃO DA CI #1915 — REGEX DE LICENÇA UPSTREAM — 2026-11-27
+- [x] Consultados os jobs da CI #1915 (run 46010942181): check-style aprovado; build-debug-apk falhou nos testes unitários; final-status falhou por consequência; nenhum APK foi gerado.
+- [x] Identificado o único teste com falha: CoreInstallerTest.extractsMelonDsCoreAndIgnoresMetadataAndUpstreamLicense (linha 362); 256 testes executados, 1 falhou.
+- [x] Causa isolada no filtro de licença: a expressão usava matches(), que exige correspondência da string inteira, e não reconhecia o prefixo upstream "melondsds-" antes de LICENSE.
+- [x] Corrigido o filtro para localizar LICENSE como segmento delimitado por hífen/underscore, exigindo sufixo de extensão opcional e fim do nome; a entrada continua sendo ignorada, nunca extraída.
+- [ ] Aguardar nova CI com a correção; confirmar check-style, todos os testes, APK, artefato e final-status.
+- [ ] Após CI integralmente aprovada, repetir no aparelho a instalação do melonDS DS e abrir The Legend of Zelda: Phantom Hourglass.
+- [ ] Validar áudio/vídeo, duas telas, controles/touch e save local .srm após o primeiro boot; Device Sync RomM somente na rede local.
+- [x] PR #57 permanece aberta e draft, sem merge ou publicação em tandem-latest.
+
+Evidência CI #1915:
+- Run: 46010942181.
+- Job de build/testes: 140545972638; 256 testes concluídos, 1 falha.
+- Teste: extractsMelonDsCoreAndIgnoresMetadataAndUpstreamLicense; IllegalStateException em CoreInstallerTest.kt:362.
+- Commits anteriores avaliados: 548bbafec2323ac6509da34b4e3c071abd32fb0f (correção inicial) e 0076be382802e38744cffa180ff739d6cffb2eae (teste de regressão).
+
+
+VALIDAÇÃO NO APARELHO — MELONDS DS / PHANTOM HOURGLASS — 2026-11-27
+- [x] Usuário confirmou que a instalação do núcleo melonDS DS funcionou após a correção do reconhecimento do nome upstream melondsds-LICENSE.txt.
+- [x] Usuário confirmou que The Legend of Zelda: Phantom Hourglass abriu e não encontrou nenhum outro erro durante este teste.
+- [x] Considerado aprovado o teste de instalação/carregamento inicial do melonDS DS no aparelho.
+- [ ] Registrar versão/build exata utilizada no teste, caso seja informada posteriormente; não presumir número de build.
+- [ ] Continuam pendentes testes funcionais mais completos: áudio/vídeo prolongado, alternância e disposição das duas telas, controles físicos/touch e persistência do save local .srm após fechar/reabrir o jogo.
+- [ ] Testar Device Sync com RomM somente quando o aparelho estiver na rede local; timeouts fora da rede não contam como falha do núcleo.
+- [ ] Verificar/registrar CI integralmente aprovada para o commit final; a CI #1915 falhou em um teste unitário antes da correção do matcher de licença e não valida o commit corretivo posterior.
+- [x] PR #57 continua aberta e draft; sem merge e sem publicação em tandem-latest.
+
+Resultado do usuário:
+- Mensagem de 2026-11-27: "Funcionou. Não encontrei nenhum outro erro".
+- Resultado: correção funcional confirmada no teste real; não declarar Estágio I concluído enquanto as verificações restantes e CI não estiverem documentadas.
+
+
+VALIDAÇÃO FUNCIONAL FINAL — CONFIRMAÇÃO DO USUÁRIO — 2026-11-27
+- [x] Usuário confirmou que todos os pontos funcionais listados anteriormente já estão OK.
+- [x] Instalação e carregamento do núcleo melonDS DS; abertura de The Legend of Zelda: Phantom Hourglass.
+- [x] Áudio e vídeo durante o uso.
+- [x] Disposição e alternância das duas telas Nintendo DS.
+- [x] Controles físicos e touchscreen/gamepad virtual.
+- [x] Persistência do save local .srm após encerrar e reabrir o jogo.
+- [x] Device Sync com RomM; considerar válida a confirmação do usuário para os testes realizados na rede local.
+- [x] Nenhuma outra falha funcional conhecida no escopo atual do Estágio I.
+- [x] Encerrado o ciclo de testes funcionais do Estágio I conforme confirmação do usuário. Qualquer erro que venha a ser descoberto futuramente será tratado em PR corretiva separada, sem reabrir o escopo desta PR automaticamente.
+- [ ] Confirmar CI integralmente aprovada para o commit final da correção do nome LICENSE; a CI #1915 falhou antes da correção do matcher e não valida o commit posterior.
+- [x] PR #57 permanece aberta/draft, sem merge e sem publicação em tandem-latest; aguardar autorização explícita para qualquer merge/publicação.
+
+Decisão de escopo do usuário:
+- Os testes funcionais remanescentes foram declarados OK pelo usuário em 2026-11-27.
+- Não solicitar novos testes de rotina para o Estágio I.
+- Se surgir erro futuro, corrigir em uma nova PR específica, quando aplicável.
+
+
+CI APROVADA — FECHAMENTO DA VALIDAÇÃO DO ESTÁGIO I — 2026-11-27
+- [x] CI #1922 — https://github.com/izzyn0okami/Tandem/actions/runs/46016197052 — conclusão success no commit 4967a18d00b86b937fb5917809f30be02641c469.
+- [x] check-style / Spotless: sucesso, incluindo aplicação automática e verificação final da formatação.
+- [x] Testes unitários: sucesso.
+- [x] Build assembleLawnWithQuickstepGithubDebug: sucesso.
+- [x] Upload do APK de debug: sucesso.
+- [x] final-status: sucesso.
+- [x] Jobs condicionais de publicação/notificação ignorados conforme esperado; esta CI não publicou em tandem-latest.
+- [x] Combinada a CI #1922 aprovada com a confirmação final do usuário sobre todos os testes funcionais no aparelho, não restam pendências conhecidas dentro do escopo atual do Estágio I.
+- [ ] Merge da PR #57 permanece pendente de autorização explícita; a PR continua aberta e draft.
+- [ ] Nenhuma publicação em tandem-latest foi realizada.
+
+
+CORREÇÃO DE RESOLUÇÃO DO PLUGIN KSP — CI #1925 — 2026-11-27
+- [x] CI #1925 (run 46019465698): testes unitários, compilação do APK e upload do artefato passaram; check-style falhou antes de executar Spotless e final-status falhou por consequência.
+- [x] Causa identificada no log: Gradle não encontrou o marcador do plugin com.google.devtools.ksp versão 2.3.13 nos repositórios configurados (Google e Gradle Plugin Portal).
+- [x] Confirmado que o marcador com.google.devtools.ksp.gradle.plugin:2.3.13 está publicado no Maven Central; a versão KSP 2.3.13 é válida e não deve ser rebaixada.
+- [x] Corrigido settings.gradle adicionando mavenCentral() aos repositórios de pluginManagement, sem alterar versões de plugins ou dependências.
+- [x] Commit corretivo: 7cb5f57da47951406c66e9a8a128f95d0cdb120f.
+- [ ] Aguardar nova CI disparada pelo commit corretivo; exigir check-style/Spotless, testes, APK e final-status aprovados.
+- [ ] A PR #57 permanece aberta e draft; nenhum merge ou publicação em tandem-latest foi realizado.
+
+
+CI APROVADA — CORREÇÃO DO PLUGIN KSP — CI #1930 — 2026-11-27
+- [x] CI #1930 — https://github.com/izzyn0okami/Tandem/actions/runs/46021955932 — conclusão success para o commit 607306a151e6c4c14574932fe5012d946c180d12.
+- [x] check-style / Spotless: sucesso; aplicação automática e verificação final concluídas.
+- [x] Testes unitários: sucesso.
+- [x] Build assembleLawnWithQuickstepGithubDebug: sucesso.
+- [x] Upload do APK de debug: sucesso.
+- [x] final-status: sucesso.
+- [x] A correção de pluginManagement.repositories com mavenCentral() resolveu a falha de resolução do plugin KSP 2.3.13.
+- [x] O APK foi gerado como artefato da CI; não houve publicação em tandem-latest.
+- [x] Com a CI #1930 aprovada e os testes funcionais do aparelho já confirmados pelo usuário, não restam pendências conhecidas no escopo atual do Estágio I.
+- [ ] Merge da PR #57 permanece pendente de autorização explícita; a PR continua aberta e draft.
+- [ ] Nenhuma publicação em tandem-latest foi realizada.
+
+
+MERGE CONCLUÍDO — PR #57 / ESTÁGIO I — 2026-11-27
+- [x] PR #57 marcada como pronta para revisão após autorização explícita do usuário.
+- [x] PR #57 mesclada com sucesso em game-mode-m2-dev.
+- [x] Merge commit: f2ad315eedd814547bb47cfd060aaa87d27e0df5.
+- [x] PR #57 encerrada pelo GitHub com estado merged=true.
+- [x] Estágio I permanece concluído: CI #1930 aprovada e testes funcionais do aparelho confirmados pelo usuário.
+- [ ] Nenhuma publicação em tandem-latest foi autorizada ou realizada.
+- [ ] Atualizar a PR #58 (Stage J) sobre a nova base game-mode-m2-dev, preservando seus 66 commits de trabalho e resolvendo divergências com o Estágio I antes de executar novas validações.
+- [x] PR #41 permaneceu intocada.
