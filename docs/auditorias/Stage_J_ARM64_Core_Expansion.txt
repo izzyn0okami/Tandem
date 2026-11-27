@@ -64,3 +64,19 @@ DEPENDÊNCIA CONCLUÍDA — MERGE DO ESTÁGIO I / PR #57 — 2026-11-27
 - [ ] Executar CI completa sobre o novo head; a CI #1554 aprovada no commit 79d9f56453b48e771acbf79c2ebaecea73a96f8c é histórica e não valida a branch atualizada.
 - [ ] Continuam pendentes todos os testes físicos de cores avançados, BIOS/firmware, Vulkan/Turnip, saves/RomM e RetroAchievements listados neste log.
 - [x] PR #58 permanece aberta e draft; nenhum merge ou publicação em tandem-latest foi realizado.
+
+
+
+AUDITORIA DE DEPENDÊNCIA / DIVERGÊNCIA DA PR #58 — 2026-11-27
+- [x] Reconsultado o log do Estágio I na branch game-mode-m2-dev e confirmado o merge da PR #57 no commit f2ad315eedd814547bb47cfd060aaa87d27e0df5.
+- [x] Reconsultado o estado da PR #58: aberta, Draft, não mesclada; base ainda definida como feat/libretro-stage-i; head feat/arm64-core-expansion.
+- [x] Comparação realizada antes desta atualização documental: game-mode-m2-dev...feat/arm64-core-expansion = diverged, 67 commits à frente e 234 atrás; merge-base antigo 2d6ba3cc1e7ef1a4978907ed121b6e6f1c57e5d7.
+- [x] Confirmado que a PR contém 67 commits no total: 66 commits de implementação/auditoria do Stage J e 1 commit final que registrou a dependência do merge da PR #57.
+- [x] Diff atual contém 15 arquivos: 13 arquivos de código/testes e 2 logs de auditoria. Os pontos de maior sobreposição com Stage I são GamePlatforms.kt, CoreRegistry.kt, CoreInstaller.kt, BiosManager.kt e GameSessionActivity.kt.
+- [ ] Rebase real da branch feat/arm64-core-expansion sobre game-mode-m2-dev continua pendente. As ações GitHub disponíveis nesta sessão permitem consultar refs, criar commits/árvores e mover refs, mas não oferecem uma operação de rebase nem aplicação segura e sequencial dos patches dos 67 commits.
+- [ ] Não foi alterada a base da PR, não foi movida a ref da branch e não foi criado um snapshot/squash substituindo o histórico; essas alternativas poderiam descartar a sequência de commits ou produzir uma PR enganosa.
+- [ ] Próxima operação técnica deve ser um rebase Git verdadeiro, preservando a sequência dos 66 commits de trabalho, resolvendo conflitos contra a base atual e mantendo o commit documental final de dependência.
+- [ ] Depois do rebase: verificar que o diff não reapresenta/reverte Stage I, revisar os 15 arquivos e executar CI integral no novo head.
+- [ ] Permanecem pendentes testes físicos de cores avançados, BIOS/firmware, Vulkan/Turnip, integração de saves/RomM e RetroAchievements, conforme itens anteriores deste log.
+- [x] PR #58 permanece aberta e Draft; nenhum merge ou publicação em tandem-latest foi realizado.
+- [x] PR #55 e PR #41 não foram alteradas.
