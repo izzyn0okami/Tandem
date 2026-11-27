@@ -269,3 +269,15 @@ NOVA TENTATIVA DE MESCLAGEM / REAUDITORIA — 2026-11-27
 - [ ] Após rebase: conferir diff final sem duplicação de Stage I, executar CI completa no novo head, revisar resultado e somente então tentar novo merge.
 - [ ] Permanecem pendentes testes físicos dos cores avançados, BIOS/firmware, Vulkan/Turnip no Snapdragon/Adreno, saves/RomM e RetroAchievements conforme escopo Stage J.
 - [x] Nenhuma alteração em tandem-latest, PR #41 ou PR #55.
+
+
+AUDITORIA GLOBAL DAS PRs ABERTAS — 2026-11-27
+- [x] Inventário completo das PRs abertas do repositório: #55 e #58. PR #56 já mesclada; PR #57 já mesclada.
+- [x] PR #55 foi rebaseada documentalmente sobre o head atual de game-mode-m2-dev, preservando as conclusões G5/G7 em arquivo dedicado e evitando substituir o checklist vivo. CI #1937 iniciada; aguardar resultado antes do merge.
+- [x] PR #58 teve sua base corrigida de feat/libretro-stage-i para game-mode-m2-dev, pois a PR #57 já foi mesclada.
+- [x] Comparação de histórico da PR #58: 117 commits no head contra 234 commits posteriores na base, com merge-base 2d6ba3cc1e7ef1a4978907ed121b6e6f1c57e5d7.
+- [x] Confirmado que há sobreposição em arquivos centrais: BiosManager, CoreInstaller, CoreRegistry, CoreSaveAdapter, DeviceSyncArtifactPolicy, GamePlatforms, GameSessionActivity, RomMDeviceSyncClient, RomMDeviceSyncRunner, SaveArtifactCatalog, SaveStore, VulkanDriverManager e respectivos testes, além do log do Estágio I.
+- [ ] Rebase funcional da PR #58 ainda pendente. Não escolher automaticamente a versão antiga ou nova dos arquivos sobrepostos: as mudanças posteriores da base incluem correções do Estágio I, sincronização DS, lifecycle de sessão, unzipper e instalação de núcleos. Resolver por integração semântica e preservar ambos os conjuntos de comportamento.
+- [ ] Depois da reconciliação, executar CI completa no head atualizado, corrigir Spotless/testes/build e validar que o diff da PR contém apenas Stage J mais ajustes necessários.
+- [ ] Testes no aparelho continuam necessários para importação/fallback Vulkan e instalação/execução dos novos núcleos; CI não substitui esses testes.
+- [x] Nenhuma publicação em tandem-latest foi realizada. PR #41 não foi alterada.
