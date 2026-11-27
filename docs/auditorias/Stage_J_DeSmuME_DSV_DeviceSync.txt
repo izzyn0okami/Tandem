@@ -47,3 +47,8 @@ REBASE DE ESCOPO APÓS MERGE DA PR #62 — 2026-11-27
 - [x] Esta branch foi reconstruída sobre o novo head de game-mode-m2-dev para remover do diff os commits de teste já mesclados.
 - [x] Os testes de inventário/seleção da PR #62 permanecem na base; esta PR mantém apenas testes adicionais de manifesto, upload e download DSV.
 - [ ] Nova CI após reconstrução da branch.
+
+CORREÇÃO DE TESTE LEGADO — 2026-11-27
+- [x] A primeira CI (#2016) identificou um teste existente, NintendoDsDeviceSyncTest.deviceSyncAcceptsDsvAndRejectsWrongRemoteExtension, que ainda chamava localSave com a extensão padrão .srm.
+- [x] Atualizado o teste legado para declarar a extensão obtida do adapter DeSmuME, conforme o novo contrato de validação.
+- [ ] Nova CI no head atualizado.
