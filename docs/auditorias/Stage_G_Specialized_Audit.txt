@@ -25,9 +25,12 @@ VALIDAÇÃO E SITUAÇÃO
 - [x] Decisões G1–G8 consolidadas com o estado atual após merge da PR #56.
 - [x] Implementação G6 mantida na PR #56 já mesclada; esta auditoria não duplica seu código.
 - [x] Auditoria separada criada para evitar reverter o checklist principal atualizado por outras etapas.
-- [ ] CI para o commit desta consolidação: aguardar execução automática no GitHub Actions; não presumir sucesso.
+- [x] CI #1937 concluída com sucesso no commit 8089d52a003def9515efa8db968b926a752ce2aa: testes unitários, Spotless, build do APK e upload do artefato aprovados.
+- [x] PR #55 mesclada por squash em game-mode-m2-dev; merge commit e6949de1a62809e21772b51071f2f2a3c88fd130.
 - [ ] Nenhuma publicação em tandem-latest autorizada ou realizada por esta PR.
 
 HISTÓRICO
 - PR #55 original continha somente alterações documentais num checklist que ficou 281 commits atrás da base atual. Seu patch integral não deve ser aplicado sobre o checklist atualizado, pois poderia reverter registros posteriores.
-- Esta consolidação preserva as decisões técnicas e de escopo relevantes em um arquivo independente, sem substituir o checklist vivo.
+- A consolidação preservou as decisões técnicas e de escopo relevantes em um arquivo independente, sem substituir o checklist vivo.
+- CI #1937: https://github.com/izzyn0okami/Tandem/actions/runs/46044417212
+- PR #55: https://github.com/izzyn0okami/Tandem/pull/55
