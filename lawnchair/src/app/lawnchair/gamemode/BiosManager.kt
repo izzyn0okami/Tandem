@@ -56,16 +56,28 @@ object BiosManager {
     /** Plataformas que precisam de uma pasta de sistema inteira (ex.: blueMSX), em vez de um arquivo só. */
     fun platformsWithKit(): List<GamePlatform> = GamePlatforms.all.filter { it.biosKit != null }
 
-    /** Cada subpasta pedida existe e tem pelo menos um arquivo dentro. */
-    fun kitReady(context: Context, platform: GamePlatform): Boolean {
-        val kit = platform.biosKit ?: return true
-        return kit.all { folder -> File(systemDir(context), folder).let { it.isDirectory && it.walkTopDown().any(File::isFile) } }
+    /** Valida a presença real de conteúdo nos diretórios de sistema exigidos pelos cores. */
+    internal fun kitContentsReady(platform: GamePlatform, folder: String, directory: File): Boolean {
+        if (!directory.isDirectory) return false
+        val expectedLeaf = when {
+            platform.slug == "ps2" && folder == "pcsx2/bios" -> "bios"
+            platform.slug in setOf("gc", "wii") && folder == "dolphin-emu/Sys" -> "Sys"
+            else -> null
+        }
+        return (expectedLeaf == null || directory.name.equals(expectedLeaf, ignoreCase = true)) &&
+            directory.walkTopDown().any(File::isFile)
     }
 
-    /** Quantas das subpastas pedidas já têm algum arquivo. */
+    /** Cada subpasta pedida precisa conter a estrutura mínima que o core realmente utiliza. */
+    fun kitReady(context: Context, platform: GamePlatform): Boolean {
+        val kit = platform.biosKit ?: return true
+        return kit.all { folder -> kitContentsReady(platform, folder, File(systemDir(context), folder)) }
+    }
+
+    /** Quantas subpastas atendem aos requisitos mínimos do core. */
     fun kitStatus(context: Context, platform: GamePlatform): Pair<Int, Int> {
         val kit = platform.biosKit ?: return 0 to 0
-        val ok = kit.count { folder -> File(systemDir(context), folder).let { it.isDirectory && it.walkTopDown().any(File::isFile) } }
+        val ok = kit.count { folder -> kitContentsReady(platform, folder, File(systemDir(context), folder)) }
         return ok to kit.size
     }
 

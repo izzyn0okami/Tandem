@@ -252,4 +252,21 @@ class BiosManagerTest {
         assertNull(device.supports("unknown_capability"))
         assertNull(device.copy(online = null).online)
     }
+
+    @Test
+    fun advancedCoreBiosKitsValidateTheCurrentNestedDirectoryLayout() {
+        val ps2 = GamePlatforms.all.single { it.slug == "ps2" }
+        assertEquals(listOf("pcsx2/bios", "pcsx2/resources"), ps2.biosKit)
+        val ps2Bios = File(root, "pcsx2/bios").apply { mkdirs() }
+        assertFalse(BiosManager.kitContentsReady(ps2, "pcsx2/bios", ps2Bios))
+        File(ps2Bios, "scph39001.bin").writeText("bios")
+        assertTrue(BiosManager.kitContentsReady(ps2, "pcsx2/bios", ps2Bios))
+
+        val gameCube = GamePlatforms.all.single { it.slug == "gc" }
+        assertEquals(listOf("dolphin-emu/Sys"), gameCube.biosKit)
+        val dolphinSys = File(root, "dolphin-emu/Sys").apply { mkdirs() }
+        assertFalse(BiosManager.kitContentsReady(gameCube, "dolphin-emu/Sys", dolphinSys))
+        File(dolphinSys, "codehandler.bin").writeText("system")
+        assertTrue(BiosManager.kitContentsReady(gameCube, "dolphin-emu/Sys", dolphinSys))
+    }
 }
