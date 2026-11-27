@@ -141,4 +141,16 @@ class GamePlatformsResolutionTest {
         assertTrue(yabause.supportsRomMSaveSync)
     }
 
+    @Test
+    fun segaCdGenesisPlusGxBackupRamIsNotAdvertisedAsSramSync() {
+        val platform = GamePlatforms.bySlug("scd")!!
+        val genesisPlus = CoreRegistry.info(platform, "genesis_plus_gx")
+        val picoDrive = CoreRegistry.info(platform, "picodrive")
+
+        assertTrue(genesisPlus.supportsStates)
+        assertFalse(genesisPlus.supportsRomMSaveSync)
+        assertTrue(picoDrive.supportsStates)
+        assertTrue(picoDrive.supportsRomMSaveSync)
+    }
+
 }
