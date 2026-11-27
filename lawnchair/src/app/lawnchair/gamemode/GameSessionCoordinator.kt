@@ -203,3 +203,17 @@ internal object GameSessionSyncPolicy {
     /** Conflitos são estacionados para resolução; somente falhas operacionais pedem retry automático. */
     fun shouldRetryBackground(result: DeviceSyncExecutionResult): Boolean = result.failed > 0
 }
+
+/**
+ * Decisões puras do ciclo de vida da sessão. Mantidas fora da Activity para
+ * permitir testes JVM sem instanciar Android ou o núcleo nativo.
+ */
+internal object GameSessionLifecyclePolicy {
+    fun shouldDestroyNativeOnPause(isFinishing: Boolean, isChangingConfigurations: Boolean): Boolean =
+        isFinishing || isChangingConfigurations
+
+    fun shouldLogNormalEnd(isFinishing: Boolean): Boolean = isFinishing
+
+    fun shouldEnqueuePostSessionSync(coreSupportsRomMSaveSync: Boolean, hasRomPath: Boolean): Boolean =
+        coreSupportsRomMSaveSync && hasRomPath
+}
