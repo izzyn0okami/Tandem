@@ -1407,3 +1407,25 @@ ACOMPANHAMENTO DE CI — 2026-11-27
 - [ ] CI #1824 — run 45992647409 — commit 2372bc1d1a6325ca8c2f4cf2ffbbeb1f7665caca: em andamento.
 - [ ] Aguardando CIs para os commits Sega CD 4d232a8 e 9d19d8b; monitorar workflow da ponta atual.
 - PR #57 permanece aberta como Draft, não mesclada; head consultado 9d19d8b20b285cbc4327555c3631063b817e1689. Sem publicação em tandem-latest.
+
+
+COMPLEMENTO DA AUDITORIA DE SAVE — LIMITES DO TRANSPORTE SRAM
+- O transporte atual de Tandem é baseado no bloco SRAM retornado pelo núcleo via LibretroDroid e persistido em um arquivo próprio do jogo; não sincroniza automaticamente todos os arquivos que o núcleo grava diretamente em GameFolders/Saves.
+- Por isso, a tabela "Saves = suportado" da documentação Libretro não basta, isoladamente, para provar compatibilidade com RomM Device Sync.
+- Beetle Saturn e Genesis Plus GX Sega CD têm arquivos de backup específicos (.bcr/.bkr/.smpc e .brm, respectivamente); essas plataformas/combinações agora não anunciam sync SRAM até haver adaptador de arquivos dedicado.
+- Esta separação não desativa saves locais ou save states; apenas evita sincronização RomM por uma interface/formato não comprovado.
+
+Fontes:
+- https://docs.libretro.com/library/beetle_saturn/
+- https://docs.libretro.com/library/genesis_plus_gx/
+- https://docs.libretro.com/development/cores/developing-cores/
+
+
+ACOMPANHAMENTO DE CI — 2026-11-27 — RECONSULTA
+- [x] CIs #1811–#1821: concluídas com sucesso integral (check-style, build-debug-apk e final-status).
+- [ ] CI #1822 — run 45991507650 — commit ecb5547d2bc30ad843c30001b8615c09bd652378: check-style e build-debug-apk aprovados; final-status ainda em fila.
+- [ ] CI #1823 — run 45992619101 — commit 702c866a5db22e6b29fb0a519f2896ce2038bbb4: em andamento.
+- [ ] CI #1824 — run 45992647409 — commit 2372bc1d1a6325ca8c2f4cf2ffbbeb1f7665caca: em andamento.
+- [ ] CI #1825 — run 45992668128 — commit 9d19d8b20b285cbc4327555c3631063b817e1689: em andamento.
+- [ ] CI #1826 — run 45992691513 — commit 3c6a522a287f7769d61b5ae3e2dce036b48f59ad: em andamento; ponta atual consultada.
+- PR #57 segue aberta como Draft e sem merge. Head 3c6a522a287f7769d61b5ae3e2dce036b48f59ad. Sem publicação em tandem-latest.
