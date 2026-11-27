@@ -66,6 +66,7 @@ class NintendoDsDeviceSyncTest {
             file = file,
             updatedAt = "2026-11-27T12:00:00Z",
             remoteSlot = "autosave",
+            expectedExtension = DeviceSyncArtifactPolicy.fileExtensionForCore("desmume"),
         )
         assertNotNull(save)
 
