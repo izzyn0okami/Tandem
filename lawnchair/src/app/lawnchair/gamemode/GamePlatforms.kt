@@ -133,7 +133,7 @@ object GamePlatforms {
             15,
             bios = listOf(BiosFile("bios.gg", "Game Gear BIOS (opcional)", "672e104c3be3a238301aceffc3b23fd6")),
         ),
-        GamePlatform("32x", "Sega 32X", "picodrive", setOf("32x"), setOf("32x", "sega32x"), 43),
+        GamePlatform("32x", "Sega 32X", "picodrive", setOf("32x"), setOf("32x", "sega32x"), 43, 10),
         GamePlatform(
             slug = "scd",
             name = "Sega CD",
@@ -141,6 +141,7 @@ object GamePlatforms {
             extensions = setOf("cue", "chd", "iso", "m3u"),
             folderAliases = setOf("scd", "segacd", "megacd", "segamegacd"),
             sortOrder = 44,
+            raConsoleId = 9,
             discBased = true,
             discCompanionExtensions = setOf("bin", "wav"),
             bios = listOf(
@@ -150,7 +151,7 @@ object GamePlatforms {
             ),
             biosRequired = true,
         ),
-        GamePlatform("n64", "Nintendo 64", "mupen64plus_next_gles3", setOf("z64", "n64", "v64"), setOf("n64", "nintendo64"), 50),
+        GamePlatform("n64", "Nintendo 64", "mupen64plus_next_gles3", setOf("z64", "n64", "v64"), setOf("n64", "nintendo64"), 50, 2),
         GamePlatform(
             slug = "psx",
             name = "PlayStation",
@@ -183,6 +184,7 @@ object GamePlatforms {
             extensions = setOf("cue", "chd", "iso", "m3u", "ccd"),
             folderAliases = setOf("saturn", "segasaturn"),
             sortOrder = 45,
+            raConsoleId = 39,
             discBased = true,
             discCompanionExtensions = setOf("bin", "img", "sub", "wav"),
             bios = listOf(
@@ -198,6 +200,7 @@ object GamePlatforms {
             extensions = setOf("gdi", "cdi", "chd", "cue", "m3u"),
             folderAliases = setOf("dreamcast", "dc", "segadreamcast"),
             sortOrder = 46,
+            raConsoleId = 40,
             discBased = true,
             discCompanionExtensions = setOf("bin", "raw", "wav"),
             bios = listOf(
@@ -231,6 +234,7 @@ object GamePlatforms {
             extensions = setOf("iso", "cso", "pbp"),
             folderAliases = setOf("psp", "playstationportable", "sonypsp"),
             sortOrder = 61,
+            raConsoleId = 41,
             discBased = true,
         ),
         GamePlatform(
@@ -288,7 +292,7 @@ object GamePlatforms {
             bios = listOf(BiosFile("lynxboot.img", "Atari Lynx (obrigatório)", "fcd403db69f54290b51035d82f835e7b")),
             biosRequired = true,
         ),
-        GamePlatform("jaguar", "Atari Jaguar", "virtualjaguar", setOf("j64", "jag"), setOf("jaguar", "atarijaguar", "j64"), 84),
+        GamePlatform("jaguar", "Atari Jaguar", "virtualjaguar", setOf("j64", "jag"), setOf("jaguar", "atarijaguar", "j64"), 84, 17),
         GamePlatform(
             slug = "ps2",
             name = "PlayStation 2",
