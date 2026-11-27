@@ -1329,3 +1329,17 @@ ACOMPANHAMENTO DE CI — RECONSULTA — 2026-11-27
 - [ ] CI #1804 — run 45990371323 — commit e536ed662cb8622155d3c3235eea99ccbf364a98: check-style aprovado; testes unitários em execução, build APK e final-status pendentes.
 - [ ] A correção conservadora de capacidades (head atual 93df6e0ade57509716f0f99efa2fe478120b2a46) ainda não apresentou status/execução CI associado no endpoint consultado; monitorar novo workflow da PR.
 - PR #57 permanece aberta, Draft e não mesclada; head atual 93df6e0ade57509716f0f99efa2fe478120b2a46. Sem publicação em tandem-latest.
+
+
+AUDITORIA DE FORMATO DE SAVE — DOLPHIN (GAMECUBE/WII) — 2026-11-27
+- [x] Documentação oficial Libretro confirma suporte a Saves e States no Dolphin.
+- [x] Documentação oficial confirma estrutura própria de arquivos em `<save_dir>/dolphin-emu/User`, semelhante ao emulador Dolphin standalone; inclui arquivos de save e configuração.
+- [x] Interface Libretro distingue SRAM exposta ao frontend de saves que o core grava diretamente na pasta de saves; nem todo core consegue expor todos os dados como SRAM.
+- [x] GameCube e Wii agora mantêm save states habilitados, mas RomM SRAM Device Sync desativado para Dolphin, evitando classificar memory cards/arquivos próprios como SRAM.
+- [x] Teste JVM adicionado para garantir essa separação nas duas plataformas.
+- [ ] Avaliar futuramente sincronização específica da árvore Dolphin User, com inventário/identidade por jogo e prevenção de conflitos; não enviar a pasta inteira como se fosse SRAM.
+- [ ] Testar saves e states do Dolphin no aparelho e confirmar os caminhos efetivos usados pela versão Android do core.
+
+Commits:
+- e41d6e43c91c07295c63970aff61cd9a60ee62bd — metadados Dolphin GameCube/Wii.
+- ca420f54fb6fdf6d4955986aa7750daa08ba35cd — teste de capacidades e formato de save.
