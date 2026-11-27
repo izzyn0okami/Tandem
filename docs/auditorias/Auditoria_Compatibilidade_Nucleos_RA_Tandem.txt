@@ -157,3 +157,12 @@ A implementação inicial está em branch separada e ainda não foi mesclada. N�
 
 
 Fontes adicionais de IDs: https://purelogiccode.github.io/RetroAchievementsSharp/reference/console-table/ (tabela secundária; validar atividade pela API oficial).
+
+ATUALIZAÇÃO 2026-11-27 — CI #2083 E CORREÇÃO
+- CI #2083 falhou na compilação Kotlin: GameScreens.kt:767 não passou o novo parâmetro coreId a RaSettings.blocksStates.
+- Spotless passou; a falha foi de compilação, não de estilo.
+- Corrigido em GameScreens.kt: a política de bloqueio de save states agora recebe chosenCoreId.
+- Commit corretivo: a5cd993fe052dc60de3409a23b4882fbe1e8a84c.
+- [ ] Aguardar nova CI; APK não foi gerado pela execução #2083.
+- [ ] Testes físicos PSX/DS e validação dos IDs via API oficial continuam pendentes.
+- Status: EM ANDAMENTO; não homologado e não mesclado.
