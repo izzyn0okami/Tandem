@@ -164,6 +164,18 @@ class GamePlatformsResolutionTest {
     }
 
     @Test
+    fun nintendoDsDefaultsToMaintainedMelonDsDsCore() {
+        val platform = GamePlatforms.bySlug("nds")!!
+        assertEquals("melonds_ds", platform.coreId)
+        assertTrue("ids" in platform.extensions)
+        val modern = CoreRegistry.info(platform, "melonds_ds")
+        assertTrue(modern.supportsStates)
+        assertTrue(modern.supportsRomMSaveSync)
+        val legacy = CoreRegistry.info(platform, "melonds")
+        assertFalse(legacy.supportsRomMSaveSync)
+    }
+
+    @Test
     fun nintendoDsCoresDeclareNativeSaveCompatibilityPerCoreFormat() {
         val platform = GamePlatforms.bySlug("nds")!!
         val melonDs = CoreRegistry.info(platform, "melonds")
