@@ -33,6 +33,22 @@ class NintendoDsDeviceSyncTest {
     }
 
     @Test
+    fun melonDsDsSramIsCataloguedForRomMDeviceSync() {
+        val store = SaveStore(root, "melonds_ds", File("Pokemon.nds"), gameIdentity = "romm-nds-game")
+        store.sramFile.writeBytes(byteArrayOf(4, 3, 2, 1))
+
+        val artifact = DeviceSyncArtifactPolicy.selectForRomM(store.inventory())
+
+        assertNotNull(artifact)
+        assertEquals(SaveArtifactType.CORE_SAVE, artifact!!.type)
+        assertEquals("srm", artifact.format)
+        assertEquals("autosave", DeviceSyncArtifactPolicy.remoteSlot(artifact))
+        assertEquals(store.sramFile, artifact.file)
+        assertTrue(CoreSaveAdapterRegistry.isCompatibleRomMEmulator("melonds_ds", "melonds_ds"))
+        assertFalse(CoreSaveAdapterRegistry.isCompatibleRomMEmulator("melonds_ds", "melonds"))
+    }
+
+    @Test
     fun desmumeFormatsAreNotAssumedCompatibleAcrossCores() {
         assertTrue(CoreSaveAdapterRegistry.isCompatibleRomMEmulator("desmume", "desmume"))
         assertTrue(CoreSaveAdapterRegistry.isCompatibleRomMEmulator("desmume2015", "desmume2015"))
