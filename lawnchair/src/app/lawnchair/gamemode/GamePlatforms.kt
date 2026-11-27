@@ -154,7 +154,7 @@ object GamePlatforms {
         GamePlatform(
             slug = "psx",
             name = "PlayStation",
-            coreId = "pcsx_rearmed",
+            coreId = "mednafen_psx",
             extensions = setOf("cue", "chd", "pbp", "iso", "m3u"),
             folderAliases = setOf("psx", "ps1", "playstation", "playstation1", "sonyplaystation"),
             sortOrder = 60,
