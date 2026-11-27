@@ -96,6 +96,16 @@ class GamePlatformsResolutionTest {
         assertTrue(pcsx2.preferVulkan == true)
     }
     @Test
+    fun playstationCoresUseLibretroMemoryCardFormatForPrimarySlot() {
+        val platform = GamePlatforms.bySlug("psx")!!
+        listOf("pcsx_rearmed", "swanstation", "mednafen_psx").forEach { coreId ->
+            val info = CoreRegistry.info(platform, coreId)
+            assertTrue("$coreId should support save states", info.supportsStates)
+            assertTrue("$coreId primary memory card uses Libretro SRAM", info.supportsRomMSaveSync)
+        }
+    }
+
+    @Test
     fun nintendoDsCoresDoNotAdvertiseRomMSyncForNonSramSaveFormats() {
         val platform = GamePlatforms.bySlug("nds")!!
         val melonDs = CoreRegistry.info(platform, "melonds")
