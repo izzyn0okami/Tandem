@@ -74,3 +74,10 @@ CI APROVADA — PR #61 — 2026-11-27
 - [x] CI pós-atualização documental #2045 (run 46075508612) concluída com sucesso no commit a85c798fcf642d7d51eb880eb3c8dedc589dd242; Spotless, testes unitários, APK Debug, upload do artefato e final-status passaram.
 - [x] Artefato assembleLawnWithQuickstepGithubDebug disponível (46.656.675 bytes; run 46075508612). Jobs condicionais de release/notificação foram ignorados conforme esperado.
 - [ ] Esta validação automatizada não substitui os testes físicos específicos descritos acima.
+
+
+CI APROVADA — ATUALIZAÇÃO DOCUMENTAL — 2026-11-27
+- [x] CI #2053 (run 46078559451) concluída com sucesso no head 79e4aeab43405b71d68f332b9de10e77c2263642.
+- [x] Spotless, testes unitários, APK Debug, upload do artefato e final-status aprovados.
+- [x] Artefato assembleLawnWithQuickstepGithubDebug disponível (46.656.505 bytes; artifact 15236835173).
+- [ ] Testes físicos de importação/alternância/remoção de drivers permanecem pendentes; esta CI valida o head antes deste registro documental.
