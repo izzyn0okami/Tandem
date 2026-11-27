@@ -96,6 +96,21 @@ class GamePlatformsResolutionTest {
         assertTrue(pcsx2.preferVulkan == true)
     }
     @Test
+    fun pcEngineCoresDeclareSaveTransportByDocumentedFormat() {
+        val platform = GamePlatforms.bySlug("pce")!!
+        val fast = CoreRegistry.info(platform, "mednafen_pce_fast")
+        val accurate = CoreRegistry.info(platform, "mednafen_pce")
+        val geargrafx = CoreRegistry.info(platform, "geargrafx")
+
+        assertTrue(fast.supportsStates)
+        assertTrue(fast.supportsRomMSaveSync)
+        assertTrue(accurate.supportsStates)
+        assertFalse(accurate.supportsRomMSaveSync)
+        assertTrue(geargrafx.supportsStates)
+        assertTrue(geargrafx.supportsRomMSaveSync)
+    }
+
+    @Test
     fun n64CoresDeclareSaveTransportOnlyWhenDocumented() {
         val platform = GamePlatforms.bySlug("n64")!!
         val mupenGles2 = CoreRegistry.info(platform, "mupen64plus_next_gles2")
