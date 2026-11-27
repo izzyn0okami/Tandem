@@ -74,13 +74,13 @@ object RomMDeviceSyncRunner {
             if (!snapshotRoot.exists() && !snapshotRoot.mkdirs()) {
                 throw IOException("Não foi possível preparar a captura temporária do save.")
             }
-            val snapshot = File(snapshotRoot, "${UUID.randomUUID()}.srm")
+            val snapshot = File(snapshotRoot, "${UUID.randomUUID()}.${DeviceSyncArtifactPolicy.fileExtensionForCore(coreId)}")
             try {
                 val artifacts = store.inventory()
                 val localArtifact = DeviceSyncArtifactPolicy.selectForRomM(artifacts)
                 val remoteSlot = localArtifact?.let(DeviceSyncArtifactPolicy::remoteSlot)
                     ?: DeviceSyncArtifactPolicy.remoteSlotForCore(coreId)
-                val originalSave = localArtifact?.file ?: store.sramFile
+                val originalSave = localArtifact?.file ?: store.deviceSyncSaveFile
                 val initialTargetHash = originalSave.takeIf { it.isFile && it.length() > 0L }?.let(::md5)
                 val sourceSnapshot = if (useSnapshotOnly) {
                     snapshotOverride?.takeIf { it.isFile && it.length() > 0L }
@@ -555,7 +555,7 @@ object RomMDeviceSyncRunner {
                 migrationSourcesOverride = emptyMap(),
             )
             val artifact = DeviceSyncArtifactPolicy.selectForRomM(store.inventory())
-            val target = artifact?.file ?: store.sramFile
+            val target = artifact?.file ?: store.deviceSyncSaveFile
             val remoteSlot = artifact?.let(DeviceSyncArtifactPolicy::remoteSlot)
                 ?: DeviceSyncArtifactPolicy.remoteSlotForCore(coreId)
             val emulator = DeviceSyncArtifactPolicy.canonicalEmulator(coreId)
