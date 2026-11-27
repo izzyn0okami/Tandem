@@ -480,6 +480,34 @@ class DeviceSyncProtocolTest {
     }
 
     @Test
+    fun uploadSaveAcceptsDeclaredDeSmuMeDsvExtension() {
+        val server = MockWebServer()
+        val file = java.io.File.createTempFile("device-sync-ds-", ".dsv")
+        file.writeBytes(byteArrayOf(4, 3, 2, 1))
+        server.start()
+        try {
+            server.enqueue(MockResponse(body = """{"id":93}"""))
+            val client = RomMDeviceSyncClient(server.url("/").toString(), "test-token")
+            client.uploadSave(
+                romId = 42L,
+                deviceId = "device-123",
+                sessionId = 8L,
+                slot = "autosave",
+                emulator = "desmume",
+                fileName = "Pokemon.dsv",
+                file = file,
+                expectedExtension = "dsv",
+            )
+            val request = server.takeRequest()
+            assertEquals("/api/saves", request.url.encodedPath)
+            assertTrue(request.body!!.utf8().contains("filename=\"Pokemon.dsv\""))
+        } finally {
+            server.close()
+            file.delete()
+        }
+    }
+
+    @Test
     fun uploadSaveWithoutSlotCreatesAnUnpairedArchive() {
         val server = MockWebServer()
         val file = java.io.File.createTempFile("device-sync-archive-", ".srm")
