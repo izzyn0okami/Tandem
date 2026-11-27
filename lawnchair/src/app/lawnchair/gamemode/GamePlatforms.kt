@@ -158,6 +158,7 @@ object GamePlatforms {
             extensions = setOf("cue", "chd", "pbp", "iso", "m3u"),
             folderAliases = setOf("psx", "ps1", "playstation", "playstation1", "sonyplaystation"),
             sortOrder = 60,
+            raConsoleId = 12,
             discBased = true,
             discCompanionExtensions = setOf("bin", "img", "sub", "sbi", "ccd", "wav"),
             bios = listOf(
@@ -211,6 +212,7 @@ object GamePlatforms {
             extensions = setOf("nds", "dsi", "ids"),
             folderAliases = setOf("nds", "ds", "nintendods", "dsi"),
             sortOrder = 33,
+            raConsoleId = 18,
             bios = listOf(
                 BiosFile("bios7.bin", "DS ARM7 (opcional)", "df692a80a5b1bc90728bc3dfc76cd948"),
                 BiosFile("bios9.bin", "DS ARM9 (opcional)", "a392174eb3e572fed6447e956bde4b25"),
