@@ -42,3 +42,10 @@ RESULTADO FINAL DA CI — 2026-11-27
 - [x] APK Debug assembleLawnWithQuickstepGithubDebug compilado.
 - [x] Artefato APK enviado com sucesso.
 - [x] Confirmado que a correção dos testes DSV não exige alteração em código de produção.
+
+
+MERGE CONCLUÍDO — PR #62 — 2026-11-27
+- [x] PR #62 aprovada e mesclada em game-mode-m2-dev após CI #2014 (run 46071864239) aprovada no head 5b0161d0bfe8d78df0e82092c9695fe6805e4a83.
+- [x] Merge squash: 11c0e35f4ae950657b146673e37b39c930b0f9af.
+- [x] Testes de inventário e seleção DSV passam na CI; transporte RomM de ponta a ponta continua separado na PR #63.
+- [x] tandem-latest permanece intocada.
