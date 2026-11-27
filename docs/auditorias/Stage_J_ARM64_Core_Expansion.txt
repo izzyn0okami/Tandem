@@ -466,3 +466,14 @@ RECONCILIAÇÃO DA PR #58 — PREFERÊNCIA VULKAN DOS CORES AVANÇADOS — 2026-
 - [x] Panda3DS permanece em OpenGL ES, conforme a declaração específica do catálogo atual; não foi forçado para Vulkan sem comprovação.
 - [x] Adicionados testes para as preferências Vulkan de PCEE2 e Dolphin.
 - [ ] Nova CI no head atualizado.
+
+
+CI APROVADA — PR #59 — 2026-11-27
+- [x] CI #2037 (run 46073168931) concluída com sucesso no head 341a6a56e25816436e2d1cb2df7cc68ebce7825b.
+- [x] check-style / Spotless: sucesso.
+- [x] Testes unitários: sucesso.
+- [x] Build assembleLawnWithQuickstepGithubDebug: sucesso.
+- [x] Upload do artefato APK Debug: sucesso; artefato disponível no run 46073168931.
+- [x] final-status: sucesso; etapas condicionais de publicação/notificação foram ignoradas conforme esperado.
+- [ ] Testes físicos específicos desta PR permanecem pendentes; CI não comprova compatibilidade real no Motorola Edge 30 Fusion.
+- [ ] Não mesclar antes da validação física correspondente e revisão final do diff.
