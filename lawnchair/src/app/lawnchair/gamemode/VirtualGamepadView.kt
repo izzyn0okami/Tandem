@@ -274,7 +274,11 @@ internal class VirtualGamepadView @JvmOverloads constructor(
                 val pointerId = event.getPointerId(index)
                 forwardPassthroughTouch(event)
                 passthroughPointerIds.remove(pointerId)
-                if (passthroughPointerIds.isEmpty()) clearLastPassthroughEvent()
+                if (passthroughPointerIds.isEmpty()) {
+                    clearLastPassthroughEvent()
+                } else {
+                    refreshPassthroughEvent(event)
+                }
                 pointerControls.remove(pointerId)?.let { releaseControl(it) }
             }
 
@@ -308,6 +312,18 @@ internal class VirtualGamepadView @JvmOverloads constructor(
             }
         } finally {
             forwarded.recycle()
+        }
+    }
+
+    /** Refreshes the snapshot after a pointer-up so it contains only pointers still held. */
+    private fun refreshPassthroughEvent(event: MotionEvent) {
+        val pointerIdBits = passthroughPointerIds.fold(0) { bits, pointerId -> bits or (1 shl pointerId) }
+        val remaining = event.split(pointerIdBits)
+        try {
+            clearLastPassthroughEvent()
+            if (remaining.pointerCount > 0) lastPassthroughEvent = MotionEvent.obtain(remaining)
+        } finally {
+            remaining.recycle()
         }
     }
 
