@@ -1688,3 +1688,48 @@ ACOMPANHAMENTO CI — IMPLEMENTAÇÃO .DSV — 2026-11-27
 - [ ] CI #1868 — run 45995160455 — commit af8dc0d27989c481bbbf67f61f92efea7b294e48: build-debug-apk e check-style na fila.
 - [ ] CI #1871 — run 45995224326 — commit b25992233863db6f62d1f9b55412ce38d468620c: build-debug-apk e check-style na fila.
 - [ ] Aguardar conclusão integral de ambas; não marcar implementação aprovada antes do final-status do workflow.
+
+
+INCLUSÃO DO MELONDS DS COMO NÚCLEO PADRÃO DE NINTENDO DS — 2026-11-27
+- [x] Confirmada a recomendação oficial Libretro: melonDS DS é a versão mais nova; melonDS legado é obsoleto e sem manutenção.
+- [x] Confirmado que melonDS DS possui build Android ARM64 oficial no release upstream JesseTG/melonds-ds.
+- [x] CoreInstaller agora reconhece o ID lógico melonds_ds e o nome binário upstream melondsds_libretro_android.so (diferente do padrão melonds_ds_libretro_android.so).
+- [x] Instalador baixa o release oficial v1.4.0, exige exatamente o arquivo melondsds_libretro_android.so no ZIP e verifica SHA-256 do pacote antes de extrair/substituir o core.
+- [x] O core anterior permanece preservado por backup/rollback do instalador.
+- [x] HEAD de atualização usa a URL upstream específica; os demais cores continuam usando o Buildbot Android ARM64.
+- [x] GamePlatforms agora define melonds_ds como núcleo padrão de Nintendo DS e aceita extensão .ids.
+- [x] CoreRegistry apresenta melonDS DS como recomendado e mantém melonDS legado como alternativa manual; DeSmuME/DeSmuME 2015 e NooDS permanecem como alternativas.
+- [x] melonDS DS declara save states e RomM SRAM Device Sync habilitados; usa o Save directory e arquivo .srm conforme documentação Libretro.
+- [x] Testes JVM cobrem nome de binário, ID reverso, URL upstream, SHA-256 fixado, core padrão e compatibilidade de save.
+- [x] Ajuste de layout DS foi estendido ao novo core, respeitando preferências salvas e as opções que o núcleo realmente declara.
+- [ ] CI de instalação/compilação ainda precisa concluir.
+- [ ] Validar no aparelho: download do core, ELF ARM64, primeiro boot, BIOS opcional, layout/touchscreen, áudio/vídeo, save .srm e upload/download RomM.
+- [ ] A release v1.4.0 informa que o renderer compute shader ainda não é suportado no Android; o core deve usar fallback de renderização disponível. Confirmar desempenho real no Edge 30 Fusion.
+- [ ] O save .sav existente do melonDS legado no Cache directory não é apagado nem migrado automaticamente. O core antigo permanece disponível para abrir jogos e saves legados; testar eventual migração separadamente antes de automatizar.
+- [ ] A origem é um release upstream externo ao Buildbot; atualização de versão/URL/hash requer atualização explícita do app enquanto o SHA está fixado. Não há atualização dinâmica sem hash autenticado.
+
+Fontes:
+- https://docs.libretro.com/library/melonds_ds/ — núcleo mais novo; saves .srm no Save directory; save states; DS/DSi; extensões .nds/.dsi/.ids.
+- https://docs.libretro.com/library/melonds/ — núcleo legado obsoleto/sem manutenção e save .sav no Cache directory.
+- https://github.com/JesseTG/melonds-ds/releases/tag/v1.4.0 — release upstream v1.4.0, Android Release ZIP e SHA-256 publicado.
+- https://github.com/JesseTG/melonds-ds — projeto upstream confirma Android arm64 e suporte para frontends Libretro.
+- https://docs.libretro.com/guides/download-cores/ — convenções para instalação manual de núcleos.
+
+Release fixado:
+- Asset: melondsds_libretro-android-Release.zip
+- Biblioteca interna esperada: melondsds_libretro_android.so
+- SHA-256 do ZIP: 555568396dd5cf230030e4dd0ff0b0c6ca7118231fe562bc50680fefa7ad8594
+- Versão: v1.4.0 (27-09-2026)
+
+Commits:
+- ba8da0e25efd5fc9854cf98c8c256b89705d87ca — instalador com origem upstream, SHA fixado e nome de biblioteca específico.
+- ba5e98d146e35ec116bcdb2b603aed2366402b6a — melonDS DS como núcleo padrão da plataforma.
+- 26f570474570266399da55a3f1d2d5ad1b044c0d — registro do núcleo e capacidades.
+- e1da73efbe2697bbda4ccd50aadf2040ed84bdcc — integração da sessão DS.
+- 087d1e172ef14d04028237c4bffaef0e60a07656 — layout lado a lado compatível com as opções do melonDS DS.
+- 77d270c1df09d2f12fd17aac68389d300706c60b — testes de instalação e hash.
+- 9d0c2f086252911d12282777999807fa217f0d8a — teste de plataforma e núcleo padrão.
+- d063941a759f725c50f84c08ba4d37aa01294847 — teste de Device Sync .srm.
+- 4ef8cd980787723e9a369fdd73c0a3180ba1c61f — documentação das fontes upstream.
+
+PR #57 permanece aberta/draft, sem merge e sem publicação em tandem-latest.
