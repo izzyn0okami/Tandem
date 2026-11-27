@@ -810,3 +810,13 @@ ATUALIZAÇÃO — CI #1673 APROVADA — 2026-11-26
 - [ ] Testes no aparelho de multitouch misto, dois analógicos simultâneos, botões + analógicos, ACTION_CANCEL, pausa/retomada, rotação e ocultação por controle físico permanecem pendentes.
 - [ ] Interface acessível para alterar ativação, ocultação automática, opacidade, escala e posição do gamepad virtual permanece pendente; as preferências já existem e são persistidas no código.
 - [ ] Não mesclar nem publicar em tandem-latest sem autorização explícita; PR #41 permanece intocada.
+
+
+CORREÇÃO DE AUDITORIA — INTERFACE DO GAMEPAD VIRTUAL — 2026-11-26
+- [x] Reinspecionada integralmente a SettingsScreen em GameScreens.kt e a navegação da GameModeActivity.
+- [x] Confirmado que a seção "Controles virtuais" já está acessível na aba Configurações do Modo Jogos.
+- [x] Confirmados controles para ativar/desativar o gamepad, ocultação automática ao conectar controle físico, opacidade, escala e deslocamentos horizontal/vertical.
+- [x] Confirmada persistência automática por GameModeSettings e indicação na interface de que os ajustes passam a valer na próxima sessão.
+- [x] Corrigida a pendência registrada após a CI #1673: não é necessário implementar uma nova tela de configurações do gamepad.
+- [ ] Testes no aparelho da aplicação dos ajustes (incluindo reiniciar sessão, opacidade, escala, deslocamentos e ocultação com controle físico) permanecem pendentes.
+- [ ] Testes de multitouch avançado e dos dois analógicos simultâneos permanecem pendentes.
