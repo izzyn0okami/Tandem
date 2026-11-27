@@ -1938,3 +1938,17 @@ CORREÇÃO DE RESOLUÇÃO DO PLUGIN KSP — CI #1925 — 2026-11-27
 - [x] Commit corretivo: 7cb5f57da47951406c66e9a8a128f95d0cdb120f.
 - [ ] Aguardar nova CI disparada pelo commit corretivo; exigir check-style/Spotless, testes, APK e final-status aprovados.
 - [ ] A PR #57 permanece aberta e draft; nenhum merge ou publicação em tandem-latest foi realizado.
+
+
+CI APROVADA — CORREÇÃO DO PLUGIN KSP — CI #1930 — 2026-11-27
+- [x] CI #1930 — https://github.com/izzyn0okami/Tandem/actions/runs/46021955932 — conclusão success para o commit 607306a151e6c4c14574932fe5012d946c180d12.
+- [x] check-style / Spotless: sucesso; aplicação automática e verificação final concluídas.
+- [x] Testes unitários: sucesso.
+- [x] Build assembleLawnWithQuickstepGithubDebug: sucesso.
+- [x] Upload do APK de debug: sucesso.
+- [x] final-status: sucesso.
+- [x] A correção de pluginManagement.repositories com mavenCentral() resolveu a falha de resolução do plugin KSP 2.3.13.
+- [x] O APK foi gerado como artefato da CI; não houve publicação em tandem-latest.
+- [x] Com a CI #1930 aprovada e os testes funcionais do aparelho já confirmados pelo usuário, não restam pendências conhecidas no escopo atual do Estágio I.
+- [ ] Merge da PR #57 permanece pendente de autorização explícita; a PR continua aberta e draft.
+- [ ] Nenhuma publicação em tandem-latest foi realizada.
