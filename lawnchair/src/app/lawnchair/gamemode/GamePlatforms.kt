@@ -207,8 +207,8 @@ object GamePlatforms {
         GamePlatform(
             slug = "nds",
             name = "Nintendo DS",
-            coreId = "melonds",
-            extensions = setOf("nds", "dsi"),
+            coreId = "melonds_ds",
+            extensions = setOf("nds", "dsi", "ids"),
             folderAliases = setOf("nds", "ds", "nintendods", "dsi"),
             sortOrder = 33,
             bios = listOf(
