@@ -69,6 +69,7 @@ import kotlinx.coroutines.withContext
 class GameSessionActivity : ComponentActivity() {
 
     private var retroView: GLRetroView? = null
+    private var virtualGamepad: VirtualGamepadView? = null
     private var saveStore: SaveStore? = null
     private var menuOpen by mutableStateOf(false)
 
@@ -109,6 +110,9 @@ class GameSessionActivity : ComponentActivity() {
     private var coreOptions by mutableStateOf<List<CoreOption>>(emptyList())
     private var coreLog: Closeable? = null
     private var coreIdForOptions = ""
+    private var coreSupportsStates = false
+    private var coreSupportsRomMSaveSync = false
+    private var sramLoadFailureLogged = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -140,7 +144,7 @@ class GameSessionActivity : ComponentActivity() {
             systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
         }
 
-        val coreId = File(corePath).name.removeSuffix("_libretro_android.so")
+        val coreId = CoreInstaller.coreIdFromFileName(File(corePath).name)
         val platformSlug = intent.getStringExtra(EXTRA_PLATFORM)
         val siblings = platformSlug?.let(GamePlatforms::bySlug)?.let { CoreRegistry.cores(it) }.orEmpty().map { it.id }
         val legacyCores = intent.getStringArrayListExtra(EXTRA_MIGRATION_CORES).orEmpty()
@@ -162,6 +166,9 @@ class GameSessionActivity : ComponentActivity() {
         coreLog = SessionDiagnostics.startCoreLog()
 
         val platformObject = platformSlug?.let(GamePlatforms::bySlug)
+        val coreInfo = platformObject?.let { CoreRegistry.info(it, coreId) }
+        coreSupportsStates = coreInfo?.supportsStates ?: false
+        coreSupportsRomMSaveSync = coreInfo?.supportsRomMSaveSync ?: false
         // Calculado uma vez, sem depender de rede: o menu de pausa usa isso para travar "Carregar estado"
         // desde o primeiro frame, sem esperar a sessão do RetroAchievements (que é assíncrona) confirmar.
         val statesBlocked = platformObject != null && RaSettings.blocksStates(this, platformObject)
@@ -187,7 +194,17 @@ class GameSessionActivity : ComponentActivity() {
             coreFilePath = corePath
             gameFilePath = loadPath
             systemDirectory = GameFolders.dir(this@GameSessionActivity, FolderKind.Bios).absolutePath
-            savesDirectory = effectiveSavesDirectory.absolutePath
+            savesDirectory = if (coreId in setOf("desmume", "desmume2015")) {
+                store.coreSaveDirectory.absolutePath
+            } else {
+                effectiveSavesDirectory.absolutePath
+            }
+            preferVulkan = coreInfo?.preferVulkan ?: GameModeSettings.isVulkanPreferred(this@GameSessionActivity)
+            vulkanDriver = if (GameModeSettings.isExternalVulkanDriverEnabled(this@GameSessionActivity)) {
+                GameModeSettings.vulkanDriver(this@GameSessionActivity)
+            } else {
+                null
+            }
             saveRAMState = store.readSram()
             // Opções que o usuário salvou para este núcleo.
             variables = CoreRegistry.variables(this@GameSessionActivity, coreId)
@@ -198,16 +215,40 @@ class GameSessionActivity : ComponentActivity() {
             platformSlug = platformSlug,
             romPath = romPath,
             gameIdentity = stableIdentity,
-            effectiveDirectory = effectiveSavesDirectory,
+            effectiveDirectory = if (coreId in setOf("desmume", "desmume2015")) store.coreSaveDirectory else effectiveSavesDirectory,
             saveStore = store,
         )
 
         val view = GLRetroView(this, data)
         retroView = view
         lifecycle.addObserver(view)
-        setContentView(view)
+        val gamepad = VirtualGamepadView(this, retroView = view)
+        virtualGamepad = gamepad
+        val sessionHost = object : FrameLayout(this) {
+            override fun dispatchTouchEvent(event: MotionEvent): Boolean {
+                // Always let the overlay classify each pointer, even when an earlier finger
+                // started on the DS touchscreen. It forwards only non-control pointers to GLRetroView.
+                if (gamepad.dispatchTouchEvent(event)) return true
+                return view.dispatchTouchEvent(event)
+            }
+        }.apply {
+            addView(view, ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
+            addView(gamepad, ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
+        }
+        setContentView(sessionHost)
 
-        if (coreId == "melonds") {
+        lifecycleScope.launch {
+            view.getGLRetroEvents().first { it is GLRetroView.GLRetroEvents.FrameRendered }
+            if (view.sramLoadFailed) {
+                Toast.makeText(
+                    this@GameSessionActivity,
+                    R.string.game_session_sram_load_failed,
+                    Toast.LENGTH_LONG,
+                ).show()
+            }
+        }
+
+        if (coreId in setOf("melonds", "melonds_ds")) {
             lifecycleScope.launch {
                 view.getGLRetroEvents().first { it is GLRetroView.GLRetroEvents.FrameRendered }
                 applyDsSideBySide(view)
@@ -330,6 +371,7 @@ class GameSessionActivity : ComponentActivity() {
                                     subtitle = progress,
                                     canSave = true,
                                     canLoad = store.hasState() && !raHardcore,
+                                    supportsStates = coreSupportsStates,
                                     hasAchievements = raEntries.isNotEmpty(),
                                     raRichPresenceVisible = raRichPresenceVisible,
                                     onToggleRichPresence = {
@@ -449,6 +491,7 @@ class GameSessionActivity : ComponentActivity() {
             return
         }
         menuOpen = open
+        virtualGamepad?.setMenuOpen(open)
         if (!open) {
             optionsOpen = false
             raListOpen = false
@@ -480,21 +523,36 @@ class GameSessionActivity : ComponentActivity() {
         raIdleJob = null
     }
 
+    // Serializa o autosave periódico com a persistência disparada por pausa/encerramento.
+    @Synchronized
     private fun persistSram() {
         val view = retroView ?: return
         val store = saveStore ?: return
+        if (!GameSessionSavePolicy.shouldPersistSram(view.sramLoadFailed)) {
+            if (!sramLoadFailureLogged) {
+                GameLog.log("saves", "o núcleo rejeitou o SRAM existente; persistência bloqueada para preservar o arquivo original")
+                sramLoadFailureLogged = true
+            }
+            return
+        }
         runCatching {
             val bytes = view.serializeSRAM()
             if (bytes.isNotEmpty()) {
                 val changed = store.writeSramIfChanged(bytes)
                 if (changed) {
-                    romPath?.let { path -> coreIdOf()?.let { GameSessionCoordinator.markPending(this, path, it, intent.getStringExtra(EXTRA_PLATFORM), gameIdentity) } }
-                    GameLog.log("saves", "SRAM alterado pelo núcleo e persistido; sincronização agendada")
+                    if (coreSupportsRomMSaveSync) {
+                        romPath?.let { path -> coreIdOf()?.let { GameSessionCoordinator.markPending(this, path, it, intent.getStringExtra(EXTRA_PLATFORM), gameIdentity) } }
+                        GameLog.log("saves", "SRAM alterado pelo núcleo e persistido; sincronização agendada")
+                    } else {
+                        GameLog.log("saves", "SRAM persistido localmente; este núcleo usa armazenamento próprio e não sincroniza saves pelo RomM")
+                    }
                 } else {
                     GameLog.log("saves", "SRAM inalterado após serialização do núcleo; gravação e upload desnecessários ignorados")
                 }
+            } else {
+                GameLog.log("saves", "núcleo retornou SRAM vazia; arquivo local existente não foi alterado")
             }
-        }
+        }.onFailure { GameLog.error("saves", "falha ao serializar ou persistir SRAM", it) }
         val user = RaSettings.user(this) ?: return
         if (raSession != null) {
             runCatching {
@@ -520,59 +578,60 @@ class GameSessionActivity : ComponentActivity() {
     }
 
     private fun saveQuickState() {
+        if (!coreSupportsStates) {
+            toast(R.string.game_session_state_save_failed)
+            setMenu(false)
+            return
+        }
         val view = retroView ?: return
         val store = saveStore ?: return
         val saved = runCatching {
             val (emuState, raProgress) = view.serializeStateWithAchievements()
-            if (emuState == null) return@runCatching false
-            val payload = if (raProgress != null) {
-                val header = "TNDM".toByteArray(Charsets.US_ASCII)
-                val len = raProgress.size
-                header + byteArrayOf(
-                    (len shr 24).toByte(),
-                    (len shr 16).toByte(),
-                    (len shr 8).toByte(),
-                    len.toByte(),
-                ) + raProgress + emuState
-            } else {
-                emuState
+            if (emuState == null) {
+                GameLog.log("saves", "núcleo não forneceu estado rápido serializável")
+                return@runCatching false
             }
+            val payload = QuickStateEnvelope.encode(emuState, raProgress)
             store.writeState(payload)
             logArtifactInventory("estado rápido salvo")
-            romPath?.let { path -> coreIdOf()?.let { GameSessionCoordinator.markPending(this, path, it, intent.getStringExtra(EXTRA_PLATFORM), gameIdentity) } }
+            if (coreSupportsRomMSaveSync) {
+                romPath?.let { path -> coreIdOf()?.let { GameSessionCoordinator.markPending(this, path, it, intent.getStringExtra(EXTRA_PLATFORM), gameIdentity) } }
+            }
             true
-        }.getOrDefault(false)
+        }.onFailure { GameLog.error("saves", "falha ao criar estado rápido", it) }.getOrDefault(false)
         toast(if (saved) R.string.game_session_state_saved else R.string.game_session_state_save_failed)
         setMenu(false)
     }
 
     private fun loadQuickState() {
-        // Defesa adicional: nenhum caminho de chamada pode carregar estados durante o Hardcore.
-        if (raHardcore) {
+        // Defesa adicional: nenhum caminho de chamada pode carregar estados em núcleos incompatíveis ou durante o Hardcore.
+        if (!coreSupportsStates || raHardcore) {
             toast(R.string.game_session_state_load_failed)
             return
         }
         val view = retroView ?: return
-        val payload = saveStore?.readState() ?: return
-        var emuState = payload
-        var raProgress: ByteArray? = null
-        val marker = "TNDM".toByteArray(Charsets.US_ASCII)
-        if (payload.size >= 8 && payload.copyOfRange(0, 4).contentEquals(marker)) {
-            val len = ((payload[4].toInt() and 0xFF) shl 24) or
-                ((payload[5].toInt() and 0xFF) shl 16) or
-                ((payload[6].toInt() and 0xFF) shl 8) or
-                (payload[7].toInt() and 0xFF)
-            val emuSize = payload.size - 8 - len
-            if (len < 0 || emuSize <= 0) {
-                // Cabeçalho corrompido ou pacote truncado: não entrega o conteúdo ao núcleo.
-                toast(R.string.game_session_state_load_failed)
-                setMenu(false)
-                return
-            }
-            raProgress = payload.copyOfRange(8, 8 + len)
-            emuState = payload.copyOfRange(8 + len, payload.size)
+        val payload = runCatching { saveStore?.readState() }
+            .onFailure { GameLog.error("saves", "falha ao ler arquivo de estado rápido", it) }
+            .getOrNull()
+        if (payload == null) {
+            GameLog.log("saves", "carregamento solicitado, mas não há estado rápido legível")
+            toast(R.string.game_session_state_load_failed)
+            setMenu(false)
+            return
         }
-        val loaded = runCatching { view.unserializePersistedStateWithAchievements(emuState, raProgress) }.getOrDefault(false)
+        val decoded = QuickStateEnvelope.decode(payload)
+        if (decoded == null) {
+            GameLog.log("saves", "estado rápido rejeitado: envelope TNDM truncado ou com comprimentos inválidos (total=${payload.size})")
+            toast(R.string.game_session_state_load_failed)
+            setMenu(false)
+            return
+        }
+        val loaded = runCatching {
+            view.unserializePersistedStateWithAchievements(decoded.emulatorState, decoded.achievementsProgress)
+        }
+            .onFailure { GameLog.error("saves", "falha ao carregar estado rápido", it) }
+            .getOrDefault(false)
+        if (!loaded) GameLog.log("saves", "núcleo recusou o estado rápido; sessão continuou sem restaurá-lo")
         toast(if (loaded) R.string.game_session_state_loaded else R.string.game_session_state_load_failed)
         setMenu(false)
     }
@@ -598,6 +657,7 @@ class GameSessionActivity : ComponentActivity() {
     }
 
     override fun onDestroy() {
+        virtualGamepad?.releaseAll()
         stopRaIdleLoop()
         if (!nativeDestroyed) {
             raSession?.stop()
@@ -605,7 +665,7 @@ class GameSessionActivity : ComponentActivity() {
             nativeDestroyed = true
         }
         coreLog?.close()
-        if (isFinishing) SessionDiagnostics.sessionEnded(this, "encerrado normalmente")
+        if (GameSessionLifecyclePolicy.shouldLogNormalEnd(isFinishing)) SessionDiagnostics.sessionEnded(this, "encerrado normalmente")
         super.onDestroy()
     }
 
@@ -625,9 +685,15 @@ class GameSessionActivity : ComponentActivity() {
 
     /** DS: as duas telas lado a lado cabem melhor no celular em paisagem. Só usa valores que o núcleo declara. */
     private fun applyDsSideBySide(view: GLRetroView) {
-        if (CoreRegistry.savedOptions(this, "melonds").containsKey("melonds_screen_layout")) return
-        val option = CoreRegistry.parse(view.getVariables()).firstOrNull { it.key == "melonds_screen_layout" } ?: return
-        val sideBySide = option.values.firstOrNull { it.contains("Left", ignoreCase = true) && it.contains("Right", ignoreCase = true) } ?: return
+        val layoutKeys = setOf("melonds_screen_layout", "melonds_screen_layout1")
+        if (layoutKeys.any { CoreRegistry.savedOptions(this, coreIdForOptions).containsKey(it) }) return
+        val option = CoreRegistry.parse(view.getVariables()).firstOrNull {
+            it.key in layoutKeys
+        } ?: return
+        val sideBySide = option.values.firstOrNull {
+            it.contains("left-right", ignoreCase = true) ||
+                (it.contains("left", ignoreCase = true) && it.contains("right", ignoreCase = true))
+        } ?: return
         view.updateVariables(Variable(key = option.key, value = sideBySide))
         GameLog.log("núcleos", "DS: telas lado a lado ($sideBySide)")
     }
@@ -653,6 +719,7 @@ class GameSessionActivity : ComponentActivity() {
     private fun coreIdOf(): String? = intent.getStringExtra(EXTRA_CORE_PATH)?.let { File(it).name.removeSuffix("_libretro_android.so") }
 
     override fun onPause() {
+        virtualGamepad?.releaseAll()
         // Antes do super: a superfície de vídeo ainda está ativa e consegue entregar o save.
         persistSram()
         logArtifactInventory("pausa/encerramento da sessão")
@@ -664,7 +731,7 @@ class GameSessionActivity : ComponentActivity() {
         lostWatcher.stop()
         // Ao encerrar ou recriar a Activity, descarte o cliente RA e o núcleo antes de o
         // GLSurfaceView suspender o GL thread. Em uma pausa comum, preserve a sessão.
-        if (isFinishing || isChangingConfigurations) {
+        if (GameSessionLifecyclePolicy.shouldDestroyNativeOnPause(isFinishing, isChangingConfigurations)) {
             stopRaIdleLoop()
             raSession?.stop()
             retroView?.destroyNative()
@@ -674,7 +741,9 @@ class GameSessionActivity : ComponentActivity() {
         // Só libere e agende o upload depois que o GL foi pausado e o save local persistido.
         romPath?.let { path ->
             GameSessionCoordinator.markSessionInactive(this, path, intent.getStringExtra(EXTRA_PLATFORM), gameIdentity)
-            coreIdOf()?.let { GameSessionCoordinator.enqueuePostSessionSync(this, path, it, intent.getStringExtra(EXTRA_PLATFORM), gameIdentity) }
+            if (GameSessionLifecyclePolicy.shouldEnqueuePostSessionSync(coreSupportsRomMSaveSync, path.isNotBlank(), retroView?.sramLoadFailed == true)) {
+                coreIdOf()?.let { GameSessionCoordinator.enqueuePostSessionSync(this, path, it, intent.getStringExtra(EXTRA_PLATFORM), gameIdentity) }
+            }
         }
         // Em uma pausa comum, o idle é retomado em onResume; respostas de rede aguardam o GL.
         stopRaIdleLoop()
@@ -763,6 +832,7 @@ private fun PauseMenu(
     subtitle: String?,
     canSave: Boolean,
     canLoad: Boolean,
+    supportsStates: Boolean,
     hasAchievements: Boolean,
     raRichPresenceVisible: Boolean,
     onToggleRichPresence: () -> Unit,
@@ -807,8 +877,12 @@ private fun PauseMenu(
                 onToggleRichPresence,
             )
             GameButton(stringResource(R.string.game_session_resume), onResume, primary = true, modifier = Modifier.focusRequester(firstItem))
-            GameButton(stringResource(R.string.game_session_save_state), onSave, enabled = canSave)
-            GameButton(stringResource(R.string.game_session_load_state), onLoad, enabled = canLoad)
+            if (supportsStates) {
+                GameButton(stringResource(R.string.game_session_save_state), onSave, enabled = canSave)
+                GameButton(stringResource(R.string.game_session_load_state), onLoad, enabled = canLoad)
+            } else {
+                Text("Este núcleo não oferece suporte a save states.", color = GameColors.textDim, fontSize = 12.sp)
+            }
             GameButton(stringResource(R.string.game_session_reset), onReset)
             if (hasAchievements) GameButton(stringResource(R.string.game_session_achievements), onAchievements)
             GameButton(stringResource(R.string.game_session_core_options), onCoreOptions)

@@ -5,26 +5,67 @@ import java.io.File
 import java.io.FileOutputStream
 import java.net.HttpURLConnection
 import java.net.URL
+import java.security.MessageDigest
 import java.util.zip.ZipInputStream
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 /**
- * Instala e atualiza núcleos ARM64 do Buildbot oficial sem substituir uma versão válida
- * até que o novo arquivo tenha sido baixado e validado por completo.
+ * Instala e atualiza núcleos ARM64 do Buildbot e fontes upstream explicitamente fixadas,
+ * sem substituir uma versão válida até que o novo arquivo tenha sido validado por completo.
  */
 object CoreInstaller {
 
     private const val BASE_URL = "https://buildbot.libretro.com/nightly/android/latest/arm64-v8a"
     private const val PREFS = "libretro_core_updates"
+    private const val MELONDS_DS_CORE_ID = "melonds_ds"
+    private const val MELONDS_DS_FILE_NAME = "melondsds_libretro_android.so"
+    private const val MELONDS_DS_RELEASE_URL =
+        "https://github.com/JesseTG/melonds-ds/releases/download/v1.4.0/melondsds_libretro-android-Release.zip"
+    private const val MELONDS_DS_RELEASE_SHA256 =
+        "555568396dd5cf230030e4dd0ff0b0c6ca7118231fe562bc50680fefa7ad8594"
+
+    internal fun downloadUrl(coreId: String): String = if (coreId == MELONDS_DS_CORE_ID) {
+        MELONDS_DS_RELEASE_URL
+    } else {
+        "$BASE_URL/${coreFileName(coreId)}.zip"
+    }
+
+    internal fun expectedArchiveSha256(coreId: String): String? = MELONDS_DS_RELEASE_SHA256.takeIf { coreId == MELONDS_DS_CORE_ID }
 
     fun coresDir(context: Context): File = File(context.filesDir, "libretro/cores").apply { mkdirs() }
 
-    fun coreFile(context: Context, coreId: String): File = File(coresDir(context), "${coreId}_libretro_android.so")
+    fun coreFile(context: Context, coreId: String): File = File(coresDir(context), coreFileName(coreId))
+
+    internal fun coreFileName(coreId: String): String = when (coreId) {
+        "azahar" -> "${coreId}_libretro.so"
+        MELONDS_DS_CORE_ID -> MELONDS_DS_FILE_NAME
+        else -> "${coreId}_libretro_android.so"
+    }
+
+    internal fun coreIdFromFileName(fileName: String): String = when (fileName) {
+        MELONDS_DS_FILE_NAME -> MELONDS_DS_CORE_ID
+        else -> fileName.removeSuffix("_libretro_android.so").removeSuffix("_libretro.so")
+    }
 
     fun isInstalled(context: Context, coreId: String): Boolean {
         val file = coreFile(context, coreId)
-        return file.isFile && isArm64Elf(file)
+        if (!file.isFile || !isArm64Elf(file)) return false
+
+        val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+        val storedDigest = prefs.getString("sha256_$coreId", null)
+        val actualDigest = sha256(file) ?: return false
+        if (storedDigest != null && !storedDigest.equals(actualDigest, ignoreCase = true)) {
+            GameLog.error(
+                "núcleos",
+                "integridade local de $coreId divergente; núcleo será tratado como inválido",
+                IllegalStateException("SHA-256 do núcleo instalado não corresponde ao registro local"),
+            )
+            return false
+        }
+        // Migração de núcleos já instalados: registra a impressão digital local na primeira leitura.
+        if (storedDigest == null) prefs.edit().putString("sha256_$coreId", actualDigest).apply()
+        return true
     }
 
     /**
@@ -36,7 +77,7 @@ object CoreInstaller {
             val target = coreFile(context, coreId)
             if (!target.isFile || !isArm64Elf(target)) return@runCatching false
 
-            val connection = URL("$BASE_URL/${target.name}.zip").openConnection() as HttpURLConnection
+            val connection = URL(downloadUrl(coreId)).openConnection() as HttpURLConnection
             connection.requestMethod = "HEAD"
             connection.connectTimeout = 15_000
             connection.readTimeout = 20_000
@@ -47,14 +88,9 @@ object CoreInstaller {
                 val remoteModified = connection.lastModified
                 val remoteEtag = connection.getHeaderField("ETag")?.takeIf { it.isNotBlank() }
                 val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-                val installedModified = prefs.getLong("modified_$coreId", target.lastModified())
+                val installedModified = prefs.getLong("modified_$coreId", 0L)
                 val installedEtag = prefs.getString("etag_$coreId", null)
-                when {
-                    remoteModified > 0L && remoteModified > installedModified + 1_000L -> true
-                    remoteEtag != null && installedEtag != null && remoteEtag != installedEtag -> true
-                    remoteModified > 0L || (remoteEtag != null && installedEtag != null) -> false
-                    else -> null
-                }
+                updateAvailableFromMetadata(remoteModified, installedModified, remoteEtag, installedEtag)
             } finally {
                 connection.disconnect()
             }
@@ -96,7 +132,11 @@ object CoreInstaller {
             val target = coreFile(context, coreId)
             val part = File(target.parentFile, "${target.name}.part")
             val backup = File(target.parentFile, "${target.name}.backup")
-            val connection = URL("$BASE_URL/${target.name}.zip").openConnection() as HttpURLConnection
+            val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+            val expectedDigest = prefs.getString("sha256_$coreId", null)
+            recoverBackup(target, backup, expectedDigest)
+            val connection = URL(downloadUrl(coreId)).openConnection() as HttpURLConnection
+            val archivePart = File(target.parentFile, "${target.name}.archive.part")
             connection.connectTimeout = 30_000
             connection.readTimeout = 90_000
             GameLog.log("núcleos", "baixando ${target.name}")
@@ -106,26 +146,22 @@ object CoreInstaller {
                 }
                 val remoteModified = connection.lastModified
                 val remoteEtag = connection.getHeaderField("ETag")?.takeIf { it.isNotBlank() }
-                ZipInputStream(connection.inputStream).use { zip ->
-                    val entry = zip.nextEntry
-                    check(entry != null && entry.name == target.name && !entry.isDirectory) {
-                        "ZIP inesperado: esperava ${target.name}, veio ${entry?.name}"
-                    }
-                    FileOutputStream(part).use { output ->
-                        val buffer = ByteArray(64 * 1024)
-                        var written = 0L
-                        while (true) {
-                            val read = zip.read(buffer)
-                            if (read < 0) break
-                            output.write(buffer, 0, read)
-                            written += read
-                            onProgress(written)
-                        }
-                        output.flush()
+                val archiveInput = if (coreId == MELONDS_DS_CORE_ID) {
+                    // melonDS DS is distributed by its upstream GitHub release, not Buildbot.
+                    FileOutputStream(archivePart).use { output ->
+                        connection.inputStream.use { input -> input.copyTo(output) }
                         output.fd.sync()
                     }
-                    zip.closeEntry()
+                    val expectedArchiveDigest = checkNotNull(expectedArchiveSha256(coreId))
+                    val actualArchiveDigest = checkNotNull(sha256(archivePart))
+                    check(actualArchiveDigest.equals(expectedArchiveDigest, ignoreCase = true)) {
+                        "SHA-256 do pacote melonDS DS diverge do release oficial v1.4.0"
+                    }
+                    archivePart.inputStream()
+                } else {
+                    connection.inputStream
                 }
+                extractCoreFromArchive(archiveInput, part, target.name, onProgress)
                 check(isArm64Elf(part)) {
                     "${target.name} não é uma biblioteca ELF ARM64 válida"
                 }
@@ -164,11 +200,20 @@ object CoreInstaller {
                     )
                 }
 
-                val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+                val installedDigest = checkNotNull(sha256(target)) { "Não foi possível calcular SHA-256 do núcleo instalado" }
                 prefs.edit()
-                    .putLong("modified_$coreId", remoteModified.takeIf { it > 0L } ?: System.currentTimeMillis())
+                    .putString("sha256_$coreId", installedDigest)
                     .apply {
-                        if (remoteEtag != null) putString("etag_$coreId", remoteEtag)
+                        if (remoteModified > 0L) {
+                            putLong("modified_$coreId", remoteModified)
+                        } else {
+                            remove("modified_$coreId")
+                        }
+                        if (remoteEtag != null) {
+                            putString("etag_$coreId", remoteEtag)
+                        } else {
+                            remove("etag_$coreId")
+                        }
                     }
                     .apply()
                 // A limpeza do backup é pós-commit: sua falha não invalida a instalação.
@@ -184,9 +229,173 @@ object CoreInstaller {
             } finally {
                 connection.disconnect()
                 part.delete()
+                archivePart.delete()
             }
         }.onFailure { GameLog.error("núcleos", "falha ao instalar/atualizar $coreId", it) }
     }
+
+    /**
+     * Extrai o binário esperado de um ZIP que pode conter diretório-raiz.
+     * Aceita somente diretórios seguros e um único arquivo com o nome exato do núcleo.
+     */
+    internal fun extractCoreFromArchive(
+        archiveInput: java.io.InputStream,
+        target: File,
+        expectedFileName: String,
+        onProgress: (Long) -> Unit = {},
+    ) {
+        ZipInputStream(archiveInput).use { zip ->
+            var foundCore = false
+            var entry = zip.nextEntry
+            while (entry != null) {
+                val normalizedName = entry.name.replace("\\", "/")
+                val segments = normalizedName.split('/').filter { it.isNotEmpty() }
+                check(
+                    normalizedName.isNotBlank() &&
+                        !normalizedName.startsWith('/') &&
+                        !Regex("^[A-Za-z]:").containsMatchIn(normalizedName) &&
+                        segments.none { it == "." || it == ".." },
+                ) { "ZIP contém caminho inseguro: ${entry.name}" }
+
+                if (!entry.isDirectory) {
+                    val fileName = segments.lastOrNull()
+                    when {
+                        fileName == expectedFileName -> {
+                            check(!foundCore) {
+                                "ZIP contém mais de uma cópia do núcleo esperado: $expectedFileName"
+                            }
+                            FileOutputStream(target).use { output ->
+                                val buffer = ByteArray(64 * 1024)
+                                var written = 0L
+                                while (true) {
+                                    val read = zip.read(buffer)
+                                    if (read < 0) break
+                                    output.write(buffer, 0, read)
+                                    written += read
+                                    onProgress(written)
+                                }
+                                output.flush()
+                                output.fd.sync()
+                            }
+                            foundCore = true
+                        }
+
+                        fileName?.endsWith(".info", ignoreCase = true) == true -> {
+                            // Metadados Libretro não são executáveis e nunca são extraídos.
+                            // closeEntry() abaixo consome a entrada e valida seu CRC.
+                        }
+
+                        fileName?.let { Regex("(?i)(?:^|[-_])LICENSE(?:\\.[A-Za-z0-9]+)?$").containsMatchIn(it) } == true -> {
+                            // Licenças distribuídas junto ao core upstream são permitidas,
+                            // mas nunca são extraídas para a pasta de bibliotecas.
+                        }
+
+                        fileName?.endsWith(".so", ignoreCase = true) == true -> {
+                            error("ZIP contém biblioteca adicional inesperada: ${entry.name}")
+                        }
+
+                        else -> error("ZIP contém arquivo auxiliar não permitido: ${entry.name}")
+                    }
+                }
+                zip.closeEntry()
+                entry = zip.nextEntry
+            }
+            check(foundCore) { "ZIP não contém o núcleo esperado: $expectedFileName" }
+        }
+    }
+
+    /**
+     * Recupera uma promoção interrompida usando o digest confirmado nas preferências.
+     * Nunca descarta um backup válido quando não há evidência de qual arquivo foi confirmado.
+     */
+    internal fun recoverBackup(target: File, backup: File, expectedDigest: String? = null) {
+        if (!backup.exists()) return
+
+        val targetIsValid = target.isFile && isArm64Elf(target)
+        val backupIsValid = backup.isFile && isArm64Elf(backup)
+        val targetDigest = if (targetIsValid) sha256(target) else null
+        val backupDigest = if (backupIsValid) sha256(backup) else null
+        val targetMatches = targetDigest?.equals(expectedDigest, ignoreCase = true) == true
+        val backupMatches = backupDigest?.equals(expectedDigest, ignoreCase = true) == true
+
+        when {
+            targetMatches -> {
+                check(backup.delete()) { "Não foi possível remover backup residual ${backup.name}" }
+            }
+
+            backupMatches -> {
+                if (target.exists()) {
+                    check(target.delete()) { "Não foi possível remover destino não confirmado ${target.name}" }
+                }
+                check(backup.renameTo(target)) { "Não foi possível restaurar backup confirmado ${backup.name}" }
+                check(isArm64Elf(target) && sha256(target)?.equals(expectedDigest, ignoreCase = true) == true) {
+                    "Backup restaurado não corresponde ao SHA-256 confirmado"
+                }
+            }
+
+            !targetIsValid && backupIsValid -> {
+                // O destino não é executável; restaura a única cópia ELF válida disponível.
+                check(backup.renameTo(target)) { "Não foi possível restaurar backup ${backup.name}" }
+                check(isArm64Elf(target)) { "Backup restaurado falhou na validação ELF ARM64" }
+                if (expectedDigest != null && !sha256(target).equals(expectedDigest, ignoreCase = true)) {
+                    GameLog.error(
+                        "núcleos",
+                        "backup de ${target.name} restaurado, mas não corresponde ao digest registrado",
+                        IllegalStateException("SHA-256 do backup diverge do registro local"),
+                    )
+                }
+            }
+
+            targetIsValid && backupIsValid -> {
+                // Ambos são válidos, mas nenhum coincide com o commit conhecido (ou não há digest).
+                // Preserva os dois até que um novo pacote seja integralmente validado.
+                GameLog.error(
+                    "núcleos",
+                    "destino e backup válidos de ${target.name} não correspondem ao digest confirmado; ambos preservados",
+                    IllegalStateException("Não foi possível identificar com segurança a instalação confirmada"),
+                )
+            }
+
+            else -> {
+                val status = "destino válido=$targetIsValid, backup válido=$backupIsValid"
+                GameLog.error(
+                    "núcleos",
+                    "recuperação de ${target.name} não pôde ser concluída; arquivos preservados ($status)",
+                    IllegalStateException("Nenhuma cópia pôde ser confirmada com segurança"),
+                )
+            }
+        }
+    }
+
+    /** Compara apenas pares de metadados realmente disponíveis nos dois lados. */
+    internal fun updateAvailableFromMetadata(
+        remoteModified: Long,
+        installedModified: Long,
+        remoteEtag: String?,
+        installedEtag: String?,
+    ): Boolean? {
+        val hasComparableModified = remoteModified > 0L && installedModified > 0L
+        val hasComparableEtag = remoteEtag != null && installedEtag != null
+        if (!hasComparableModified && !hasComparableEtag) return null
+
+        val modifiedChanged = hasComparableModified && remoteModified > installedModified + 1_000L
+        val etagChanged = hasComparableEtag && remoteEtag != installedEtag
+        return modifiedChanged || etagChanged
+    }
+
+    /** SHA-256 local para detectar corrupção posterior do arquivo instalado. */
+    internal fun sha256(file: File): String? = runCatching {
+        val digest = MessageDigest.getInstance("SHA-256")
+        file.inputStream().use { input ->
+            val buffer = ByteArray(64 * 1024)
+            while (true) {
+                val read = input.read(buffer)
+                if (read < 0) break
+                digest.update(buffer, 0, read)
+            }
+        }
+        digest.digest().joinToString("") { "%02x".format(it.toInt() and 0xFF) }
+    }.getOrNull()
 
     /** Valida ELF64 little-endian para AArch64 (e_machine = EM_AARCH64/183). */
     internal fun isArm64Elf(file: File): Boolean = runCatching {

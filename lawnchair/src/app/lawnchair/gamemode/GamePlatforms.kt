@@ -39,7 +39,14 @@ data class GamePlatform(
 )
 
 /** Um arquivo de BIOS esperado na pasta de sistema do núcleo. */
-data class BiosFile(val name: String, val label: String, val md5Hash: String? = null)
+enum class BiosLocation { SYSTEM, SAVES }
+
+data class BiosFile(
+    val name: String,
+    val label: String,
+    val md5Hash: String? = null,
+    val location: BiosLocation = BiosLocation.SYSTEM,
+)
 
 /**
  * Plataformas que o motor atual (M3) sabe jogar. A decisão segue a lógica do Argosy: o nome da
@@ -200,8 +207,8 @@ object GamePlatforms {
         GamePlatform(
             slug = "nds",
             name = "Nintendo DS",
-            coreId = "melonds",
-            extensions = setOf("nds", "dsi"),
+            coreId = "melonds_ds",
+            extensions = setOf("nds", "dsi", "ids"),
             folderAliases = setOf("nds", "ds", "nintendods", "dsi"),
             sortOrder = 33,
             bios = listOf(
@@ -283,29 +290,49 @@ object GamePlatforms {
         GamePlatform(
             slug = "ps2",
             name = "PlayStation 2",
-            coreId = "",
-            extensions = setOf("iso", "chd", "cso", "zso", "gz"),
+            coreId = "armsx2",
+            extensions = setOf("elf", "iso", "chd", "cso", "zso", "bin", "mdf", "nrg", "gz", "img", "m3u"),
             folderAliases = setOf("ps2", "playstation2", "sonyplaystation2"),
             sortOrder = 100,
-            launch = LaunchMode.EMULATOR,
+            discBased = true,
+            discCompanionExtensions = setOf("bin", "img", "sub"),
+            biosRequired = true,
+            biosKit = listOf("pcsx2/bios", "pcsx2/resources"),
         ),
         GamePlatform(
             slug = "gc",
             name = "GameCube",
-            coreId = "",
-            extensions = setOf("gcm", "iso", "gcz", "rvz", "ciso", "tgc"),
+            coreId = "dolphin",
+            extensions = setOf("gcm", "iso", "gcz", "rvz", "ciso", "tgc", "m3u"),
             folderAliases = setOf("gc", "ngc", "gamecube", "nintendogamecube"),
             sortOrder = 101,
-            launch = LaunchMode.EMULATOR,
+            discBased = true,
+            bios = listOf(
+                BiosFile(
+                    "dolphin-emu/User/GC/USA/IPL.bin",
+                    "GameCube IPL dos EUA (opcional)",
+                    location = BiosLocation.SAVES,
+                ),
+            ),
+            biosGroups = listOf(
+                listOf(BiosFile("dolphin-emu/Sys/codehandler.bin", "Dolphin Sys codehandler (obrigatório)")),
+            ),
+            biosRequired = true,
+            biosKit = listOf("dolphin-emu/Sys"),
         ),
         GamePlatform(
             slug = "wii",
             name = "Wii",
-            coreId = "",
-            extensions = setOf("wbfs", "iso", "rvz", "wia", "wad"),
+            coreId = "dolphin",
+            extensions = setOf("wbfs", "iso", "rvz", "wia", "wad", "m3u"),
             folderAliases = setOf("wii", "nintendowii"),
             sortOrder = 102,
-            launch = LaunchMode.EMULATOR,
+            discBased = true,
+            biosGroups = listOf(
+                listOf(BiosFile("dolphin-emu/Sys/codehandler.bin", "Dolphin Sys codehandler (obrigatório)")),
+            ),
+            biosRequired = true,
+            biosKit = listOf("dolphin-emu/Sys"),
         ),
         GamePlatform(
             slug = "switch",
@@ -320,20 +347,89 @@ object GamePlatforms {
         GamePlatform(
             slug = "3ds",
             name = "Nintendo 3DS",
-            coreId = "",
-            extensions = setOf("3ds", "cci", "cxi", "cia", "3dsx"),
+            coreId = "azahar",
+            extensions = setOf("3ds", "cci", "cxi", "cia", "3dsx", "app", "elf", "axf"),
             folderAliases = setOf("3ds", "n3ds", "nintendo3ds"),
             sortOrder = 104,
-            launch = LaunchMode.EMULATOR,
+            bios = listOf(
+                BiosFile(
+                    "Citra/sysdata/aes_keys.txt",
+                    "Chaves AES do Nintendo 3DS (opcional para jogos criptografados)",
+                    location = BiosLocation.SAVES,
+                ),
+            ),
         ),
         GamePlatform(
             slug = "wiiu",
             name = "Wii U",
-            coreId = "",
-            extensions = setOf("wua", "wud", "wux", "rpx"),
+            coreId = "cemu",
+            extensions = setOf("wua", "wud", "wux", "iso", "rpx", "elf"),
             folderAliases = setOf("wiiu", "nintendowiiu"),
             sortOrder = 105,
-            launch = LaunchMode.EMULATOR,
+            bios = listOf(BiosFile("Cemu/keys.txt", "Chaves de disco do Wii U (opcional)")),
+            multiFileFolder = true,
+        ),
+        GamePlatform(
+            slug = "ps3",
+            name = "PlayStation 3",
+            coreId = "rpcs3",
+            extensions = setOf("iso", "pkg", "ps3", "elf", "self", "m3u"),
+            folderAliases = setOf("ps3", "playstation3", "sonyplaystation3"),
+            sortOrder = 106,
+            discBased = true,
+            discCompanionExtensions = setOf("bin", "key", "dkey", "rap", "edat"),
+            bios = listOf(BiosFile("rpcs3/PS3UPDAT.PUP", "Firmware do PlayStation 3 (obrigatório)")),
+            biosRequired = true,
+            multiFileFolder = true,
+        ),
+        GamePlatform(
+            slug = "vita",
+            name = "PlayStation Vita",
+            coreId = "vita3k",
+            extensions = setOf("vpk", "zip", "pkg", "bin"),
+            folderAliases = setOf("vita", "psvita", "psv", "playstationvita", "sonypsvita"),
+            sortOrder = 107,
+            zipIsNativeRom = true,
+            bios = listOf(
+                BiosFile("vita3k/PSP2UPDAT.PUP", "Firmware do PS Vita (obrigatório)"),
+                BiosFile("vita3k/PSP2UPDAT_PREINST.PUP", "Pacote pré-instalado do firmware PS Vita (obrigatório)"),
+                BiosFile("vita3k/PSP2UPDAT_FONT.PUP", "Fontes do firmware PS Vita (opcional)"),
+            ),
+            biosGroups = listOf(
+                listOf(BiosFile("vita3k/PSP2UPDAT.PUP", "Firmware do PS Vita")),
+                listOf(BiosFile("vita3k/PSP2UPDAT_PREINST.PUP", "Pacote pré-instalado do PS Vita")),
+            ),
+            biosRequired = true,
+            multiFileFolder = true,
+        ),
+        GamePlatform(
+            slug = "xbox360",
+            name = "Xbox 360",
+            coreId = "xenia_edge",
+            extensions = setOf("iso", "xex", "zar", "xcp", "x360", "m3u"),
+            folderAliases = setOf("xbox360", "xbox 360", "x360", "microsoftxbox360"),
+            sortOrder = 108,
+            discBased = true,
+            multiFileFolder = true,
+        ),
+        GamePlatform(
+            slug = "model3",
+            name = "Sega Model 3",
+            coreId = "supermodel",
+            extensions = setOf("zip"),
+            folderAliases = setOf("model3", "sega_model3", "sega model 3", "sega model3"),
+            sortOrder = 109,
+            zipIsNativeRom = true,
+            bios = listOf(
+                BiosFile("supermodel/Config/Games.xml", "Catálogo de jogos Supermodel (obrigatório)"),
+                BiosFile("supermodel/Config/Supermodel.ini", "Configuração Supermodel (obrigatória)"),
+            ),
+            biosGroups = listOf(
+                listOf(BiosFile("supermodel/Config/Games.xml", "Games.xml")),
+                listOf(BiosFile("supermodel/Config/Supermodel.ini", "Supermodel.ini")),
+            ),
+            biosRequired = true,
+            biosKit = listOf("supermodel/Config"),
         ),
         GamePlatform(
             slug = "pc",
@@ -438,7 +534,11 @@ object GamePlatforms {
         for (folder in folders) {
             val key = normalize(folder)
             val byFolder = all.firstOrNull { key in it.folderAliases }
-            if (byFolder != null && (ext in byFolder.extensions || (!byFolder.discBased && ext in genericExtensions))) return byFolder
+            if (byFolder != null) {
+                return byFolder.takeIf {
+                    ext in it.extensions || (!it.discBased && ext in genericExtensions)
+                }
+            }
         }
         return all.singleOrNull { ext in it.extensions }
     }

@@ -27,6 +27,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Slider
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -757,9 +758,13 @@ internal fun GameDetailScreen(
     val context = LocalContext.current
     val local = entry.local
     val group = entry.group
+    val chosenCoreId = remember(entry.platform.slug) { CoreRegistry.chosen(context, entry.platform) }
+    val coreInfo = remember(entry.platform.slug, chosenCoreId) { CoreRegistry.info(entry.platform, chosenCoreId) }
     val history = remember(local?.path) { local?.let { PlayHistory.get(context, it.path) } ?: PlayHistory.Entry(0L, 0L) }
-    val hasState = remember(local?.path) {
-        local != null && SaveStore(context, CoreRegistry.chosen(context, local.platform), File(local.path)).hasState() && !RaSettings.blocksStates(context, local.platform)
+    val hasState = remember(local?.path, chosenCoreId, coreInfo.supportsStates) {
+        local != null && coreInfo.supportsStates &&
+            SaveStore(context, chosenCoreId, File(local.path)).hasState() &&
+            !RaSettings.blocksStates(context, local.platform)
     }
     val percent = entry.percent(progress)
     val firstFocus = remember { FocusRequester() }
@@ -815,7 +820,6 @@ internal fun GameDetailScreen(
                 .getOrNull()
         }
     }
-    val chosenCoreId = remember(entry.platform.slug) { CoreRegistry.chosen(context, entry.platform) }
     var remoteSaveVersions by remember(entry.key) { mutableStateOf<List<RemoteFile>?>(null) }
     var remoteSaveVersionsLoading by remember(entry.key) { mutableStateOf(false) }
     var remoteSaveVersionsError by remember(entry.key) { mutableStateOf<String?>(null) }
@@ -830,12 +834,13 @@ internal fun GameDetailScreen(
     var deviceSyncExecutionError by remember(entry.key) { mutableStateOf<String?>(null) }
     val canInspectDeviceSyncSave = local != null &&
         entry.platform.launch == LaunchMode.LIBRETRO &&
+        coreInfo.supportsRomMSaveSync &&
         chosenCoreId.isNotBlank() &&
         RomMSettings.isConnected(context) &&
         RomMSettings.deviceSyncDeviceId(context) != null &&
         runCatching { GameIdentityResolver.hasRomMLink(context, File(local.path)) }.getOrDefault(false)
-    val syncStatus by produceState<SaveSyncStatus?>(null, local?.path, chosenCoreId, syncVersion) {
-        value = local?.let { SaveSync.status(context, it.path, chosenCoreId) }
+    val syncStatus by produceState<SaveSyncStatus?>(null, local?.path, chosenCoreId, syncVersion, coreInfo.supportsRomMSaveSync) {
+        value = if (coreInfo.supportsRomMSaveSync) local?.let { SaveSync.status(context, it.path, chosenCoreId) } else null
     }
     var rommLinked by remember(local?.path) {
         mutableStateOf(local?.let { runCatching { GameIdentityResolver.hasRomMLink(context, File(it.path)) }.getOrDefault(false) } ?: false)
@@ -949,6 +954,7 @@ internal fun GameDetailScreen(
                 if (
                     local != null &&
                     entry.platform.launch == LaunchMode.LIBRETRO &&
+                    coreInfo.supportsRomMSaveSync &&
                     RomMSettings.isConnected(context)
                 ) {
                     if (rommLinked) {
@@ -1531,9 +1537,23 @@ internal fun SettingsScreen(
     onOpenCores: () -> Unit,
     onOpenScraper: () -> Unit,
     onOpenServer: () -> Unit,
+    preferVulkan: Boolean,
+    externalVulkanDriverEnabled: Boolean,
+    vulkanDriverLabel: String?,
+    vulkanDriverStatus: String,
+    onTogglePreferVulkan: () -> Unit,
+    onToggleExternalVulkanDriver: () -> Unit,
+    onImportVulkanDriver: () -> Unit,
+    onRemoveVulkanDriver: () -> Unit,
     onExit: () -> Unit,
 ) {
     val context = LocalContext.current
+    var virtualGamepadEnabled by remember { mutableStateOf(GameModeSettings.isVirtualGamepadEnabled(context)) }
+    var virtualGamepadAutoHide by remember { mutableStateOf(GameModeSettings.isVirtualGamepadAutoHideEnabled(context)) }
+    var virtualGamepadOpacity by remember { mutableStateOf(GameModeSettings.virtualGamepadOpacity(context)) }
+    var virtualGamepadScale by remember { mutableStateOf(GameModeSettings.virtualGamepadScale(context)) }
+    var virtualGamepadOffsetX by remember { mutableStateOf(GameModeSettings.virtualGamepadOffsetX(context)) }
+    var virtualGamepadOffsetY by remember { mutableStateOf(GameModeSettings.virtualGamepadOffsetY(context)) }
     var autoEnter by remember { mutableStateOf(GameModeSettings.isAutoEnterEnabled(context)) }
     val toggleAuto = {
         autoEnter = !autoEnter
@@ -1779,6 +1799,104 @@ internal fun SettingsScreen(
         GameButton(
             label = "Sobre a iiDB / iiSU",
             onClick = { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://iisu.network/wiki/iidb-developers"))) },
+        )
+
+        SettingsSection("Controles virtuais")
+        SettingsSwitchRow(
+            label = "Exibir controles na tela durante os jogos",
+            checked = virtualGamepadEnabled,
+            onToggle = {
+                virtualGamepadEnabled = !virtualGamepadEnabled
+                GameModeSettings.setVirtualGamepadEnabled(context, virtualGamepadEnabled)
+            },
+        )
+        SettingsSwitchRow(
+            label = "Ocultar quando conectar controle físico",
+            checked = virtualGamepadAutoHide,
+            onToggle = {
+                virtualGamepadAutoHide = !virtualGamepadAutoHide
+                GameModeSettings.setVirtualGamepadAutoHideEnabled(context, virtualGamepadAutoHide)
+            },
+        )
+        Text("Opacidade: ${(virtualGamepadOpacity * 100).toInt()}%", color = GameColors.textDim, fontSize = 13.sp)
+        Slider(
+            value = virtualGamepadOpacity,
+            onValueChange = {
+                virtualGamepadOpacity = it
+                GameModeSettings.setVirtualGamepadOpacity(context, it)
+            },
+            valueRange = 0.25f..1f,
+        )
+        Text("Tamanho: ${(virtualGamepadScale * 100).toInt()}%", color = GameColors.textDim, fontSize = 13.sp)
+        Slider(
+            value = virtualGamepadScale,
+            onValueChange = {
+                virtualGamepadScale = it
+                GameModeSettings.setVirtualGamepadScale(context, it)
+            },
+            valueRange = 0.7f..1.3f,
+        )
+        Text("Posição horizontal: ${(virtualGamepadOffsetX * 100).toInt()}%", color = GameColors.textDim, fontSize = 13.sp)
+        Slider(
+            value = virtualGamepadOffsetX,
+            onValueChange = {
+                virtualGamepadOffsetX = it
+                GameModeSettings.setVirtualGamepadOffsetX(context, it)
+            },
+            valueRange = -0.08f..0.08f,
+        )
+        Text("Posição vertical: ${(virtualGamepadOffsetY * 100).toInt()}%", color = GameColors.textDim, fontSize = 13.sp)
+        Slider(
+            value = virtualGamepadOffsetY,
+            onValueChange = {
+                virtualGamepadOffsetY = it
+                GameModeSettings.setVirtualGamepadOffsetY(context, it)
+            },
+            valueRange = -0.08f..0.08f,
+        )
+        Text(
+            "As alterações são salvas automaticamente e aplicadas na próxima sessão de jogo. O layout mantém dois analógicos independentes.",
+            color = GameColors.textDim,
+            fontSize = 12.sp,
+        )
+
+        SettingsSection("Gráficos e Vulkan")
+        SettingsSwitchRow(
+            label = "Preferir Vulkan quando disponível",
+            checked = preferVulkan,
+            onToggle = onTogglePreferVulkan,
+        )
+        Text(
+            "O Tandem usa Vulkan quando o núcleo solicita esse modo e o dispositivo oferece suporte. A preferência também orienta núcleos que permitem escolher o renderizador.",
+            color = GameColors.textDim,
+            fontSize = 12.sp,
+        )
+        Text(
+            "Driver Adreno: ${vulkanDriverLabel ?: "driver padrão do Android"}",
+            color = GameColors.text,
+            fontSize = 13.sp,
+        )
+        if (vulkanDriverLabel != null) {
+            SettingsSwitchRow(
+                label = "Usar driver externo Adreno (Turnip)",
+                checked = externalVulkanDriverEnabled,
+                onToggle = onToggleExternalVulkanDriver,
+            )
+        }
+        GameButton(
+            label = if (vulkanDriverLabel == null) "Importar driver Turnip (.zip)" else "Substituir driver Turnip (.zip)",
+            onClick = onImportVulkanDriver,
+        )
+        if (vulkanDriverLabel != null) {
+            GameButton("Remover driver externo", onRemoveVulkanDriver, danger = true)
+        }
+        if (vulkanDriverStatus.isNotBlank()) {
+            Text(vulkanDriverStatus, color = GameColors.textDim, fontSize = 12.sp)
+        }
+        Text(
+            "Importe um pacote ZIP compatível com Android ARM64 que contenha libvulkan_freedreno.so. Recurso destinado a GPUs Adreno (Snapdragon); os ajustes são aplicados na próxima sessão.",
+            color = GameColors.textDim,
+            fontSize = 12.sp,
         )
 
         SettingsSection(stringResource(R.string.game_mode_section_interface))

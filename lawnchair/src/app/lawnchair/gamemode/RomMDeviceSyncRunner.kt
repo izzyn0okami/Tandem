@@ -39,6 +39,8 @@ object RomMDeviceSyncRunner {
         platformSlug: String? = null,
         snapshotOverride: File? = null,
         useSnapshotOnly: Boolean = false,
+        siblingCores: List<String> = emptyList(),
+        migrationSources: Map<String, File> = emptyMap(),
     ): DeviceSyncExecutionResult = withContext(Dispatchers.IO) {
         SaveSync.withExclusiveSyncLock {
             val app = context.applicationContext
@@ -64,9 +66,10 @@ object RomMDeviceSyncRunner {
                 app,
                 coreId,
                 romFile,
+                siblingCores = siblingCores,
                 platformSlug = platformSlug,
                 gameIdentity = identity,
-                migrationSourcesOverride = emptyMap(),
+                migrationSourcesOverride = migrationSources,
             )
             val client = RomMDeviceSyncClient(connection.url, connection.token)
             val emulator = DeviceSyncArtifactPolicy.canonicalEmulator(coreId)
@@ -74,13 +77,13 @@ object RomMDeviceSyncRunner {
             if (!snapshotRoot.exists() && !snapshotRoot.mkdirs()) {
                 throw IOException("Não foi possível preparar a captura temporária do save.")
             }
-            val snapshot = File(snapshotRoot, "${UUID.randomUUID()}.srm")
+            val snapshot = File(snapshotRoot, "${UUID.randomUUID()}.${CoreSaveAdapterRegistry.resolve(coreId).fileExtension}")
             try {
                 val artifacts = store.inventory()
                 val localArtifact = DeviceSyncArtifactPolicy.selectForRomM(artifacts)
                 val remoteSlot = localArtifact?.let(DeviceSyncArtifactPolicy::remoteSlot)
                     ?: DeviceSyncArtifactPolicy.remoteSlotForCore(coreId)
-                val originalSave = localArtifact?.file ?: store.sramFile
+                val originalSave = localArtifact?.file ?: store.nativeSaveFile ?: store.sramFile
                 val initialTargetHash = originalSave.takeIf { it.isFile && it.length() > 0L }?.let(::md5)
                 val sourceSnapshot = if (useSnapshotOnly) {
                     snapshotOverride?.takeIf { it.isFile && it.length() > 0L }
@@ -95,7 +98,7 @@ object RomMDeviceSyncRunner {
                     if (before != captured) throw IOException("O artefato mudou durante a captura; tente novamente.")
                     DeviceSyncProtocolJson.localSave(
                         romId = romId,
-                        fileName = romSaveFileName(romFile),
+                        fileName = romSaveFileName(romFile, localArtifact?.format ?: CoreSaveAdapterRegistry.resolve(coreId).fileExtension),
                         emulator = emulator,
                         file = snapshot,
                         updatedAt = Instant.ofEpochMilli(localArtifact?.modifiedAtEpochMs ?: source.lastModified()).toString(),
@@ -222,7 +225,7 @@ object RomMDeviceSyncRunner {
                                         sessionId = negotiation.sessionId,
                                         slot = remoteSlot,
                                         emulator = emulator,
-                                        fileName = romSaveFileName(romFile),
+                                        fileName = romSaveFileName(romFile, localArtifact?.format ?: CoreSaveAdapterRegistry.resolve(coreId).fileExtension),
                                         file = snapshot,
                                     )
                                     uploaded++
@@ -246,6 +249,7 @@ object RomMDeviceSyncRunner {
                                     operation,
                                     DeviceSyncArtifactPolicy.compatibleEmulators(coreId),
                                     remoteSlot,
+                                    CoreSaveAdapterRegistry.resolve(coreId).fileExtension,
                                 )
                                 val saveId = operation.saveId
                                     ?: throw IOException("O RomM não informou o ID do save para download.")
@@ -275,7 +279,7 @@ object RomMDeviceSyncRunner {
                                         sessionId = negotiation.sessionId,
                                         slot = null,
                                         emulator = emulator,
-                                        fileName = archiveSaveFileName(romFile, localTimestamp, initialLocalHash ?: md5(snapshot)),
+                                        fileName = archiveSaveFileName(romFile, localTimestamp, initialLocalHash ?: md5(snapshot), localArtifact?.format ?: CoreSaveAdapterRegistry.resolve(coreId).fileExtension),
                                         file = snapshot,
                                     )
                                     uploaded++
@@ -450,7 +454,7 @@ object RomMDeviceSyncRunner {
                 val emulator = DeviceSyncArtifactPolicy.canonicalEmulator(coreId)
                 val localSave = DeviceSyncProtocolJson.localSave(
                     romId = romId,
-                    fileName = romSaveFileName(romFile),
+                    fileName = romSaveFileName(romFile, artifact?.format ?: CoreSaveAdapterRegistry.resolve(coreId).fileExtension),
                     emulator = emulator,
                     file = localSnapshot,
                     updatedAt = Instant.ofEpochMilli(artifact.modifiedAtEpochMs).toString(),
@@ -492,7 +496,7 @@ object RomMDeviceSyncRunner {
                     sessionId = negotiation.sessionId,
                     slot = remoteSlot,
                     emulator = emulator,
-                    fileName = romSaveFileName(romFile),
+                    fileName = romSaveFileName(romFile, artifact?.format ?: CoreSaveAdapterRegistry.resolve(coreId).fileExtension),
                     file = localSnapshot,
                 )
                 client.complete(negotiation.sessionId, operationsCompleted = 1, operationsFailed = 0)
@@ -571,7 +575,7 @@ object RomMDeviceSyncRunner {
                 val localSave = if (beforeHash != null) {
                     DeviceSyncProtocolJson.localSave(
                         romId = romId,
-                        fileName = romSaveFileName(romFile),
+                        fileName = romSaveFileName(romFile, artifact?.format ?: CoreSaveAdapterRegistry.resolve(coreId).fileExtension),
                         emulator = emulator,
                         file = snapshot,
                         updatedAt = Instant.ofEpochMilli(target.lastModified()).toString(),
@@ -652,7 +656,7 @@ object RomMDeviceSyncRunner {
                         sessionId = negotiation.sessionId,
                         slot = remoteSlot,
                         emulator = emulator,
-                        fileName = romSaveFileName(romFile),
+                        fileName = romSaveFileName(romFile, artifact?.format ?: CoreSaveAdapterRegistry.resolve(coreId).fileExtension),
                         file = selectedStage,
                     )
                 }
@@ -762,15 +766,15 @@ object RomMDeviceSyncRunner {
         preferences.edit().remove(key).apply()
     }
 
-    private fun romSaveFileName(romFile: File): String = "${romFile.nameWithoutExtension}.srm"
+    private fun romSaveFileName(romFile: File, extension: String): String = "${romFile.nameWithoutExtension}.$extension"
 
-    private fun archiveSaveFileName(romFile: File, timestamp: Instant, contentHash: String): String {
+    private fun archiveSaveFileName(romFile: File, timestamp: Instant, contentHash: String, extension: String): String {
         val tag = java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss")
             .withZone(java.time.ZoneId.systemDefault())
             .format(timestamp)
         // The hash suffix prevents a null-slot archive from colliding with a slotted
         // RomM snapshot that happens to have the same second-level timestamp.
-        return "${romFile.nameWithoutExtension} [$tag] - Tandem-${contentHash.take(8)}.srm"
+        return "${romFile.nameWithoutExtension} [$tag] - Tandem-${contentHash.take(8)}.$extension"
     }
 
     private fun File.matchesMd5(expected: String?): Boolean {

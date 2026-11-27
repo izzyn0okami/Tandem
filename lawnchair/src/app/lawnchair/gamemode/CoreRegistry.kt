@@ -6,7 +6,14 @@ import com.swordfish.libretrodroid.Variable
 import org.json.JSONObject
 
 /** Um núcleo Libretro que sabe jogar uma plataforma. */
-data class CoreInfo(val id: String, val label: String, val note: String)
+data class CoreInfo(
+    val id: String,
+    val label: String,
+    val note: String,
+    val supportsStates: Boolean = false,
+    val supportsRomMSaveSync: Boolean = false,
+    val preferVulkan: Boolean? = null,
+)
 
 /** Uma opção do núcleo (nome, valores permitidos e valor atual), lida do próprio núcleo em execução. */
 data class CoreOption(val key: String, val label: String, val values: List<String>, val current: String) {
@@ -22,7 +29,23 @@ object CoreRegistry {
 
     private const val FILE = "game_mode_cores"
 
-    private fun core(id: String, label: String, note: String) = CoreInfo(id, label, note)
+    private fun core(
+        id: String,
+        label: String,
+        note: String,
+        supportsStates: Boolean = true,
+        supportsRomMSaveSync: Boolean = true,
+        preferVulkan: Boolean? = null,
+    ) = CoreInfo(id, label, note, supportsStates, supportsRomMSaveSync, preferVulkan)
+
+    /** Núcleo sem auditoria específica: recursos permanecem desativados por segurança. */
+    private fun unknownCore(id: String) = CoreInfo(
+        id = id,
+        label = id,
+        note = "Capacidades ainda não auditadas; save states e sincronização RomM desativados",
+        supportsStates = false,
+        supportsRomMSaveSync = false,
+    )
 
     private val catalog: Map<String, List<CoreInfo>> = mapOf(
         "nes" to listOf(
@@ -47,36 +70,84 @@ object CoreRegistry {
         "genesis" to listOf(
             core("genesis_plus_gx", "Genesis Plus GX", "Preciso e completo"),
             core("picodrive", "PicoDrive", "Leve, com 32X"),
-            core("blastem", "BlastEm", "Muito preciso"),
+            core(
+                "blastem",
+                "BlastEm",
+                "Muito preciso; documentação Libretro não declara Saves/States nem seus formatos",
+                supportsStates = false,
+                supportsRomMSaveSync = false,
+            ),
         ),
         "sms" to masterSystemCores(),
         "gg" to masterSystemCores(),
         "scd" to listOf(
-            core("genesis_plus_gx", "Genesis Plus GX", "Preciso e completo"),
-            core("picodrive", "PicoDrive", "Leve"),
+            core("genesis_plus_gx", "Genesis Plus GX", "Preciso e completo; Sega CD usa arquivos BRM de backup RAM, fora do sync SRAM RomM", supportsRomMSaveSync = false),
+            core(
+                "picodrive",
+                "PicoDrive",
+                "Leve; formato de backup RAM Sega CD não confirmado como SRAM Libretro",
+                supportsRomMSaveSync = false,
+            ),
         ),
         "n64" to listOf(
             core("mupen64plus_next_gles3", "Mupen64Plus-Next (GLES3)", "Melhor qualidade"),
             core("mupen64plus_next_gles2", "Mupen64Plus-Next (GLES2)", "Para aparelhos mais antigos"),
-            core("parallel_n64", "ParaLLEl N64", "Alternativa leve"),
+            core(
+                "parallel_n64",
+                "ParaLLEl N64",
+                "Alternativa experimental; documentação lista States, mas não declara Saves frontend-level",
+                supportsRomMSaveSync = false,
+            ),
         ),
         "psx" to listOf(
-            core("pcsx_rearmed", "PCSX ReARMed", "Leve e rápido"),
-            core("swanstation", "SwanStation", "Mais preciso, mais pesado"),
-            core("mednafen_psx", "Beetle PSX", "Alta precisão, renderização por software; exige mais desempenho"),
+            core(
+                "pcsx_rearmed",
+                "PCSX ReARMed",
+                "Leve e rápido; cartão 0 usa .srm (sync RomM); cartão 1 usa arquivo próprio se ativado",
+            ),
+            core(
+                "swanstation",
+                "SwanStation",
+                "Mais preciso, mais pesado; cartão Libretro padrão usa .srm; cartões alternativos usam arquivos próprios",
+            ),
+            core(
+                "mednafen_psx",
+                "Beetle PSX",
+                "Alta precisão, renderização por software; cartão 0 usa .srm (sync RomM); cartão 1 usa .mcr separado",
+            ),
         ),
         "pce" to listOf(
             core("mednafen_pce_fast", "Beetle PCE Fast", "Rápido"),
-            core("mednafen_pce", "Beetle PCE", "Mais preciso"),
-            core("geargrafx", "Geargrafx", "Alternativa moderna"),
+            core(
+                "mednafen_pce",
+                "Beetle PCE",
+                "Mais preciso; documentação Libretro lista States, mas não declara Saves frontend-level",
+                supportsRomMSaveSync = false,
+            ),
+            core(
+                "geargrafx",
+                "Geargrafx",
+                "Alternativa moderna; backup RAM por jogo em .srm; Memory Base 128 compartilhada em .sav fica fora do sync SRAM",
+            ),
         ),
         "atari2600" to listOf(
-            core("stella", "Stella", "Padrão"),
-            core("stella2014", "Stella 2014", "Mais leve"),
+            core("stella", "Stella", "Padrão; save states suportados, saves de cartucho não suportados", supportsRomMSaveSync = false),
+            core("stella2014", "Stella 2014", "Mais leve; save states suportados, saves de cartucho não suportados", supportsRomMSaveSync = false),
         ),
         "atari5200" to listOf(
-            core("a5200", "a5200", "Padrão"),
-            core("atari800", "Atari800", "Alternativa"),
+            core(
+                "a5200",
+                "a5200",
+                "Capacidades de save ainda não confirmadas na documentação Libretro; recursos desativados por segurança",
+                supportsStates = false,
+                supportsRomMSaveSync = false,
+            ),
+            core(
+                "atari800",
+                "Atari800",
+                "Alternativa; save states suportados, saves frontend-level não suportados",
+                supportsRomMSaveSync = false,
+            ),
         ),
         "lynx" to listOf(
             core("handy", "Handy", "Leve"),
@@ -88,15 +159,149 @@ object CoreRegistry {
             core("race", "RACE", "Leve"),
         ),
         "saturn" to listOf(
-            core("mednafen_saturn", "Beetle Saturn", "Preciso, pesado"),
-            core("yabasanshiro", "YabaSanshiro", "Mais leve"),
+            core("mednafen_saturn", "Beetle Saturn", "Preciso, pesado; saves em arquivos .bcr/.bkr/.smpc, fora do transporte SRAM RomM", supportsRomMSaveSync = false),
+            core("yabasanshiro", "YabaSanshiro", "Mais leve; formato/caminho de save ainda não confirmado para sync SRAM", supportsRomMSaveSync = false),
             core("yabause", "Yabause", "Alternativa"),
         ),
+        "wswan" to listOf(
+            core(
+                "mednafen_wswan",
+                "Beetle Cygne",
+                "WonderSwan/Color; SRAM e save states compatíveis com a interface Libretro",
+            ),
+        ),
+        "dreamcast" to listOf(
+            core(
+                "flycast",
+                "Flycast",
+                "Dreamcast/Naomi; save states suportados (desative Threaded Rendering); VMUs são arquivos próprios, fora do fluxo SRAM RomM",
+                supportsRomMSaveSync = false,
+            ),
+        ),
+        "psp" to listOf(
+            core(
+                "ppsspp",
+                "PPSSPP",
+                "PSP; requer assets em system/PPSSPP; saves em PSP/SAVEDATA e estados no diretório de estados",
+                supportsRomMSaveSync = false,
+            ),
+        ),
+        "vb" to listOf(
+            core(
+                "mednafen_vb",
+                "Beetle VB",
+                "Virtual Boy; SRAM de cartucho e save states suportados",
+            ),
+        ),
         "nds" to listOf(
-            core("melonds", "melonDS", "Preciso, com toque direto"),
-            core("desmume", "DeSmuME", "Alternativa"),
-            core("desmume2015", "DeSmuME 2015", "Mais leve"),
-            core("noods", "NooDS", "Leve"),
+            core(
+                "melonds_ds",
+                "melonDS DS",
+                "Núcleo recomendado e mantido; DS/DSi, save de cartucho .srm no Save directory e Device Sync RomM",
+            ),
+            core(
+                "melonds",
+                "melonDS (legado)",
+                "Versão antiga e sem manutenção; salva em .sav no Cache do frontend, sem Device Sync automático",
+                supportsRomMSaveSync = false,
+            ),
+            core(
+                "desmume",
+                "DeSmuME",
+                "Alternativa; save de cartucho .dsv sincronizado como arquivo nativo, isolado deste núcleo",
+                supportsRomMSaveSync = true,
+            ),
+            core(
+                "desmume2015",
+                "DeSmuME 2015",
+                "Mais leve; save de cartucho .dsv sincronizado como arquivo nativo, isolado deste núcleo",
+                supportsRomMSaveSync = true,
+            ),
+            core(
+                "noods",
+                "NooDS",
+                "Leve; documentação Libretro não declara suporte frontend-level a Saves, apenas save states",
+                supportsRomMSaveSync = false,
+            ),
+        ),
+        "ps2" to listOf(
+            core(
+                "armsx2",
+                "ARMSX2",
+                "PS2 para ARM64; Vulkan recomendado ou OpenGL ES 3.2; requer BIOS e recursos PCSX2",
+                supportsRomMSaveSync = false,
+                preferVulkan = true,
+            ),
+            core(
+                "pcsx2",
+                "PCSX2",
+                "Núcleo PCSX2 alternativo para ARM64; requer BIOS e recursos PCSX2",
+                supportsRomMSaveSync = false,
+                preferVulkan = true,
+            ),
+        ),
+        "gc" to listOf(
+            core("dolphin", "Dolphin", "GameCube; Vulkan/OpenGL ES; requer a pasta Sys do Dolphin; saves em arquivos próprios na pasta User, fora do sync SRAM RomM", supportsRomMSaveSync = false),
+        ),
+        "wii" to listOf(
+            core("dolphin", "Dolphin", "Wii; Vulkan/OpenGL ES; requer a pasta Sys do Dolphin; saves em arquivos próprios na pasta User, fora do sync SRAM RomM", supportsRomMSaveSync = false),
+        ),
+        "3ds" to listOf(
+            core("azahar", "Azahar", "Fork atual do Citra; Vulkan ou OpenGL ES 3.2", preferVulkan = true),
+            core(
+                "panda3ds",
+                "Panda3DS",
+                "Alternativa experimental; requer OpenGL ES 3.1 ou superior",
+                preferVulkan = false,
+            ),
+        ),
+        "wiiu" to listOf(
+            core(
+                "cemu",
+                "Cemu",
+                "Wii U; Vulkan obrigatório no Android; saves internos e sem save states",
+                supportsStates = false,
+                supportsRomMSaveSync = false,
+                preferVulkan = true,
+            ),
+        ),
+        "ps3" to listOf(
+            core(
+                "rpcs3",
+                "RPCS3",
+                "Experimental e muito exigente; Vulkan obrigatório no Android; firmware PS3",
+                supportsStates = false,
+                supportsRomMSaveSync = false,
+                preferVulkan = true,
+            ),
+        ),
+        "xbox360" to listOf(
+            core(
+                "xenia_edge",
+                "Xenia Edge",
+                "Xbox 360 experimental; Vulkan 1.1; conteúdo interno em system/Xenia-Edge; sem save states ou sync RomM",
+                supportsStates = false,
+                supportsRomMSaveSync = false,
+                preferVulkan = true,
+            ),
+        ),
+        "model3" to listOf(
+            core(
+                "supermodel",
+                "Supermodel",
+                "Sega Model 3; OpenGL ES 3.0; requer Games.xml e Supermodel.ini",
+                preferVulkan = false,
+            ),
+        ),
+        "vita" to listOf(
+            core(
+                "vita3k",
+                "Vita3K",
+                "Experimental; Vulkan 1.1; saves no armazenamento virtual do Vita; sem save states",
+                supportsStates = false,
+                supportsRomMSaveSync = false,
+                preferVulkan = true,
+            ),
         ),
         "coleco" to listOf(
             core("gearcoleco", "Gearcoleco", "Padrão"),
@@ -127,9 +332,11 @@ object CoreRegistry {
     fun cores(platform: GamePlatform): List<CoreInfo> {
         val list = catalog[platform.slug].orEmpty()
         if (list.firstOrNull()?.id == platform.coreId) return list
-        val default = list.firstOrNull { it.id == platform.coreId } ?: core(platform.coreId, platform.coreId, "Padrão")
+        val default = list.firstOrNull { it.id == platform.coreId } ?: unknownCore(platform.coreId)
         return listOf(default) + list.filter { it.id != platform.coreId }
     }
+
+    fun info(platform: GamePlatform, coreId: String): CoreInfo = cores(platform).firstOrNull { it.id == coreId } ?: unknownCore(coreId)
 
     private fun prefs(context: Context) = context.getSharedPreferences(FILE, Context.MODE_PRIVATE)
 

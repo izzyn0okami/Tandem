@@ -85,9 +85,9 @@ data class DeviceSyncNegotiation(
 
 object DeviceSyncProtocolJson {
     /**
-     * Constrói a entrada de negociação a partir do arquivo de save local aceito nesta etapa.
-     * A extensão .srm é exigida; para PSX, o conteúdo pode ser cartão de memória transportado
-     * como Save comum do RomM. O filtro de emuladores é opcional: null permite ao cliente
+     * Constrói a entrada de negociação a partir de um arquivo de save local explicitamente suportado.
+     * A extensão é preservada (.srm, .dsv); para PSX, o conteúdo pode ser cartão de memória
+     * transportado como Save comum do RomM. O filtro de emuladores é opcional: null permite ao cliente
      * detectar saves de outros núcleos no mesmo slot e validar a compatibilidade localmente.
      */
     fun localSave(
@@ -99,8 +99,8 @@ object DeviceSyncProtocolJson {
         remoteSlot: String = "autosave",
     ): DeviceSyncSave? {
         require(romId > 0L)
-        require(fileName.endsWith(".srm", ignoreCase = true)) {
-            "O Device Sync desta etapa aceita somente arquivos .srm."
+        require(fileName.substringAfterLast('.', "").lowercase() in setOf("srm", "dsv")) {
+            "O Device Sync aceita somente formatos de save explicitamente suportados."
         }
         require(emulator.isNotBlank())
         require(updatedAt.isNotBlank())
@@ -187,12 +187,14 @@ object DeviceSyncProtocolJson {
         operation: DeviceSyncOperation,
         expectedEmulator: String,
         expectedSlot: String = "autosave",
-    ) = validateDownloadOperation(operation, setOf(expectedEmulator), expectedSlot)
+        expectedExtension: String = "srm",
+    ) = validateDownloadOperation(operation, setOf(expectedEmulator), expectedSlot, expectedExtension)
 
     fun validateDownloadOperation(
         operation: DeviceSyncOperation,
         compatibleEmulators: Set<String>,
         expectedSlot: String = "autosave",
+        expectedExtension: String = "srm",
     ) {
         if (operation.action != DeviceSyncAction.Download) {
             throw IOException("A operação recebida não é um download.")
@@ -200,8 +202,8 @@ object DeviceSyncProtocolJson {
         if (operation.slot != expectedSlot) {
             throw IOException("Download fora do slot $expectedSlot foi preservado sem alteração.")
         }
-        if (operation.fileName?.endsWith(".srm", ignoreCase = true) != true) {
-            throw IOException("O arquivo remoto não é um save .srm compatível; download recusado.")
+        if (operation.fileName?.substringAfterLast('.', "")?.equals(expectedExtension, ignoreCase = true) != true) {
+            throw IOException("O formato do save remoto não corresponde ao formato nativo esperado ($expectedExtension); download recusado.")
         }
         if (operation.emulator == null || compatibleEmulators.none { it.equals(operation.emulator, ignoreCase = true) }) {
             throw IOException("O save remoto pertence a um núcleo sem compatibilidade declarada; download recusado.")
@@ -340,8 +342,8 @@ class RomMDeviceSyncClient(
     }
 
     /**
-     * Envia um arquivo .srm como Save comum do Device Sync. Nunca sobrescreve e desativa a limpeza
-     * automática do servidor para preservar versões anteriores.
+     * Envia um arquivo de save nativo como Save comum do Device Sync. Nunca sobrescreve e desativa
+     * a limpeza automática do servidor para preservar versões anteriores.
      */
     fun uploadSave(
         romId: Long,
@@ -355,7 +357,9 @@ class RomMDeviceSyncClient(
         require(romId > 0L && sessionId > 0L)
         require(deviceId.isNotBlank() && emulator.isNotBlank())
         require(slot == null || slot.isNotBlank())
-        require(fileName.endsWith(".srm", ignoreCase = true)) { "O upload Device Sync aceita somente arquivos .srm." }
+        require(fileName.substringAfterLast('.', "").lowercase() in setOf("srm", "dsv")) {
+            "O upload Device Sync aceita somente formatos de save explicitamente suportados."
+        }
         require(file.isFile && file.length() > 0L) { "O save local está ausente ou vazio." }
         val contentHash = md5(file)
         val urlBuilder = base.resolve("api/saves")!!.newBuilder()

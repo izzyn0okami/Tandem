@@ -72,6 +72,27 @@ class SaveStoreTest {
     }
 
     @Test
+    fun interruptedTemporarySramDoesNotReplaceOrHideLastCommittedSave() {
+        val store = SaveStore(root, "melonds", File("Pokemon.nds"))
+        val committed = byteArrayOf(1, 2, 3, 4)
+        val partial = byteArrayOf(9, 9)
+
+        store.writeSram(committed)
+        val staleTemp = File(store.sramFile.parentFile, "sram.srm.tmp")
+        staleTemp.writeBytes(partial)
+
+        // A process interruption may leave the temporary file behind. It is not a committed save.
+        assertArrayEquals(committed, store.readSram())
+        assertTrue(staleTemp.exists())
+
+        // The next successful write replaces the stale temporary file without deleting the old save first.
+        val nextCommitted = byteArrayOf(5, 6, 7, 8)
+        store.writeSram(nextCommitted)
+        assertArrayEquals(nextCommitted, store.readSram())
+        assertFalse(staleTemp.exists())
+    }
+
+    @Test
     fun readsNewestSiblingCoreSramWhenCurrentCoreHasNoSave() {
         val older = File(root, "older/Pokemon/sram.srm")
         val newer = File(root, "newer/Pokemon/sram.srm")
@@ -465,6 +486,35 @@ class SaveStoreTest {
         assertArrayEquals(byteArrayOf(4, 4), File(currentChoice, "current-only.bin").readBytes())
         assertArrayEquals(byteArrayOf(1, 1, 1), File(source, "sram.srm").readBytes())
         assertArrayEquals(byteArrayOf(2, 2, 2), File(target, "sram.srm").readBytes())
+    }
+
+
+    @Test
+    fun approvedLegacySourcesAreMigratedForCurrentAndSiblingCoresBeforeSync() {
+        val currentLegacy = File(root, "legacy/current/Pokemon")
+        val siblingLegacy = File(root, "legacy/sibling/Pokemon")
+        currentLegacy.mkdirs()
+        siblingLegacy.mkdirs()
+        File(currentLegacy, "sram.srm").writeBytes(byteArrayOf(1, 2, 3))
+        File(siblingLegacy, "sram.srm").writeBytes(byteArrayOf(4, 5, 6))
+
+        val store = SaveStore(
+            root,
+            "current",
+            File("Pokemon.nds"),
+            siblingCores = listOf("sibling"),
+            gameIdentity = "romm-game-123",
+            migrationSources = mapOf(
+                "current" to currentLegacy,
+                "sibling" to siblingLegacy,
+            ),
+        )
+
+        assertArrayEquals(byteArrayOf(1, 2, 3), store.readSram())
+        assertArrayEquals(byteArrayOf(1, 2, 3), File(root, "current/romm-game-123/sram.srm").readBytes())
+        assertArrayEquals(byteArrayOf(4, 5, 6), File(root, "sibling/romm-game-123/sram.srm").readBytes())
+        assertTrue(currentLegacy.isDirectory)
+        assertTrue(siblingLegacy.isDirectory)
     }
 
 }

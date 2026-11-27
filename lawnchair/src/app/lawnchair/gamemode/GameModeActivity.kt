@@ -196,6 +196,27 @@ private fun GameModeRoot(refreshKey: Int, onExit: () -> Unit) {
     }
     val detail = entries.firstOrNull { it.key == detailKey }
     val networkRequest = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {}
+    var preferVulkan by remember { mutableStateOf(GameModeSettings.isVulkanPreferred(context)) }
+    var externalVulkanDriverEnabled by remember { mutableStateOf(GameModeSettings.isExternalVulkanDriverEnabled(context)) }
+    var vulkanDriverLabel by remember { mutableStateOf(GameModeSettings.vulkanDriver(context)?.libraryName) }
+    var vulkanDriverStatus by remember { mutableStateOf("") }
+    val vulkanDriverPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        if (uri != null) {
+            scope.launch {
+                vulkanDriverStatus = "Importando pacote do driver…"
+                val result = withContext(Dispatchers.IO) { VulkanDriverManager.importTurnipDriver(context, uri) }
+                result.onSuccess { driver ->
+                    GameModeSettings.setVulkanDriver(context, driver)
+                    GameModeSettings.setExternalVulkanDriverEnabled(context, true)
+                    externalVulkanDriverEnabled = true
+                    vulkanDriverLabel = driver.libraryName
+                    vulkanDriverStatus = "Driver Turnip importado. Será aplicado na próxima sessão."
+                }.onFailure { error ->
+                    vulkanDriverStatus = error.message ?: "Não foi possível importar o driver."
+                }
+            }
+        }
+    }
 
     DisposableEffect(Unit) {
         onDispose { GameThemeMusic.stop("modo jogos encerrado") }
@@ -241,6 +262,9 @@ private fun GameModeRoot(refreshKey: Int, onExit: () -> Unit) {
     ) {
         GameThemeMusic.stop("início de jogo")
         GameLog.log("jogo", "abrir: $title (plataforma=${platform?.slug ?: "?"}, núcleo=$coreId)")
+        val coreInfo = platform?.let { CoreRegistry.info(it, coreId) }
+        val supportsRomMSaveSync = coreInfo?.supportsRomMSaveSync != false
+        val effectiveLoadState = loadState && coreInfo?.supportsStates != false
         if (platform != null && platform.launch != LaunchMode.LIBRETRO) {
             status = context.getString(R.string.game_external_opening, title)
             ExternalEmulators.launch(context, LocalGame(title, platform, romPath))
@@ -268,7 +292,7 @@ private fun GameModeRoot(refreshKey: Int, onExit: () -> Unit) {
             )
             Triple(identity, plan, siblings)
         }
-        if (migrationPlan.ambiguous) {
+        if (supportsRomMSaveSync && migrationPlan.ambiguous) {
             if (migrationPlan.conflictSources.isNotEmpty()) {
                 val conflictFiles = withContext(Dispatchers.IO) {
                     GameIdentityResolver.inspectLegacyConflicts(
@@ -293,12 +317,12 @@ private fun GameModeRoot(refreshKey: Int, onExit: () -> Unit) {
                 "Não foi possível confirmar a qual jogo pertence o save antigo. Os arquivos foram preservados e o jogo não será iniciado.",
             )
         }
-        if (migrationPlan.confirmationSources.isNotEmpty()) {
+        if (supportsRomMSaveSync && migrationPlan.confirmationSources.isNotEmpty()) {
             pendingLegacySaveClaim = PendingLegacySaveClaim(
                 coreId = coreId,
                 romPath = romPath,
                 title = title,
-                loadState = loadState,
+                loadState = effectiveLoadState,
                 platform = platform,
                 gameIdentity = gameIdentity,
                 sources = migrationPlan.confirmationSources,
@@ -306,16 +330,16 @@ private fun GameModeRoot(refreshKey: Int, onExit: () -> Unit) {
             status = ""
             return
         }
-        val migrationSources = migrationPlan.sources
+        val migrationSources = if (supportsRomMSaveSync) migrationPlan.sources else emptyMap()
         val core = CoreInstaller.ensureInstalled(context, coreId) { bytes ->
             status = context.getString(R.string.game_mode_status_downloading, coreId, bytes / 1024)
         }.getOrThrow()
-        if (RomMSettings.isConnected(context) && !useLocalSave) {
+        if (RomMSettings.isConnected(context) && !useLocalSave && supportsRomMSaveSync) {
             status = context.getString(R.string.game_mode_status_syncing)
             try {
                 // A partida só começa depois que o pull terminou de verdade.
                 withContext(Dispatchers.IO) {
-                    GameSessionCoordinator.prepareSession(context, romPath, coreId, platform?.slug, gameIdentity, migrationSources)
+                    GameSessionCoordinator.prepareSession(context, romPath, coreId, platform?.slug, gameIdentity, migrationSources, siblings)
                 }
             } catch (error: Exception) {
                 if (error is kotlinx.coroutines.CancellationException) throw error
@@ -325,7 +349,7 @@ private fun GameModeRoot(refreshKey: Int, onExit: () -> Unit) {
                     coreId = coreId,
                     romPath = romPath,
                     title = title,
-                    loadState = loadState,
+                    loadState = effectiveLoadState,
                     platform = platform,
                     error = error.message ?: error.toString(),
                     localSaveAvailable = error !is SaveRollbackException && withContext(Dispatchers.IO) {
@@ -346,7 +370,7 @@ private fun GameModeRoot(refreshKey: Int, onExit: () -> Unit) {
             }
         }
         status = context.getString(R.string.game_mode_status_starting, title)
-        context.startActivity(GameSessionActivity.intent(context, core.absolutePath, romPath, loadState, platform?.slug, gameIdentity, migrationSources))
+        context.startActivity(GameSessionActivity.intent(context, core.absolutePath, romPath, effectiveLoadState, platform?.slug, gameIdentity, migrationSources))
         status = ""
     }
 
@@ -597,6 +621,33 @@ private fun GameModeRoot(refreshKey: Int, onExit: () -> Unit) {
                         onOpenCores = { showCores = true },
                         onOpenScraper = { showScraper = true },
                         onOpenServer = { showServer = true },
+                        preferVulkan = preferVulkan,
+                        externalVulkanDriverEnabled = externalVulkanDriverEnabled,
+                        vulkanDriverLabel = vulkanDriverLabel,
+                        vulkanDriverStatus = vulkanDriverStatus,
+                        onTogglePreferVulkan = {
+                            preferVulkan = !preferVulkan
+                            GameModeSettings.setVulkanPreferred(context, preferVulkan)
+                        },
+                        onToggleExternalVulkanDriver = {
+                            externalVulkanDriverEnabled = !externalVulkanDriverEnabled
+                            GameModeSettings.setExternalVulkanDriverEnabled(context, externalVulkanDriverEnabled)
+                        },
+                        onImportVulkanDriver = {
+                            vulkanDriverPicker.launch(arrayOf("application/zip", "application/x-zip-compressed"))
+                        },
+                        onRemoveVulkanDriver = {
+                            runCatching {
+                                VulkanDriverManager.remove(context)
+                                GameModeSettings.setVulkanDriver(context, null)
+                                GameModeSettings.setExternalVulkanDriverEnabled(context, false)
+                                externalVulkanDriverEnabled = false
+                                vulkanDriverLabel = null
+                                vulkanDriverStatus = "Driver externo removido. O driver do Android será usado."
+                            }.onFailure { error ->
+                                vulkanDriverStatus = error.message ?: "Não foi possível remover o driver."
+                            }
+                        },
                         onExit = onExit,
                     )
 

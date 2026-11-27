@@ -410,4 +410,5 @@
     <!-- Accessibility announcement for closing the nudge window. [CHAR_LIMIT=16] -->
     <string name="nudge_a11y_close">Close</string>
     <string name="nudge_a11y_image">Nudge image</string>
+    <string name="game_session_sram_load_failed">O núcleo não conseguiu carregar o save existente. O arquivo original será preservado e não será sobrescrito nesta sessão.</string>
 </resources>

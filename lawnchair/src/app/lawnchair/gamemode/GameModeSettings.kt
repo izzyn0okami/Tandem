@@ -2,6 +2,8 @@ package app.lawnchair.gamemode
 
 import android.content.Context
 import androidx.core.content.edit
+import com.swordfish.libretrodroid.VulkanDriver
+import java.io.File
 
 /**
  * Preferências mínimas do modo jogos (M1). Ficam em SharedPreferences simples
@@ -16,6 +18,84 @@ object GameModeSettings {
     private const val KEY_RA_RICH_PRESENCE = "ra_rich_presence_visible"
     private const val KEY_SOUNDBITES = "theme_music_enabled"
     private const val KEY_SOUNDBITES_AUTO_DETAILS = "soundbites_auto_details"
+
+    private const val KEY_VIRTUAL_GAMEPAD_ENABLED = "virtual_gamepad_enabled"
+    private const val KEY_VIRTUAL_GAMEPAD_AUTO_HIDE = "virtual_gamepad_auto_hide"
+    private const val KEY_VIRTUAL_GAMEPAD_OPACITY = "virtual_gamepad_opacity"
+    private const val KEY_VIRTUAL_GAMEPAD_SCALE = "virtual_gamepad_scale"
+    private const val KEY_VIRTUAL_GAMEPAD_OFFSET_X = "virtual_gamepad_offset_x"
+    private const val KEY_VIRTUAL_GAMEPAD_OFFSET_Y = "virtual_gamepad_offset_y"
+    private const val KEY_PREFER_VULKAN = "prefer_vulkan"
+    private const val KEY_EXTERNAL_VULKAN_DRIVER_ENABLED = "external_vulkan_driver_enabled"
+    private const val KEY_VULKAN_DRIVER_DIRECTORY = "vulkan_driver_directory"
+    private const val KEY_VULKAN_DRIVER_LIBRARY = "vulkan_driver_library"
+
+    fun isVirtualGamepadEnabled(context: Context): Boolean = context.getSharedPreferences(FILE, Context.MODE_PRIVATE).getBoolean(KEY_VIRTUAL_GAMEPAD_ENABLED, true)
+
+    fun setVirtualGamepadEnabled(context: Context, enabled: Boolean) {
+        context.getSharedPreferences(FILE, Context.MODE_PRIVATE).edit { putBoolean(KEY_VIRTUAL_GAMEPAD_ENABLED, enabled) }
+    }
+
+    fun isVirtualGamepadAutoHideEnabled(context: Context): Boolean = context.getSharedPreferences(FILE, Context.MODE_PRIVATE).getBoolean(KEY_VIRTUAL_GAMEPAD_AUTO_HIDE, true)
+
+    fun setVirtualGamepadAutoHideEnabled(context: Context, enabled: Boolean) {
+        context.getSharedPreferences(FILE, Context.MODE_PRIVATE).edit { putBoolean(KEY_VIRTUAL_GAMEPAD_AUTO_HIDE, enabled) }
+    }
+
+    fun virtualGamepadOpacity(context: Context): Float = context.getSharedPreferences(FILE, Context.MODE_PRIVATE).getFloat(KEY_VIRTUAL_GAMEPAD_OPACITY, 0.76f).coerceIn(0.25f, 1f)
+
+    fun setVirtualGamepadOpacity(context: Context, value: Float) {
+        context.getSharedPreferences(FILE, Context.MODE_PRIVATE).edit { putFloat(KEY_VIRTUAL_GAMEPAD_OPACITY, value.coerceIn(0.25f, 1f)) }
+    }
+
+    fun virtualGamepadScale(context: Context): Float = context.getSharedPreferences(FILE, Context.MODE_PRIVATE).getFloat(KEY_VIRTUAL_GAMEPAD_SCALE, 1f).coerceIn(0.7f, 1.3f)
+
+    fun setVirtualGamepadScale(context: Context, value: Float) {
+        context.getSharedPreferences(FILE, Context.MODE_PRIVATE).edit { putFloat(KEY_VIRTUAL_GAMEPAD_SCALE, value.coerceIn(0.7f, 1.3f)) }
+    }
+
+    fun virtualGamepadOffsetX(context: Context): Float = context.getSharedPreferences(FILE, Context.MODE_PRIVATE).getFloat(KEY_VIRTUAL_GAMEPAD_OFFSET_X, 0f).coerceIn(-0.08f, 0.08f)
+
+    fun setVirtualGamepadOffsetX(context: Context, value: Float) {
+        context.getSharedPreferences(FILE, Context.MODE_PRIVATE).edit { putFloat(KEY_VIRTUAL_GAMEPAD_OFFSET_X, value.coerceIn(-0.08f, 0.08f)) }
+    }
+
+    fun virtualGamepadOffsetY(context: Context): Float = context.getSharedPreferences(FILE, Context.MODE_PRIVATE).getFloat(KEY_VIRTUAL_GAMEPAD_OFFSET_Y, 0f).coerceIn(-0.08f, 0.08f)
+
+    fun setVirtualGamepadOffsetY(context: Context, value: Float) {
+        context.getSharedPreferences(FILE, Context.MODE_PRIVATE).edit { putFloat(KEY_VIRTUAL_GAMEPAD_OFFSET_Y, value.coerceIn(-0.08f, 0.08f)) }
+    }
+
+    fun isVulkanPreferred(context: Context): Boolean = context.getSharedPreferences(FILE, Context.MODE_PRIVATE).getBoolean(KEY_PREFER_VULKAN, false)
+
+    fun setVulkanPreferred(context: Context, preferred: Boolean) {
+        context.getSharedPreferences(FILE, Context.MODE_PRIVATE).edit { putBoolean(KEY_PREFER_VULKAN, preferred) }
+    }
+
+    fun isExternalVulkanDriverEnabled(context: Context): Boolean = context.getSharedPreferences(FILE, Context.MODE_PRIVATE).getBoolean(KEY_EXTERNAL_VULKAN_DRIVER_ENABLED, false)
+
+    fun setExternalVulkanDriverEnabled(context: Context, enabled: Boolean) {
+        context.getSharedPreferences(FILE, Context.MODE_PRIVATE).edit { putBoolean(KEY_EXTERNAL_VULKAN_DRIVER_ENABLED, enabled) }
+    }
+
+    fun vulkanDriver(context: Context): VulkanDriver? {
+        val prefs = context.getSharedPreferences(FILE, Context.MODE_PRIVATE)
+        val directory = prefs.getString(KEY_VULKAN_DRIVER_DIRECTORY, null)?.takeIf { it.isNotBlank() } ?: return null
+        val library = prefs.getString(KEY_VULKAN_DRIVER_LIBRARY, null)?.takeIf { it.isNotBlank() } ?: return null
+        return VulkanDriver(directory, library).takeIf { File(directory, library).isFile }
+    }
+
+    fun setVulkanDriver(context: Context, driver: VulkanDriver?) {
+        context.getSharedPreferences(FILE, Context.MODE_PRIVATE).edit {
+            if (driver == null) {
+                remove(KEY_VULKAN_DRIVER_DIRECTORY)
+                remove(KEY_VULKAN_DRIVER_LIBRARY)
+            } else {
+                putString(KEY_VULKAN_DRIVER_DIRECTORY, driver.directory)
+                putString(KEY_VULKAN_DRIVER_LIBRARY, driver.libraryName)
+            }
+        }
+    }
 
     /** Exibição do Rich Presence do RetroAchievements durante a sessão; ativada por padrão. */
     fun isRaRichPresenceVisible(context: Context): Boolean = context.getSharedPreferences(FILE, Context.MODE_PRIVATE).getBoolean(KEY_RA_RICH_PRESENCE, true)

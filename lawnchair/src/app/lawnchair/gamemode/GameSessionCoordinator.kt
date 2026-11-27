@@ -75,6 +75,7 @@ internal object GameSessionCoordinator {
         platformSlug: String?,
         gameIdentity: String,
         migrationSources: Map<String, File>,
+        siblingCores: List<String> = emptyList(),
     ) {
         val app = context.applicationContext
         if (!RomMSettings.isConnected(app)) return
@@ -86,7 +87,14 @@ internal object GameSessionCoordinator {
         val connection = GameIdentityResolver.connectionSnapshot(app)
             ?: throw IOException("Não foi possível confirmar a conta RomM para preparar a sessão.")
         ensureDeviceRegistered(app, connection.url, connection.token)
-        val result = RomMDeviceSyncRunner.synchronizeLocalSave(app, romPath, coreId, platformSlug)
+        val result = RomMDeviceSyncRunner.synchronizeLocalSave(
+            app,
+            romPath,
+            coreId,
+            platformSlug,
+            siblingCores = siblingCores,
+            migrationSources = migrationSources,
+        )
         if (GameSessionSyncPolicy.blocksSessionStart(result)) {
             throw IOException(
                 "A sincronização pré-jogo foi interrompida para preservar os dados. " +
@@ -202,4 +210,25 @@ internal object GameSessionSyncPolicy {
 
     /** Conflitos são estacionados para resolução; somente falhas operacionais pedem retry automático. */
     fun shouldRetryBackground(result: DeviceSyncExecutionResult): Boolean = result.failed > 0
+}
+
+/**
+ * Decisões puras do ciclo de vida da sessão. Mantidas fora da Activity para
+ * permitir testes JVM sem instanciar Android ou o núcleo nativo.
+ */
+internal object GameSessionLifecyclePolicy {
+    fun shouldDestroyNativeOnPause(isFinishing: Boolean, isChangingConfigurations: Boolean): Boolean = isFinishing || isChangingConfigurations
+
+    fun shouldLogNormalEnd(isFinishing: Boolean): Boolean = isFinishing
+
+    fun shouldEnqueuePostSessionSync(
+        coreSupportsRomMSaveSync: Boolean,
+        hasRomPath: Boolean,
+        sramLoadFailed: Boolean = false,
+    ): Boolean = coreSupportsRomMSaveSync && hasRomPath && !sramLoadFailed
+}
+
+/** Evita substituir um save válido por SRAM recém-gerada quando o núcleo rejeitou o arquivo existente. */
+internal object GameSessionSavePolicy {
+    fun shouldPersistSram(sramLoadFailed: Boolean): Boolean = !sramLoadFailed
 }

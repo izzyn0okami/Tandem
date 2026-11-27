@@ -14,6 +14,8 @@ internal data class CoreSaveAdapter(
     /** Slot remoto estável do protocolo RomM. */
     val remoteSlot: String,
     val compatibleCoreIds: Set<String>,
+    /** Native file extension used by cores that do not expose SRAM through Libretro memory. */
+    val fileExtension: String = "srm",
 )
 
 /** Mapeamento explícito por núcleo; compatibilidade nunca é inferida apenas pela extensão. */
@@ -28,6 +30,7 @@ internal object CoreSaveAdapterRegistry {
         "snes9x2010",
         "bsnes",
     )
+    private val desmumeSaveCores = setOf("desmume", "desmume2015")
 
     /** O identificador público do núcleo Libretro; o namespace Tandem nunca é enviado ao RomM. */
     fun romMEmulatorId(coreId: String): String = coreId.removePrefixIgnoreCase("tandem_").lowercase()
@@ -61,6 +64,14 @@ internal object CoreSaveAdapterRegistry {
                 localSlot = "core-save",
                 remoteSlot = "autosave",
                 compatibleCoreIds = snesSaveCores,
+            )
+
+            in desmumeSaveCores -> CoreSaveAdapter(
+                artifactType = SaveArtifactType.CORE_SAVE,
+                localSlot = "core-save",
+                remoteSlot = "autosave",
+                compatibleCoreIds = setOf(normalized),
+                fileExtension = "dsv",
             )
 
             else -> CoreSaveAdapter(

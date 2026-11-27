@@ -1070,8 +1070,14 @@ class SaveStore internal constructor(
         siblingCores.filter { it != coreId }.forEach(::directoryForCore)
     }
 
+    /** Per-game directory passed to cores that write native save files into the frontend Save directory. */
+    val coreSaveDirectory: File get() = dir
+
     val sramFile = File(dir, "sram.srm")
     val stateFile = File(dir, "state1.state")
+    val nativeSaveFile: File? = CoreSaveAdapterRegistry.resolve(coreId)
+        .takeIf { it.fileExtension == "dsv" }
+        ?.let { File(dir, "${romFile.nameWithoutExtension}.dsv") }
 
     private fun raProgressFile(user: String): File {
         val digest = MessageDigest.getInstance("SHA-256").digest(user.toByteArray(Charsets.UTF_8))
@@ -1136,6 +1142,7 @@ class SaveStore internal constructor(
         val files = buildList {
             add(sramFile)
             add(stateFile)
+            nativeSaveFile?.let(::add)
             raUser?.let { add(raProgressFile(it)) }
         }
         return SaveArtifactCatalog.inspect(
