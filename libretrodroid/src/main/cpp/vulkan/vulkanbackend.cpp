@@ -75,11 +75,7 @@ void VulkanBackend::configure(bool prefer, const DriverConfig& driver) {
 
     driverConfig = driver;
     availability = -1;
-    vk = Dispatch {};
-    if (loaderHandle != nullptr) {
-        dlclose(loaderHandle);
-        loaderHandle = nullptr;
-    }
+    resetLoader();
 }
 
 void* VulkanBackend::openCustomDriver() const {
@@ -114,43 +110,72 @@ void* VulkanBackend::openCustomDriver() const {
 #endif
 }
 
-bool VulkanBackend::loadLoader() {
-    if (vk.getInstanceProcAddr != nullptr) return true;
+void VulkanBackend::resetLoader() {
+    vk = Dispatch {};
+    if (loaderHandle != nullptr) {
+        dlclose(loaderHandle);
+        loaderHandle = nullptr;
+    }
+    usingCustomDriver = false;
+}
 
-    if (driverConfig.isCustom() && !driverConfig.hookDirectory.empty()) {
-        loaderHandle = openCustomDriver();
+bool VulkanBackend::loadLoader(bool allowCustom) {
+    if (vk.getInstanceProcAddr != nullptr && vk.createInstance != nullptr) return true;
+
+    auto resolve = [this](void* handle) {
+        if (handle == nullptr) return false;
+        auto getInstanceProcAddr = reinterpret_cast<PFN_vkGetInstanceProcAddr>(
+            dlsym(handle, "vkGetInstanceProcAddr"));
+        if (getInstanceProcAddr == nullptr) return false;
+        auto createInstance = reinterpret_cast<PFN_vkCreateInstance>(
+            getInstanceProcAddr(VK_NULL_HANDLE, "vkCreateInstance"));
+        if (createInstance == nullptr) return false;
+
+        vk.getInstanceProcAddr = getInstanceProcAddr;
+        vk.enumerateInstanceVersion = reinterpret_cast<PFN_vkEnumerateInstanceVersion>(
+            getInstanceProcAddr(VK_NULL_HANDLE, "vkEnumerateInstanceVersion"));
+        vk.createInstance = createInstance;
+        return true;
+    };
+
+    if (allowCustom && driverConfig.isCustom() && !driverConfig.hookDirectory.empty()) {
+        void* custom = openCustomDriver();
+        if (resolve(custom)) {
+            loaderHandle = custom;
+            usingCustomDriver = true;
+            return true;
+        }
+        if (custom != nullptr) dlclose(custom);
+        LOGW("Custom Vulkan driver entry points are incomplete; trying the system driver");
+        vk = Dispatch {};
     }
-    if (loaderHandle == nullptr) {
-        loaderHandle = dlopen("libvulkan.so", RTLD_NOW | RTLD_LOCAL);
-    }
-    if (loaderHandle == nullptr) {
+
+    void* system = dlopen("libvulkan.so", RTLD_NOW | RTLD_LOCAL);
+    if (system == nullptr) {
         LOGW("Vulkan loader unavailable: %s", dlerror());
         return false;
     }
-
-    vk.getInstanceProcAddr = reinterpret_cast<PFN_vkGetInstanceProcAddr>(
-        dlsym(loaderHandle, "vkGetInstanceProcAddr"));
-    if (vk.getInstanceProcAddr == nullptr) {
-        LOGW("Vulkan loader has no vkGetInstanceProcAddr");
+    if (!resolve(system)) {
+        LOGW("System Vulkan loader has no usable Vulkan entry points");
+        dlclose(system);
+        vk = Dispatch {};
         return false;
     }
-
-    vk.enumerateInstanceVersion = reinterpret_cast<PFN_vkEnumerateInstanceVersion>(
-        vk.getInstanceProcAddr(VK_NULL_HANDLE, "vkEnumerateInstanceVersion"));
-    vk.createInstance = reinterpret_cast<PFN_vkCreateInstance>(
-        vk.getInstanceProcAddr(VK_NULL_HANDLE, "vkCreateInstance"));
-    return vk.createInstance != nullptr;
+    loaderHandle = system;
+    usingCustomDriver = false;
+    return true;
 }
 
-bool VulkanBackend::isAvailable() {
-    if (availability >= 0) return availability == 1;
-    availability = 0;
-
-    if (!loadLoader()) return false;
+bool VulkanBackend::probeLoader() {
+    if (!loadLoader(false)) return false;
 
     uint32_t loaderVersion = VK_API_VERSION_1_0;
     if (vk.enumerateInstanceVersion != nullptr) {
-        vk.enumerateInstanceVersion(&loaderVersion);
+        const VkResult versionResult = vk.enumerateInstanceVersion(&loaderVersion);
+        if (versionResult != VK_SUCCESS) {
+            LOGW("Vulkan loader version query failed: %d", versionResult);
+            return false;
+        }
     }
     if (loaderVersion < MINIMUM_API_VERSION) {
         LOGW("Vulkan loader version %u.%u is below 1.1", VK_API_VERSION_MAJOR(loaderVersion),
@@ -165,8 +190,9 @@ bool VulkanBackend::isAvailable() {
     info.pApplicationInfo = &app;
 
     VkInstance probe = VK_NULL_HANDLE;
-    if (vk.createInstance(&info, nullptr, &probe) != VK_SUCCESS) {
-        LOGW("Vulkan probe instance could not be created");
+    const VkResult createResult = vk.createInstance(&info, nullptr, &probe);
+    if (createResult != VK_SUCCESS || probe == VK_NULL_HANDLE) {
+        LOGW("Vulkan probe instance could not be created: %d", createResult);
         return false;
     }
 
@@ -176,28 +202,81 @@ bool VulkanBackend::isAvailable() {
     auto extensions = reinterpret_cast<PFN_vkEnumerateDeviceExtensionProperties>(
         vk.getInstanceProcAddr(probe, "vkEnumerateDeviceExtensionProperties"));
 
-    uint32_t count = 1;
-    VkPhysicalDevice device = VK_NULL_HANDLE;
-    VkResult enumerated = enumerate(probe, &count, &device);
-    bool supported = (enumerated == VK_SUCCESS || enumerated == VK_INCOMPLETE) && count > 0;
-
+    bool supported = destroy != nullptr && enumerate != nullptr && extensions != nullptr;
+    std::vector<VkPhysicalDevice> devices;
     if (supported) {
-        uint32_t extensionCount = 0;
-        extensions(device, nullptr, &extensionCount, nullptr);
-        std::vector<VkExtensionProperties> available(extensionCount);
-        extensions(device, nullptr, &extensionCount, available.data());
-        for (const char* name : FRAME_EXPORT_EXTENSIONS) {
-            if (!hasExtension(available, name)) {
-                LOGW("Vulkan device lacks %s", name);
+        uint32_t count = 0;
+        const VkResult countResult = enumerate(probe, &count, nullptr);
+        if ((countResult != VK_SUCCESS && countResult != VK_INCOMPLETE) || count == 0) {
+            LOGW("Vulkan probe found no physical devices: result=%d count=%u", countResult, count);
+            supported = false;
+        } else {
+            devices.resize(count);
+            const VkResult devicesResult = enumerate(probe, &count, devices.data());
+            if ((devicesResult != VK_SUCCESS && devicesResult != VK_INCOMPLETE) || count == 0) {
+                LOGW("Vulkan physical-device enumeration failed: %d", devicesResult);
                 supported = false;
+            } else {
+                devices.resize(count);
             }
         }
     }
 
-    destroy(probe, nullptr);
-    availability = supported ? 1 : 0;
+    if (supported) {
+        supported = false;
+        for (VkPhysicalDevice device : devices) {
+            uint32_t extensionCount = 0;
+            VkResult extensionResult = extensions(device, nullptr, &extensionCount, nullptr);
+            if (extensionResult != VK_SUCCESS && extensionResult != VK_INCOMPLETE) continue;
+            std::vector<VkExtensionProperties> available(extensionCount);
+            extensionResult = extensions(device, nullptr, &extensionCount, available.data());
+            if (extensionResult != VK_SUCCESS && extensionResult != VK_INCOMPLETE) continue;
+
+            const bool hasRequiredExtensions = std::all_of(
+                std::begin(FRAME_EXPORT_EXTENSIONS), std::end(FRAME_EXPORT_EXTENSIONS),
+                [&available](const char* name) { return hasExtension(available, name); });
+            if (hasRequiredExtensions) {
+                supported = true;
+                break;
+            }
+        }
+    }
+
+    if (destroy != nullptr) {
+        destroy(probe, nullptr);
+    } else {
+        LOGW("Vulkan probe instance has no vkDestroyInstance entry point");
+        supported = false;
+    }
     LOGI("Vulkan HW rendering %s", supported ? "available" : "unavailable");
     return supported;
+}
+
+bool VulkanBackend::isAvailable() {
+    if (availability >= 0) return availability == 1;
+    availability = 0;
+
+    if (!loadLoader()) return false;
+    const bool customWasLoaded = usingCustomDriver;
+    if (probeLoader()) {
+        availability = 1;
+        return true;
+    }
+
+    if (customWasLoaded) {
+        LOGW("Selected custom Vulkan driver failed the Vulkan probe; retrying with the system driver");
+        resetLoader();
+        if (loadLoader(false) && probeLoader()) {
+            availability = 1;
+            LOGI("System Vulkan driver passed the fallback probe");
+            return true;
+        }
+        resetLoader();
+    }
+
+    availability = 0;
+    LOGW("No compatible Vulkan driver passed the hardware-rendering probe");
+    return false;
 }
 
 void VulkanBackend::setNegotiationInterface(
@@ -354,23 +433,64 @@ bool VulkanBackend::loadInstanceFunctions() {
         load("vkGetPhysicalDeviceFeatures"));
     vk.createDevice = reinterpret_cast<PFN_vkCreateDevice>(load("vkCreateDevice"));
     vk.getDeviceProcAddr = reinterpret_cast<PFN_vkGetDeviceProcAddr>(load("vkGetDeviceProcAddr"));
-    return vk.destroyInstance && vk.enumeratePhysicalDevices && vk.createDevice && vk.getDeviceProcAddr;
+    return vk.destroyInstance && vk.enumeratePhysicalDevices && vk.getPhysicalDeviceProperties &&
+           vk.getPhysicalDeviceQueueFamilyProperties && vk.enumerateDeviceExtensionProperties &&
+           vk.getPhysicalDeviceFeatures && vk.createDevice && vk.getDeviceProcAddr;
 }
 
 bool VulkanBackend::pickPhysicalDevice() {
     uint32_t count = 0;
-    vk.enumeratePhysicalDevices(instance, &count, nullptr);
-    if (count == 0) return false;
-    std::vector<VkPhysicalDevice> devices(count);
-    vk.enumeratePhysicalDevices(instance, &count, devices.data());
-    gpu = devices.front();
+    VkResult result = vk.enumeratePhysicalDevices(instance, &count, nullptr);
+    if ((result != VK_SUCCESS && result != VK_INCOMPLETE) || count == 0) {
+        LOGE("Vulkan physical-device enumeration failed: result=%d count=%u", result, count);
+        return false;
+    }
 
-    VkPhysicalDeviceProperties properties {};
-    vk.getPhysicalDeviceProperties(gpu, &properties);
-    LOGI("Vulkan device: %s (api %u.%u.%u, driver %u)", properties.deviceName,
-         VK_API_VERSION_MAJOR(properties.apiVersion), VK_API_VERSION_MINOR(properties.apiVersion),
-         VK_API_VERSION_PATCH(properties.apiVersion), properties.driverVersion);
-    return true;
+    std::vector<VkPhysicalDevice> devices(count);
+    result = vk.enumeratePhysicalDevices(instance, &count, devices.data());
+    if ((result != VK_SUCCESS && result != VK_INCOMPLETE) || count == 0) {
+        LOGE("Vulkan physical-device list could not be read: result=%d count=%u", result, count);
+        return false;
+    }
+    devices.resize(count);
+
+    const auto required = requiredDeviceExtensions();
+    const uint32_t minimumDeviceVersion = std::max(MINIMUM_API_VERSION, requestedApiVersion());
+    const VkQueueFlags wantedQueue = VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT;
+    for (VkPhysicalDevice candidate : devices) {
+        VkPhysicalDeviceProperties properties {};
+        vk.getPhysicalDeviceProperties(candidate, &properties);
+        if (properties.apiVersion < minimumDeviceVersion) continue;
+
+        uint32_t extensionCount = 0;
+        result = vk.enumerateDeviceExtensionProperties(candidate, nullptr, &extensionCount, nullptr);
+        if (result != VK_SUCCESS && result != VK_INCOMPLETE) continue;
+        std::vector<VkExtensionProperties> available(extensionCount);
+        result = vk.enumerateDeviceExtensionProperties(candidate, nullptr, &extensionCount, available.data());
+        if (result != VK_SUCCESS && result != VK_INCOMPLETE) continue;
+        const bool hasExtensions = std::all_of(required.begin(), required.end(), [&available](const char* name) {
+            return hasExtension(available, name);
+        });
+        if (!hasExtensions) continue;
+
+        uint32_t familyCount = 0;
+        vk.getPhysicalDeviceQueueFamilyProperties(candidate, &familyCount, nullptr);
+        std::vector<VkQueueFamilyProperties> families(familyCount);
+        vk.getPhysicalDeviceQueueFamilyProperties(candidate, &familyCount, families.data());
+        const bool hasQueue = std::any_of(families.begin(), families.end(), [wantedQueue](const auto& family) {
+            return (family.queueFlags & wantedQueue) == wantedQueue && family.queueCount > 0;
+        });
+        if (!hasQueue) continue;
+
+        gpu = candidate;
+        LOGI("Vulkan device: %s (api %u.%u.%u, driver %u)", properties.deviceName,
+             VK_API_VERSION_MAJOR(properties.apiVersion), VK_API_VERSION_MINOR(properties.apiVersion),
+             VK_API_VERSION_PATCH(properties.apiVersion), properties.driverVersion);
+        return true;
+    }
+
+    LOGE("No Vulkan physical device supports all required frame-export extensions");
+    return false;
 }
 
 VkDevice VulkanBackend::createDeviceWrapper(VkPhysicalDevice physicalDevice, void* opaque,
@@ -483,7 +603,12 @@ bool VulkanBackend::createDeviceThroughCore() {
     device = context.device;
     queue = context.queue;
     queueFamily = context.queue_family_index;
-    return device != VK_NULL_HANDLE && queue != VK_NULL_HANDLE;
+    if (device == VK_NULL_HANDLE || queue == VK_NULL_HANDLE) {
+        LOGE("The core reported a successful Vulkan device negotiation without a valid device and queue");
+        destroyCoreDevice();
+        return false;
+    }
+    return true;
 }
 
 bool VulkanBackend::createDevice() {
@@ -531,7 +656,11 @@ bool VulkanBackend::loadDeviceFunctions() {
     vk.getAndroidHardwareBufferProperties = reinterpret_cast<PFN_vkGetAndroidHardwareBufferPropertiesANDROID>(
         load("vkGetAndroidHardwareBufferPropertiesANDROID"));
 
-    return vk.destroyDevice && vk.queueSubmit && vk.cmdBlitImage && vk.cmdClearColorImage && vk.createImage &&
+    return vk.destroyDevice && vk.getDeviceQueue && vk.deviceWaitIdle && vk.createCommandPool &&
+           vk.destroyCommandPool && vk.allocateCommandBuffers && vk.beginCommandBuffer && vk.endCommandBuffer &&
+           vk.resetCommandBuffer && vk.cmdPipelineBarrier && vk.cmdBlitImage && vk.cmdClearColorImage &&
+           vk.createFence && vk.destroyFence && vk.waitForFences && vk.resetFences && vk.queueSubmit &&
+           vk.createImage && vk.destroyImage && vk.allocateMemory && vk.freeMemory && vk.bindImageMemory &&
            vk.getAndroidHardwareBufferProperties;
 }
 
@@ -555,40 +684,65 @@ bool VulkanBackend::start() {
     if (isStarted()) return true;
     if (!isAvailable()) return false;
 
-    if (!createInstance() || !loadInstanceFunctions()) {
-        LOGE("Vulkan context could not be created");
-        shutdown();
-        return false;
-    }
-    createPresentationSurface();
-    if (!pickPhysicalDevice() || !createDevice() || !loadDeviceFunctions() || !createFrameResources()) {
-        LOGE("Vulkan context could not be created");
-        shutdown();
+    const bool customWasLoaded = usingCustomDriver;
+    const auto* coreNegotiation = negotiation;
+    auto initialize = [this]() {
+        if (!createInstance() || !loadInstanceFunctions()) {
+            LOGE("Vulkan context could not be created");
+            shutdown();
+            return false;
+        }
+        createPresentationSurface();
+        if (!pickPhysicalDevice() || !createDevice() || !loadDeviceFunctions() || !createFrameResources()) {
+            LOGE("Vulkan context could not be created");
+            shutdown();
+            return false;
+        }
+
+        renderInterface = {};
+        renderInterface.interface_type = RETRO_HW_RENDER_INTERFACE_VULKAN;
+        renderInterface.interface_version = RETRO_HW_RENDER_INTERFACE_VULKAN_VERSION;
+        renderInterface.handle = this;
+        renderInterface.instance = instance;
+        renderInterface.gpu = gpu;
+        renderInterface.device = device;
+        renderInterface.get_device_proc_addr = vk.getDeviceProcAddr;
+        renderInterface.get_instance_proc_addr = vk.getInstanceProcAddr;
+        renderInterface.queue = queue;
+        renderInterface.queue_index = queueFamily;
+        renderInterface.set_image = &callbackSetImage;
+        renderInterface.get_sync_index = &callbackGetSyncIndex;
+        renderInterface.get_sync_index_mask = &callbackGetSyncIndexMask;
+        renderInterface.set_command_buffers = &callbackSetCommandBuffers;
+        renderInterface.wait_sync_index = &callbackWaitSyncIndex;
+        renderInterface.lock_queue = &callbackLockQueue;
+        renderInterface.unlock_queue = &callbackUnlockQueue;
+        renderInterface.set_signal_semaphore = &callbackSetSignalSemaphore;
+
+        LOGI("Vulkan context ready (custom_driver=%d, negotiated=%d, queue family %u)",
+             usingCustomDriver, negotiatedDevice, queueFamily);
+        return true;
+    };
+
+    if (initialize()) return true;
+    if (!customWasLoaded) return false;
+
+    LOGW("Custom Vulkan driver passed the probe but failed context creation; retrying with the system driver");
+    resetLoader();
+    availability = -1;
+    if (!loadLoader(false) || !probeLoader()) {
+        resetLoader();
+        availability = 0;
         return false;
     }
 
-    renderInterface = {};
-    renderInterface.interface_type = RETRO_HW_RENDER_INTERFACE_VULKAN;
-    renderInterface.interface_version = RETRO_HW_RENDER_INTERFACE_VULKAN_VERSION;
-    renderInterface.handle = this;
-    renderInterface.instance = instance;
-    renderInterface.gpu = gpu;
-    renderInterface.device = device;
-    renderInterface.get_device_proc_addr = vk.getDeviceProcAddr;
-    renderInterface.get_instance_proc_addr = vk.getInstanceProcAddr;
-    renderInterface.queue = queue;
-    renderInterface.queue_index = queueFamily;
-    renderInterface.set_image = &callbackSetImage;
-    renderInterface.get_sync_index = &callbackGetSyncIndex;
-    renderInterface.get_sync_index_mask = &callbackGetSyncIndexMask;
-    renderInterface.set_command_buffers = &callbackSetCommandBuffers;
-    renderInterface.wait_sync_index = &callbackWaitSyncIndex;
-    renderInterface.lock_queue = &callbackLockQueue;
-    renderInterface.unlock_queue = &callbackUnlockQueue;
-    renderInterface.set_signal_semaphore = &callbackSetSignalSemaphore;
+    availability = 1;
+    negotiation = coreNegotiation;
+    if (initialize()) return true;
 
-    LOGI("Vulkan context ready (negotiated=%d, queue family %u)", negotiatedDevice, queueFamily);
-    return true;
+    resetLoader();
+    availability = 0;
+    return false;
 }
 
 const retro_hw_render_interface_vulkan* VulkanBackend::getRenderInterface() const {
@@ -901,18 +1055,24 @@ void VulkanBackend::destroyCoreDevice() {
     if (device != VK_NULL_HANDLE && vk.deviceWaitIdle != nullptr) {
         vk.deviceWaitIdle(device);
     }
-    if (negotiation != nullptr && negotiation->destroy_device != nullptr && negotiatedDevice) {
+    if (negotiatedDevice && negotiation != nullptr && negotiation->destroy_device != nullptr) {
         negotiation->destroy_device();
+    } else if (device != VK_NULL_HANDLE && vk.destroyDevice != nullptr) {
+        vk.destroyDevice(device, nullptr);
     }
+    device = VK_NULL_HANDLE;
+    queue = VK_NULL_HANDLE;
+    negotiatedDevice = false;
 }
 
 void VulkanBackend::shutdown() {
     if (device != VK_NULL_HANDLE) {
-        if (vk.deviceWaitIdle != nullptr) vk.deviceWaitIdle(device);
         destroyFrameBuffer();
-        if (frameFence != VK_NULL_HANDLE) vk.destroyFence(device, frameFence, nullptr);
-        if (commandPool != VK_NULL_HANDLE) vk.destroyCommandPool(device, commandPool, nullptr);
-        if (vk.destroyDevice != nullptr) vk.destroyDevice(device, nullptr);
+        if (frameFence != VK_NULL_HANDLE && vk.destroyFence != nullptr) vk.destroyFence(device, frameFence, nullptr);
+        if (commandPool != VK_NULL_HANDLE && vk.destroyCommandPool != nullptr) {
+            vk.destroyCommandPool(device, commandPool, nullptr);
+        }
+        destroyCoreDevice();
     }
     destroyPresentationSurface();
     if (instance != VK_NULL_HANDLE && vk.destroyInstance != nullptr) {
