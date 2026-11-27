@@ -98,6 +98,17 @@ class DeviceSyncProtocolTest {
     }
 
     @Test
+    fun nativeSaveFilenameCompatibilityIsScopedToDeclaredCoreExtension() {
+        assertTrue(DeviceSyncArtifactPolicy.isCompatibleFileName("desmume", "Pokemon.dsv"))
+        assertTrue(DeviceSyncArtifactPolicy.isCompatibleFileName("desmume2015", "Pokemon.DSV"))
+        assertFalse(DeviceSyncArtifactPolicy.isCompatibleFileName("desmume", "Pokemon.srm"))
+        assertFalse(DeviceSyncArtifactPolicy.isCompatibleFileName("melonds", "Pokemon.dsv"))
+        assertTrue(DeviceSyncArtifactPolicy.isCompatibleFileName("melonds", "Pokemon.srm"))
+        assertFalse(DeviceSyncArtifactPolicy.isCompatibleFileName("desmume", "Pokemon"))
+        assertFalse(DeviceSyncArtifactPolicy.isCompatibleFileName("desmume", null))
+    }
+
+    @Test
     fun registrationUsesStableHostnameAndApiSyncModeWithoutAssumingMacAddress() {
         val json = DeviceSyncProtocolJson.registration(
             DeviceSyncRegistration(
