@@ -136,7 +136,9 @@ private:
         std::vector<VkSemaphore> waitSemaphores;
     };
 
-    bool loadLoader();
+    bool loadLoader(bool allowCustom = true);
+    bool probeLoader();
+    void resetLoader();
     void* openCustomDriver() const;
     bool loadInstanceFunctions();
     bool loadDeviceFunctions();
@@ -174,6 +176,7 @@ private:
     void waitForFrame();
 
     void* loaderHandle = nullptr;
+    bool usingCustomDriver = false;
     bool preferVulkan = false;
     DriverConfig driverConfig;
     Dispatch vk;
