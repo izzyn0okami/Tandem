@@ -1261,3 +1261,35 @@ STATUS DE CI — ÚLTIMA RECONSULTA — 2026-11-27
 - [ ] CI #1793: build-debug-apk ainda em execução na etapa Run unit tests; Build APK e Upload artifact pendentes.
 - [ ] Commit c0a406180089421e7ceb3b3c1eab11eb89fc256c (correção SMS Plus ARM64) ainda sem workflow associado retornado pelo endpoint de workflows de commit filtrado para eventos pull_request; verificar execução push separadamente se necessário.
 - PR #57 segue aberta como Draft, sem merge. Nenhum artefato foi publicado em tandem-latest.
+
+
+CATÁLOGO — CONFIRMAÇÃO ARM64 E METADADOS EXPLÍCITOS — 2026-11-27
+- [x] Índice oficial Buildbot Android ARM64 confirmou os pacotes flycast_libretro_android.so.zip, ppsspp_libretro_android.so.zip, mednafen_wswan_libretro_android.so.zip e mednafen_vb_libretro_android.so.zip.
+- [x] A disponibilidade dos quatro pacotes foi confirmada no índice, mas ainda não equivale a validação de conteúdo interno, ELF, assinatura ou execução no dispositivo.
+- [x] Documentação Libretro confirma Flycast com save states e saves via arquivos VMU próprios em system/dc; a implementação atual do Tandem sincroniza SRAM pelo fluxo RomM, então Device Sync foi explicitamente desativado para Flycast.
+- [x] Documentação Libretro confirma PPSSPP com save states e saves em PSP/SAVEDATA, além de assets necessários em system/PPSSPP. Como o Device Sync atual do Tandem não sincroniza esse diretório estruturado, RomM Device Sync foi explicitamente desativado para PPSSPP.
+- [x] Documentação Libretro confirma Beetle Cygne (WonderSwan) com SRAM .srm e save states.
+- [x] Documentação Libretro confirma Beetle VB com SRAM .srm e save states.
+- [x] CoreRegistry agora declara entradas explícitas para wswan, dreamcast, psp e vb; os recursos deixam de depender do fallback genérico.
+- [x] Teste unitário adicionado em GamePlatformsResolutionTest para garantir capabilities explícitas e distinguir cores com save states mas sem RomM SRAM sync.
+- [ ] Testar os quatro núcleos no aparelho e confirmar assets, desempenho, leitura/gravação dos saves e comportamento de estados.
+- [ ] Implementar futuramente transporte RomM próprio para VMU do Flycast e dados PSP/SAVEDATA, caso desejado; não classificar esses formatos como SRAM.
+- [ ] Revisar os demais núcleos que usam formatos de save não-SRAM ou arquivos auxiliares, para evitar sincronização falsa/ineficaz.
+
+Commits de implementação:
+- ccd2e7897ce153164a59cb5e4c6ab3cc1371b970 — CoreRegistry: capacidades explícitas de WonderSwan, Dreamcast, PSP e Virtual Boy.
+- 44221f574848a9a8fb5311c45b0d8f934a4d9595 — teste das capacidades explícitas.
+
+CIs e estado da PR:
+- [x] CI #1791 (run 45989509316): check-style aprovado; build-debug-apk continuava em execução na última consulta.
+- [x] CI #1793 (run 45989772089): check-style aprovado; build-debug-apk continuava em execução na última consulta.
+- [ ] CI #1800 (run 45990219076), acionada pelo commit documental 78c14e1: check-style e build-debug-apk ainda em execução na última consulta.
+- [ ] CIs para os commits ccd2e78 e 44221f5 ainda precisam ser acompanhadas.
+- PR #57 permanece aberta e Draft, com head 44221f574848a9a8fb5311c45b0d8f934a4d9595. Não houve merge nem publicação em tandem-latest.
+
+Fontes técnicas:
+- Índice Buildbot Android ARM64: https://buildbot.libretro.com/nightly/android/latest/arm64-v8a/
+- PPSSPP: https://docs.libretro.com/library/ppsspp/
+- Flycast: https://docs.libretro.com/library/flycast/
+- Beetle Cygne: https://docs.libretro.com/library/beetle_cygne/
+- Beetle VB: https://docs.libretro.com/library/beetle_vb/
