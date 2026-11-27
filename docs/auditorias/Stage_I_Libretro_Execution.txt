@@ -842,3 +842,11 @@ IMPLEMENTAÇÃO — VULKAN E DRIVER ADRENO
 - [ ] Aguardar conclusão da CI #1681 antes de considerar a versão corrigida plenamente validada.
 - [ ] Ampliar catálogo ARM64 com ARMSX2, Dolphin, Azahar/Panda3DS, Cemu, RPCS3 e Vita3K, incluindo BIOS/firmware e particularidades de renderização.
 - [ ] Não mesclar PR #57 nem publicar em tandem-latest sem autorização explícita; PR #41 permanece intocada.
+
+
+ATUALIZAÇÃO — CI #1681 CONCLUÍDA COM SUCESSO — 2026-11-26
+- [x] CI #1681 — https://github.com/izzyn0okami/Tandem/actions/runs/45927951412 — check-style/Spotless, testes unitários, build assembleLawnWithQuickstepGithubDebug, upload do APK e final-status aprovados no commit d7a7149ffd7ca02f3b35c36db1679dab41ff8f0a.
+- [x] A versão corrigida do importador de driver externo foi compilada e passou nos testes automatizados. A importação real de pacote Turnip e a inicialização Vulkan em Adreno ainda exigem teste em aparelho.
+- [x] CI #1682 — https://github.com/izzyn0okami/Tandem/actions/runs/45927955835 — evento pull_request gerado pelo bot terminou em action_required sem executar jobs; a validação efetiva por push da mesma revisão ocorreu na CI #1681 e passou.
+- [ ] CI #1683 — https://github.com/izzyn0okami/Tandem/actions/runs/45928460318 — check-style aprovado; testes/build ainda em andamento no momento do registro.
+- [ ] Validar em aparelho: importar pacote ZIP Turnip ARM64, ativar/desativar driver externo, usar Vulkan com núcleo compatível e confirmar fallback para driver do Android.
