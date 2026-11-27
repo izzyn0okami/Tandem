@@ -128,3 +128,14 @@ ENDURECIMENTO DO IMPORTADOR VULKAN — 2026-11-27
 - [x] Tentativa de criar workflow temporário de validação reutilizando ci.yml não gerou execução; arquivo .github/workflows/stage-j-validation.yml foi removido para não deixar automação auxiliar permanente.
 - [ ] Antes de rebase, executar CI real para o head com endurecimento; depois reconciliar o conflito add/add do VulkanDriverManager preservando esta implementação combinada e remover o painel Vulkan legado de GameModeActivity/GameScreens.
 - [x] Nenhum merge, mudança da base da PR, publicação em game-mode-m2-dev/tandem-latest ou alteração em PR #41/#55 foi realizado.
+
+CI #1934 APROVADA — HARDENING VULKAN — 2026-11-27
+- [x] CI #1934 executada por workflow_dispatch no head d60e12d861ef393e91f3ff763094dc293dbe94a5 (run 46036862086).
+- [x] Job build-debug-apk: sucesso; passo Run unit tests: sucesso; Build APK assembleLawnWithQuickstepGithubDebug: sucesso; upload do artefato: sucesso.
+- [x] Job check-style: sucesso; Spotless automático não precisou gerar commit e a verificação final passou.
+- [x] Artefato assembleLawnWithQuickstepGithubDebug criado (artifact ID 15219671225, 46.634.389 bytes; expira em 2027-02-25).
+- [x] A CI confirma compilação e testes unitários da branch Stage J antes do rebase; não valida integração com game-mode-m2-dev nem comportamento em dispositivo.
+- [x] Sincronizado docs/auditorias/Stage_I_Libretro_Execution.txt da branch Stage J com o conteúdo integral atual da base game-mode-m2-dev (blob SHA bb f6b6a718c09415ec222aeb929f0b3ce077ec03), removendo a cópia antiga/truncada que causava diff documental.
+- [ ] Conferir o diff novamente e executar CI após a sincronização documental se a mudança disparar workflow; confirmar que o log Stage I está idêntico à base.
+- [ ] Prosseguir com rebase real somente depois de planejar a reconciliação de VulkanDriverManager e a remoção do painel Vulkan legado de GameModeActivity/GameScreens, sem descartar recursos não relacionados da base.
+- [x] PR #58 permanece aberta, não mesclada, ainda baseada em feat/libretro-stage-i; nenhuma publicação em tandem-latest.
