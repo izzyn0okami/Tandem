@@ -221,6 +221,13 @@ private fun GameModeRoot(refreshKey: Int, onExit: () -> Unit) {
     DisposableEffect(Unit) {
         onDispose { GameThemeMusic.stop("modo jogos encerrado") }
     }
+    LaunchedEffect(showCores) {
+        if (!showCores) {
+            externalVulkanDriverEnabled = GameModeSettings.isExternalVulkanDriverEnabled(context)
+            vulkanDriverLabel = GameModeSettings.vulkanDriver(context)?.libraryName
+        }
+    }
+
     LaunchedEffect(tab, detailKey) {
         if (detailKey == null) {
             GameThemeMusic.stop(if (tab == GameTab.Library) "saída dos detalhes do jogo" else "saída da Biblioteca")
@@ -638,7 +645,12 @@ private fun GameModeRoot(refreshKey: Int, onExit: () -> Unit) {
                         },
                         onRemoveVulkanDriver = {
                             runCatching {
-                                VulkanDriverManager.remove(context)
+                                val importedId = AdrenoToolsDriverManager.installedIdFor(context, GameModeSettings.vulkanDriver(context))
+                                if (importedId != null) {
+                                    AdrenoToolsDriverManager.removePackage(context, importedId)
+                                } else {
+                                    VulkanDriverManager.remove(context)
+                                }
                                 GameModeSettings.setVulkanDriver(context, null)
                                 GameModeSettings.setExternalVulkanDriverEnabled(context, false)
                                 externalVulkanDriverEnabled = false
