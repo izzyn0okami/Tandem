@@ -980,3 +980,13 @@ RESULTADOS DE CI — 2026-11-26
 - [x] Testes ELF e teste de recuperação de SRAM agora têm validação CI verde.
 - PR #57 continua aberta e Draft; nenhuma mesclagem ou publicação em tandem-latest foi feita.
 - PR #41 e PR #55 não foram alteradas.
+
+ 
+AUDITORIA — INFRAESTRUTURA DE TESTES DE CICLO DE VIDA — 2026-11-26
+- [x] Verificada a estrutura de testes na branch feat/libretro-stage-i: os testes específicos do Game Mode estão em tests/unit/kotlin/app/lawnchair/gamemode; não existe diretório dedicado androidTest/instrumented no módulo do app.
+- [x] Verificado build.gradle do módulo raiz: dependência de testes locais JUnit está configurada; não há testInstrumentationRunner, bloco androidTest/testOptions, dependências AndroidX Test/Espresso nem configuração de source set androidTest.
+- [x] A árvore tests/ existente é a suíte de testes de plataforma/AOSP (Android.bp, manifests e TAPL), não é uma suíte Gradle Android instrumentada pronta para testar GameSessionActivity.
+- [x] Busca por GameSessionActivityTest, ActivityScenario, InstrumentationRegistry e AndroidJUnit4 não encontrou testes correspondentes no repositório indexado; a revisão da árvore do branch confirma a ausência de um pacote instrumentado dedicado ao Game Mode.
+- [ ] Para testar Activity/GLRetroView em dispositivo será necessário criar infraestrutura Android instrumentada compatível com o build híbrido AOSP/Gradle, selecionar runner e dependências adequadas e verificar se o libretrodroid permite inicialização controlada em teste. Não adicionar configuração especulativa sem validar impacto no build.
+- [ ] Alternativa de menor risco: extrair lógica pura de ciclo de vida/persistência para um coordenador testável em JVM e manter os testes de GL/thread/Activity como validação manual no aparelho até a infraestrutura instrumentada estar comprovada.
+- Conclusão: a lacuna não é apenas ausência de casos de teste; falta uma source set Android instrumentada configurada no módulo. Nenhuma alteração de código de produção ou configuração Gradle foi feita nesta revisão.
