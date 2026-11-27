@@ -77,6 +77,34 @@ class SaveArtifactCatalogTest {
     }
 
     @Test
+    fun deSmuMeNativeDsvSaveIsIncludedInInventory() {
+        val store = SaveStore(root, "desmume", File("Pokemon.nds"), gameIdentity = "romm-ds-game")
+        val nativeSave = store.nativeSaveFile ?: error("DeSmuME must expose its native DSV save")
+        nativeSave.writeBytes(byteArrayOf(1, 2, 3, 4))
+
+        val artifact = store.inventory().single()
+
+        assertEquals(nativeSave, artifact.file)
+        assertEquals(SaveArtifactType.CORE_SAVE, artifact.type)
+        assertEquals("core-save", artifact.slot)
+        assertEquals("dsv", artifact.format)
+        assertEquals("desmume", artifact.coreId)
+    }
+
+    @Test
+    fun deSmuMeSaveAdapterIsNotSharedAcrossDifferentCoreIds() {
+        val desmume = CoreSaveAdapterRegistry.resolve("desmume")
+        val desmume2015 = CoreSaveAdapterRegistry.resolve("desmume2015")
+        val melonds = CoreSaveAdapterRegistry.resolve("melonds")
+
+        assertEquals("dsv", desmume.fileExtension)
+        assertEquals(setOf("desmume"), desmume.compatibleCoreIds)
+        assertEquals("dsv", desmume2015.fileExtension)
+        assertEquals(setOf("desmume2015"), desmume2015.compatibleCoreIds)
+        assertEquals("srm", melonds.fileExtension)
+    }
+
+    @Test
     fun catalogIgnoresUnknownEmptyAndDuplicateFiles() {
         val save = File(root, "sram.srm").apply { writeBytes(byteArrayOf(1, 2)) }
         val emptyState = File(root, "state1.state").apply { createNewFile() }
