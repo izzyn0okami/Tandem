@@ -84,9 +84,21 @@ object CoreRegistry {
             core("parallel_n64", "ParaLLEl N64", "Alternativa leve"),
         ),
         "psx" to listOf(
-            core("pcsx_rearmed", "PCSX ReARMed", "Leve e rápido"),
-            core("swanstation", "SwanStation", "Mais preciso, mais pesado"),
-            core("mednafen_psx", "Beetle PSX", "Alta precisão, renderização por software; exige mais desempenho"),
+            core(
+                "pcsx_rearmed",
+                "PCSX ReARMed",
+                "Leve e rápido; cartão 0 usa .srm (sync RomM); cartão 1 usa arquivo próprio se ativado",
+            ),
+            core(
+                "swanstation",
+                "SwanStation",
+                "Mais preciso, mais pesado; cartão Libretro padrão usa .srm; cartões alternativos usam arquivos próprios",
+            ),
+            core(
+                "mednafen_psx",
+                "Beetle PSX",
+                "Alta precisão, renderização por software; cartão 0 usa .srm (sync RomM); cartão 1 usa .mcr separado",
+            ),
         ),
         "pce" to listOf(
             core("mednafen_pce_fast", "Beetle PCE Fast", "Rápido"),
