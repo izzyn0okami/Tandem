@@ -685,9 +685,15 @@ class GameSessionActivity : ComponentActivity() {
 
     /** DS: as duas telas lado a lado cabem melhor no celular em paisagem. Só usa valores que o núcleo declara. */
     private fun applyDsSideBySide(view: GLRetroView) {
-        if (CoreRegistry.savedOptions(this, "melonds").containsKey("melonds_screen_layout")) return
-        val option = CoreRegistry.parse(view.getVariables()).firstOrNull { it.key == "melonds_screen_layout" } ?: return
-        val sideBySide = option.values.firstOrNull { it.contains("Left", ignoreCase = true) && it.contains("Right", ignoreCase = true) } ?: return
+        val layoutKeys = setOf("melonds_screen_layout", "melonds_screen_layout1")
+        if (layoutKeys.any { CoreRegistry.savedOptions(this, coreIdForOptions).containsKey(it) }) return
+        val option = CoreRegistry.parse(view.getVariables()).firstOrNull {
+            it.key in layoutKeys
+        } ?: return
+        val sideBySide = option.values.firstOrNull {
+            it.contains("left-right", ignoreCase = true) ||
+                (it.contains("left", ignoreCase = true) && it.contains("right", ignoreCase = true))
+        } ?: return
         view.updateVariables(Variable(key = option.key, value = sideBySide))
         GameLog.log("núcleos", "DS: telas lado a lado ($sideBySide)")
     }
