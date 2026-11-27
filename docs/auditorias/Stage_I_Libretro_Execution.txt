@@ -932,3 +932,22 @@ CI DA CABEÇA — TESTES ELF
 - CI #1706 — run 45932419148, commit 8887a0ba00c2a8d5607cfb363571ef9cb85a916d (atualização documental): em andamento no momento desta atualização.
 - [ ] Aguardar conclusão das CIs #1705/#1706; não marcar os novos testes ELF como validados antes de resultado verde.
 - PR #57 continua aberta e draft; não mesclar nem publicar em tandem-latest sem autorização explícita. PR #41 permanece intocada.
+
+
+REVISÃO COMPLEMENTAR — CICLO DE VIDA DA SESSÃO E ENCERRAMENTO ABRUPTO — 2026-11-26
+- [x] Revisado onPause: libera os inputs do gamepad virtual e serializa SRAM antes de super.onPause(), enquanto a superfície GL ainda está ativa.
+- [x] Em encerramento ou mudança de configuração, o cliente RetroAchievements e o núcleo nativo são destruídos antes de a superfície GL suspender o thread.
+- [x] Em pausa comum, a sessão nativa é preservada; onResume restaura o comportamento de menu/retomada e reinicia o acompanhamento de controle.
+- [x] Depois de super.onPause(), a sessão é marcada inativa e a sincronização pós-sessão é enfileirada somente para núcleos compatíveis com RomM.
+- [x] onDestroy possui proteção contra destruição nativa duplicada; exitGame também persiste SRAM antes de finish().
+- [x] Confirmado que a recuperação após encerramento abrupto não pode depender de onPause/onDestroy: o autosave periódico de 60 segundos é a proteção disponível; morte forçada do processo pode perder alterações posteriores ao último autosave.
+- [x] Revisado o conjunto de arquivos alterados da PR #57: ainda não há testes instrumentados androidTest específicos para ciclo de vida real/GLRetroView; a validação existente é unitária e revisão estática.
+- [ ] Adicionar/viabilizar testes instrumentados que simulem pausa/retomada, recriação da Activity, falha/encerramento do processo e callbacks de serializeSRAM/unserialize no GL thread.
+- [ ] Avaliar se o intervalo de autosave de 60 segundos é adequado para o risco de perda em encerramento forçado; não alterar sem decisão de produto e sem medir custo/performance.
+- [ ] Validar em aparelho: encerrar pelo menu, alternar para segundo plano, girar tela e provocar encerramento forçado; confirmar SRAM recuperada e logs de diagnóstico.
+- Conclusão: o fluxo normal de pausa/saída tem persistência explícita antes da suspensão GL. Encerramento abrupto permanece limitado ao último autosave periódico, não há garantia de captura final do progresso. Nenhuma alteração de código foi feita nesta revisão.
+
+STATUS CI #1705
+- [x] check-style/Spotless aprovado.
+- [ ] Job build-debug-apk ainda executava testes unitários; build APK e upload ainda não iniciados na última consulta. Run: https://github.com/izzyn0okami/Tandem/actions/runs/45932394279.
+- PR #57 segue aberta e draft. Sem merge e sem publicação em tandem-latest.
