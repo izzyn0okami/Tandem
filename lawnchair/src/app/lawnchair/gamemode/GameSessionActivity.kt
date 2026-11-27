@@ -178,6 +178,10 @@ class GameSessionActivity : ComponentActivity() {
         if (raCoreSupported && RaSettings.isLoggedIn(this)) {
             raNoticeQueue.add(getString(if (statesBlocked) R.string.game_ra_hardcore_label else R.string.game_ra_softcore_label))
         }
+        if (platformObject?.raConsoleId != null && RaSettings.isLoggedIn(this) && !raCoreSupported) {
+            raNoticeQueue.add("RetroAchievements desativado: o núcleo selecionado não possui suporte oficial para esta plataforma.")
+            GameLog.log("conquistas", "RA desativado para ${platformObject.slug}/$coreId: núcleo fora da allowlist")
+        }
         // Núcleos como N64 e DS não abrem .zip: extrai antes (os saves continuam com o nome do .zip).
         val loadPath = try {
             RomUnzipper.prepare(this, romPath, platformObject).absolutePath
