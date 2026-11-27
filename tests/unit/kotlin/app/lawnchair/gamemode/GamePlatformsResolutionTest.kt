@@ -164,7 +164,7 @@ class GamePlatformsResolutionTest {
     }
 
     @Test
-    fun nintendoDsCoresDoNotAdvertiseRomMSyncForNonSramSaveFormats() {
+    fun nintendoDsCoresDeclareNativeSaveCompatibilityPerCoreFormat() {
         val platform = GamePlatforms.bySlug("nds")!!
         val melonDs = CoreRegistry.info(platform, "melonds")
         val desmume = CoreRegistry.info(platform, "desmume")
@@ -174,9 +174,9 @@ class GamePlatformsResolutionTest {
         assertTrue(melonDs.supportsStates)
         assertFalse(melonDs.supportsRomMSaveSync)
         assertTrue(desmume.supportsStates)
-        assertFalse(desmume.supportsRomMSaveSync)
+        assertTrue(desmume.supportsRomMSaveSync)
         assertTrue(desmume2015.supportsStates)
-        assertFalse(desmume2015.supportsRomMSaveSync)
+        assertTrue(desmume2015.supportsRomMSaveSync)
         assertTrue(noods.supportsStates)
         assertFalse(noods.supportsRomMSaveSync)
     }
