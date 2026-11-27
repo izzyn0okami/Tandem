@@ -6,8 +6,8 @@ import java.io.IOException
  * Seleciona o único artefato que o protocolo Device Sync atual consegue transportar.
  *
  * CORE_SAVE usa o slot remoto autosave; MEMORY_CARD PSX usa memory-card-0.
- * A escolha é explícita e independente do nome físico sram.srm. Save states e progresso
- * RetroAchievements nunca entram na negociação.
+ * A escolha é explícita e baseada no formato declarado pelo adaptador do núcleo (.srm, .dsv etc.).
+ * Save states e progresso RetroAchievements nunca entram na negociação.
  */
 internal object DeviceSyncArtifactPolicy {
     fun remoteSlot(artifact: SaveArtifact): String = when (artifact.type) {
