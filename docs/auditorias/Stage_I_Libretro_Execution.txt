@@ -1915,3 +1915,16 @@ Decisão de escopo do usuário:
 - Os testes funcionais remanescentes foram declarados OK pelo usuário em 2026-11-27.
 - Não solicitar novos testes de rotina para o Estágio I.
 - Se surgir erro futuro, corrigir em uma nova PR específica, quando aplicável.
+
+
+CI APROVADA — FECHAMENTO DA VALIDAÇÃO DO ESTÁGIO I — 2026-11-27
+- [x] CI #1922 — https://github.com/izzyn0okami/Tandem/actions/runs/46016197052 — conclusão success no commit 4967a18d00b86b937fb5917809f30be02641c469.
+- [x] check-style / Spotless: sucesso, incluindo aplicação automática e verificação final da formatação.
+- [x] Testes unitários: sucesso.
+- [x] Build assembleLawnWithQuickstepGithubDebug: sucesso.
+- [x] Upload do APK de debug: sucesso.
+- [x] final-status: sucesso.
+- [x] Jobs condicionais de publicação/notificação ignorados conforme esperado; esta CI não publicou em tandem-latest.
+- [x] Combinada a CI #1922 aprovada com a confirmação final do usuário sobre todos os testes funcionais no aparelho, não restam pendências conhecidas dentro do escopo atual do Estágio I.
+- [ ] Merge da PR #57 permanece pendente de autorização explícita; a PR continua aberta e draft.
+- [ ] Nenhuma publicação em tandem-latest foi realizada.
