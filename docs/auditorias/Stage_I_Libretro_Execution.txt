@@ -850,3 +850,31 @@ ATUALIZAÇÃO — CI #1681 CONCLUÍDA COM SUCESSO — 2026-11-26
 - [x] CI #1682 — https://github.com/izzyn0okami/Tandem/actions/runs/45927955835 — evento pull_request gerado pelo bot terminou em action_required sem executar jobs; a validação efetiva por push da mesma revisão ocorreu na CI #1681 e passou.
 - [ ] CI #1683 — https://github.com/izzyn0okami/Tandem/actions/runs/45928460318 — check-style aprovado; testes/build ainda em andamento no momento do registro.
 - [ ] Validar em aparelho: importar pacote ZIP Turnip ARM64, ativar/desativar driver externo, usar Vulkan com núcleo compatível e confirmar fallback para driver do Android.
+
+
+ATUALIZAÇÃO — EXPANSÃO DE CORES ARM64 E CI — 2026-11-26
+- [x] CI #1683 — https://github.com/izzyn0okami/Tandem/actions/runs/45928460318 — check-style, testes unitários, build debug APK, upload e final-status aprovados.
+- [x] CI #1684 — https://github.com/izzyn0okami/Tandem/actions/runs/45928613668 — check-style, testes unitários, build debug APK e final-status aprovados.
+- [x] CI #1685 — https://github.com/izzyn0okami/Tandem/actions/runs/45928670215 — check-style, testes unitários, build debug APK e final-status aprovados.
+- [x] CI #1686 — https://github.com/izzyn0okami/Tandem/actions/runs/45928826403 — check-style, testes unitários, build debug APK e final-status aprovados.
+- [x] CI #1687 — https://github.com/izzyn0okami/Tandem/actions/runs/45929117325 — check-style falhou ao tentar enviar Spotless por concorrência de commits; build também falhou por erro de tipo no desvio de migração de saves.
+- [x] CI #1688 — https://github.com/izzyn0okami/Tandem/actions/runs/45929161056 — mesma disputa de envio do Spotless e mesmo erro de tipo no build; sem falha adicional identificada.
+- [x] CI #1689 — https://github.com/izzyn0okami/Tandem/actions/runs/45929245419 — check-style aprovado; build identificou incompatibilidade de tipo na coleção vazia do mapa de migração. Corrigido depois para usar mapa vazio.
+- [x] CI #1690 — https://github.com/izzyn0okami/Tandem/actions/runs/45929385393 — check-style aprovado; build executado no commit anterior à correção de tipo e falhou pelo mesmo motivo.
+- [x] CI #1691 — https://github.com/izzyn0okami/Tandem/actions/runs/45929392577 — check-style aprovado; build executado no commit anterior à correção e falhou pelo mesmo motivo.
+- [ ] CI #1692 — https://github.com/izzyn0okami/Tandem/actions/runs/45929592219 — check-style aprovado; testes/build em andamento no commit corrigido 67c6874d5faf7dcd5e6b917269815d657660b7b5.
+- [ ] CI #1693 — https://github.com/izzyn0okami/Tandem/actions/runs/45929606966 — check-style aprovado; testes/build em andamento no mesmo commit corrigido.
+
+IMPLEMENTAÇÃO — CATÁLOGO ARM64
+- [x] PS2: ARMSX2 como núcleo padrão; BIOS e recursos PCSX2 organizados em pastas aninhadas.
+- [x] GameCube/Wii: Dolphin; kit Sys e validação do codehandler; IPL opcional no diretório de saves.
+- [x] Nintendo 3DS: Azahar padrão e Panda3DS alternativo; chave AES opcional importada para o diretório correto de saves.
+- [x] Wii U: Cemu; chaves opcionais e download de conteúdo multi-arquivo.
+- [x] PS3: RPCS3; firmware PS3 obrigatório.
+- [x] PS Vita: Vita3K; firmware principal e pacote pré-instalado obrigatórios, fontes opcionais; conteúdo multi-arquivo.
+- [x] CoreInstaller reconhece a nomenclatura específica do Azahar (azahar_libretro.so) além do padrão Android.
+- [x] Núcleos sem save states não oferecem os comandos de estado; núcleos com armazenamento próprio não iniciam sincronização RomM nem ficam bloqueados por conflitos de saves incompatíveis.
+- [ ] Aguardar CI #1692/#1693 corrigida e corrigir eventuais erros restantes.
+- [ ] Expandir o catálogo com Xenia Edge (Xbox 360) e Supermodel (Sega Model 3), ambos encontrados no Buildbot ARM64, além de oferecer PCSX2 como alternativa ao ARMSX2.
+- [ ] Testes em aparelho: verificar inicialização real dos novos núcleos, renderização Vulkan/Turnip, BIOS/firmware e compatibilidade dos jogos.
+- [ ] Não mesclar PR #57 nem publicar em tandem-latest sem autorização explícita; PR #41 permanece intocada.
