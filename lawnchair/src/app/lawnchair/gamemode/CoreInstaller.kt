@@ -285,6 +285,11 @@ object CoreInstaller {
                             // closeEntry() abaixo consome a entrada e valida seu CRC.
                         }
 
+                        fileName?.matches(Regex("(?i)(?:^|[-_])LICENSE(?:\\.[A-Za-z0-9]+)?")) == true -> {
+                            // Licenças distribuídas junto ao core upstream são permitidas,
+                            // mas nunca são extraídas para a pasta de bibliotecas.
+                        }
+
                         fileName?.endsWith(".so", ignoreCase = true) == true -> {
                             error("ZIP contém biblioteca adicional inesperada: ${entry.name}")
                         }
