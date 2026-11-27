@@ -1030,3 +1030,18 @@ AUDITORIA E CORREÇÃO — FONTES LEGADAS NO DEVICE SYNC PRÉ-JOGO — 2026-11-2
 - [ ] Confirmar cenário com save de núcleo irmão e ausência de save no núcleo selecionado.
 - A correção não apaga arquivos legados; migração continua preservando a origem e recusando sobrescrita silenciosa em colisões.
 - PR #57 permanece aberta como Draft. Sem merge ou publicação em tandem-latest.
+
+ 
+AUDITORIA E CORREÇÃO — PROTEÇÃO CONTRA SRAM REJEITADO PELO NÚCLEO — 2026-11-27
+- [x] Identificada a lacuna em GLRetroView: quando LibretroDroid.unserializeSRAM retorna false, a propriedade sramLoadFailed é marcada, mas GameSessionActivity não a consultava.
+- [x] Confirmado que persistSram continuava chamando serializeSRAM e writeSramIfChanged mesmo após a rejeição do arquivo existente; isso poderia substituir um save incompatível preservado por uma SRAM recém-gerada.
+- [x] Adicionada GameSessionSavePolicy.shouldPersistSram e integrada a persistSram: quando o núcleo rejeita o SRAM inicial, a sessão não grava nem agenda upload dessa SRAM.
+- [x] Adicionado aviso visível após o primeiro frame informando que o save existente foi preservado e não será sobrescrito nesta sessão.
+- [x] Adicionado teste JVM rejectedExistingSramIsNeverPersistedOverByFreshCoreMemory.
+- Commits: GameSessionActivity 7b47a7d002f26051187c42065edb09e45ac3f7d1; GameSessionSavePolicy 64c2ccd12d81e0bfa020b4419a150ac071571055; teste f7768bacbd78c4f7d80533cbe43987974aa22ae9; recurso de aviso dff9de753974ddb761605a691af2cdab26ef1779.
+- [ ] Aguardar CI final da alteração de proteção SRAM e do recurso visual.
+- [ ] Testar no aparelho com SRAM deliberadamente incompatível: confirmar aviso, arquivo original intacto e ausência de upload da SRAM rejeitada.
+- [ ] Testar com SRAM compatível: confirmar que gravação e sincronização continuam normais.
+- CI #1733 (run 45936360324) falhou no commit intermediário c5462f2fabc36945ef8d3aea5e741baa3fa59f15 porque o runner ainda não tinha recebido os novos parâmetros siblingCores/migrationSources; as alterações correspondentes chegaram nos commits subsequentes.
+- CIs #1734 (45936370107), #1735 (45936377936), #1736 (45936396976), #1737 (45936418345), #1745 (45936631117) e #1746 (45936634135) estavam em execução na última consulta; #1734–#1737 cobrem a integração de fontes legadas, #1745–#1746 cobrem a proteção contra sobrescrita de SRAM rejeitado.
+- Não houve merge nem publicação em tandem-latest. PR #57 permanece aberta como Draft; PR #41 e PR #55 permanecem intocadas.
