@@ -43,3 +43,13 @@ REVISÃO VULKAN — 2026-11-26
 - [ ] CI dos últimos ajustes de seleção de GPU ainda pendente; verificar build nativo, testes e Spotless antes de encerrar esta revisão.
 - [x] Probe Vulkan agora também trata a ausência inesperada de vkDestroyInstance sem dereferenciar ponteiro nulo; a disponibilidade é rejeitada com aviso.
 - [ ] CI incluindo a proteção final do probe (commit 80deb66) pendente.
+
+CI APROVADA — PR #58 — atualização 2026-11-27
+- [x] CI #1554 — https://github.com/izzyn0okami/Tandem/actions/runs/45752339074 — conclusão success no commit 79d9f56453b48e771acbf79c2ebaecea73a96f8c.
+- [x] check-style / Spotless: sucesso.
+- [x] Testes/build debug APK: sucesso.
+- [x] final-status: sucesso; jobs condicionais de release/notificação foram ignorados conforme esperado.
+- [ ] A CI confirma compilação e testes automatizados, não compatibilidade física de Vulkan/Turnip nem execução real de cada emulador/core.
+- [ ] Permanecem pendentes as validações de catálogo, BIOS/firmware, instalação/execução dos novos cores, importação e fallback de driver Vulkan, integração de saves/RomM/RetroAchievements e teste físico no Snapdragon 888+.
+- [ ] PR #58 continua draft, aberta e não mergeável contra sua base atual; depende da PR #57 e a branch está divergente da base (65 commits à frente e 228 atrás do head atual da #57). Rebase/atualização deve ocorrer somente depois da conclusão e merge autorizado da #57.
+- [x] Nenhum merge ou publicação em tandem-latest foi realizado nesta atualização.
