@@ -1,5 +1,7 @@
 package app.lawnchair.gamemode
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -33,7 +35,23 @@ internal fun CoresScreen() {
     val scope = rememberCoroutineScope()
     var tick by remember { mutableIntStateOf(0) }
     var message by remember { mutableStateOf("") }
-    val platforms = remember { GamePlatforms.all.filter { it.launch == LaunchMode.LIBRETRO && CoreRegistry.cores(it).size > 1 } }
+    val platforms = remember { GamePlatforms.all.filter { it.launch == LaunchMode.LIBRETRO } }
+
+    val driverPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        if (uri != null) {
+            scope.launch {
+                message = "Importando pacote AdrenoTools…"
+                val result = AdrenoToolsDriverManager.importPackage(context, uri)
+                result.onSuccess { driver ->
+                    AdrenoToolsDriverManager.select(context, driver.id)
+                    message = "Driver importado e selecionado: ${driver.name} ${driver.version}. Será aplicado na próxima sessão."
+                }.onFailure { error ->
+                    message = "Falha ao importar driver: ${error.message ?: "pacote inválido"}"
+                }
+                tick++
+            }
+        }
+    }
 
     Column(
         modifier = Modifier.fillMaxSize().padding(horizontal = 24.dp, vertical = 4.dp),
@@ -42,7 +60,94 @@ internal fun CoresScreen() {
         Text(stringResource(R.string.game_cores_title), color = GameColors.text, fontSize = 20.sp, fontWeight = FontWeight.Bold)
         Text(stringResource(R.string.game_cores_note), color = GameColors.textDim, fontSize = 12.sp)
         if (message.isNotEmpty()) Text(message, color = GameColors.textDim, fontSize = 12.sp, maxLines = 2)
-        LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxSize()) {
+
+        if (AdrenoToolsDriverManager.isLikelyAdreno()) {
+            val drivers = remember(tick) { AdrenoToolsDriverManager.installed(context) }
+            val selectedDriver = remember(tick) { AdrenoToolsDriverManager.selectedId(context) }
+            val legacyTurnipAvailable = remember(tick) { AdrenoToolsDriverManager.legacyTurnipDriver(context) != null }
+            val systemSelected = remember(tick) {
+                !GameModeSettings.isExternalVulkanDriverEnabled(context) || GameModeSettings.vulkanDriver(context) == null
+            }
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text("Drivers Vulkan (Adreno / Turnip)", color = GameColors.text, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+                Text(
+                    "Importe pacotes AdrenoTools compatíveis com Android ARM64. Os drivers ficam no armazenamento privado do aplicativo, sem root. Se houver falha, selecione o driver do sistema. A troca vale para novas sessões.",
+                    color = GameColors.textDim,
+                    fontSize = 12.sp,
+                )
+                FocusSurface(
+                    onClick = { driverPicker.launch(arrayOf("application/zip", "application/x-zip-compressed", "application/octet-stream")) },
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Text("Importar pacote AdrenoTools (.zip)", color = GameColors.text, fontSize = 13.sp, modifier = Modifier.padding(12.dp))
+                }
+                FocusSurface(
+                    onClick = {
+                        AdrenoToolsDriverManager.select(context, null)
+                        message = "Driver Vulkan do sistema selecionado."
+                        tick++
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Text(
+                        text = "${if (systemSelected) "●" else "○"} Driver Vulkan do sistema",
+                        color = if (systemSelected) GameColors.accent else GameColors.text,
+                        fontSize = 13.sp,
+                        modifier = Modifier.padding(12.dp),
+                    )
+                }
+                if (legacyTurnipAvailable) {
+                    FocusSurface(
+                        onClick = {
+                            AdrenoToolsDriverManager.select(context, AdrenoToolsDriverManager.LEGACY_TURNIP_ID)
+                            message = "Instalação Turnip existente selecionada."
+                            tick++
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Text(
+                            text = "${if (selectedDriver == AdrenoToolsDriverManager.LEGACY_TURNIP_ID) "●" else "○"} Turnip instalado anteriormente",
+                            color = if (selectedDriver == AdrenoToolsDriverManager.LEGACY_TURNIP_ID) GameColors.accent else GameColors.text,
+                            fontSize = 13.sp,
+                            modifier = Modifier.padding(12.dp),
+                        )
+                    }
+                }
+                drivers.forEach { driver ->
+                    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                        FocusSurface(
+                            onClick = {
+                                AdrenoToolsDriverManager.select(context, driver.id)
+                                message = "Driver selecionado: ${driver.name} ${driver.version}."
+                                tick++
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                        ) {
+                            Column(modifier = Modifier.fillMaxWidth().padding(12.dp)) {
+                                Text(
+                                    text = "${if (selectedDriver == driver.id) "●" else "○"} ${driver.name} ${driver.version}",
+                                    color = if (selectedDriver == driver.id) GameColors.accent else GameColors.text,
+                                    fontSize = 13.sp,
+                                )
+                                Text("${driver.vendor} • ${driver.author} • SHA-256 ${driver.sha256.take(12)}…", color = GameColors.textDim, fontSize = 11.sp)
+                            }
+                        }
+                        FocusSurface(
+                            onClick = {
+                                runCatching { AdrenoToolsDriverManager.removePackage(context, driver.id) }
+                                    .onSuccess { message = "Pacote ${driver.name} removido." }
+                                    .onFailure { message = it.message ?: "Não foi possível remover o pacote." }
+                                tick++
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                        ) {
+                            Text("Remover ${driver.name}", color = GameColors.danger, fontSize = 12.sp, modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp))
+                        }
+                    }
+                }
+            }
+        }
+        LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.weight(1f)) {
             items(platforms, key = { it.slug }) { platform ->
                 val chosen = remember(tick) { CoreRegistry.chosen(context, platform) }
                 Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
