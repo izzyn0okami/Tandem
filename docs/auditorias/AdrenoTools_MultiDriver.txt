@@ -59,3 +59,14 @@ RECONCILIAÇÃO DA PR #58 — VISIBILIDADE DE PLATAFORMAS COM UM ÚNICO CORE —
 - [x] A PR #58 também alterava CoresScreen para mostrar todas as plataformas Libretro, não apenas as que possuem mais de um núcleo.
 - [x] Portada a regra para a branch desta PR: plataformas com um único core agora aparecem no gerenciador para instalação/atualização e consulta.
 - [ ] Nova CI no head atualizado e revisão do APK.
+
+
+CI APROVADA — PR #61 — 2026-11-27
+- [x] CI #2039 (run 46073257616) concluída com sucesso no head 5e3eefb566a8aa76ca0c58202afa31c7061313d5.
+- [x] check-style / Spotless: sucesso.
+- [x] Testes unitários: sucesso.
+- [x] Build assembleLawnWithQuickstepGithubDebug: sucesso.
+- [x] Upload do artefato APK Debug: sucesso; artefato disponível no run 46073257616.
+- [x] final-status: sucesso; etapas condicionais de publicação/notificação foram ignoradas conforme esperado.
+- [ ] Testes físicos específicos desta PR permanecem pendentes; CI não comprova compatibilidade real no Motorola Edge 30 Fusion.
+- [ ] Não mesclar antes da validação física correspondente e revisão final do diff.
