@@ -18,14 +18,36 @@ object CoreInstaller {
 
     private const val BASE_URL = "https://buildbot.libretro.com/nightly/android/latest/arm64-v8a"
     private const val PREFS = "libretro_core_updates"
+    private const val MELONDS_DS_CORE_ID = "melonds_ds"
+    private const val MELONDS_DS_FILE_NAME = "melondsds_libretro_android.so"
+    private const val MELONDS_DS_RELEASE_URL =
+        "https://github.com/JesseTG/melonds-ds/releases/download/v1.4.0/melondsds_libretro-android-Release.zip"
+    private const val MELONDS_DS_RELEASE_SHA256 =
+        "555568396dd5cf230030e4dd0ff0b0c6ca7118231fe562bc50680fefa7ad8594"
+
+    internal fun downloadUrl(coreId: String): String = if (coreId == MELONDS_DS_CORE_ID) {
+        MELONDS_DS_RELEASE_URL
+    } else {
+        "$BASE_URL/${coreFileName(coreId)}.zip"
+    }
+
+    internal fun expectedArchiveSha256(coreId: String): String? =
+        MELONDS_DS_RELEASE_SHA256.takeIf { coreId == MELONDS_DS_CORE_ID }
 
     fun coresDir(context: Context): File = File(context.filesDir, "libretro/cores").apply { mkdirs() }
 
     fun coreFile(context: Context, coreId: String): File = File(coresDir(context), coreFileName(coreId))
 
-    internal fun coreFileName(coreId: String): String = if (coreId == "azahar") "${coreId}_libretro.so" else "${coreId}_libretro_android.so"
+    internal fun coreFileName(coreId: String): String = when (coreId) {
+        "azahar" -> "${coreId}_libretro.so"
+        MELONDS_DS_CORE_ID -> MELONDS_DS_FILE_NAME
+        else -> "${coreId}_libretro_android.so"
+    }
 
-    internal fun coreIdFromFileName(fileName: String): String = fileName.removeSuffix("_libretro_android.so").removeSuffix("_libretro.so")
+    internal fun coreIdFromFileName(fileName: String): String = when (fileName) {
+        MELONDS_DS_FILE_NAME -> MELONDS_DS_CORE_ID
+        else -> fileName.removeSuffix("_libretro_android.so").removeSuffix("_libretro.so")
+    }
 
     fun isInstalled(context: Context, coreId: String): Boolean {
         val file = coreFile(context, coreId)
@@ -56,7 +78,7 @@ object CoreInstaller {
             val target = coreFile(context, coreId)
             if (!target.isFile || !isArm64Elf(target)) return@runCatching false
 
-            val connection = URL("$BASE_URL/${target.name}.zip").openConnection() as HttpURLConnection
+            val connection = URL(downloadUrl(coreId)).openConnection() as HttpURLConnection
             connection.requestMethod = "HEAD"
             connection.connectTimeout = 15_000
             connection.readTimeout = 20_000
@@ -114,7 +136,8 @@ object CoreInstaller {
             val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
             val expectedDigest = prefs.getString("sha256_$coreId", null)
             recoverBackup(target, backup, expectedDigest)
-            val connection = URL("$BASE_URL/${target.name}.zip").openConnection() as HttpURLConnection
+            val connection = URL(downloadUrl(coreId)).openConnection() as HttpURLConnection
+            val archivePart = File(target.parentFile, "${target.name}.archive.part")
             connection.connectTimeout = 30_000
             connection.readTimeout = 90_000
             GameLog.log("núcleos", "baixando ${target.name}")
@@ -124,7 +147,22 @@ object CoreInstaller {
                 }
                 val remoteModified = connection.lastModified
                 val remoteEtag = connection.getHeaderField("ETag")?.takeIf { it.isNotBlank() }
-                ZipInputStream(connection.inputStream).use { zip ->
+                val archiveInput = if (coreId == MELONDS_DS_CORE_ID) {
+                    // melonDS DS is distributed by its upstream GitHub release, not Buildbot.
+                    FileOutputStream(archivePart).use { output ->
+                        connection.inputStream.use { input -> input.copyTo(output) }
+                        output.fd.sync()
+                    }
+                    val expectedArchiveDigest = checkNotNull(expectedArchiveSha256(coreId))
+                    val actualArchiveDigest = checkNotNull(sha256(archivePart))
+                    check(actualArchiveDigest.equals(expectedArchiveDigest, ignoreCase = true)) {
+                        "SHA-256 do pacote melonDS DS diverge do release oficial v1.4.0"
+                    }
+                    archivePart.inputStream()
+                } else {
+                    connection.inputStream
+                }
+                ZipInputStream(archiveInput).use { zip ->
                     val entry = zip.nextEntry
                     check(entry != null && entry.name == target.name && !entry.isDirectory) {
                         "ZIP inesperado: esperava ${target.name}, veio ${entry?.name}"
@@ -212,6 +250,7 @@ object CoreInstaller {
             } finally {
                 connection.disconnect()
                 part.delete()
+                archivePart.delete()
             }
         }.onFailure { GameLog.error("núcleos", "falha ao instalar/atualizar $coreId", it) }
     }
