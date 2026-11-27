@@ -60,6 +60,29 @@ class GamePlatformsResolutionTest {
     }
 
     @Test
+    fun stageJAddsRetroComputerAndArcadePlatformsWithoutEnablingUnauditedCapabilities() {
+        val amiga = GamePlatforms.bySlug("amiga")!!
+        val dos = GamePlatforms.bySlug("dos")!!
+        val arcade = GamePlatforms.bySlug("arcade")!!
+        val pocketStation = GamePlatforms.bySlug("pocketstation")!!
+
+        assertEquals("puae", amiga.coreId)
+        assertEquals("dosbox_pure", dos.coreId)
+        assertEquals("fbneo", arcade.coreId)
+        assertEquals("pokketstation", pocketStation.coreId)
+
+        listOf(
+            CoreRegistry.info(amiga, amiga.coreId),
+            CoreRegistry.info(dos, dos.coreId),
+            CoreRegistry.info(arcade, arcade.coreId),
+            CoreRegistry.info(pocketStation, pocketStation.coreId),
+        ).forEach { core ->
+            assertFalse("${core.id} must not advertise unaudited save states", core.supportsStates)
+            assertFalse("${core.id} must not advertise unaudited RomM save sync", core.supportsRomMSaveSync)
+        }
+    }
+
+    @Test
     fun everyPreviouslyImplicitPlatformDeclaresCoreCapabilitiesExplicitly() {
         val wonderSwan = CoreRegistry.info(GamePlatforms.bySlug("wswan")!!, "mednafen_wswan")
         val dreamcast = CoreRegistry.info(GamePlatforms.bySlug("dreamcast")!!, "flycast")
@@ -90,10 +113,14 @@ class GamePlatformsResolutionTest {
         val supermodel = CoreRegistry.info(GamePlatforms.bySlug("model3")!!, "supermodel")
         val xenia = CoreRegistry.info(GamePlatforms.bySlug("xbox360")!!, "xenia_edge")
         val pcsx2 = CoreRegistry.info(GamePlatforms.bySlug("ps2")!!, "pcsx2")
+        val pcee2 = CoreRegistry.info(GamePlatforms.bySlug("ps2")!!, "pcee2")
+        val dolphin = CoreRegistry.info(GamePlatforms.bySlug("gc")!!, "dolphin")
         assertTrue(supermodel.preferVulkan == false)
         assertTrue(xenia.preferVulkan == true)
         assertFalse(xenia.supportsStates)
         assertTrue(pcsx2.preferVulkan == true)
+        assertTrue(pcee2.preferVulkan == true)
+        assertTrue(dolphin.preferVulkan == true)
     }
     @Test
     fun pcEngineCoresDeclareSaveTransportByDocumentedFormat() {
@@ -251,4 +278,34 @@ class GamePlatformsResolutionTest {
         assertFalse(picoDrive.supportsRomMSaveSync)
     }
 
+
+    @Test
+    fun stageJAlternativeCoresRemainConservativeUntilIndividuallyAudited() {
+        val alternatives = listOf(
+            "ps2" to "pcee2",
+            "snes" to "bsnes-jg",
+            "gba" to "mednafen_gba",
+            "gba" to "meteor",
+            "genesis" to "genesis_plus_gx_wide",
+            "atari2600" to "stella2023",
+            "psx" to "mednafen_psx_hw",
+            "dreamcast" to "parallel_dc",
+            "pce" to "mednafen_supergrafx",
+        )
+
+        alternatives.forEach { (slug, coreId) ->
+            val platform = GamePlatforms.bySlug(slug)!!
+            val info = CoreRegistry.info(platform, coreId)
+            assertEquals(coreId, info.id)
+            assertFalse("$coreId must not advertise unaudited save states", info.supportsStates)
+            assertFalse("$coreId must not advertise unaudited RomM sync", info.supportsRomMSaveSync)
+        }
+    }
+
+    @Test
+    fun stageJDoesNotReintroduceLegacyMelonDsDsAlias() {
+        val platform = GamePlatforms.bySlug("nds")!!
+        assertEquals("melonds_ds", platform.coreId)
+        assertFalse(CoreRegistry.cores(platform).any { it.id == "melondsds" })
+    }
 }
