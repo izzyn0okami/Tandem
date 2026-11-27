@@ -117,12 +117,23 @@ object CoreRegistry {
             core("geargrafx", "Geargrafx", "Alternativa moderna"),
         ),
         "atari2600" to listOf(
-            core("stella", "Stella", "Padrão"),
-            core("stella2014", "Stella 2014", "Mais leve"),
+            core("stella", "Stella", "Padrão; save states suportados, saves de cartucho não suportados", supportsRomMSaveSync = false),
+            core("stella2014", "Stella 2014", "Mais leve; save states suportados, saves de cartucho não suportados", supportsRomMSaveSync = false),
         ),
         "atari5200" to listOf(
-            core("a5200", "a5200", "Padrão"),
-            core("atari800", "Atari800", "Alternativa"),
+            core(
+                "a5200",
+                "a5200",
+                "Capacidades de save ainda não confirmadas na documentação Libretro; recursos desativados por segurança",
+                supportsStates = false,
+                supportsRomMSaveSync = false,
+            ),
+            core(
+                "atari800",
+                "Atari800",
+                "Alternativa; save states suportados, saves frontend-level não suportados",
+                supportsRomMSaveSync = false,
+            ),
         ),
         "lynx" to listOf(
             core("handy", "Handy", "Leve"),
