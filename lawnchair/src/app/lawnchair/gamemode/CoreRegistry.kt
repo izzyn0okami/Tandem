@@ -106,6 +106,36 @@ object CoreRegistry {
             core("yabasanshiro", "YabaSanshiro", "Mais leve"),
             core("yabause", "Yabause", "Alternativa"),
         ),
+        "wswan" to listOf(
+            core(
+                "mednafen_wswan",
+                "Beetle Cygne",
+                "WonderSwan/Color; SRAM e save states compatíveis com a interface Libretro",
+            ),
+        ),
+        "dreamcast" to listOf(
+            core(
+                "flycast",
+                "Flycast",
+                "Dreamcast/Naomi; save states suportados (desative Threaded Rendering); VMUs são arquivos próprios, fora do fluxo SRAM RomM",
+                supportsRomMSaveSync = false,
+            ),
+        ),
+        "psp" to listOf(
+            core(
+                "ppsspp",
+                "PPSSPP",
+                "PSP; requer assets em system/PPSSPP; saves em PSP/SAVEDATA e estados no diretório de estados",
+                supportsRomMSaveSync = false,
+            ),
+        ),
+        "vb" to listOf(
+            core(
+                "mednafen_vb",
+                "Beetle VB",
+                "Virtual Boy; SRAM de cartucho e save states suportados",
+            ),
+        ),
         "nds" to listOf(
             core("melonds", "melonDS", "Preciso, com toque direto"),
             core("desmume", "DeSmuME", "Alternativa"),
