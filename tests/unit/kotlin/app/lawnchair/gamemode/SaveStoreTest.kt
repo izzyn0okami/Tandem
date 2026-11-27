@@ -522,6 +522,8 @@ class SaveStoreTest {
         val dsStore = SaveStore(root, "desmume", File("Pokemon.nds"), gameIdentity = "ds-game")
         val melondsStore = SaveStore(root, "melonds", File("Pokemon.nds"), gameIdentity = "ds-game")
         val nativeSave = dsStore.nativeSaveFile ?: error("DeSmuME must expose its native DSV save")
+        assertEquals(nativeSave, dsStore.deviceSyncSaveFile)
+        assertEquals(melondsStore.sramFile, melondsStore.deviceSyncSaveFile)
         nativeSave.writeBytes(byteArrayOf(1, 2, 3, 4))
         melondsStore.sramFile.writeBytes(byteArrayOf(5, 6, 7, 8))
 

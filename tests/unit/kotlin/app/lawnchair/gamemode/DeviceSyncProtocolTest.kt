@@ -819,4 +819,107 @@ class DeviceSyncProtocolTest {
             directory.deleteRecursively()
         }
     }
+
+    @Test
+    fun localSaveRequiresTheExtensionDeclaredByTheCoreAdapter() {
+        val file = java.io.File.createTempFile("desmume-save-", ".dsv")
+        try {
+            file.writeBytes(byteArrayOf(1, 2, 3))
+            val save = DeviceSyncProtocolJson.localSave(
+                romId = 42L,
+                fileName = "Pokemon.dsv",
+                emulator = "desmume",
+                file = file,
+                updatedAt = "2026-11-27T12:00:00Z",
+                expectedExtension = DeviceSyncArtifactPolicy.fileExtensionForCore("desmume"),
+            )
+            assertEquals("Pokemon.dsv", save?.fileName)
+            assertTrue(
+                runCatching {
+                    DeviceSyncProtocolJson.localSave(
+                        romId = 42L,
+                        fileName = "Pokemon.dsv",
+                        emulator = "melonds",
+                        file = file,
+                        updatedAt = "2026-11-27T12:00:00Z",
+                        expectedExtension = DeviceSyncArtifactPolicy.fileExtensionForCore("melonds"),
+                    )
+                }.isFailure,
+            )
+        } finally {
+            file.delete()
+        }
+    }
+
+    @Test
+    fun uploadSaveRequiresDeclaredExtensionAndAcceptsDeSmuMeDsv() {
+        val server = MockWebServer()
+        val file = java.io.File.createTempFile("device-sync-dsv-", ".dsv")
+        file.writeBytes(byteArrayOf(4, 3, 2, 1))
+        server.start()
+        try {
+            val client = RomMDeviceSyncClient(server.url("/").toString(), "test-token")
+            assertTrue(
+                runCatching {
+                    client.uploadSave(
+                        romId = 42L,
+                        deviceId = "device-123",
+                        sessionId = 8L,
+                        slot = "autosave",
+                        emulator = "desmume",
+                        fileName = "Pokemon.dsv",
+                        file = file,
+                    )
+                }.isFailure,
+            )
+            server.enqueue(MockResponse(body = """{"id":93}"""))
+            client.uploadSave(
+                romId = 42L,
+                deviceId = "device-123",
+                sessionId = 8L,
+                slot = "autosave",
+                emulator = "desmume",
+                fileName = "Pokemon.dsv",
+                file = file,
+                expectedExtension = DeviceSyncArtifactPolicy.fileExtensionForCore("desmume"),
+            )
+            val request = server.takeRequest()
+            assertEquals("/api/saves", request.url.encodedPath)
+            assertTrue(request.body!!.utf8().contains("filename=\"Pokemon.dsv\""))
+        } finally {
+            server.close()
+            file.delete()
+        }
+    }
+
+    @Test
+    fun downloadValidationUsesTheCoreDeclaredNativeExtension() {
+        val operation = DeviceSyncOperation(
+            action = DeviceSyncAction.Download,
+            romId = 42L,
+            saveId = 314L,
+            fileName = "Pokemon.dsv",
+            slot = "autosave",
+            emulator = "desmume",
+            reason = "server save is newer",
+            serverUpdatedAt = null,
+            serverContentHash = "0123456789abcdef0123456789abcdef",
+        )
+        DeviceSyncProtocolJson.validateDownloadOperation(
+            operation,
+            DeviceSyncArtifactPolicy.compatibleEmulators("desmume"),
+            "autosave",
+            DeviceSyncArtifactPolicy.fileExtensionForCore("desmume"),
+        )
+        assertTrue(
+            runCatching {
+                DeviceSyncProtocolJson.validateDownloadOperation(
+                    operation,
+                    DeviceSyncArtifactPolicy.compatibleEmulators("melonds"),
+                    "autosave",
+                    DeviceSyncArtifactPolicy.fileExtensionForCore("melonds"),
+                )
+            }.isFailure,
+        )
+    }
 }

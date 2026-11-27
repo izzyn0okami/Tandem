@@ -77,13 +77,13 @@ object RomMDeviceSyncRunner {
             if (!snapshotRoot.exists() && !snapshotRoot.mkdirs()) {
                 throw IOException("Não foi possível preparar a captura temporária do save.")
             }
-            val snapshot = File(snapshotRoot, "${UUID.randomUUID()}.${CoreSaveAdapterRegistry.resolve(coreId).fileExtension}")
+            val snapshot = File(snapshotRoot, "${UUID.randomUUID()}.${DeviceSyncArtifactPolicy.fileExtensionForCore(coreId)}")
             try {
                 val artifacts = store.inventory()
                 val localArtifact = DeviceSyncArtifactPolicy.selectForRomM(artifacts)
                 val remoteSlot = localArtifact?.let(DeviceSyncArtifactPolicy::remoteSlot)
                     ?: DeviceSyncArtifactPolicy.remoteSlotForCore(coreId)
-                val originalSave = localArtifact?.file ?: store.nativeSaveFile ?: store.sramFile
+                val originalSave = localArtifact?.file ?: store.deviceSyncSaveFile
                 val initialTargetHash = originalSave.takeIf { it.isFile && it.length() > 0L }?.let(::md5)
                 val sourceSnapshot = if (useSnapshotOnly) {
                     snapshotOverride?.takeIf { it.isFile && it.length() > 0L }
@@ -103,6 +103,7 @@ object RomMDeviceSyncRunner {
                         file = snapshot,
                         updatedAt = Instant.ofEpochMilli(localArtifact?.modifiedAtEpochMs ?: source.lastModified()).toString(),
                         remoteSlot = remoteSlot,
+                        expectedExtension = DeviceSyncArtifactPolicy.fileExtensionForCore(coreId),
                     ) ?: throw IOException("Não foi possível preparar o artefato local.")
                 }
                 GameLog.log(
@@ -227,6 +228,7 @@ object RomMDeviceSyncRunner {
                                         emulator = emulator,
                                         fileName = romSaveFileName(romFile, localArtifact?.format ?: CoreSaveAdapterRegistry.resolve(coreId).fileExtension),
                                         file = snapshot,
+                                        expectedExtension = DeviceSyncArtifactPolicy.fileExtensionForCore(coreId),
                                     )
                                     uploaded++
                                     GameLog.log(
@@ -249,7 +251,7 @@ object RomMDeviceSyncRunner {
                                     operation,
                                     DeviceSyncArtifactPolicy.compatibleEmulators(coreId),
                                     remoteSlot,
-                                    CoreSaveAdapterRegistry.resolve(coreId).fileExtension,
+                                    DeviceSyncArtifactPolicy.fileExtensionForCore(coreId),
                                 )
                                 val saveId = operation.saveId
                                     ?: throw IOException("O RomM não informou o ID do save para download.")

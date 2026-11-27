@@ -1,0 +1,76 @@
+AUDITORIA — STAGE J: DeSmuME DSV / RomM Device Sync
+Data: 2026-11-27
+Branch: integration/stage-j-desmume-dsv-sync-final
+Base pretendida: game-mode-m2-dev
+Origem da lacuna: diferenças funcionais exclusivas identificadas na PR #58 (feat/arm64-core-expansion).
+
+OBJETIVO
+Completar o transporte do arquivo nativo .dsv do DeSmuME pelo Device Sync do RomM, sem tratar o .dsv como save compatível com melonDS ou outros núcleos. O arquivo .dsv é um artefato CORE_SAVE no slot remoto autosave. SRAM .srm e cartão de memória PSX continuam com as regras próprias já existentes.
+
+IMPLEMENTAÇÃO NESTA PR
+- [x] DeviceSyncArtifactPolicy expõe a extensão declarada pelo CoreSaveAdapterRegistry e valida nomes de arquivo contra essa extensão.
+- [x] DeviceSyncProtocolJson.localSave exige a extensão esperada pelo núcleo; mantém .srm como padrão para chamadas antigas.
+- [x] RomMDeviceSyncClient.uploadSave exige a extensão esperada; upload .dsv requer declaração explícita do adaptador.
+- [x] RomMDeviceSyncRunner usa o destino de Device Sync do SaveStore quando ainda não existe artefato inventariado.
+- [x] RomMDeviceSyncRunner passa a extensão do adaptador para manifesto e upload e valida downloads com a mesma extensão.
+- [x] RomMDeviceSyncDiagnostics inspeciona o destino correto e envia a extensão declarada ao manifesto.
+- [x] SavePathDiagnostics registra o arquivo nativo e o destino de Device Sync sem ler o conteúdo do save.
+- [x] SaveStore.deviceSyncSaveFile aponta para o arquivo nativo DSV do DeSmuME e para sram.srm nos demais núcleos.
+- [x] SaveSync considera o destino nativo na detecção de save local e de alterações pendentes.
+- [x] Testes unitários verificam manifesto DSV, rejeição de extensão não declarada, upload DSV e validação de download pelo adaptador.
+- [x] Teste SaveStore verifica que DeSmuME seleciona o arquivo DSV e melonDS continua selecionando sram.srm.
+
+VALIDAÇÃO
+- [ ] Spotless.
+- [ ] Testes unitários.
+- [ ] APK Debug e upload do artefato.
+- [ ] Revisão do diff após CI; nenhuma alteração em produção deve ser mesclada sem todos os checks.
+
+TESTES NO APARELHO
+- [ ] DeSmuME: iniciar jogo, criar save, confirmar arquivo .dsv no diretório do núcleo.
+- [ ] DeSmuME: upload para RomM e confirmar extensão .dsv/slot autosave.
+- [ ] DeSmuME: baixar save remoto mais novo e confirmar que o arquivo nativo foi atualizado sem perda de backup.
+- [ ] DeSmuME 2015: repetir teste com identidade de núcleo isolada.
+- [ ] melonDS: confirmar que usa seu formato/arquivo próprio e nunca envia .dsv.
+- [ ] Confirmar que SRAM de SNES e cartões de memória PSX não foram afetados.
+
+HISTÓRICO / ESCOPO
+- A CI #1987 da PR #62 falhou inicialmente porque os testes copiados usavam APIs antigas. Os testes de inventário/seleção foram ajustados à API atual e a PR #62 passou em CI #2005/#2007 no head ddccf339032da6c4a1e7bc71a4db93c955a01940.
+- A PR #62 cobre inventário e seleção de artefatos; ela não implementa nem prova o transporte DSV completo. Esta PR separa a implementação de produção e os testes de protocolo.
+- A PR #58 permanece Draft e não deve ser mesclada como snapshot divergente.
+- tandem-latest não foi alterada.
+- game-mode-m2-dev não foi alterada diretamente por esta branch.
+- Não mesclar esta PR até CI completa e testes físicos de DSV/RomM.
+
+REBASE DE ESCOPO APÓS MERGE DA PR #62 — 2026-11-27
+- [x] PR #62 foi mesclada em game-mode-m2-dev com squash commit 11c0e35f4ae950657b146673e37b39c930b0f9af.
+- [x] Esta branch foi reconstruída sobre o novo head de game-mode-m2-dev para remover do diff os commits de teste já mesclados.
+- [x] Os testes de inventário/seleção da PR #62 permanecem na base; esta PR mantém apenas testes adicionais de manifesto, upload e download DSV.
+- [ ] Nova CI após reconstrução da branch.
+
+CORREÇÃO DE TESTE LEGADO — 2026-11-27
+- [x] A primeira CI (#2016) identificou um teste existente, NintendoDsDeviceSyncTest.deviceSyncAcceptsDsvAndRejectsWrongRemoteExtension, que ainda chamava localSave com a extensão padrão .srm.
+- [x] Atualizado o teste legado para declarar a extensão obtida do adapter DeSmuME, conforme o novo contrato de validação.
+- [ ] Nova CI no head atualizado.
+
+
+CI APROVADA — PR #63 — 2026-11-27
+- [x] CI #2034 (run 46072847800) concluída com sucesso no head cd601b07b1d2f93bbf5065a7673804751fdbb8bb.
+- [x] check-style / Spotless: sucesso.
+- [x] Testes unitários: sucesso.
+- [x] Build assembleLawnWithQuickstepGithubDebug: sucesso.
+- [x] Upload do artefato APK Debug: sucesso; artefato disponível no run 46072847800.
+- [x] final-status: sucesso; etapas condicionais de publicação/notificação foram ignoradas conforme esperado.
+- [ ] Testes físicos específicos desta PR permanecem pendentes; CI não comprova compatibilidade real no Motorola Edge 30 Fusion.
+- [ ] Não mesclar antes da validação física correspondente e revisão final do diff.
+
+- [x] CI pós-atualização documental #2046 (run 46075516759) concluída com sucesso no commit cfcca87bf21a8efe4638a524edce15516be5d91d; Spotless, testes unitários, APK Debug, upload do artefato e final-status passaram.
+- [x] Artefato assembleLawnWithQuickstepGithubDebug disponível (46.630.607 bytes; run 46075516759). Jobs condicionais de release/notificação foram ignorados conforme esperado.
+- [ ] Esta validação automatizada não substitui os testes físicos específicos descritos acima.
+
+
+CI APROVADA — ATUALIZAÇÃO DOCUMENTAL — 2026-11-27
+- [x] CI #2054 (run 46078563323) concluída com sucesso no head 0e65f1b2c35d9e5e1fee5c796b8e68a3bd5a4140.
+- [x] Spotless, testes unitários, APK Debug, upload do artefato e final-status aprovados.
+- [x] Artefato assembleLawnWithQuickstepGithubDebug disponível (46.631.414 bytes; artifact 15236450220).
+- [ ] Testes físicos DeSmuME DSV/RomM permanecem pendentes; esta CI valida o head antes deste registro documental.

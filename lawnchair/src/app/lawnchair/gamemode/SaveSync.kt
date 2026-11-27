@@ -91,7 +91,7 @@ object SaveSync {
             migrationSourcesOverride = emptyMap(),
         )
         if (files(store).none { (_, file) -> file.isFile && file.length() > 0L } &&
-            !(store.sramFile.isFile && store.sramFile.length() > 0L)
+            !(store.deviceSyncSaveFile.isFile && store.deviceSyncSaveFile.length() > 0L)
         ) {
             return null
         }
@@ -131,7 +131,8 @@ object SaveSync {
             migrationSourcesOverride = emptyMap(),
         )
         val prefs = prefs(context)
-        val changed = files(store).any { (kind, file) ->
+        val filesToCheck = files(store) + (RemoteFileKind.Save to store.deviceSyncSaveFile)
+        val changed = filesToCheck.any { (kind, file) ->
             val exists = file.isFile
             val length = if (exists) file.length() else 0L
             val currentHash = if (length > 0L) hash(file) else null
