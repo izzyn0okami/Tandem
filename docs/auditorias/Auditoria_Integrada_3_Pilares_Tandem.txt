@@ -889,3 +889,15 @@ CORREÇÃO — POLÍTICA DE RESTAURAÇÃO DE SAVE STATES PERSISTIDOS — 2026-11
 
 ## CONCLUSÃO FINAL
 Os três pilares estão integrados e incorporados à branch principal de desenvolvimento, e o HEAD atual passou pela CI completa e foi publicado como tandem-latest build 2074. Não há PR pendente. Isso encerra a etapa de integração/reconciliação dos três pilares, mas não declara compatibilidade universal de todos os cores/firmwares nem implementa funcionalidades explicitamente fora de escopo (save states remotos, WebDAV, eventos em tempo real ou reprodução de música em segundo plano). As pendências acima são melhorias/limites conhecidos e devem ser tratadas em etapas próprias, sem reabrir os estágios concluídos automaticamente.
+
+
+## RETROACHIEVEMENTS — MATRIZ DE COMPATIBILIDADE DE NÚCLEOS (2026-11-27)
+- [x] Criada branch isolada feat/ra-core-compatibility.
+- [x] Implementada allowlist por plataforma + coreId; RA/Hardcore não iniciam com núcleo fora da matriz.
+- [x] PSX e DS receberam Console IDs conhecidos (12 e 18); Beetle PSX tornou-se o núcleo padrão de PSX.
+- [x] Adicionados testes unitários básicos para PSX, DS, NES e plataforma sem Console ID.
+- [ ] Confirmar IDs ativos na API oficial; a documentação exige Web API Key.
+- [ ] CI e revisão de regressões.
+- [ ] Teste físico PSX/DS com jogos reconhecidos.
+- [ ] Resolver casos especiais: Arcade por hash, PC-88, SuperGrafx, Watara e outros sistemas sem mapeamento seguro.
+- Status: EM ANDAMENTO; branch não mesclada.
