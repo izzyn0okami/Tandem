@@ -766,3 +766,124 @@ CORREÇÃO — POLÍTICA DE RESTAURAÇÃO DE SAVE STATES PERSISTIDOS — 2026-11
 - [SEGURANÇA] Nenhum save, ROM ou dado remoto foi apagado, movido ou migrado pelo merge. SRAM/cartões permanecem no Device Sync; save states permanecem exclusivamente locais. `overwrite=false` e preservação de conflitos continuam conforme implementação aprovada.
 - [ESTADO] PR #50 está fechada e marcada como merged. A comparação final confirmou que a branch de trabalho estava 147 commits à frente e 0 atrás da base antes do merge.
 - [PRÓXIMO PASSO] Verificar o estado da branch base e a CI disparada após o merge. Não abrir nova PR até consultar PRs abertas e este log.
+
+
+# AUDITORIA FINAL INTEGRADA DOS 3 PILARES — 2026-11-27
+
+## Escopo e revisão
+- Branch auditada: `game-mode-m2-dev`.
+- HEAD auditado: `67493daac58cfebf9be6e0120f3f4a37c78837f2`.
+- Revisão estática dos componentes centrais atuais: `GameSessionActivity.kt`, `RetroAchievements.kt`, `RaTokenKeyStore.kt`, `RaWebApiKeyStore.kt`, `SaveSync.kt`, `RomMClient.kt`, `RomMDeviceSyncClient.kt`, `RomMDeviceSyncRunner.kt`, além dos registros Stage I, Stage J, Vulkan, AdrenoTools e DSV.
+- Estado GitHub consultado: nenhuma PR aberta. PR #58 está fechada sem merge, intencionalmente substituída pelas PRs #59–#63; #59, #60, #61 e #63 foram mescladas em `game-mode-m2-dev`; #62 também foi mesclada.
+- CI do HEAD: run 46081732728, conclusão SUCCESS. check-style/Spotless, testes unitários, build APK Debug, upload do artefato e final-status passaram; job tandem-release também passou.
+- Publicação: release `tandem-latest`, build 2074, aponta para o HEAD auditado e contém `Tandem.apk` (53.075.151 bytes; SHA-256 `ad2803141eb6f4c8de0ba7c8db40e27625952153ded3d53b464d9b18bcebca73`).
+
+## Resultado executivo
+- [x] Os três pilares estão integrados na base atual e não há PR aberta aguardando incorporação.
+- [x] O snapshot divergente da PR #58 não foi mesclado. Suas diferenças úteis foram reconciliadas em PRs menores e incorporadas.
+- [x] A CI e a publicação do HEAD atual foram confirmadas diretamente no GitHub.
+- [!] A aprovação de CI não equivale a certificação de todos os cores, jogos, BIOS, firmwares e drivers Vulkan. A compatibilidade continua sendo específica por núcleo e dispositivo.
+- [!] O README ainda contém a afirmação antiga de que Hardcore não foi implementado; o código atual integra o modo Hardcore por rc_client. Corrigir a documentação em atualização separada.
+- [!] Os logs históricos contêm estados de PR/CI anteriores ao merge. Este registro é a referência consolidada para o estado de 2026-11-27.
+
+## PILAR 1 — ROMM
+
+### Implementado e incorporado
+- [x] Autenticação, conexão/pareamento, tratamento de erros HTTP e compatibilidade de API RomM.
+- [x] Biblioteca, pesquisa, metadados, capas/mídia, conteúdo associado e dados pessoais do jogo.
+- [x] Identidade estável do jogo e isolamento por servidor/conta/ROM; migração conservadora de identidade antiga.
+- [x] Downloads, atualizações e associação de ROM local existente ao registro RomM.
+- [x] Inventário tipado de artefatos de jogo e sincronização oficial RomM Device Sync para saves compatíveis.
+- [x] Fila persistente, captura imutável para retry, verificação de hash, prevenção de upload sem alteração, backup, rollback e preservação de conflitos.
+- [x] Histórico e restauração manual de versões SRAM, sem excluir versões remotas anteriores.
+- [x] Saves DeSmuME/DeSmuME 2015 em formato nativo .dsv no Device Sync; melonDS DS externo permanece com .srm. O adaptador determina extensão/slot/emulador e rejeita artefatos incompatíveis.
+- [x] Saves e cartões de memória compatíveis são enviados apenas quando há mudança real no conteúdo.
+- [x] Diagnóstico de sincronização registra metadados necessários sem registrar bytes dos saves nem tokens.
+- [x] Integração de música/Jukebox com streaming, busca, artistas/álbuns, favoritos e playlists; teste funcional no aparelho foi confirmado pelo usuário.
+- [x] CIs das PRs de integração e CI final #2074 passaram.
+
+### Limites e pendências reais
+- [ ] Save states continuam locais; não são sincronizados pelo Device Sync. Isso é intencional na arquitetura atual, não uma falha silenciosa.
+- [ ] A sincronização depende de adaptadores por núcleo/formato. Núcleos experimentais adicionados no Stage J permanecem com RomM sync e save states desativados até auditoria individual.
+- [ ] A Jukebox não oferece reprodução em segundo plano/MediaSession, download offline nem reprodução nativa de formatos de música de console SPC/VGM/VGZ/GYM.
+- [ ] G5 (WebDAV) e G7 (sockets/eventos em tempo real) foram tratados como auditorias técnicas; não há implementação integral desses fluxos no escopo atual.
+- [ ] G1–G4 e G8 permanecem fora do escopo conforme decisão registrada anteriormente; não devem ser descritos como funcionalidades concluídas.
+- [ ] A chamada de negociação atual envia `emulators = null`; o executor restringe ROM/slot e valida compatibilidade do emulador recebido antes de aplicar, e uploads informam o emulador canônico. A filtragem no servidor poderia ser mais estrita, mas a proteção local impede aplicar silenciosamente artefato declarado incompatível.
+- [ ] Não foi executada nesta auditoria uma nova transferência contra a instância RomM do usuário; a confirmação funcional previamente registrada continua sendo a evidência do teste real.
+
+### Veredito RomM
+[CONCLUÍDO — INTEGRAÇÃO PRINCIPAL] O fluxo principal de biblioteca, download, identidade e Device Sync está incorporado. [PARCIAL POR ESCOPO] States remotos, WebDAV, eventos em tempo real e alguns formatos/core experimentais não fazem parte do conjunto validado.
+
+## PILAR 2 — LIBRETRO
+
+### Implementado e incorporado
+- [x] LibretroDroid integrado ao ciclo de sessão do Game Mode.
+- [x] Resolução de plataformas/formatos, tratamento de ZIP ambíguo e segurança de extração.
+- [x] Suporte a conjuntos multidisco/M3U, arquivos companheiros e preservação de jogos independentes na mesma pasta.
+- [x] Catálogo ARM64 ampliado e reconciliado sem substituir defaults da base; alternativas sem validação permanecem experimentais.
+- [x] CoreInstaller com staging, validação ELF AArch64, backup/rollback e SHA-256 local para detectar corrupção posterior.
+- [x] BIOS/firmware com validação estrutural, kits, staging e rollback; orientações específicas para PS2, Vita3K e Dolphin.
+- [x] Seleção e persistência de núcleo por plataforma; tela lista também plataformas com apenas um núcleo.
+- [x] Gamepad virtual touchscreen com D-pad, ABXY, Start/Select e dois analógicos, multitouch e layout adaptável; Stage I foi confirmado pelo usuário.
+- [x] Correções de sessão, áudio/vídeo, ciclo de vida e diagnóstico de falhas.
+- [x] melonDS DS externo como padrão NDS atual, pacote JesseTG v1.4.0 com SHA-256 fixado; DeSmuME/2015 preserva caminho DSV nativo.
+- [x] Backend Vulkan nativo com seleção de GPU/queue e fallback do driver customizado para o driver do sistema.
+- [x] Gerenciamento AdrenoTools multi-driver integrado preservando o importador Turnip legado, caminhos e preferências existentes.
+- [x] PRs #57, #59, #60, #61 e #63 incorporadas; CI final #2074 passou.
+- [x] Usuário confirmou a conclusão dos testes funcionais do Stage I e autorizou a sequência de merges Stage J.
+
+### Limites e pendências reais
+- [ ] Não há isolamento de processo para o motor nativo; uma falha fatal do core/LibretroDroid ainda pode encerrar o processo do launcher.
+- [ ] SHA-256 local detecta alteração posterior do binário, mas não autentica sozinho a origem do primeiro download. A validação de assinatura OpenPGP do Buildbot exige chave pública/fingerprint confiável e não deve ser presumida concluída.
+- [ ] Catálogo/ZIP ARM64 disponível não significa que todo core foi iniciado e validado individualmente em todos os jogos/BIOS. Capacidades de save/state/sync dos cores experimentais continuam desativadas por segurança.
+- [ ] Compatibilidade de BIOS/firmware real é por núcleo e kit; os testes unitários validam estrutura, não autenticidade ou boot de todos os firmwares.
+- [ ] Vulkan/Turnip depende de GPU Qualcomm Adreno compatível. O fallback do driver do sistema é implementado; não é promessa de que todos os cores Vulkan funcionarão em qualquer driver.
+- [ ] Vita3K, RPCS3, Xenia Edge, Cemu e outros cores pesados/experimentais não devem ser considerados equivalentes em maturidade aos cores retro tradicionais apenas por constarem do catálogo.
+- [ ] Não foi executada nesta auditoria uma nova bateria de sessões em hardware; preservam-se as confirmações de testes físicos feitas pelo usuário e os limites por core acima.
+
+### Veredito Libretro
+[CONCLUÍDO — ESTÁGIOS I E J INCORPORADOS] A arquitetura de execução, catálogo, BIOS, controle virtual e suporte Vulkan foi reconciliada e mesclada. [PARCIAL POR COMPATIBILIDADE] A validação individual de todos os cores, firmwares e drivers não pode ser inferida da CI nem da presença no catálogo.
+
+## PILAR 3 — RETROACHIEVEMENTS
+
+### Implementado e incorporado
+- [x] Login por usuário/senha e token; a senha não é persistida.
+- [x] Token e Web API Key criptografados com AES-GCM e chave protegida pelo Android Keystore, armazenados em `noBackupFilesDir`.
+- [x] Sessão de jogo usa integração nativa rc_client/LibretroDroid para autenticação, identificação do jogo por hash e processamento de conquistas.
+- [x] Lista de conquistas, descrição, pontos, status desbloqueado e prévia na tela de detalhes após o primeiro reconhecimento do jogo.
+- [x] Notificações/overlays nativos de desbloqueio, desafio ativo, progresso, leaderboards, tracker, Rich Presence e conclusão/Mastery.
+- [x] Rich Presence consultado pelo rc_client, sem parser paralelo; atualização visual periódica.
+- [x] Reconexão e retry de falha transitória de login; falha definitiva ou jogo não reconhecido desativa Hardcore apenas naquela sessão.
+- [x] Modo Hardcore configurável, padrão ligado; bloqueia save states quando a conta e plataforma RA são elegíveis. O motor oficial recebe o modo e pode solicitar reset ao alternar.
+- [x] Integração de conquistas preservada nas mudanças de núcleo e sessão; a PR #3 e as melhorias posteriores de overlay/Rich Presence foram incorporadas anteriormente.
+- [x] A validação de notificações/overlays no Motorola Edge 30 Fusion foi aprovada pelo usuário em testes anteriores.
+
+### Limites e pendências reais
+- [ ] A prévia da tela de detalhes depende de o jogo já ter sido reconhecido uma vez e de Game ID em cache; não descobre o ID antes da primeira execução.
+- [ ] Login e prévia ainda usam a API clássica `dorequest.php`; a sessão durante a partida usa rc_client oficial. Não é uma migração total da camada auxiliar para rc_client.
+- [ ] Hardcore depende de hash reconhecido, conta autenticada e plataforma com Console ID RA. ROMs modificadas/traduzidas/hacks sem hash compatível não podem garantir conquistas/Hardcore.
+- [ ] A auditoria não executou nova sessão conectada ao serviço RetroAchievements; status online e leaderboard dependem da rede e do servidor.
+- [ ] Atualizar README: a descrição atual diz que Hardcore não está implementado, mas o código atual já possui controle e bloqueio de save states.
+
+### Veredito RetroAchievements
+[CONCLUÍDO — INTEGRAÇÃO PRINCIPAL] Login, rc_client, conquistas, overlays, Rich Presence e Hardcore estão implementados. [PARCIAL POR LIMITAÇÃO DO SERVIÇO] Reconhecimento de ROM e prévia pré-jogo dependem dos hashes/cache e da disponibilidade do serviço.
+
+## INTEGRAÇÃO ENTRE OS TRÊS PILARES
+- [x] RomM Device Sync é o único transporte remoto ativo para saves compatíveis; save states permanecem locais, evitando dois transportes concorrentes.
+- [x] RetroAchievements Hardcore impede o uso de save states nas sessões elegíveis.
+- [x] O inventário de artefatos e adaptadores por núcleo evitam tratar qualquer arquivo .srm/.dsv como formato universal.
+- [x] A seleção de núcleo e a identidade do jogo são consideradas ao decidir compatibilidade de save remoto.
+- [ ] A validação integral de cada combinação jogo + núcleo + BIOS + formato de save + RA ainda não é possível apenas com a suíte automatizada; combinações não testadas devem permanecer conservadoras.
+- [ ] Falha nativa de Libretro pode derrubar a sessão do launcher e, portanto, interromper também a interface de RomM/RA; isolamento de processo é uma melhoria arquitetural futura.
+
+## GOVERNANÇA, CI E PUBLICAÇÃO
+- [x] Nenhuma PR aberta no momento da auditoria.
+- [x] PR #58 fechada sem merge por ser snapshot divergente/supersedido; suas mudanças úteis foram incorporadas por #59–#63.
+- [x] PRs #59, #60, #61 e #63 mescladas; #62 também incorporada.
+- [x] CI #2074 / run 46081732728: Spotless, testes unitários, APK Debug, upload de artefato, final-status e tandem-release SUCCESS.
+- [x] Release `tandem-latest` build 2074 publicada no HEAD `67493daac58cfebf9be6e0120f3f4a37c78837f2`.
+- [ ] Corrigir README para refletir o estado real do Hardcore.
+- [ ] Manter este documento e os logs individuais sincronizados quando uma nova CI, PR ou validação física alterar o estado.
+
+## CONCLUSÃO FINAL
+Os três pilares estão integrados e incorporados à branch principal de desenvolvimento, e o HEAD atual passou pela CI completa e foi publicado como tandem-latest build 2074. Não há PR pendente. Isso encerra a etapa de integração/reconciliação dos três pilares, mas não declara compatibilidade universal de todos os cores/firmwares nem implementa funcionalidades explicitamente fora de escopo (save states remotos, WebDAV, eventos em tempo real ou reprodução de música em segundo plano). As pendências acima são melhorias/limites conhecidos e devem ser tratadas em etapas próprias, sem reabrir os estágios concluídos automaticamente.
