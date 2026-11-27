@@ -737,3 +737,17 @@ COMPLEMENTO — SINCRONIZAÇÃO DURANTE PAUSA TRANSITÓRIA — 2026-11-26
 - [x] A sincronização disparada em onPause também ocorre em pausa transitória do Android; a implementação usa snapshot imutável e pode manter a fila pendente para a próxima execução.
 - [ ] Testar no aparelho pausa/retomada rápida com rede lenta, verificando que o snapshot antigo não substitui o save mais recente e que o segundo job é processado depois.
 - [ ] Verificar comportamento real de conflito quando uma pausa transitória gera upload enquanto o usuário retoma a sessão.
+
+
+ATUALIZAÇÃO — CORREÇÃO DA RECUPERAÇÃO DE BACKUP E CI #1650 — 2026-11-27
+- [x] Corrigida a expectativa do teste que falhava: quando o destino corresponde ao SHA-256 confirmado, ele é mantido e o backup residual inválido é removido.
+- [x] Teste renomeado para removesInvalidBackupWhenTargetMatchesConfirmedDigest; verifica o SHA-256 preservado no destino e a ausência do backup.
+- [x] CI #1650 — https://github.com/izzyn0okami/Tandem/actions/runs/45915151100 — sucesso no commit 4e4712c30f6a6dc305b8405e42664363f21544fe.
+- [x] check-style / Spotless: sucesso; testes unitários: sucesso; build assembleLawnWithQuickstepGithubDebug: sucesso; upload do APK: sucesso.
+- [x] Os cenários de recuperação para destino inválido + backup inválido e destino ausente + backup inválido também passaram na mesma suíte.
+- [x] Nenhuma publicação tandem-release/nightly-release foi executada; tandem-latest não foi alterada.
+- [ ] Validar no aparelho recuperação após instalação interrompida, falha de rede e pacote inválido.
+- [ ] Testes instrumentados de ciclo de vida e validação funcional de SRAM/estados rápidos continuam pendentes.
+- [ ] Ampliar auditoria integral do catálogo Buildbot e confirmar compatibilidade funcional por núcleo/plataforma/BIOS no aparelho.
+- [ ] Refinamentos avançados do gamepad virtual (multitouch misto, eixos simultâneos/deadzone, rotação, acessibilidade e personalização completa) continuam pendentes; funcionamento básico foi confirmado pelo usuário.
+- PR #57 permanece aberta e draft, sem merge ou publicação em tandem-latest; PR #41 permanece intocada.
