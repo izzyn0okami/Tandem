@@ -215,7 +215,7 @@ class GameSessionActivity : ComponentActivity() {
             platformSlug = platformSlug,
             romPath = romPath,
             gameIdentity = stableIdentity,
-            effectiveDirectory = effectiveSavesDirectory,
+            effectiveDirectory = if (coreId in setOf("desmume", "desmume2015")) store.coreSaveDirectory else effectiveSavesDirectory,
             saveStore = store,
         )
 
