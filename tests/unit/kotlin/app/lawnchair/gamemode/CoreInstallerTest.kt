@@ -38,7 +38,7 @@ class CoreInstallerTest {
             file.writeBytes(header)
             assertTrue(CoreInstaller.isArm64Elf(file))
 
-            header[18] = 62 // x86-64, not AArch64
+            header[18] = 62
             file.writeBytes(header)
             assertFalse(CoreInstaller.isArm64Elf(file))
         } finally {
@@ -157,9 +157,8 @@ class CoreInstallerTest {
         }
     }
 
-
     @Test
-    fun preservesValidTargetAndInvalidBackupForDiagnosis() {
+    fun removesInvalidBackupWhenTargetMatchesConfirmedDigest() {
         val directory = Files.createTempDirectory("core-recovery-invalid-backup").toFile()
         val target = File(directory, "core.so")
         val backup = File(directory, "core.so.backup")
@@ -171,8 +170,7 @@ class CoreInstallerTest {
             CoreInstaller.recoverBackup(target, backup, targetDigest)
 
             assertEquals(targetDigest, CoreInstaller.sha256(target))
-            assertTrue(backup.isFile)
-            assertFalse(CoreInstaller.isArm64Elf(backup))
+            assertFalse(backup.exists())
         } finally {
             directory.deleteRecursively()
         }
@@ -224,5 +222,4 @@ class CoreInstallerTest {
         header[18] = 183.toByte()
         file.writeBytes(header + byteArrayOf(marker.toByte()))
     }
-
 }
