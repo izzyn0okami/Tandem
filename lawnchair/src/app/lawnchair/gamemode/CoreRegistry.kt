@@ -118,8 +118,17 @@ object CoreRegistry {
         ),
         "pce" to listOf(
             core("mednafen_pce_fast", "Beetle PCE Fast", "Rápido"),
-            core("mednafen_pce", "Beetle PCE", "Mais preciso"),
-            core("geargrafx", "Geargrafx", "Alternativa moderna"),
+            core(
+                "mednafen_pce",
+                "Beetle PCE",
+                "Mais preciso; documentação Libretro lista States, mas não declara Saves frontend-level",
+                supportsRomMSaveSync = false,
+            ),
+            core(
+                "geargrafx",
+                "Geargrafx",
+                "Alternativa moderna; backup RAM por jogo em .srm; Memory Base 128 compartilhada em .sav fica fora do sync SRAM",
+            ),
         ),
         "atari2600" to listOf(
             core("stella", "Stella", "Padrão; save states suportados, saves de cartucho não suportados", supportsRomMSaveSync = false),
