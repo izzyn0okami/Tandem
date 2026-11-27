@@ -901,3 +901,12 @@ Os três pilares estão integrados e incorporados à branch principal de desenvo
 - [ ] Teste físico PSX/DS com jogos reconhecidos.
 - [ ] Resolver casos especiais: Arcade por hash, PC-88, SuperGrafx, Watara e outros sistemas sem mapeamento seguro.
 - Status: EM ANDAMENTO; branch não mesclada.
+
+
+ATUALIZAÇÃO — AUDITORIA RA / CI #2083 (2026-11-27)
+- Resultado CI #2083: falha no job de build/testes por chamada desatualizada de RaSettings.blocksStates em GameScreens.kt:767; Spotless passou.
+- Correção aplicada: chosenCoreId enviado à política de save states, commit a5cd993fe052dc60de3409a23b4882fbe1e8a84c.
+- A CI não gerou APK. Nenhum teste no aparelho foi realizado nesta execução.
+- [ ] Nova CI e build APK.
+- [ ] Validar PSX/DS no aparelho e confirmar IDs pela API oficial.
+- Status da matriz RA: EM ANDAMENTO; não mesclada.
