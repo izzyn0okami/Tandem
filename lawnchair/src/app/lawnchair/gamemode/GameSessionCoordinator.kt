@@ -209,11 +209,9 @@ internal object GameSessionSyncPolicy {
  * permitir testes JVM sem instanciar Android ou o núcleo nativo.
  */
 internal object GameSessionLifecyclePolicy {
-    fun shouldDestroyNativeOnPause(isFinishing: Boolean, isChangingConfigurations: Boolean): Boolean =
-        isFinishing || isChangingConfigurations
+    fun shouldDestroyNativeOnPause(isFinishing: Boolean, isChangingConfigurations: Boolean): Boolean = isFinishing || isChangingConfigurations
 
     fun shouldLogNormalEnd(isFinishing: Boolean): Boolean = isFinishing
 
-    fun shouldEnqueuePostSessionSync(coreSupportsRomMSaveSync: Boolean, hasRomPath: Boolean): Boolean =
-        coreSupportsRomMSaveSync && hasRomPath
+    fun shouldEnqueuePostSessionSync(coreSupportsRomMSaveSync: Boolean, hasRomPath: Boolean): Boolean = coreSupportsRomMSaveSync && hasRomPath
 }
