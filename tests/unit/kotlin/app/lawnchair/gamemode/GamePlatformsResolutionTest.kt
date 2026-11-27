@@ -96,6 +96,24 @@ class GamePlatformsResolutionTest {
         assertTrue(pcsx2.preferVulkan == true)
     }
     @Test
+    fun nintendoDsCoresDoNotAdvertiseRomMSyncForNonSramSaveFormats() {
+        val platform = GamePlatforms.bySlug("nds")!!
+        val melonDs = CoreRegistry.info(platform, "melonds")
+        val desmume = CoreRegistry.info(platform, "desmume")
+        val desmume2015 = CoreRegistry.info(platform, "desmume2015")
+        val noods = CoreRegistry.info(platform, "noods")
+
+        assertTrue(melonDs.supportsStates)
+        assertFalse(melonDs.supportsRomMSaveSync)
+        assertTrue(desmume.supportsStates)
+        assertFalse(desmume.supportsRomMSaveSync)
+        assertTrue(desmume2015.supportsStates)
+        assertFalse(desmume2015.supportsRomMSaveSync)
+        assertTrue(noods.supportsStates)
+        assertFalse(noods.supportsRomMSaveSync)
+    }
+
+    @Test
     fun unknownCoreCapabilitiesDefaultToDisabledWithoutChangingCatalogEntries() {
         val platform = GamePlatforms.bySlug("nes")!!
         val unknownAlternative = CoreRegistry.info(platform, "unlisted_core")
