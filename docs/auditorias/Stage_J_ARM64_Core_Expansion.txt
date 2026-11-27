@@ -316,3 +316,17 @@ RECONCILIAÇÃO DE CONFLITOS — INSPEÇÃO COMPARATIVA 2026-11-27
 - [x] Risco concreto identificado: a aplicação literal de CoreInstaller da PR regrediria o suporte melonDS DS que já foi implementado e testado na base. Portanto, não realizar merge/rebase automático ou cópia integral dos arquivos.
 - [ ] Próxima integração deve ser feita em branch nova baseada no head atual de game-mode-m2-dev, com alterações aditivas por arquivo, testes de regressão específicos para melonDS DS/Azahar e VulkanDriverManager, e revisão de todos os 28 arquivos.
 - [ ] Nenhuma implementação foi sobrescrita nesta inspeção; nenhuma branch de integração foi criada; nenhuma CI foi disparada; PR #58 segue bloqueada.
+
+
+REAUDITORIA DE CONTINUIDADE — 2026-11-27 15:00 (UTC-4)
+- [x] Consultado novamente o log Stage I na base game-mode-m2-dev; o arquivo está presente e confirma o merge da PR #57 no commit f2ad315eedd814547bb47cfd060aaa87d27e0df5.
+- [x] Consultado o log Stage G na base; confirma PR #55 mesclada no commit e6949de1a62809e21772b51071f2f2a3c88fd130 e suas decisões de escopo.
+- [x] Estado GitHub confirmado: PR #58 aberta, não mesclada, base game-mode-m2-dev, head feat/arm64-core-expansion; head 7b0979510618be91988490e414507fde89399dc9; base f13c7932cd006c086ca94b197a717462b495a899.
+- [x] Comparação atualizada: diverged, 121 commits exclusivos do head e 236 exclusivos da base; merge-base 2d6ba3cc1e7ef1a4978907ed121b6e6f1c57e5d7; 28 arquivos alterados.
+- [x] Confirmado que o diff ainda inclui docs/auditorias/Stage_I_Libretro_Execution.txt com 1564 linhas de alteração; esse arquivo é a cópia histórica da PR e não deve substituir o log atual da base.
+- [x] Consultados os workflow runs associados ao head 7b0979510618be91988490e414507fde89399dc9: nenhum run pull_request retornado. CI #1522/#1531/#1537/#1554 e demais execuções anteriores são históricas e não validam este head.
+- [x] Confirmado que o head atual da PR não mudou durante esta auditoria; não foi realizado merge, rebase, alteração funcional ou movimentação de refs.
+- [ ] Bloqueio principal permanece: rebase Git verdadeiro e reconciliação semântica dos 28 arquivos; a divergência não pode ser resolvida por merge direto, snapshot ou substituição integral de arquivos.
+- [ ] Após reconciliação: remover do diff a cópia obsoleta do log Stage I, preservar melonDS DS/Device Sync e integrar Azahar, reconciliar VulkanDriverManager e VulkanBackend, revisar catálogo/BIOS/saves e executar CI integral no novo head.
+- [ ] Validar no Motorola Edge 30 Fusion os cores/BIOS avançados e o fluxo Vulkan/Turnip; CI não substitui esses testes físicos.
+- [x] game-mode-m2-dev e tandem-latest não foram alteradas. PR #41 não foi alterada.
