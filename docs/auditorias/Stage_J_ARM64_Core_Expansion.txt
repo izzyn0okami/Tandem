@@ -193,3 +193,11 @@ AMPLIAÇÃO CONTROLADA DO DEVICE SYNC PARA SAVES NATIVOS .DSV — 2026-11-27
 - [ ] Teste físico ainda necessário com DeSmuME: criar save .dsv, upload ao RomM, download em nova sessão, resolução de conflito e verificação byte a byte.
 - [ ] A compatibilidade fica limitada aos IDs DeSmuME declarados; não presume compatibilidade de .dsv com melonDS nem com outros cores DS.
 - [x] PR #58 continua aberta e não mesclada; base continua feat/libretro-stage-i. Nenhuma publicação em game-mode-m2-dev ou tandem-latest.
+
+
+DISTINÇÃO DOS FORMATOS DOS CORES NINTENDO DS — 2026-11-27
+- [x] Consultada a documentação oficial Libretro: melonDS DS usa .srm na pasta Save do frontend; o núcleo legado melonDS usa .sav na pasta Cache; DeSmuME mantém seu formato nativo .dsv.
+- [x] O catálogo Stage J oferece os IDs melonds, desmume, desmume2015 e melondsds; melondsds permanece no fluxo .srm já suportado, enquanto DeSmuME agora usa .dsv no Device Sync.
+- [ ] O núcleo legado melonds ainda exige auditoria separada: a sessão atual passa a pasta Save, mas a documentação Libretro aponta a pasta Cache e extensão .sav. Não presumir que o suporte .srm genérico cubra esse core.
+- [ ] Antes de implementar melonds legado, confirmar a propriedade de diretório Cache disponível no GLRetroViewData/LibretroDroid e desenhar migração/isolamento por ROM para .sav, sem misturar com saves de melonDS DS.
+- [ ] CI do conjunto DSV/Device Sync continua pendente no head atual; não há run posterior aos commits de ampliação.
