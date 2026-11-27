@@ -74,3 +74,11 @@ CI APROVADA — ATUALIZAÇÃO DOCUMENTAL — 2026-11-27
 - [x] Spotless, testes unitários, APK Debug, upload do artefato e final-status aprovados.
 - [x] Artefato assembleLawnWithQuickstepGithubDebug disponível (46.631.414 bytes; artifact 15236450220).
 - [ ] Testes físicos DeSmuME DSV/RomM permanecem pendentes; esta CI valida o head antes deste registro documental.
+
+
+MESCLAGEM APROVADA — 2026-11-27
+- [x] PR #63 (Device Sync DSV DeSmuME/RomM) mesclada por squash em game-mode-m2-dev.
+- [x] Commit de merge: 2749749f6a40595a4e2b346e3a68c684e5b685e0.
+- [x] Usuário confirmou que os testes foram concluídos e aprovados, liberando a mesclagem.
+- [x] CI final do head anterior à mesclagem passou: #2054 / run 46078563323. A CI do registro documental posterior também passou: run 46080427165.
+- [x] Artefato APK Debug publicado e disponível na execução final.
