@@ -338,7 +338,7 @@ class CoreInstallerTest {
     }
 
     @Test
-    fun extractsMelonDsCoreFromReleaseZipRootDirectory() {
+    fun extractsMelonDsCoreAndIgnoresLibretroInfoMetadata() {
         val directory = Files.createTempDirectory("melonds-zip-nested").toFile()
         val target = File(directory, "melondsds_libretro_android.so")
         val payload = ByteArray(32) { it.toByte() }
@@ -346,7 +346,10 @@ class CoreInstallerTest {
             ZipOutputStream(bytes).use { zip ->
                 zip.putNextEntry(ZipEntry("melondsds_libretro-android-Release/"))
                 zip.closeEntry()
-                zip.putNextEntry(ZipEntry("melondsds_libretro-android-Release/melondsds_libretro_android.so"))
+                zip.putNextEntry(ZipEntry("melondsds_libretro-android-Release/cores/melondsds_libretro_android.info"))
+                zip.write("display_name = melonDS DS".toByteArray())
+                zip.closeEntry()
+                zip.putNextEntry(ZipEntry("melondsds_libretro-android-Release/cores/melondsds_libretro_android.so"))
                 zip.write(payload)
                 zip.closeEntry()
             }
@@ -360,6 +363,35 @@ class CoreInstallerTest {
             )
 
             assertArrayEquals(payload, target.readBytes())
+        } finally {
+            directory.deleteRecursively()
+        }
+    }
+
+    @Test
+    fun rejectsUnexpectedAdditionalSharedLibraryInCoreArchive() {
+        val directory = Files.createTempDirectory("melonds-zip-extra-core").toFile()
+        val target = File(directory, "melondsds_libretro_android.so")
+        val archive = ByteArrayOutputStream().also { bytes ->
+            ZipOutputStream(bytes).use { zip ->
+                zip.putNextEntry(ZipEntry("melondsds_libretro-android-Release/cores/other_libretro.so"))
+                zip.write(byteArrayOf(1, 2, 3))
+                zip.closeEntry()
+            }
+        }.toByteArray()
+
+        try {
+            try {
+                CoreInstaller.extractCoreFromArchive(
+                    ByteArrayInputStream(archive),
+                    target,
+                    "melondsds_libretro_android.so",
+                )
+                fail("Biblioteca adicional deveria ser rejeitada")
+            } catch (expected: IllegalStateException) {
+                assertTrue(expected.message.orEmpty().contains("biblioteca adicional"))
+            }
+            assertFalse(target.exists())
         } finally {
             directory.deleteRecursively()
         }
