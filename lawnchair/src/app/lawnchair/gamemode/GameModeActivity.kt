@@ -292,7 +292,7 @@ private fun GameModeRoot(refreshKey: Int, onExit: () -> Unit) {
             )
             Triple(identity, plan, siblings)
         }
-        if (migrationPlan.ambiguous) {
+        if (supportsRomMSaveSync && migrationPlan.ambiguous) {
             if (migrationPlan.conflictSources.isNotEmpty()) {
                 val conflictFiles = withContext(Dispatchers.IO) {
                     GameIdentityResolver.inspectLegacyConflicts(
@@ -322,7 +322,7 @@ private fun GameModeRoot(refreshKey: Int, onExit: () -> Unit) {
                 coreId = coreId,
                 romPath = romPath,
                 title = title,
-                loadState = loadState,
+                loadState = effectiveLoadState,
                 platform = platform,
                 gameIdentity = gameIdentity,
                 sources = migrationPlan.confirmationSources,
