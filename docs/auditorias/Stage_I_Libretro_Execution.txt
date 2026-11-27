@@ -1740,3 +1740,18 @@ ACOMPANHAMENTO CI — MELONDS DS — 2026-11-27
 - [ ] CI #1887 — run 45996155964 — commit 4ef8cd980787723e9a369fdd73c0a3180ba1c61f: check-style e build-debug-apk na fila.
 - [ ] O commit de atualização do log não gerou workflow próprio.
 - [ ] Aguardar conclusão integral das CIs; validar build, testes e final-status antes de considerar esta integração aprovada.
+
+
+CORREÇÃO DE COMPILAÇÃO — FLUXOS DE CONFLITO E HISTÓRICO DO DEVICE SYNC — 2026-11-27
+- [x] Investigadas as falhas das CIs #1886 (run 45996130478) e #1887 (run 45996155964): ambas passaram em check-style, mas falharam na compilação Kotlin do app.
+- [x] Causa confirmada nos logs: quatro referências a `localArtifact?.format` estavam fora do escopo da variável, nos fluxos de resolução de conflito e restauração de histórico do RomM.
+- [x] Corrigidas as quatro referências para usar o artefato selecionado no escopo (`artifact?.format`), preservando a extensão real (.srm/.dsv) no nome enviado ao RomM.
+- [ ] CI do commit corretivo ainda não apareceu na consulta de workflows; confirmar execução e resultado integral.
+- [ ] Após a CI passar, revisar qualquer novo erro de compilação/teste antes de avançar para validação final.
+
+Commits:
+- 1068abbaaebe5ca8b4ec9d3b5e5f63b9cebcefa0 — correção de referências fora de escopo em RomMDeviceSyncRunner.kt.
+
+CIs com falha:
+- #1886 — run 45996130478 — falha em compileLawnWithQuickstepGithubDebugKotlin; quatro unresolved reference localArtifact.
+- #1887 — run 45996155964 — mesma falha; check-style passou em ambas.
