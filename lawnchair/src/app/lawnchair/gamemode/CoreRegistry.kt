@@ -70,13 +70,24 @@ object CoreRegistry {
         "genesis" to listOf(
             core("genesis_plus_gx", "Genesis Plus GX", "Preciso e completo"),
             core("picodrive", "PicoDrive", "Leve, com 32X"),
-            core("blastem", "BlastEm", "Muito preciso"),
+            core(
+                "blastem",
+                "BlastEm",
+                "Muito preciso; documentação Libretro não declara Saves/States nem seus formatos",
+                supportsStates = false,
+                supportsRomMSaveSync = false,
+            ),
         ),
         "sms" to masterSystemCores(),
         "gg" to masterSystemCores(),
         "scd" to listOf(
             core("genesis_plus_gx", "Genesis Plus GX", "Preciso e completo; Sega CD usa arquivos BRM de backup RAM, fora do sync SRAM RomM", supportsRomMSaveSync = false),
-            core("picodrive", "PicoDrive", "Leve"),
+            core(
+                "picodrive",
+                "PicoDrive",
+                "Leve; formato de backup RAM Sega CD não confirmado como SRAM Libretro",
+                supportsRomMSaveSync = false,
+            ),
         ),
         "n64" to listOf(
             core("mupen64plus_next_gles3", "Mupen64Plus-Next (GLES3)", "Melhor qualidade"),
