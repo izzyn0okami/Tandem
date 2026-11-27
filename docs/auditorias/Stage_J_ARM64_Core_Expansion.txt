@@ -254,3 +254,18 @@ Referências técnicas consultadas:
 - https://docs.libretro.com/library/melonds/
 - https://docs.libretro.com/library/melonds_ds/
 - libretrodroid/src/main/java/com/swordfish/libretrodroid/GLRetroViewData.kt (blob f9c9e61c5d3669a8fc7b34bc535a289728174825 na branch feat/arm64-core-expansion)
+
+
+NOVA TENTATIVA DE MESCLAGEM / REAUDITORIA — 2026-11-27
+- [x] Reconsultada a PR #57: encerrada com merged=true; merge commit f2ad315eedd814547bb47cfd060aaa87d27e0df5 em game-mode-m2-dev.
+- [x] Reconsultada a PR #58: aberta, não mesclada, head dea824aacb6c956af8351a9eecffd732cb2f5d2d; base ainda feat/libretro-stage-i.
+- [x] Comparação atual game-mode-m2-dev...feat/arm64-core-expansion: diverged; 116 commits exclusivos do head, 234 commits exclusivos da base; merge-base 2d6ba3cc1e7ef1a4978907ed121b6e6f1c57e5d7.
+- [x] Diff reportado contém 28 arquivos, incluindo cópia histórica de Stage_I_Libretro_Execution.txt (1559 adições/5 remoções), além dos arquivos de Stage J. A revisão deve impedir que essa cópia antiga reverta ou duplique mudanças da base.
+- [x] Verificados reviews e threads: nenhuma review submetida e nenhum thread inline pendente.
+- [x] Verificados workflow runs associados ao head consultado: nenhum run pull_request retornado; CI #1554 e #1934 permanecem históricas e não validam o head atual.
+- [x] Tentativa de merge squash pelo GitHub API, protegida por expected_head_sha, recusada pelo GitHub com HTTP 405: Pull Request has merge conflicts. Nenhum merge foi realizado.
+- [ ] Rebase Git verdadeiro de feat/arm64-core-expansion sobre game-mode-m2-dev ainda necessário. A integração deve preservar os 116 commits de Stage J e reconciliar VulkanDriverManager, integração Vulkan legada, GamePlatforms/CoreRegistry/CoreInstaller/BiosManager, GameSessionActivity e os arquivos de saves/Device Sync DS.
+- [ ] Não alterar a base da PR nem mover a branch por snapshot/squash antes do rebase; isso ocultaria a divergência e poderia reintroduzir regressões do Stage I.
+- [ ] Após rebase: conferir diff final sem duplicação de Stage I, executar CI completa no novo head, revisar resultado e somente então tentar novo merge.
+- [ ] Permanecem pendentes testes físicos dos cores avançados, BIOS/firmware, Vulkan/Turnip no Snapdragon/Adreno, saves/RomM e RetroAchievements conforme escopo Stage J.
+- [x] Nenhuma alteração em tandem-latest, PR #41 ou PR #55.
