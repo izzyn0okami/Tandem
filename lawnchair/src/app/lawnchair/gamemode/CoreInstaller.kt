@@ -258,23 +258,39 @@ object CoreInstaller {
                 ) { "ZIP contém caminho inseguro: ${entry.name}" }
 
                 if (!entry.isDirectory) {
-                    check(!foundCore && segments.lastOrNull() == expectedFileName) {
-                        "ZIP inesperado: esperava um único arquivo $expectedFileName, veio ${entry.name}"
-                    }
-                    FileOutputStream(target).use { output ->
-                        val buffer = ByteArray(64 * 1024)
-                        var written = 0L
-                        while (true) {
-                            val read = zip.read(buffer)
-                            if (read < 0) break
-                            output.write(buffer, 0, read)
-                            written += read
-                            onProgress(written)
+                    val fileName = segments.lastOrNull()
+                    when {
+                        fileName == expectedFileName -> {
+                            check(!foundCore) {
+                                "ZIP contém mais de uma cópia do núcleo esperado: $expectedFileName"
+                            }
+                            FileOutputStream(target).use { output ->
+                                val buffer = ByteArray(64 * 1024)
+                                var written = 0L
+                                while (true) {
+                                    val read = zip.read(buffer)
+                                    if (read < 0) break
+                                    output.write(buffer, 0, read)
+                                    written += read
+                                    onProgress(written)
+                                }
+                                output.flush()
+                                output.fd.sync()
+                            }
+                            foundCore = true
                         }
-                        output.flush()
-                        output.fd.sync()
+
+                        fileName?.endsWith(".info", ignoreCase = true) == true -> {
+                            // Metadados Libretro não são executáveis e nunca são extraídos.
+                            // closeEntry() abaixo consome a entrada e valida seu CRC.
+                        }
+
+                        fileName?.endsWith(".so", ignoreCase = true) == true -> {
+                            error("ZIP contém biblioteca adicional inesperada: ${entry.name}")
+                        }
+
+                        else -> error("ZIP contém arquivo auxiliar não permitido: ${entry.name}")
                     }
-                    foundCore = true
                 }
                 zip.closeEntry()
                 entry = zip.nextEntry
