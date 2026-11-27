@@ -11,8 +11,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 /**
- * Instala e atualiza núcleos ARM64 do Buildbot oficial sem substituir uma versão válida
- * até que o novo arquivo tenha sido baixado e validado por completo.
+ * Instala e atualiza núcleos ARM64 do Buildbot e fontes upstream explicitamente fixadas,
+ * sem substituir uma versão válida até que o novo arquivo tenha sido validado por completo.
  */
 object CoreInstaller {
 
