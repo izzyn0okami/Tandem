@@ -494,6 +494,7 @@ object GamePlatforms {
             extensions = setOf("zip"),
             folderAliases = setOf("neogeo", "neogeoaes", "neogeomvs", "neo-geo", "mvs", "aes"),
             sortOrder = 88,
+            raConsoleId = 27,
             discBased = false,
             zipIsNativeRom = true,
             bios = listOf(BiosFile("neogeo.zip", "Neo Geo (BIOS do conjunto)")),
