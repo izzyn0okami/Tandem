@@ -1798,3 +1798,34 @@ Commits:
 - 6730c562f0aff3c8429674221aa1b557b1835d18 — extrator passou a aceitar núcleo dentro de diretório-raiz.
 - d0812678e67b4a1ed8966de938b34a7e52e82dab — normalização segura dos separadores de caminho ZIP.
 - f27508bd8dc8f0f6400df2aca328122743226915 — testes de ZIP aninhado e rejeição de traversal.
+
+
+
+RETESTE NO APARELHO — MELONDS DS / BUILD #1910 — 2026-11-27
+- [x] Recebido e analisado novo log do aparelho: Tandem 16.Dev. (#1910), sessão b0a60348.
+- [x] Teste realizado com The Legend of Zelda: Phantom Hourglass; a seleção do core melonds_ds ocorreu, mas a instalação falhou antes de carregar a biblioteca.
+- [x] A falha anterior do diretório-raiz foi superada: o instalador agora percorre o ZIP e identifica entradas internas.
+- [x] Nova causa confirmada: o pacote upstream inclui o metadado Libretro `melondsds_libretro_android.info` em `cores/`; o extrator o tratava incorretamente como arquivo executável inesperado.
+- [x] Confirmado que o arquivo .so ainda não foi instalado/carregado; portanto este log não demonstra defeito de execução do melonDS DS nem perda de saves.
+- [x] Timeouts de rede para RomM em 192.168.0.102:8080 foram ignorados conforme orientação do usuário, pois o aparelho estava fora da rede local.
+- [x] Corrigido o extrator: aceita o único .so com nome exato, ignora arquivos .info sem extraí-los, continua validando CRC ao fechar cada entrada e rejeita bibliotecas .so adicionais, arquivos auxiliares desconhecidos e caminhos inseguros.
+- [x] Adicionado teste JVM com ZIP aninhado contendo .info antes da biblioteca esperada.
+- [x] Adicionado teste JVM para rejeitar uma biblioteca .so adicional inesperada.
+- [ ] CI completa da nova correção ainda pendente.
+- [ ] Após CI aprovada, instalar o novo APK e repetir o download/instalação do melonDS DS; confirmar carregamento do core e abertura de Phantom Hourglass.
+- [ ] Depois do primeiro boot, testar áudio/vídeo, duas telas, controles/touch e save local .srm.
+- [ ] Device Sync RomM deve ser testado novamente somente quando o aparelho estiver na rede local.
+
+Histórico de CI relacionado:
+- [x] CI #1906 — run 46001067964 — commit f27508bd8dc8f0f6400df2aca328122743226915: testes unitários e build APK passaram; check-style falhou porque o passo automático tentou enviar a formatação enquanto a branch já havia avançado (push não fast-forward). Artefato #15199146166 foi gerado, mas a CI global ficou com falha e não foi tratado como validação final.
+- [x] CI #1909 — run 46001330892 — commit 9ac2687f27e198452184051809b9546924087778: check-style, testes unitários, build APK, upload e final-status passaram.
+- [x] Artefato da CI #1909: ID 15199931106; 46.629.732 bytes; SHA-256 4274142a22626d7456d09d88559ca234821b6eef9645f0db4ab96af3057f772e. O usuário testou a versão 16.Dev. (#1910), correspondente à rodada, e reproduziu o problema de metadados .info.
+- [ ] A CI #1909 aprovou o código anterior à correção de metadados; não valida os commits corretivos desta atualização.
+
+Commits desta correção:
+- bee6ad4337ef2facc54cf59f7056fc94534cea8c — extrator passa a ignorar metadados .info, sem extrair arquivos auxiliares.
+- 4bbec4a28cf912b425686f748065600a81d257f3 — testes para metadado .info e rejeição de biblioteca adicional.
+
+Governança:
+- PR #57 continua aberta e draft.
+- Não houve merge nem publicação em tandem-latest.
