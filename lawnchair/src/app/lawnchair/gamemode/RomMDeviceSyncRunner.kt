@@ -37,10 +37,10 @@ object RomMDeviceSyncRunner {
         romPath: String,
         coreId: String,
         platformSlug: String? = null,
-        siblingCores: List<String> = emptyList(),
-        migrationSources: Map<String, File> = emptyMap(),
         snapshotOverride: File? = null,
         useSnapshotOnly: Boolean = false,
+        siblingCores: List<String> = emptyList(),
+        migrationSources: Map<String, File> = emptyMap(),
     ): DeviceSyncExecutionResult = withContext(Dispatchers.IO) {
         SaveSync.withExclusiveSyncLock {
             val app = context.applicationContext
