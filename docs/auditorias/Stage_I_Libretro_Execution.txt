@@ -1952,3 +1952,14 @@ CI APROVADA — CORREÇÃO DO PLUGIN KSP — CI #1930 — 2026-11-27
 - [x] Com a CI #1930 aprovada e os testes funcionais do aparelho já confirmados pelo usuário, não restam pendências conhecidas no escopo atual do Estágio I.
 - [ ] Merge da PR #57 permanece pendente de autorização explícita; a PR continua aberta e draft.
 - [ ] Nenhuma publicação em tandem-latest foi realizada.
+
+
+MERGE CONCLUÍDO — PR #57 / ESTÁGIO I — 2026-11-27
+- [x] PR #57 marcada como pronta para revisão após autorização explícita do usuário.
+- [x] PR #57 mesclada com sucesso em game-mode-m2-dev.
+- [x] Merge commit: f2ad315eedd814547bb47cfd060aaa87d27e0df5.
+- [x] PR #57 encerrada pelo GitHub com estado merged=true.
+- [x] Estágio I permanece concluído: CI #1930 aprovada e testes funcionais do aparelho confirmados pelo usuário.
+- [ ] Nenhuma publicação em tandem-latest foi autorizada ou realizada.
+- [ ] Atualizar a PR #58 (Stage J) sobre a nova base game-mode-m2-dev, preservando seus 66 commits de trabalho e resolvendo divergências com o Estágio I antes de executar novas validações.
+- [x] PR #41 permaneceu intocada.
