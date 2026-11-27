@@ -467,4 +467,16 @@ class SaveStoreTest {
         assertArrayEquals(byteArrayOf(2, 2, 2), File(target, "sram.srm").readBytes())
     }
 
+
+    @Test
+    fun deviceSyncTargetUsesNativeDeSmuMeFileAndGenericSramForOtherCores() {
+        val dsStore = SaveStore(root, "desmume", File("Pokemon.nds"), gameIdentity = "ds-game")
+        val genericStore = SaveStore(root, "melonds", File("Pokemon.nds"), gameIdentity = "ds-game")
+
+        assertEquals(dsStore.nativeSaveFile, dsStore.deviceSyncSaveFile)
+        assertEquals("Pokemon.dsv", dsStore.deviceSyncSaveFile.name)
+        assertEquals(genericStore.sramFile, genericStore.deviceSyncSaveFile)
+        assertEquals("sram.srm", genericStore.deviceSyncSaveFile.name)
+    }
+
 }
