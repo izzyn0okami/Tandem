@@ -910,3 +910,25 @@ ATUALIZAÇÃO — COBERTURA ADICIONAL DO VALIDADOR ELF — 2026-11-26
 - [x] Adicionado teste para arquivo vazio não ser aceito como núcleo ARM64.
 - [ ] CI da revisão de testes ainda não foi localizada/confirmada; não considerar esta alteração validada até execução bem-sucedida dos testes unitários e build.
 - Commit: 6cae366fe82bf563a84029d098bc0ed9367447a2.
+
+
+AUDITORIA — PERSISTÊNCIA SRAM E ESTADOS RÁPIDOS — 2026-11-26
+- [x] Revisado o ciclo de persistência em GameSessionActivity.
+- [x] SRAM é serializada periodicamente a cada 60 segundos enquanto a Activity está RESUMED.
+- [x] SRAM também é persistida em onPause e antes da saída normal da sessão; a persistência de pausa ocorre antes de suspender a superfície GL.
+- [x] O método persistSram é sincronizado para serializar autosave periódico e gravação de pausa/encerramento; retorno vazio do núcleo não substitui nem apaga o arquivo local existente.
+- [x] SaveStore.writeSramIfChanged evita regravar bytes idênticos; a gravação usa arquivo temporário e rename para reduzir risco de corrupção em interrupção.
+- [x] Saves são organizados por identidade estável do jogo e por núcleo; SRAM pode ser lida de um núcleo irmão quando o núcleo atual ainda não possui arquivo próprio, mas estados rápidos não são compartilhados entre núcleos.
+- [x] Revisados os testes existentes de SaveStore: leitura/gravação SRAM e estado, substituição temporária, prioridade do save do núcleo atual, fallback explícito entre núcleos, isolamento por identidade, snapshots imutáveis para retry e prevenção de regravação de SRAM idêntica.
+- [x] Estados rápidos usam state1.state e o envelope TNDM preserva compatibilidade com estados antigos; QuickStateEnvelopeTest cobre round-trip, formato legado, cabeçalho truncado, tamanho unsigned inválido e ausência de payload de emulação.
+- [x] Confirmado no contrato de SaveSync e nos testes GameSessionCoordinator que estados rápidos não são enviados/baixados pelo transporte RomM; permanecem locais. A SRAM/cartão de memória é o artefato de sincronização pelo RomM Device Sync.
+- [ ] Testes instrumentados ainda necessários para confirmar serializeSRAM/unserialize no GL thread real, pausa/retomada, encerramento inesperado e restauração de estado em aparelho.
+- [ ] Confirmar em aparelho que o Device Sync baixa a SRAM remota mais recente no fluxo de abertura e grava a SRAM local antes de iniciar o núcleo; CI unitária não prova o comportamento real do servidor.
+- [ ] Avaliar futuramente recuperação de gravação temporária após encerramento abrupto, sem apagar ou sobrescrever arquivos de save existentes.
+- Conclusão desta revisão estática: não foi identificado defeito comprovado que justifique alterar o fluxo de persistência nesta etapa; as lacunas restantes dependem de testes instrumentados/funcionais, portanto nenhuma alteração especulativa foi feita.
+
+CI DA CABEÇA — TESTES ELF
+- CI #1705 — run 45932394279, commit 6cae366fe82bf563a84029d098bc0ed9367447a2: em andamento no momento desta atualização.
+- CI #1706 — run 45932419148, commit 8887a0ba00c2a8d5607cfb363571ef9cb85a916d (atualização documental): em andamento no momento desta atualização.
+- [ ] Aguardar conclusão das CIs #1705/#1706; não marcar os novos testes ELF como validados antes de resultado verde.
+- PR #57 continua aberta e draft; não mesclar nem publicar em tandem-latest sem autorização explícita. PR #41 permanece intocada.
