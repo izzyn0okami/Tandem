@@ -75,6 +75,7 @@ internal object GameSessionCoordinator {
         platformSlug: String?,
         gameIdentity: String,
         migrationSources: Map<String, File>,
+        siblingCores: List<String> = emptyList(),
     ) {
         val app = context.applicationContext
         if (!RomMSettings.isConnected(app)) return
@@ -86,7 +87,14 @@ internal object GameSessionCoordinator {
         val connection = GameIdentityResolver.connectionSnapshot(app)
             ?: throw IOException("Não foi possível confirmar a conta RomM para preparar a sessão.")
         ensureDeviceRegistered(app, connection.url, connection.token)
-        val result = RomMDeviceSyncRunner.synchronizeLocalSave(app, romPath, coreId, platformSlug)
+        val result = RomMDeviceSyncRunner.synchronizeLocalSave(
+            app,
+            romPath,
+            coreId,
+            platformSlug,
+            siblingCores = siblingCores,
+            migrationSources = migrationSources,
+        )
         if (GameSessionSyncPolicy.blocksSessionStart(result)) {
             throw IOException(
                 "A sincronização pré-jogo foi interrompida para preservar os dados. " +
