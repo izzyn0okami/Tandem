@@ -37,6 +37,8 @@ object RomMDeviceSyncRunner {
         romPath: String,
         coreId: String,
         platformSlug: String? = null,
+        siblingCores: List<String> = emptyList(),
+        migrationSources: Map<String, File> = emptyMap(),
         snapshotOverride: File? = null,
         useSnapshotOnly: Boolean = false,
     ): DeviceSyncExecutionResult = withContext(Dispatchers.IO) {
@@ -64,9 +66,10 @@ object RomMDeviceSyncRunner {
                 app,
                 coreId,
                 romFile,
+                siblingCores = siblingCores,
                 platformSlug = platformSlug,
                 gameIdentity = identity,
-                migrationSourcesOverride = emptyMap(),
+                migrationSourcesOverride = migrationSources,
             )
             val client = RomMDeviceSyncClient(connection.url, connection.token)
             val emulator = DeviceSyncArtifactPolicy.canonicalEmulator(coreId)
