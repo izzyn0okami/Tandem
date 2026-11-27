@@ -91,7 +91,7 @@ object SaveSync {
             migrationSourcesOverride = emptyMap(),
         )
         if (files(store).none { (_, file) -> file.isFile && file.length() > 0L } &&
-            !(store.sramFile.isFile && store.sramFile.length() > 0L)
+            !(store.deviceSyncSaveFile.isFile && store.deviceSyncSaveFile.length() > 0L)
         ) {
             return null
         }
