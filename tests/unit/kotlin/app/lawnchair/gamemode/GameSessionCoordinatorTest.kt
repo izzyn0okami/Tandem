@@ -61,6 +61,27 @@ class GameSessionCoordinatorTest {
         assertTrue(selected.isEmpty())
     }
 
+    @Test
+    fun nativeSessionIsDestroyedOnlyWhenActivityFinishesOrChangesConfiguration() {
+        assertFalse(GameSessionLifecyclePolicy.shouldDestroyNativeOnPause(false, false))
+        assertTrue(GameSessionLifecyclePolicy.shouldDestroyNativeOnPause(true, false))
+        assertTrue(GameSessionLifecyclePolicy.shouldDestroyNativeOnPause(false, true))
+        assertTrue(GameSessionLifecyclePolicy.shouldDestroyNativeOnPause(true, true))
+    }
+
+    @Test
+    fun normalEndIsLoggedOnlyWhenActivityFinishes() {
+        assertFalse(GameSessionLifecyclePolicy.shouldLogNormalEnd(false))
+        assertTrue(GameSessionLifecyclePolicy.shouldLogNormalEnd(true))
+    }
+
+    @Test
+    fun postSessionSyncRequiresCompatibleCoreAndRomPath() {
+        assertFalse(GameSessionLifecyclePolicy.shouldEnqueuePostSessionSync(false, true))
+        assertFalse(GameSessionLifecyclePolicy.shouldEnqueuePostSessionSync(true, false))
+        assertTrue(GameSessionLifecyclePolicy.shouldEnqueuePostSessionSync(true, true))
+    }
+
     private fun result(
         noOp: Int = 0,
         conflicts: Int = 0,
