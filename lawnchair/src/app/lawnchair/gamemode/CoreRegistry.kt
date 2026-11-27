@@ -12,7 +12,7 @@ data class CoreInfo(
     val note: String,
     val supportsStates: Boolean = true,
     val supportsRomMSaveSync: Boolean = true,
-    val preferVulkan: Boolean = false,
+    val preferVulkan: Boolean? = null,
 )
 
 /** Uma opção do núcleo (nome, valores permitidos e valor atual), lida do próprio núcleo em execução. */
@@ -35,7 +35,7 @@ object CoreRegistry {
         note: String,
         supportsStates: Boolean = true,
         supportsRomMSaveSync: Boolean = true,
-        preferVulkan: Boolean = false,
+        preferVulkan: Boolean? = null,
     ) = CoreInfo(id, label, note, supportsStates, supportsRomMSaveSync, preferVulkan)
 
     private val catalog: Map<String, List<CoreInfo>> = mapOf(
@@ -120,6 +120,13 @@ object CoreRegistry {
                 supportsRomMSaveSync = false,
                 preferVulkan = true,
             ),
+            core(
+                "pcsx2",
+                "PCSX2",
+                "Núcleo PCSX2 alternativo para ARM64; requer BIOS e recursos PCSX2",
+                supportsRomMSaveSync = false,
+                preferVulkan = true,
+            ),
         ),
         "gc" to listOf(
             core("dolphin", "Dolphin", "GameCube; Vulkan/OpenGL ES; requer a pasta Sys do Dolphin"),
@@ -129,7 +136,12 @@ object CoreRegistry {
         ),
         "3ds" to listOf(
             core("azahar", "Azahar", "Fork atual do Citra; Vulkan ou OpenGL ES 3.2", preferVulkan = true),
-            core("panda3ds", "Panda3DS", "Alternativa experimental; requer OpenGL ES 3.1 ou superior"),
+            core(
+                "panda3ds",
+                "Panda3DS",
+                "Alternativa experimental; requer OpenGL ES 3.1 ou superior",
+                preferVulkan = false,
+            ),
         ),
         "wiiu" to listOf(
             core(
@@ -149,6 +161,24 @@ object CoreRegistry {
                 supportsStates = false,
                 supportsRomMSaveSync = false,
                 preferVulkan = true,
+            ),
+        ),
+        "xbox360" to listOf(
+            core(
+                "xenia_edge",
+                "Xenia Edge",
+                "Xbox 360 experimental; Vulkan 1.1; conteúdo interno em system/Xenia-Edge; sem save states ou sync RomM",
+                supportsStates = false,
+                supportsRomMSaveSync = false,
+                preferVulkan = true,
+            ),
+        ),
+        "model3" to listOf(
+            core(
+                "supermodel",
+                "Supermodel",
+                "Sega Model 3; OpenGL ES 3.0; requer Games.xml e Supermodel.ini",
+                preferVulkan = false,
             ),
         ),
         "vita" to listOf(

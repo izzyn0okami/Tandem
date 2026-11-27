@@ -121,6 +121,15 @@ class BiosManagerTest {
     }
 
     @Test
+    fun supermodelRequiresItsConfigCatalogAndIni() {
+        val model3 = GamePlatforms.all.single { it.slug == "model3" }
+        val required = model3.biosGroups.map { it.single() }
+        assertEquals(2, required.size)
+        assertFalse(BiosManager.isReady(model3, hasBios = { it == required.first() }, isKitReady = { true }))
+        assertTrue(BiosManager.isReady(model3, hasBios = { it in required }, isKitReady = { true }))
+    }
+
+    @Test
     fun auditedCoreCatalogKeepsOptionalAndRequiredFirmwareAccurate() {
         val atari5200 = GamePlatforms.all.single { it.slug == "atari5200" }
         val coleco = GamePlatforms.all.single { it.slug == "coleco" }

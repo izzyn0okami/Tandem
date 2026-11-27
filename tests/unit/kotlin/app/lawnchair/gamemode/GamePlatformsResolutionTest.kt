@@ -51,8 +51,12 @@ class GamePlatformsResolutionTest {
         assertEquals("cemu", GamePlatforms.bySlug("wiiu")?.coreId)
         assertEquals("rpcs3", GamePlatforms.bySlug("ps3")?.coreId)
         assertEquals("vita3k", GamePlatforms.bySlug("vita")?.coreId)
+        assertEquals("xenia_edge", GamePlatforms.bySlug("xbox360")?.coreId)
+        assertEquals("supermodel", GamePlatforms.bySlug("model3")?.coreId)
         assertEquals(GamePlatforms.bySlug("vita"), GamePlatforms.resolve(listOf("psvita"), "vpk"))
         assertEquals(GamePlatforms.bySlug("ps3"), GamePlatforms.resolve(listOf("ps3"), "pkg"))
+        assertEquals(GamePlatforms.bySlug("xbox360"), GamePlatforms.resolve(listOf("xbox360"), "xex"))
+        assertEquals(GamePlatforms.bySlug("model3"), GamePlatforms.resolve(listOf("model3"), "zip"))
     }
 
     @Test
@@ -60,11 +64,18 @@ class GamePlatformsResolutionTest {
         val vita = CoreRegistry.info(GamePlatforms.bySlug("vita")!!, "vita3k")
         val ps3 = CoreRegistry.info(GamePlatforms.bySlug("ps3")!!, "rpcs3")
         val ps2 = CoreRegistry.info(GamePlatforms.bySlug("ps2")!!, "armsx2")
-        assertTrue(vita.preferVulkan)
-        assertTrue(ps3.preferVulkan)
+        assertTrue(vita.preferVulkan == true)
+        assertTrue(ps3.preferVulkan == true)
         assertFalse(vita.supportsStates)
         assertFalse(ps3.supportsRomMSaveSync)
         assertTrue(ps2.supportsStates)
         assertFalse(ps2.supportsRomMSaveSync)
+        val supermodel = CoreRegistry.info(GamePlatforms.bySlug("model3")!!, "supermodel")
+        val xenia = CoreRegistry.info(GamePlatforms.bySlug("xbox360")!!, "xenia_edge")
+        val pcsx2 = CoreRegistry.info(GamePlatforms.bySlug("ps2")!!, "pcsx2")
+        assertTrue(supermodel.preferVulkan == false)
+        assertTrue(xenia.preferVulkan == true)
+        assertFalse(xenia.supportsStates)
+        assertTrue(pcsx2.preferVulkan == true)
     }
 }
