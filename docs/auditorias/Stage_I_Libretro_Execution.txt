@@ -1045,3 +1045,18 @@ AUDITORIA E CORREÇÃO — PROTEÇÃO CONTRA SRAM REJEITADO PELO NÚCLEO — 202
 - CI #1733 (run 45936360324) falhou no commit intermediário c5462f2fabc36945ef8d3aea5e741baa3fa59f15 porque o runner ainda não tinha recebido os novos parâmetros siblingCores/migrationSources; as alterações correspondentes chegaram nos commits subsequentes.
 - CIs #1734 (45936370107), #1735 (45936377936), #1736 (45936396976), #1737 (45936418345), #1745 (45936631117) e #1746 (45936634135) estavam em execução na última consulta; #1734–#1737 cobrem a integração de fontes legadas, #1745–#1746 cobrem a proteção contra sobrescrita de SRAM rejeitado.
 - Não houve merge nem publicação em tandem-latest. PR #57 permanece aberta como Draft; PR #41 e PR #55 permanecem intocadas.
+
+ 
+RESULTADO E CORREÇÕES DE CI — DEVICE SYNC E PROTEÇÃO SRAM — 2026-11-27
+- [x] CI #1734 — run 45936370107 — commit a9595dbd90952c6fa23ca6bbbacb46a8d940a29e: Spotless, testes unitários, build Debug APK e final-status aprovados.
+- [x] CI #1735 — run 45936377936 — commit e06e0c7a74e4df17ebc44d902759718f9f8c8622: Spotless, testes unitários, build Debug APK e final-status aprovados.
+- [x] CI #1736 — run 45936396976 — commit 127123d2d901e97aefe39294c1fb892eedf39013: Spotless, testes unitários, build Debug APK e final-status aprovados.
+- [x] CI #1737 — run 45936418345 — commit 47166497cda96b70af9108e60126697238835f52: Spotless, testes unitários, build Debug APK e final-status aprovados. A migração de fontes legadas e núcleos irmãos passou em CI.
+- [x] Diagnóstico das CIs #1745/#1746: a compilação revelou que o novo texto de aviso estava em arquivo de recursos fora do source set efetivo do R do launcher; também havia chamada a GameLog.error sem o Throwable obrigatório.
+- [x] Corrigido o registro para GameLog.log e movido o texto do aviso para go/quickstep/res/values/strings.xml, que integra os recursos do módulo que gera com.android.launcher3.R.
+- Commits de correção: GameSessionActivity 389192896287d143f1331b114cc17cc854ba7ca3; recurso do launcher c9a919fa46b9872ec8ff2b8606b772a88571b154.
+- [ ] CI #1753 — run 45937735863 — commit c9a919fa46b9872ec8ff2b8606b772a88571b154: validar Spotless, testes unitários e build após as correções; estava in_progress na última consulta.
+- [x] CI #1745 — run 45936631117 — commit 64c2ccd12d81e0bfa020b4419a150ac071571055: falhou por referência de recurso não resolvida e argumento Throwable ausente; correções aplicadas nos commits seguintes.
+- [x] CI #1746 — run 45936634135 — commit f7768bacbd78c4f7d80533cbe43987974aa22ae9: mesma falha de compilação em commit intermediário; não é validação final da proteção SRAM.
+- [ ] Teste em aparelho da SRAM incompatível permanece pendente; CI JVM não prova comportamento do núcleo real nem a preservação física do arquivo no dispositivo.
+- PR #57 segue aberta como Draft, sem merge/publicação. PR #41 e #55 intocadas.
