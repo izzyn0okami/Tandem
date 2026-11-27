@@ -990,3 +990,14 @@ AUDITORIA — INFRAESTRUTURA DE TESTES DE CICLO DE VIDA — 2026-11-26
 - [ ] Para testar Activity/GLRetroView em dispositivo será necessário criar infraestrutura Android instrumentada compatível com o build híbrido AOSP/Gradle, selecionar runner e dependências adequadas e verificar se o libretrodroid permite inicialização controlada em teste. Não adicionar configuração especulativa sem validar impacto no build.
 - [ ] Alternativa de menor risco: extrair lógica pura de ciclo de vida/persistência para um coordenador testável em JVM e manter os testes de GL/thread/Activity como validação manual no aparelho até a infraestrutura instrumentada estar comprovada.
 - Conclusão: a lacuna não é apenas ausência de casos de teste; falta uma source set Android instrumentada configurada no módulo. Nenhuma alteração de código de produção ou configuração Gradle foi feita nesta revisão.
+
+ 
+AVANÇO — EXTRAÇÃO DE POLÍTICAS PURAS DO CICLO DE VIDA — 2026-11-26
+- [x] Extraídas decisões sem dependência Android para GameSessionLifecyclePolicy: destruir núcleo ao pausar somente ao finalizar Activity ou mudar configuração; registrar fim normal somente em finalização; enfileirar Device Sync pós-sessão somente para núcleo compatível e caminho ROM presente.
+- [x] GameSessionActivity passou a consumir essas políticas, preservando as mesmas condições e ordem do fluxo existente. Persistência SRAM continua antes de super.onPause(); destruição nativa continua antes da suspensão GL em finalização/recriação; sincronização continua depois de super.onPause().
+- [x] Adicionados testes JVM para todas as combinações de destruição nativa, registro de encerramento e elegibilidade de sincronização.
+- Commits: Activity 92d840040214364684198a76621db5f81827a3f1; política pura d6b9a0adc4fdc33d55085e9f5f0fe3f49a862b03; testes fe0b4ef178195390ee0a4b580fd382f2fcf51f2f.
+- [ ] Aguardar CI dos commits de refatoração/testes; não considerar validado até testes e build passarem.
+- [ ] Ainda não cobre callbacks reais GL/serializeSRAM/unserialize nem morte abrupta do processo; esses pontos continuam dependentes de teste instrumentado ou aparelho.
+- [x] Nenhuma alteração no intervalo de autosave (60 segundos), no protocolo RomM, na política de conflito ou na sincronização de estados rápidos.
+- PR #57 permanece aberta como Draft; não mesclar nem publicar em tandem-latest sem autorização. PR #41 e PR #55 intocadas.
