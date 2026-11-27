@@ -195,9 +195,14 @@ object CoreRegistry {
         ),
         "nds" to listOf(
             core(
+                "melonds_ds",
+                "melonDS DS",
+                "Núcleo recomendado e mantido; DS/DSi, save de cartucho .srm no Save directory e Device Sync RomM",
+            ),
+            core(
                 "melonds",
-                "melonDS",
-                "Preciso, com toque direto; salva em .sav no Cache do frontend, fora do transporte SRAM RomM",
+                "melonDS (legado)",
+                "Versão antiga e sem manutenção; salva em .sav no Cache do frontend, sem Device Sync automático",
                 supportsRomMSaveSync = false,
             ),
             core(
