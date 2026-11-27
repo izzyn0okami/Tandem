@@ -31,8 +31,7 @@ object CoreInstaller {
         "$BASE_URL/${coreFileName(coreId)}.zip"
     }
 
-    internal fun expectedArchiveSha256(coreId: String): String? =
-        MELONDS_DS_RELEASE_SHA256.takeIf { coreId == MELONDS_DS_CORE_ID }
+    internal fun expectedArchiveSha256(coreId: String): String? = MELONDS_DS_RELEASE_SHA256.takeIf { coreId == MELONDS_DS_CORE_ID }
 
     fun coresDir(context: Context): File = File(context.filesDir, "libretro/cores").apply { mkdirs() }
 
