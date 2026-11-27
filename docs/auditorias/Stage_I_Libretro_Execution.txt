@@ -1116,3 +1116,17 @@ REVISÃO DE COBERTURA I7/I8 — 2026-11-27
 - [x] Revisado RomUnzipper: saída é achatada para nome controlado pelo arquivo ZIP de origem, portanto nomes internos não definem caminhos de escrita; extração valida tamanho e CRC antes da promoção; substituição preserva backup anterior.
 - [ ] CI #1777 (run 45979600683) e #1778 (run 45979631712) ainda em andamento na última consulta; #1778 inclui a atualização do log.
 - [ ] Teste manual no aparelho continua necessário para confirmar comportamento com arquivos reais e sistemas de disco/multiarquivo.
+
+
+ATUALIZAÇÃO DE CI E ESTADO DA PONTA — 2026-11-27
+- [x] CI #1777 — run 45979600683 — commit 75a81e69e93368f83e455f6f203e58d3d79365be: Spotless, testes unitários, build Debug APK e final-status aprovados.
+- [x] CI #1778 — run 45979631712 — commit 88ac2d000c75172feb136fd1c84255cffd062934: Spotless, testes unitários, build Debug APK e final-status aprovados. A atualização do log e a revisão de cobertura ZIP foram incluídas nessa sequência.
+- [x] CI #1779 — run 45979702977 — commit atual 09b56005619ac4d39ce212d1fd27b618fc8027c7: Spotless, build Debug APK e final-status aprovados.
+- [x] CI #1781 — run 45979840805 — commit atual 09b56005619ac4d39ce212d1fd27b618fc8027c7: Spotless, build Debug APK e final-status aprovados.
+- [x] CI #1782 — run 45979919195 — commit atual 09b56005619ac4d39ce212d1fd27b618fc8027c7: Spotless, build Debug APK e final-status aprovados.
+- [x] CI #1780 — run 45979793105 — falha isolada no job check-style durante spotlessApply: Gradle não conseguiu resolver o plugin com.google.devtools.ksp:2.3.13 nos repositórios Google/Gradle Plugin Portal. O build Debug APK da mesma execução passou; a causa é resolução de dependência/plugin no ambiente CI, não erro de formatação ou compilação do código. As execuções #1781 e #1782 na mesma ponta concluíram com sucesso.
+- [x] Confirmado que as execuções de release tandem-release e nightly-release foram ignoradas; nenhum APK foi publicado em tandem-latest.
+- [ ] Validar no aparelho os casos ZIP, playlists M3U, SRAM rejeitada, Device Sync pré/pós-jogo, erro real de inicialização e compatibilidade funcional dos núcleos.
+- [ ] Completar a conferência integral do catálogo CoreRegistry contra os binários Android ARM64 publicados.
+- [ ] Definir e validar uma chave pública/fingerprint oficial confiável antes de habilitar verificação OpenPGP dos pacotes Buildbot; SHA-256 local detecta alterações posteriores, mas não autentica a origem do primeiro download.
+- PR #57 permanece aberta como Draft, base game-mode-m2-dev, head 09b56005619ac4d39ce212d1fd27b618fc8027c7. Nenhum merge ou publicação em tandem-latest foi autorizado ou realizado.
