@@ -1225,3 +1225,20 @@ STATUS DE CI — CONSULTA POSTERIOR — 2026-11-27
 - [ ] CI #1793 — run 45989772089 — commit 5556bf7a1ba0339d73ab7548aabc30e7b1ee8b7d: check-style e build-debug-apk ainda em execução na consulta. Não registrar sucesso prematuramente.
 - [ ] Commit documental ae3f0d77fd0dec3d6d175ddd0bf44419b0fdc7c0 (correção de disponibilidade ARM64) ainda não apresentava workflow associado na consulta.
 - PR #57 permanece aberta, Draft e não mesclada. Sem merge ou publicação em tandem-latest.
+
+
+CORREÇÃO ADICIONAL — DISPONIBILIDADE ARM64 DO SMS PLUS — 2026-11-27
+- [x] Nova consulta direta ao índice oficial Buildbot Android ARM64 confirmou smsplus_libretro_android.so.zip (67 KB, atualizado em 2026-11-26 08:24). Portanto, o SMS Plus GX está disponível no endpoint arm64-v8a e pode ser baixado pelo padrão de nome atual do CoreInstaller.
+- [x] A afirmação anterior de que SMS Plus só havia sido localizado em ARMv7 estava incorreta/incompleta. A ausência na consulta dirigida anterior não era evidência de ausência no índice ARM64; esta anotação a corrige.
+- [x] Os três núcleos de Master System/Game Gear agora têm pacote ARM64 confirmado no índice consultado: genesis_plus_gx, smsplus e gearsystem. Nenhuma alteração de catálogo é necessária por disponibilidade ABI neste ponto.
+- [ ] A presença do ZIP não substitui inspeção do conteúdo interno, validação ELF ARM64 e teste funcional no dispositivo.
+
+STATUS DE CI — RECONSULTA — 2026-11-27
+- [x] CI #1791 — run 45989509316: check-style aprovado.
+- [ ] CI #1791 — build-debug-apk: ainda executando testes unitários; etapa de build APK e artefato ainda não iniciada na consulta.
+- [x] CI #1793 — run 45989772089: check-style aprovado.
+- [ ] CI #1793 — build-debug-apk: ainda executando testes unitários; etapa de build APK e artefato ainda não iniciada na consulta.
+- A branch feat/libretro-stage-i permanece na ponta f37635b56e0e0f65b4586893b7ef09fecbf37482 durante esta atualização. PR #57 permanece aberta e Draft; não houve merge nem publicação.
+
+Fonte da correção SMS Plus:
+- Índice oficial Buildbot Android ARM64: https://buildbot.libretro.com/nightly/android/latest/arm64-v8a/ (entrada smsplus_libretro_android.so.zip).
