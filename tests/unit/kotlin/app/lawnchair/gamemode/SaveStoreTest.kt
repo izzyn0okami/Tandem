@@ -518,13 +518,19 @@ class SaveStoreTest {
     }
 
     @Test
-    fun deviceSyncTargetUsesNativeDeSmuMeFileAndGenericSramForOtherCores() {
+    fun inventoryUsesNativeDeSmuMeDsvAndDoesNotTreatItAsMelonDsSave() {
         val dsStore = SaveStore(root, "desmume", File("Pokemon.nds"), gameIdentity = "ds-game")
-        val genericStore = SaveStore(root, "melonds", File("Pokemon.nds"), gameIdentity = "ds-game")
+        val melondsStore = SaveStore(root, "melonds", File("Pokemon.nds"), gameIdentity = "ds-game")
+        val nativeSave = dsStore.nativeSaveFile ?: error("DeSmuME must expose its native DSV save")
+        nativeSave.writeBytes(byteArrayOf(1, 2, 3, 4))
+        melondsStore.sramFile.writeBytes(byteArrayOf(5, 6, 7, 8))
 
-        assertEquals(dsStore.nativeSaveFile, dsStore.deviceSyncSaveFile)
-        assertEquals("Pokemon.dsv", dsStore.deviceSyncSaveFile.name)
-        assertEquals(genericStore.sramFile, genericStore.deviceSyncSaveFile)
-        assertEquals("sram.srm", genericStore.deviceSyncSaveFile.name)
+        val dsArtifacts = dsStore.inventory()
+        val melondsArtifacts = melondsStore.inventory()
+
+        assertEquals(nativeSave, dsArtifacts.single().file)
+        assertEquals("dsv", dsArtifacts.single().format)
+        assertTrue(melondsArtifacts.none { it.format == "dsv" })
+        assertEquals("srm", melondsArtifacts.single().format)
     }
 }
