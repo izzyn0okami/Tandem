@@ -136,10 +136,24 @@ O Tandem não verifica compatibilidade RA por coreId. A integração atual é ap
 [ESCOPO DE CORREÇÃO]
 É necessária uma etapa específica de compatibilidade RA por plataforma + núcleo, incluindo todos os sistemas suportados presentes no catálogo Tandem. Não é suficiente adicionar apenas IDs para PSX e DS.
 
-Nenhum código de produção foi alterado nesta auditoria. O relatório registra os achados e a proposta de correção. Não declara PSX/DS corrigidos nem qualquer teste físico concluído.
+10. IMPLEMENTAÇÃO INICIAL — BRANCH feat/ra-core-compatibility (2026-11-27)
+[EM ANDAMENTO — NÃO HOMOLOGADO]
+- Criada matriz RaCoreCompatibility por slug + coreId. O RA/Hardcore só é elegível quando a plataforma tem Console ID e o núcleo está na allowlist.
+- PSX recebeu Console ID 12; DS recebeu Console ID 18. A referência consultada para os pares ID/nome é a tabela pública de consoles RetroAchievementsSharp; a confirmação de atividade em tempo real via API oficial ainda depende da Web API Key e permanece pendente.
+- Núcleo padrão PSX alterado de PCSX ReARMed para Beetle PSX (mednafen_psx), que consta como compatível. Núcleos alternativos continuam disponíveis, mas PCSX ReARMed não inicia RA.
+- DS: melonDS DS, melonDS e DeSmuME permitidos; NooDS permanece bloqueado.
+- Matriz aplicada também a plataformas com Console IDs já existentes e a vários sistemas adicionais com IDs conhecidos: 32X, Sega CD, N64, Atari Jaguar, Saturn, Dreamcast, PSP, 3DO, Neo Geo CD, PC-FX, Arcade, Arduboy, Vectrex, Odyssey2, PC-88, WASM-4 e Uzebox.
+- Núcleos fora da allowlist não bloqueiam o jogo nem save states; apenas RA/Hardcore ficam desativados e uma notificação é exibida.
+- Criados testes unitários para PSX, DS, NES e plataforma sem Console ID.
+- Pendências: confirmar IDs ativos com API oficial; revisar discrepâncias de plataformas especiais (Arcade por hash, PC-88, SuperGrafx, Watara); executar CI e teste físico PSX/DS.
+
+A implementação inicial está em branch separada e ainda não foi mesclada. Não declarar a etapa concluída até CI, revisão da matriz e teste físico.
 
 9. FONTES
 - RetroAchievements — Emulator Support (lista oficial atual de emuladores/núcleos): https://docs.retroachievements.org/general/emulator-support-and-issues.html
 - RetroAchievements — Unsupported Emulators and Cores: https://docs.retroachievements.org/developer-docs/unsupported-emulators-and-cores.html
 - Libretro — Memory Monitoring / Cores Compatibility: https://docs.libretro.com/guides/memorymonitoring/
 - RetroAchievements API — Get All Systems / Console IDs: https://api-docs.retroachievements.org/v1/get-console-ids.html
+
+
+Fontes adicionais de IDs: https://purelogiccode.github.io/RetroAchievementsSharp/reference/console-table/ (tabela secundária; validar atividade pela API oficial).
