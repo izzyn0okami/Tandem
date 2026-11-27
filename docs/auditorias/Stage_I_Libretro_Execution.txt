@@ -1073,3 +1073,13 @@ PROTEÇÃO COMPLETA — SRAM REJEITADO NÃO É ENVIADO AO ROMM — 2026-11-27
 - [x] Revisão estática de GLRetroView confirmou que a rejeição de SRAM ocorre no GL thread durante initializeCore e é marcada em propriedade volatile; a Activity só exibe aviso após FrameRendered, evitando consultar antes do carregamento.
 - [ ] Validar em aparelho a SRAM rejeitada: arquivo local deve permanecer byte a byte intacto; nenhuma sincronização de saída deve ser agendada; save compatível deve continuar salvando e sincronizando normalmente.
 - PR #57 continua aberta como Draft, sem merge ou publicação em tandem-latest.
+
+ 
+AUDITORIA — ENTREGA DE ERROS DE INICIALIZAÇÃO DO NÚCLEO — 2026-11-27
+- [x] Revisado GLRetroView.catchExceptions e a coleta getGLRetroErrors em GameSessionActivity.
+- [x] Identificada janela de corrida: retroGLIssuesErrors usava MutableSharedFlow com replay=0; se a inicialização GL falhasse antes de o collector da Activity assinar, o erro poderia não ser entregue, deixando a sessão sem o aviso/encerramento previsto.
+- [x] Alterado o fluxo para MutableSharedFlow(replay = 1), preservando o último erro de inicialização até que a Activity o observe. A Activity continua exibindo o código de erro e encerrando a sessão.
+- Commit: a8dc4085c24848dd81c1d48ca21081ebf001811a.
+- [ ] Aguardar CI de estilo, testes e build para a alteração de retenção de erro.
+- [ ] Teste funcional no aparelho provocando falha real de inicialização de núcleo: confirmar aviso de erro e saída controlada, sem tela preta travada.
+- Esta correção não altera o comportamento de sessão saudável nem o ciclo de vida normal.
