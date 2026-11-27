@@ -1864,3 +1864,20 @@ Commits:
 Governança:
 - PR #57 permanece aberta e draft, base game-mode-m2-dev.
 - Não houve merge nem publicação em tandem-latest.
+
+
+CORREÇÃO DA CI #1915 — REGEX DE LICENÇA UPSTREAM — 2026-11-27
+- [x] Consultados os jobs da CI #1915 (run 46010942181): check-style aprovado; build-debug-apk falhou nos testes unitários; final-status falhou por consequência; nenhum APK foi gerado.
+- [x] Identificado o único teste com falha: CoreInstallerTest.extractsMelonDsCoreAndIgnoresMetadataAndUpstreamLicense (linha 362); 256 testes executados, 1 falhou.
+- [x] Causa isolada no filtro de licença: a expressão usava matches(), que exige correspondência da string inteira, e não reconhecia o prefixo upstream "melondsds-" antes de LICENSE.
+- [x] Corrigido o filtro para localizar LICENSE como segmento delimitado por hífen/underscore, exigindo sufixo de extensão opcional e fim do nome; a entrada continua sendo ignorada, nunca extraída.
+- [ ] Aguardar nova CI com a correção; confirmar check-style, todos os testes, APK, artefato e final-status.
+- [ ] Após CI integralmente aprovada, repetir no aparelho a instalação do melonDS DS e abrir The Legend of Zelda: Phantom Hourglass.
+- [ ] Validar áudio/vídeo, duas telas, controles/touch e save local .srm após o primeiro boot; Device Sync RomM somente na rede local.
+- [x] PR #57 permanece aberta e draft, sem merge ou publicação em tandem-latest.
+
+Evidência CI #1915:
+- Run: 46010942181.
+- Job de build/testes: 140545972638; 256 testes concluídos, 1 falha.
+- Teste: extractsMelonDsCoreAndIgnoresMetadataAndUpstreamLicense; IllegalStateException em CoreInstallerTest.kt:362.
+- Commits anteriores avaliados: 548bbafec2323ac6509da34b4e3c071abd32fb0f (correção inicial) e 0076be382802e38744cffa180ff739d6cffb2eae (teste de regressão).
