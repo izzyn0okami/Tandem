@@ -146,10 +146,30 @@ object CoreRegistry {
             ),
         ),
         "nds" to listOf(
-            core("melonds", "melonDS", "Preciso, com toque direto"),
-            core("desmume", "DeSmuME", "Alternativa"),
-            core("desmume2015", "DeSmuME 2015", "Mais leve"),
-            core("noods", "NooDS", "Leve"),
+            core(
+                "melonds",
+                "melonDS",
+                "Preciso, com toque direto; salva em .sav no Cache do frontend, fora do transporte SRAM RomM",
+                supportsRomMSaveSync = false,
+            ),
+            core(
+                "desmume",
+                "DeSmuME",
+                "Alternativa; saves de cartucho em .dsv no Save directory, fora do transporte SRAM RomM",
+                supportsRomMSaveSync = false,
+            ),
+            core(
+                "desmume2015",
+                "DeSmuME 2015",
+                "Mais leve; saves de cartucho em .dsv no Save directory, fora do transporte SRAM RomM",
+                supportsRomMSaveSync = false,
+            ),
+            core(
+                "noods",
+                "NooDS",
+                "Leve; documentação Libretro não declara suporte frontend-level a Saves, apenas save states",
+                supportsRomMSaveSync = false,
+            ),
         ),
         "ps2" to listOf(
             core(
