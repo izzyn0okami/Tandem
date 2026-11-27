@@ -171,10 +171,11 @@ class GameSessionActivity : ComponentActivity() {
         coreSupportsRomMSaveSync = coreInfo?.supportsRomMSaveSync ?: false
         // Calculado uma vez, sem depender de rede: o menu de pausa usa isso para travar "Carregar estado"
         // desde o primeiro frame, sem esperar a sessão do RetroAchievements (que é assíncrona) confirmar.
-        val statesBlocked = platformObject != null && RaSettings.blocksStates(this, platformObject)
+        val raCoreSupported = platformObject != null && RaCoreCompatibility.isSupported(platformObject, coreId)
+        val statesBlocked = platformObject != null && RaSettings.blocksStates(this, platformObject, coreId)
         // Reflete o modo escolhido desde o início, antes do login/identificação assíncronos do rc_client.
         raHardcore = statesBlocked
-        if (platformObject?.raConsoleId != null && RaSettings.isLoggedIn(this)) {
+        if (raCoreSupported && RaSettings.isLoggedIn(this)) {
             raNoticeQueue.add(getString(if (statesBlocked) R.string.game_ra_hardcore_label else R.string.game_ra_softcore_label))
         }
         // Núcleos como N64 e DS não abrem .zip: extrai antes (os saves continuam com o nome do .zip).
@@ -256,7 +257,7 @@ class GameSessionActivity : ComponentActivity() {
         }
 
         val platform = platformObject
-        if (platform?.raConsoleId != null && RaSettings.isLoggedIn(this)) {
+        if (platform != null && RaSettings.isLoggedIn(this) && raCoreSupported) {
             lifecycleScope.launch {
                 // O nome do núcleo e suas opções só ficam disponíveis depois que o primeiro frame
                 // inicializa o core. Verifique opções salvas antes de ativar Hardcore.
@@ -281,6 +282,7 @@ class GameSessionActivity : ComponentActivity() {
                     context = applicationContext,
                     view = view,
                     platform = platform,
+                    coreId = coreId,
                     romPath = loadPath,
                     cacheKeyPath = romPath,
                     scope = lifecycleScope,
