@@ -221,7 +221,11 @@ internal object GameSessionLifecyclePolicy {
 
     fun shouldLogNormalEnd(isFinishing: Boolean): Boolean = isFinishing
 
-    fun shouldEnqueuePostSessionSync(coreSupportsRomMSaveSync: Boolean, hasRomPath: Boolean): Boolean = coreSupportsRomMSaveSync && hasRomPath
+    fun shouldEnqueuePostSessionSync(
+        coreSupportsRomMSaveSync: Boolean,
+        hasRomPath: Boolean,
+        sramLoadFailed: Boolean = false,
+    ): Boolean = coreSupportsRomMSaveSync && hasRomPath && !sramLoadFailed
 }
 
 /** Evita substituir um save válido por SRAM recém-gerada quando o núcleo rejeitou o arquivo existente. */
