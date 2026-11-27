@@ -96,6 +96,21 @@ class GamePlatformsResolutionTest {
         assertTrue(pcsx2.preferVulkan == true)
     }
     @Test
+    fun n64CoresDeclareSaveTransportOnlyWhenDocumented() {
+        val platform = GamePlatforms.bySlug("n64")!!
+        val mupenGles2 = CoreRegistry.info(platform, "mupen64plus_next_gles2")
+        val mupenGles3 = CoreRegistry.info(platform, "mupen64plus_next_gles3")
+        val parallel = CoreRegistry.info(platform, "parallel_n64")
+
+        assertTrue(mupenGles2.supportsStates)
+        assertTrue(mupenGles2.supportsRomMSaveSync)
+        assertTrue(mupenGles3.supportsStates)
+        assertTrue(mupenGles3.supportsRomMSaveSync)
+        assertTrue(parallel.supportsStates)
+        assertFalse(parallel.supportsRomMSaveSync)
+    }
+
+    @Test
     fun atariCoresDoNotAdvertiseUnsupportedSaveRam() {
         val atari2600 = GamePlatforms.bySlug("atari2600")!!
         val stella = CoreRegistry.info(atari2600, "stella")
