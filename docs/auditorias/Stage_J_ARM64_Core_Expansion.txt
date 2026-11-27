@@ -281,3 +281,14 @@ AUDITORIA GLOBAL DAS PRs ABERTAS — 2026-11-27
 - [ ] Depois da reconciliação, executar CI completa no head atualizado, corrigir Spotless/testes/build e validar que o diff da PR contém apenas Stage J mais ajustes necessários.
 - [ ] Testes no aparelho continuam necessários para importação/fallback Vulkan e instalação/execução dos novos núcleos; CI não substitui esses testes.
 - [x] Nenhuma publicação em tandem-latest foi realizada. PR #41 não foi alterada.
+
+
+ATUALIZAÇÃO DA AUDITORIA GLOBAL — PR #55 CONCLUÍDA — 2026-11-27
+- [x] CI #1937 concluída com sucesso no commit 8089d52a003def9515efa8db968b926a752ce2aa: testes unitários, Spotless, build do APK e upload do artefato aprovados.
+- [x] PR #55 mesclada por squash em game-mode-m2-dev; merge commit e6949de1a62809e21772b51071f2f2a3c88fd130.
+- [x] Log docs/auditorias/Stage_G_Specialized_Audit.txt atualizado na base game-mode-m2-dev com o resultado real da CI e do merge.
+- [x] Inventário atualizado: PR #58 é a única PR aberta neste momento; PR #55 encerrada por merge. PR #56 e #57 já estavam mescladas.
+- [ ] PR #58 continua divergente de game-mode-m2-dev (118 commits exclusivos do head e 236 commits exclusivos da base; merge-base 2d6ba3cc1e7ef1a4978907ed121b6e6f1c57e5d7) e mergeable=false.
+- [ ] Não foi tentado merge forçado da PR #58. Rebase Git real e integração semântica dos arquivos sobrepostos continuam necessários.
+- [ ] Após integração: revisar diff final, executar CI completa no novo head e validar cores/Vulkan/Turnip fisicamente antes do merge.
+- [x] tandem-latest permanece intocada; nenhuma publicação ou atualização dessa branch foi realizada.
