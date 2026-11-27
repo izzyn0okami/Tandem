@@ -338,7 +338,7 @@ class CoreInstallerTest {
     }
 
     @Test
-    fun extractsMelonDsCoreAndIgnoresLibretroInfoMetadata() {
+    fun extractsMelonDsCoreAndIgnoresMetadataAndUpstreamLicense() {
         val directory = Files.createTempDirectory("melonds-zip-nested").toFile()
         val target = File(directory, "melondsds_libretro_android.so")
         val payload = ByteArray(32) { it.toByte() }
@@ -348,6 +348,9 @@ class CoreInstallerTest {
                 zip.closeEntry()
                 zip.putNextEntry(ZipEntry("melondsds_libretro-android-Release/cores/melondsds_libretro_android.info"))
                 zip.write("display_name = melonDS DS".toByteArray())
+                zip.closeEntry()
+                zip.putNextEntry(ZipEntry("melondsds_libretro-android-Release/cores/melondsds-LICENSE.txt"))
+                zip.write("Upstream license text".toByteArray())
                 zip.closeEntry()
                 zip.putNextEntry(ZipEntry("melondsds_libretro-android-Release/cores/melondsds_libretro_android.so"))
                 zip.write(payload)
