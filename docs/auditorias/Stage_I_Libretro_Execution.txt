@@ -1199,3 +1199,21 @@ Fontes consultadas nesta revisão:
 - Documentação Libretro Vita3K: https://docs.libretro.com/library/vita3k/
 - Repositório do core Xenia Edge: https://github.com/WizzardSK/xenia-libretro
 - Documentação Libretro sobre instalação manual de núcleos: https://docs.libretro.com/guides/download-cores/
+
+
+CORREÇÃO DE CONFERÊNCIA DO BUILDBOT — 2026-11-27
+- [x] Consulta dirigida ao índice ARM64 confirmou os três IDs anteriormente tratados como não verificados: xenia_edge_libretro_android.so.zip, vita3k_libretro_android.so.zip e virtualjaguar_libretro_android.so.zip estão publicados em bot.libretro.com/nightly/android/latest/arm64-v8a/. Portanto, o padrão atual do CoreInstaller gera o nome de pacote correto para esses três IDs; não é necessária origem alternativa para obtê-los no endpoint equivalente.
+- [x] A documentação do core Vita3K confirma build Android arm64-v8a, requisito de GPU Vulkan 1.1 (ou backend OpenGL via glcore), firmware PS Vita e dados/shaders próprios; saves ficam no armazenamento virtual Vita e save states não são suportados. O catálogo já desativa save states e Device Sync RomM, mas ainda precisa de validação funcional e configuração de pré-requisitos no app.
+- [x] O repositório do Xenia Edge confirma pacote Android xenia_edge_libretro_android.so e descreve backend Vulkan, dados internos em system/Xenia-Edge e instalação de DLC/updates; o CoreRegistry já sinaliza Vulkan e ausência de states/Device Sync. Ainda é necessária validação no aparelho.
+- [x] O índice ARM64 também confirma gearsystem_libretro_android.so.zip.
+- [ ] smsplus_libretro_android.so.zip foi localizado no Buildbot Android armeabi-v7a, mas não foi confirmado no índice arm64-v8a consultado. Não tratar smsplus como disponível para a arquitetura ARM64 até confirmação direta; a lista do catálogo pode continuar mostrando-o como alternativa apenas se o instalador distinguir ABI ou se houver pacote ARM64 publicado.
+- [ ] Reconciliar a afirmação anterior deste log que listava smsplus como pacote ARM64 confirmado: essa conclusão não está sustentada pela consulta dirigida atual e deve ser considerada corrigida por esta anotação.
+- [ ] Embora os três pacotes xenia_edge, vita3k e virtualjaguar estejam no índice, ainda não foi feito download/inspeção interna dos ZIPs nesta auditoria; a presença no índice não substitui validação do nome interno, ELF ARM64, assinatura ou execução real.
+- [ ] Concluir comparação sistemática de todos os coreIds e alternativas de CoreRegistry, registrando explicitamente pacote ARM64 confirmado, ausente ou arquitetura diferente.
+
+Fontes desta correção:
+- Índice Buildbot Android ARM64: https://bot.libretro.com/nightly/android/latest/arm64-v8a/
+- Índice Buildbot Android ARMv7 (SMS Plus): https://bot.libretro.com/nightly/android/latest/armeabi-v7a/
+- Documentação Vita3K: https://docs.libretro.com/library/vita3k/
+- Core Xenia Edge: https://github.com/WizzardSK/xenia-libretro
+- Core Virtual Jaguar: https://github.com/libretro/virtualjaguar-libretro/releases
