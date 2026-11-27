@@ -50,8 +50,7 @@ object RaCoreCompatibility {
         "uzebox" to setOf("uzem"),
     )
 
-    fun isSupported(platform: GamePlatform, coreId: String): Boolean =
-        platform.raConsoleId != null && coreId in supportedCores[platform.slug].orEmpty()
+    fun isSupported(platform: GamePlatform, coreId: String): Boolean = platform.raConsoleId != null && coreId in supportedCores[platform.slug].orEmpty()
 
     fun supportedCoreIds(platformSlug: String): Set<String> = supportedCores[platformSlug].orEmpty()
 }

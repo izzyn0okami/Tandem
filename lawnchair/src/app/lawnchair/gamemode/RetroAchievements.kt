@@ -76,8 +76,7 @@ object RaSettings {
     }
 
     /** O hardcore bloqueia estados salvos neste jogo? (só em plataformas com conquistas e com conta) */
-    fun blocksStates(context: Context, platform: GamePlatform, coreId: String): Boolean =
-        hardcore(context) && isLoggedIn(context) && RaCoreCompatibility.isSupported(platform, coreId)
+    fun blocksStates(context: Context, platform: GamePlatform, coreId: String): Boolean = hardcore(context) && isLoggedIn(context) && RaCoreCompatibility.isSupported(platform, coreId)
 
     /**
      * Guarda, por caminho do arquivo, o id do jogo no RetroAchievements assim que é descoberto (ao
