@@ -1083,3 +1083,6 @@ AUDITORIA — ENTREGA DE ERROS DE INICIALIZAÇÃO DO NÚCLEO — 2026-11-27
 - [ ] Aguardar CI de estilo, testes e build para a alteração de retenção de erro.
 - [ ] Teste funcional no aparelho provocando falha real de inicialização de núcleo: confirmar aviso de erro e saída controlada, sem tela preta travada.
 - Esta correção não altera o comportamento de sessão saudável nem o ciclo de vida normal.
+
+- [x] Limpeza de recursos: removida a cópia redundante do texto de aviso do arquivo lawnchair/res/values/strings_game_mode.xml; o recurso fica apenas em go/quickstep/res/values/strings.xml, que gera o R usado pela GameSessionActivity. Evita duplicação entre source sets AOSP/Gradle.
+- Commit: 8a23456de35111456e38c43ea985d3fa8e991f35.
