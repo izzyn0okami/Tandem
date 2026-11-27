@@ -67,8 +67,12 @@ internal object SaveArtifactCatalog {
         return when {
             name == "sram.srm" -> {
                 val adapter = CoreSaveAdapterRegistry.resolve(coreId)
+                if (adapter.fileExtension != "srm") return null
                 adapter.artifactType to adapter.localSlot
             }
+
+            name.endsWith(".dsv") && CoreSaveAdapterRegistry.resolve(coreId).fileExtension == "dsv" ->
+                SaveArtifactType.CORE_SAVE to CoreSaveAdapterRegistry.resolve(coreId).localSlot
 
             name.matches(Regex("state[0-9]+\\.state")) ->
                 SaveArtifactType.SAVE_STATE to name.removeSuffix(".state")
