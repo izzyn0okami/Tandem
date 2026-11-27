@@ -1755,3 +1755,22 @@ Commits:
 CIs com falha:
 - #1886 — run 45996130478 — falha em compileLawnWithQuickstepGithubDebugKotlin; quatro unresolved reference localArtifact.
 - #1887 — run 45996155964 — mesma falha; check-style passou em ambas.
+
+
+RESULTADO FINAL DA CI #1897 — CORREÇÃO DEVICE SYNC — 2026-11-27
+- [x] CI #1897 — run 45996973440 — commit 1068abbaaebe5ca8b4ec9d3b5e5f63b9cebcefa0: workflow concluído com sucesso.
+- [x] check-style: Spotless automático executado e verificação final aprovada.
+- [x] build-debug-apk: Run unit tests aprovado.
+- [x] build-debug-apk: assembleLawnWithQuickstepGithubDebug aprovado.
+- [x] Upload do artefato aprovado: assembleLawnWithQuickstepGithubDebug; artifact ID 15196557284; tamanho 46.629.004 bytes; SHA-256 6b822eb77050dea8e5fc60aab94518dcefd65a5929e2977a27a71271c5798ba5.
+- [x] final-status aprovado.
+- [x] As falhas de compilação das CIs #1886 e #1887 foram corrigidas e a revisão corrigida passou na CI #1897.
+- [ ] Validação funcional no aparelho permanece obrigatória: instalação/assinatura, inicialização de cores, áudio/vídeo, BIOS quando aplicável, controles, gamepad virtual e fluxos de save.
+- [ ] Testes de Nintendo DS permanecem pendentes: DeSmuME .dsv upload/download/conflito; melonDS DS .srm upload/download; teste de ROM compactada e identidade do save.
+- [ ] Validação de compatibilidade real por core permanece separada da CI; sucesso de compilação não comprova todos os sistemas.
+- [ ] Não houve publicação tandem-release/nightly-release nesta execução; PR #57 continua sem merge e tandem-latest não foi alterada.
+
+Resumo para fechamento do Estágio I:
+- CI automatizada da ponta corretiva: APROVADA.
+- Gamepad virtual: usuário já confirmou funcionamento; validação final de ergonomia/ciclo de vida ainda não documentada integralmente.
+- Pendências restantes concentram-se em validação funcional no aparelho e compatibilidade/save por núcleo; não criar novas funcionalidades antes de concluir essa rodada.
