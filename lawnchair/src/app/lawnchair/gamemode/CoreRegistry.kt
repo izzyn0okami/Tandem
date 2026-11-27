@@ -92,7 +92,12 @@ object CoreRegistry {
         "n64" to listOf(
             core("mupen64plus_next_gles3", "Mupen64Plus-Next (GLES3)", "Melhor qualidade"),
             core("mupen64plus_next_gles2", "Mupen64Plus-Next (GLES2)", "Para aparelhos mais antigos"),
-            core("parallel_n64", "ParaLLEl N64", "Alternativa leve"),
+            core(
+                "parallel_n64",
+                "ParaLLEl N64",
+                "Alternativa experimental; documentação lista States, mas não declara Saves frontend-level",
+                supportsRomMSaveSync = false,
+            ),
         ),
         "psx" to listOf(
             core(
