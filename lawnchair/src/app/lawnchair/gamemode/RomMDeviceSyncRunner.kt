@@ -225,6 +225,7 @@ object RomMDeviceSyncRunner {
                                         emulator = emulator,
                                         fileName = romSaveFileName(romFile, coreId),
                                         file = snapshot,
+                                        expectedExtension = DeviceSyncArtifactPolicy.fileExtensionForCore(coreId),
                                     )
                                     uploaded++
                                     GameLog.log(
@@ -279,6 +280,7 @@ object RomMDeviceSyncRunner {
                                         emulator = emulator,
                                         fileName = archiveSaveFileName(romFile, localTimestamp, initialLocalHash ?: md5(snapshot), coreId),
                                         file = snapshot,
+                                        expectedExtension = DeviceSyncArtifactPolicy.fileExtensionForCore(coreId),
                                     )
                                     uploaded++
                                     extraTransfers++
@@ -497,6 +499,7 @@ object RomMDeviceSyncRunner {
                     emulator = emulator,
                     fileName = romSaveFileName(romFile, coreId),
                     file = localSnapshot,
+                    expectedExtension = DeviceSyncArtifactPolicy.fileExtensionForCore(coreId),
                 )
                 client.complete(negotiation.sessionId, operationsCompleted = 1, operationsFailed = 0)
                 completed = true
@@ -579,6 +582,7 @@ object RomMDeviceSyncRunner {
                         file = snapshot,
                         updatedAt = Instant.ofEpochMilli(target.lastModified()).toString(),
                         remoteSlot = remoteSlot,
+                        expectedExtension = DeviceSyncArtifactPolicy.fileExtensionForCore(coreId),
                     )
                 } else {
                     null
