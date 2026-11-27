@@ -188,7 +188,11 @@ class GameSessionActivity : ComponentActivity() {
             coreFilePath = corePath
             gameFilePath = loadPath
             systemDirectory = GameFolders.dir(this@GameSessionActivity, FolderKind.Bios).absolutePath
-            savesDirectory = effectiveSavesDirectory.absolutePath
+            savesDirectory = if (coreId in setOf("desmume", "desmume2015")) {
+                store.coreSaveDirectory.absolutePath
+            } else {
+                effectiveSavesDirectory.absolutePath
+            }
             saveRAMState = store.readSram()
             // Estes cores negociam um contexto Vulkan próprio no LibretroDroid. O driver
             // customizado, quando selecionado, é carregado rootless via libadrenotools.
@@ -203,7 +207,7 @@ class GameSessionActivity : ComponentActivity() {
             platformSlug = platformSlug,
             romPath = romPath,
             gameIdentity = stableIdentity,
-            effectiveDirectory = effectiveSavesDirectory,
+            effectiveDirectory = if (coreId in setOf("desmume", "desmume2015")) store.coreSaveDirectory else effectiveSavesDirectory,
             saveStore = store,
         )
 
