@@ -1172,3 +1172,30 @@ I12/I13 — COMPARAÇÃO DO CATÁLOGO COM O ÍNDICE ARM64 — 2026-11-27
 - [ ] Separar no produto estados: listado no catálogo, pacote disponível na origem, pacote baixado/ELF ARM64 validado e núcleo funcional no aparelho. CI não comprova a última etapa.
 - Fonte: índice oficial Buildbot Android ARM64 consultado em 2026-11-27: https://buildbot.libretro.com/nightly/android/latest/arm64-v8a/ . O índice apresenta arquivos .zip e .sig com nomes de bibliotecas, incluindo Azahar sem sufixo _android.
 - Nota de precisão: a conferência confirma presença de pacotes no índice, não compatibilidade funcional ou suporte oficial de cada fork/plataforma.
+
+
+ATUALIZAÇÃO — REVISÃO COMPLEMENTAR DO CATÁLOGO E INSTALADOR — 2026-11-27
+- [x] Reaberto o log desta auditoria antes de continuar; PR #57 permanece aberta, Draft e não mesclada.
+- [x] Reinspecionado CoreRegistry.kt: o catálogo inclui alternativas SMS Plus GX (smsplus) e Gearsystem (gearsystem); ambas possuem ZIP ARM64 no índice Buildbot consultado nesta data. Isso corrige a ausência dessas duas correspondências na lista resumida anterior.
+- [x] Reinspecionado CoreInstaller.kt: o fluxo baixa somente do endpoint Android ARM64 configurado; exige nome interno exato, valida ELF64 little-endian/AArch64, grava em .part, preserva backup, faz rollback em falha de promoção e registra SHA-256 local após instalação.
+- [x] Revisada a recuperação de backup: quando o digest confirmado identifica destino ou backup, a recuperação escolhe a cópia correspondente; quando não há evidência suficiente e ambos são ELF válidos, preserva ambos e registra erro em vez de descartar arbitrariamente uma cópia.
+- [x] Confirmado que SHA-256 armazenado localmente detecta alteração posterior, mas não autentica o primeiro pacote recebido. Assinatura OpenPGP com chave/fingerprint independente continua pendente.
+- [x] Documentação oficial Libretro consultada: Vita3K possui build Android arm64-v8a e exige Vulkan 1.1; repositório do core Xenia Edge informa builds Android ARM64. Isso confirma que esses projetos têm builds Android em algum canal, mas ainda não confirma o nome e a disponibilidade no endpoint específico usado pelo CoreInstaller.
+- [x] Índice oficial ARM64 consultado novamente em 2026-11-27; smsplus e gearsystem encontrados. Os IDs xenia_edge, vita3k e virtualjaguar continuam sem correspondência confirmada pelo nome exato no endpoint atual; não foram removidos nem alterados.
+- [ ] Investigar o nome de pacote exato publicado para Xenia Edge, Vita3K e Virtual Jaguar no índice Android ARM64; validar se o CoreInstaller consegue obtê-los pelo padrão atual ou precisa de mapeamento específico/origem alternativa confiável.
+- [ ] Comparar todos os IDs do CoreRegistry (incluindo cada alternativa) com o índice, não apenas os IDs já verificados em amostras anteriores.
+- [ ] Validar conteúdo interno dos ZIPs e ELF ARM64 para cada exceção de nomenclatura, sem instalar/atualizar núcleos automaticamente durante a auditoria.
+- [ ] I13 continua pendente: disponibilidade do pacote não equivale a compatibilidade funcional no Motorola Edge 30 Fusion; testar individualmente vídeo, áudio, input, BIOS e recursos específicos.
+- [ ] I11 continua pendente: obter fingerprint público oficial por canal independente e verificar assinaturas .sig antes de tratar a origem como autenticada.
+- [ ] Testes no aparelho continuam pendentes para ZIP/M3U, ciclo de vida GL/nativo, SRAM rejeitada, Device Sync e gamepad virtual multitouch/eixos.
+
+CI — PONTA ANTERIOR DO LOG
+- [ ] CI #1791 — run 45989509316 — commit bd773e9e0051e4e0a91125d339f3a52992572431: ainda em execução na consulta de 2026-11-27. check-style estava executando Spotless automático; job build-debug-apk estava executando testes unitários. Não registrar sucesso até conclusão.
+- A atualização deste registro gera um novo commit e pode disparar outra CI; atualizar este log novamente após a conclusão do workflow correspondente.
+- PR #57 segue aberta como Draft, base game-mode-m2-dev. Nenhum merge, publicação ou alteração em tandem-latest foi realizado.
+
+Fontes consultadas nesta revisão:
+- Índice Buildbot Android ARM64: https://buildbot.libretro.com/nightly/android/latest/arm64-v8a/
+- Documentação Libretro Vita3K: https://docs.libretro.com/library/vita3k/
+- Repositório do core Xenia Edge: https://github.com/WizzardSK/xenia-libretro
+- Documentação Libretro sobre instalação manual de núcleos: https://docs.libretro.com/guides/download-cores/
