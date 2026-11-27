@@ -1086,3 +1086,12 @@ AUDITORIA — ENTREGA DE ERROS DE INICIALIZAÇÃO DO NÚCLEO — 2026-11-27
 
 - [x] Limpeza de recursos: removida a cópia redundante do texto de aviso do arquivo lawnchair/res/values/strings_game_mode.xml; o recurso fica apenas em go/quickstep/res/values/strings.xml, que gera o R usado pela GameSessionActivity. Evita duplicação entre source sets AOSP/Gradle.
 - Commit: 8a23456de35111456e38c43ea985d3fa8e991f35.
+
+ 
+I7/I8 — COBERTURA ADICIONAL DE CAMINHOS DE ENTRADA ZIP — 2026-11-27
+- [x] Ampliados os testes de segurança para nomes de entrada absolutos POSIX, caminhos absolutos com barra invertida, caminhos com unidade Windows, traversal com separadores POSIX/Windows, segmentos "." e segmentos vazios.
+- [x] Teste verifica que nenhum arquivo é criado no cache para qualquer nome inseguro.
+- Commit: RomUnzipperTest af3954826d6301ed30549d4c4225b819e54cd43f.
+- [ ] CI #1767 (run 45938129925) e #1768 (run 45938133145) aguardando fila para validar os testes ZIP.
+- [ ] CIs #1753 (45937735863), #1756 (45937889900), #1757 (45937896430), #1760 (45937994022), #1761 (45938012682), #1762 (45938017859), #1763 (45938029770) e #1764 (45938086388) estavam em execução; múltiplos commits sequenciais da mesma PR provocaram execuções concorrentes.
+- [ ] Depois de concluir as execuções, consolidar resultado final da branch; não considerar os commits intermediários aprovados individualmente como validação da ponta mais recente.
