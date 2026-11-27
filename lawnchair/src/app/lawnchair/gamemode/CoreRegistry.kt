@@ -203,14 +203,14 @@ object CoreRegistry {
             core(
                 "desmume",
                 "DeSmuME",
-                "Alternativa; saves de cartucho em .dsv no Save directory, fora do transporte SRAM RomM",
-                supportsRomMSaveSync = false,
+                "Alternativa; save de cartucho .dsv sincronizado como arquivo nativo, isolado deste núcleo",
+                supportsRomMSaveSync = true,
             ),
             core(
                 "desmume2015",
                 "DeSmuME 2015",
-                "Mais leve; saves de cartucho em .dsv no Save directory, fora do transporte SRAM RomM",
-                supportsRomMSaveSync = false,
+                "Mais leve; save de cartucho .dsv sincronizado como arquivo nativo, isolado deste núcleo",
+                supportsRomMSaveSync = true,
             ),
             core(
                 "noods",
