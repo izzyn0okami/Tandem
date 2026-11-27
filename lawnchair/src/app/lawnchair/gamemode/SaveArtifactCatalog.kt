@@ -7,7 +7,7 @@ import java.util.Locale
 
 /**
  * Papel local do artefato. A distinção entre save de núcleo e cartão de memória
- * vem do adaptador do núcleo, nunca apenas da extensão .srm.
+ * vem do adaptador do núcleo, nunca apenas da extensão física.
  */
 internal enum class SaveArtifactType {
     CORE_SAVE,
