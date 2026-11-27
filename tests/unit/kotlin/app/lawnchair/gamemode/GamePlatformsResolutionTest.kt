@@ -60,6 +60,23 @@ class GamePlatformsResolutionTest {
     }
 
     @Test
+    fun everyPreviouslyImplicitPlatformDeclaresCoreCapabilitiesExplicitly() {
+        val wonderSwan = CoreRegistry.info(GamePlatforms.bySlug("wswan")!!, "mednafen_wswan")
+        val dreamcast = CoreRegistry.info(GamePlatforms.bySlug("dreamcast")!!, "flycast")
+        val psp = CoreRegistry.info(GamePlatforms.bySlug("psp")!!, "ppsspp")
+        val virtualBoy = CoreRegistry.info(GamePlatforms.bySlug("vb")!!, "mednafen_vb")
+
+        assertTrue(wonderSwan.supportsStates)
+        assertTrue(wonderSwan.supportsRomMSaveSync)
+        assertTrue(dreamcast.supportsStates)
+        assertFalse(dreamcast.supportsRomMSaveSync)
+        assertTrue(psp.supportsStates)
+        assertFalse(psp.supportsRomMSaveSync)
+        assertTrue(virtualBoy.supportsStates)
+        assertTrue(virtualBoy.supportsRomMSaveSync)
+    }
+
+    @Test
     fun coresDeclareVulkanAndSaveCapabilities() {
         val vita = CoreRegistry.info(GamePlatforms.bySlug("vita")!!, "vita3k")
         val ps3 = CoreRegistry.info(GamePlatforms.bySlug("ps3")!!, "rpcs3")
