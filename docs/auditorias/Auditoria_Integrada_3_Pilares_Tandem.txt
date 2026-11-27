@@ -863,10 +863,12 @@ CORREÇÃO — POLÍTICA DE RESTAURAÇÃO DE SAVE STATES PERSISTIDOS — 2026-11
 - [ ] Login e prévia ainda usam a API clássica `dorequest.php`; a sessão durante a partida usa rc_client oficial. Não é uma migração total da camada auxiliar para rc_client.
 - [ ] Hardcore depende de hash reconhecido, conta autenticada e plataforma com Console ID RA. ROMs modificadas/traduzidas/hacks sem hash compatível não podem garantir conquistas/Hardcore.
 - [ ] A auditoria não executou nova sessão conectada ao serviço RetroAchievements; status online e leaderboard dependem da rede e do servidor.
+- [!] Auditoria complementar confirmou que PSX e DS não possuem raConsoleId, embora Tandem ofereça Beetle PSX/SwanStation e melonDS DS compatíveis com RA; além disso, a sessão RA não filtra o coreId selecionado. Ver docs/auditorias/Auditoria_Compatibilidade_Nucleos_RA_Tandem.txt.
+- [ ] Implementar matriz de compatibilidade RA por plataforma + coreId, preencher todos os Console IDs a partir da API oficial e testar PSX/DS no aparelho.
 - [ ] Atualizar README: a descrição atual diz que Hardcore não está implementado, mas o código atual já possui controle e bloqueio de save states.
 
 ### Veredito RetroAchievements
-[CONCLUÍDO — INTEGRAÇÃO PRINCIPAL] Login, rc_client, conquistas, overlays, Rich Presence e Hardcore estão implementados. [PARCIAL POR LIMITAÇÃO DO SERVIÇO] Reconhecimento de ROM e prévia pré-jogo dependem dos hashes/cache e da disponibilidade do serviço.
+[CONCLUÍDO — MOTOR E RECURSOS PRINCIPAIS] Login, rc_client, conquistas, overlays, Rich Presence e Hardcore estão implementados. [REPROVADO — COBERTURA] A matriz de plataformas/núcleos está incompleta: PSX e DS não iniciam RA e não há filtro por coreId. A habilitação de RA/Hardcore deve aguardar a correção da matriz. Reconhecimento de ROM e prévia pré-jogo também dependem dos hashes/cache e da disponibilidade do serviço.
 
 ## INTEGRAÇÃO ENTRE OS TRÊS PILARES
 - [x] RomM Device Sync é o único transporte remoto ativo para saves compatíveis; save states permanecem locais, evitando dois transportes concorrentes.
