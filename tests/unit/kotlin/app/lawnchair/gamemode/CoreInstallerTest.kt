@@ -18,6 +18,18 @@ class CoreInstallerTest {
     }
 
     @Test
+    fun melonDsDsUsesUpstreamAndroidReleaseNameAndPinnedArchiveDigest() {
+        assertEquals("melondsds_libretro_android.so", CoreInstaller.coreFileName("melonds_ds"))
+        assertEquals("melonds_ds", CoreInstaller.coreIdFromFileName("melondsds_libretro_android.so"))
+        assertTrue(CoreInstaller.downloadUrl("melonds_ds").contains("JesseTG/melonds-ds/releases/download/v1.4.0/"))
+        assertEquals(
+            "555568396dd5cf230030e4dd0ff0b0c6ca7118231fe562bc50680fefa7ad8594",
+            CoreInstaller.expectedArchiveSha256("melonds_ds"),
+        )
+        assertEquals(null, CoreInstaller.expectedArchiveSha256("melonds"))
+    }
+
+    @Test
     fun updateDetectionFindsChangedEtagEvenWhenLastModifiedIsUnchanged() {
         assertEquals(
             true,
