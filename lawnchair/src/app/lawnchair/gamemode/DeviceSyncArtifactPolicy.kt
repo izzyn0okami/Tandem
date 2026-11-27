@@ -43,10 +43,10 @@ internal object DeviceSyncArtifactPolicy {
     fun selectForRomM(artifacts: List<SaveArtifact>): SaveArtifact? {
         val candidates = artifacts.filter {
             it.type in setOf(SaveArtifactType.CORE_SAVE, SaveArtifactType.MEMORY_CARD) &&
-                it.format.equals("srm", ignoreCase = true)
+                it.format.equals(CoreSaveAdapterRegistry.resolve(it.coreId).fileExtension, ignoreCase = true)
         }
         if (candidates.size > 1) {
-            throw IOException("Mais de um artefato .srm elegível foi encontrado; sincronização interrompida por ambiguidade.")
+            throw IOException("Mais de um artefato de save elegível foi encontrado; sincronização interrompida por ambiguidade.")
         }
         return candidates.singleOrNull()
     }
