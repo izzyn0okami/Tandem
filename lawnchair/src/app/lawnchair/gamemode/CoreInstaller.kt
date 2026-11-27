@@ -69,15 +69,7 @@ object CoreInstaller {
                 val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
                 val installedModified = prefs.getLong("modified_$coreId", 0L)
                 val installedEtag = prefs.getString("etag_$coreId", null)
-                when {
-                    remoteModified > 0L && installedModified > 0L ->
-                        remoteModified > installedModified + 1_000L
-
-                    remoteEtag != null && installedEtag != null ->
-                        remoteEtag != installedEtag
-
-                    else -> null
-                }
+                updateAvailableFromMetadata(remoteModified, installedModified, remoteEtag, installedEtag)
             } finally {
                 connection.disconnect()
             }
@@ -285,6 +277,22 @@ object CoreInstaller {
                 )
             }
         }
+    }
+
+    /** Compara apenas pares de metadados realmente disponíveis nos dois lados. */
+    internal fun updateAvailableFromMetadata(
+        remoteModified: Long,
+        installedModified: Long,
+        remoteEtag: String?,
+        installedEtag: String?,
+    ): Boolean? {
+        val hasComparableModified = remoteModified > 0L && installedModified > 0L
+        val hasComparableEtag = remoteEtag != null && installedEtag != null
+        if (!hasComparableModified && !hasComparableEtag) return null
+
+        val modifiedChanged = hasComparableModified && remoteModified > installedModified + 1_000L
+        val etagChanged = hasComparableEtag && remoteEtag != installedEtag
+        return modifiedChanged || etagChanged
     }
 
     /** SHA-256 local para detectar corrupção posterior do arquivo instalado. */
