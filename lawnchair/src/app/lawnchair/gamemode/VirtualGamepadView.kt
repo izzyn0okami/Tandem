@@ -44,6 +44,7 @@ internal class VirtualGamepadView @JvmOverloads constructor(
     private val inputManager = context.getSystemService(Context.INPUT_SERVICE) as InputManager
     private val pointerControls = mutableMapOf<Int, Control>()
     private val passthroughPointerIds = mutableSetOf<Int>()
+    private var lastPassthroughEvent: MotionEvent? = null
     private val pressedKeys = mutableSetOf<Int>()
     private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
     private val rect = RectF()
@@ -273,6 +274,7 @@ internal class VirtualGamepadView @JvmOverloads constructor(
                 val pointerId = event.getPointerId(index)
                 forwardPassthroughTouch(event)
                 passthroughPointerIds.remove(pointerId)
+                if (passthroughPointerIds.isEmpty()) clearLastPassthroughEvent()
                 pointerControls.remove(pointerId)?.let { releaseControl(it) }
             }
 
@@ -298,9 +300,40 @@ internal class VirtualGamepadView @JvmOverloads constructor(
         val forwarded = event.split(pointerIdBits)
         try {
             retroView?.dispatchTouchEvent(forwarded)
+            clearLastPassthroughEvent()
+            if (forwarded.actionMasked != MotionEvent.ACTION_UP &&
+                forwarded.actionMasked != MotionEvent.ACTION_CANCEL
+            ) {
+                lastPassthroughEvent = MotionEvent.obtain(forwarded)
+            }
         } finally {
             forwarded.recycle()
         }
+    }
+
+    /** Cancels a DS touchscreen gesture if the overlay disappears mid-touch. */
+    private fun cancelPassthroughTouch() {
+        val lastEvent = lastPassthroughEvent ?: return
+        try {
+            if (lastEvent.actionMasked != MotionEvent.ACTION_UP &&
+                lastEvent.actionMasked != MotionEvent.ACTION_CANCEL
+            ) {
+                val cancel = MotionEvent.obtain(lastEvent)
+                try {
+                    cancel.action = MotionEvent.ACTION_CANCEL
+                    retroView?.dispatchTouchEvent(cancel)
+                } finally {
+                    cancel.recycle()
+                }
+            }
+        } finally {
+            clearLastPassthroughEvent()
+        }
+    }
+
+    private fun clearLastPassthroughEvent() {
+        lastPassthroughEvent?.recycle()
+        lastPassthroughEvent = null
     }
 
     private fun updateControl(control: Control, x: Float, y: Float, pressed: Boolean) {
@@ -373,6 +406,7 @@ internal class VirtualGamepadView @JvmOverloads constructor(
     }
 
     internal fun releaseAll() {
+        cancelPassthroughTouch()
         pointerControls.values.toSet().forEach(::releaseControl)
         pointerControls.clear()
         passthroughPointerIds.clear()
