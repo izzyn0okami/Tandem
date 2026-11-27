@@ -775,7 +775,7 @@ class DeviceSyncProtocolTest {
     }
 
     @Test
-    fun deviceSyncArtifactPolicySelectsDeSmuMeNativeDsvOnlyForItsDeclaredCore() {
+    fun deviceSyncSelectsNativeDeSmuMeDsvArtifactForRomM() {
         val directory = java.io.File.createTempFile("device-sync-dsv-", "").apply {
             delete()
             mkdirs()
@@ -793,82 +793,30 @@ class DeviceSyncProtocolTest {
             assertEquals(SaveArtifactType.CORE_SAVE, selected?.type)
             assertEquals("dsv", selected?.format)
             assertEquals("autosave", DeviceSyncArtifactPolicy.remoteSlot(selected!!))
-            assertEquals("dsv", DeviceSyncArtifactPolicy.fileExtensionForCore("desmume"))
-            assertEquals("srm", DeviceSyncArtifactPolicy.fileExtensionForCore("melonds"))
+            assertTrue(DeviceSyncArtifactPolicy.isCompatibleRemote("desmume", "desmume"))
+            assertFalse(DeviceSyncArtifactPolicy.isCompatibleRemote("melonds", "desmume"))
         } finally {
             directory.deleteRecursively()
         }
     }
 
     @Test
-    fun nativeSaveFilenameCompatibilityIsScopedToDeclaredCoreExtension() {
-        assertTrue(DeviceSyncArtifactPolicy.isCompatibleFileName("desmume", "Pokemon.dsv"))
-        assertTrue(DeviceSyncArtifactPolicy.isCompatibleFileName("desmume2015", "Pokemon.DSV"))
-        assertFalse(DeviceSyncArtifactPolicy.isCompatibleFileName("desmume", "Pokemon.srm"))
-        assertFalse(DeviceSyncArtifactPolicy.isCompatibleFileName("melonds", "Pokemon.dsv"))
-        assertTrue(DeviceSyncArtifactPolicy.isCompatibleFileName("melonds", "Pokemon.srm"))
-        assertFalse(DeviceSyncArtifactPolicy.isCompatibleFileName("desmume", "Pokemon"))
-        assertFalse(DeviceSyncArtifactPolicy.isCompatibleFileName("desmume", null))
-    }
-
-    @Test
-    fun localSaveManifestAcceptsDsvOnlyWhenCoreExtensionIsDeclared() {
-        val file = java.io.File.createTempFile("local-ds-save-", ".dsv")
-        try {
-            file.writeBytes(byteArrayOf(9, 8, 7))
-            val save = DeviceSyncProtocolJson.localSave(
-                romId = 42L,
-                fileName = "Pokemon.dsv",
-                emulator = "desmume",
-                file = file,
-                updatedAt = "2026-11-27T12:00:00Z",
-                expectedExtension = "dsv",
-            )
-
-            assertEquals("Pokemon.dsv", save?.fileName)
-            assertEquals("autosave", save?.slot)
-            assertTrue(
-                runCatching {
-                    DeviceSyncProtocolJson.localSave(
-                        42L,
-                        "Pokemon.srm",
-                        "desmume",
-                        file,
-                        "2026-11-27T12:00:00Z",
-                        expectedExtension = "dsv",
-                    )
-                }.isFailure,
-            )
-        } finally {
-            file.delete()
+    fun nativeDsvArtifactIsNotSelectedForMelonDs() {
+        val directory = java.io.File.createTempFile("device-sync-melonds-", "").apply {
+            delete()
+            mkdirs()
         }
-    }
-
-    @Test
-    fun uploadSaveAcceptsDeclaredDeSmuMeDsvExtension() {
-        val server = MockWebServer()
-        val file = java.io.File.createTempFile("device-sync-ds-", ".dsv")
-        file.writeBytes(byteArrayOf(4, 3, 2, 1))
-        server.start()
         try {
-            server.enqueue(MockResponse(body = """{"id":93}"""))
-            val client = RomMDeviceSyncClient(server.url("/").toString(), "test-token")
-            client.uploadSave(
-                romId = 42L,
-                deviceId = "device-123",
-                sessionId = 8L,
-                slot = "autosave",
-                emulator = "desmume",
-                fileName = "Pokemon.dsv",
-                file = file,
-                expectedExtension = "dsv",
+            val save = java.io.File(directory, "Pokemon.dsv").apply { writeBytes(byteArrayOf(1, 2, 3)) }
+            val artifacts = SaveArtifactCatalog.inspect(
+                gameIdentity = "romm-ds-game",
+                coreId = "melonds",
+                files = listOf(save),
             )
-            val request = server.takeRequest()
-            assertEquals("/api/saves", request.url.encodedPath)
-            assertTrue(request.body!!.utf8().contains("filename=\"Pokemon.dsv\""))
+
+            assertNull(DeviceSyncArtifactPolicy.selectForRomM(artifacts))
         } finally {
-            server.close()
-            file.delete()
+            directory.deleteRecursively()
         }
     }
 }
