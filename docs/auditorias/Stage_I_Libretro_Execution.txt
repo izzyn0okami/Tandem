@@ -1774,3 +1774,27 @@ Resumo para fechamento do Estágio I:
 - CI automatizada da ponta corretiva: APROVADA.
 - Gamepad virtual: usuário já confirmou funcionamento; validação final de ergonomia/ciclo de vida ainda não documentada integralmente.
 - Pendências restantes concentram-se em validação funcional no aparelho e compatibilidade/save por núcleo; não criar novas funcionalidades antes de concluir essa rodada.
+
+
+CORREÇÃO DE INSTALAÇÃO — MELONDS DS / ZIP COM DIRETÓRIO-RAIZ — 2026-11-27
+- [x] Analisado o log de teste do aparelho (Tandem 16.Dev. #1900, sessão b4dc7c77): o usuário estava fora da rede local; timeouts para o RomM em 192.168.0.102:8080 foram classificados como esperados e excluídos desta validação.
+- [x] Erro independente confirmado na instalação do núcleo: o pacote foi baixado e passou pela etapa de verificação SHA-256, mas o instalador rejeitou a primeira entrada do ZIP porque ela era o diretório `melondsds_libretro-android-Release/`, enquanto o código esperava a biblioteca diretamente na raiz.
+- [x] Corrigido o extrator para percorrer entradas do ZIP, ignorar diretórios seguros e aceitar a biblioteca esperada dentro de uma pasta-raiz, mantendo a exigência de um único arquivo de núcleo com nome exato.
+- [x] Mantidas proteções contra caminhos absolutos, unidades Windows, segmentos "."/".." e arquivos adicionais inesperados; a validação ELF ARM64, hash do pacote e rollback continuam ocorrendo antes da substituição da instalação funcional.
+- [x] Adicionado teste JVM para extrair a biblioteca de um ZIP com diretório-raiz.
+- [x] Adicionado teste JVM para rejeitar tentativa de traversal em caminho de entrada ZIP.
+- [ ] CI da correção de extração ainda precisa concluir integralmente (check-style, testes unitários, build APK e final-status).
+- [ ] Após CI aprovada, repetir instalação do melonDS DS no aparelho e confirmar que o núcleo é carregado e inicia The Legend of Zelda: Phantom Hourglass.
+- [ ] Depois de instalado, validar jogabilidade, áudio/vídeo, layout das duas telas e persistência local .srm; Device Sync RomM deve ser reavaliado quando o aparelho estiver na rede local.
+- [ ] Não classificar como falha de rede do usuário o erro de ZIP; não classificar como falha do núcleo em execução, pois o binário ainda não chegou a ser instalado/carregado.
+
+Evidência do aparelho:
+- 2026-11-27T08:39:31.397-0400: início do download de `melondsds_libretro_android.so`.
+- 2026-11-27T08:39:35.055-0400: rejeição explícita: `ZIP inesperado: esperava melondsds_libretro_android.so, veio melondsds_libretro-android-Release/`.
+- Stack trace: `CoreInstaller.install(CoreInstaller.kt:166)`; falha durante validação da primeira entrada do ZIP.
+- O log também registra timeouts para o servidor RomM privado 192.168.0.102:8080; ignorados nesta auditoria conforme contexto informado pelo usuário.
+
+Commits:
+- 6730c562f0aff3c8429674221aa1b557b1835d18 — extrator passou a aceitar núcleo dentro de diretório-raiz.
+- d0812678e67b4a1ed8966de938b34a7e52e82dab — normalização segura dos separadores de caminho ZIP.
+- f27508bd8dc8f0f6400df2aca328122743226915 — testes de ZIP aninhado e rejeição de traversal.
