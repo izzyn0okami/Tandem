@@ -60,6 +60,7 @@
     <string name="game_session_state_loaded">Estado carregado</string>
     <string name="game_session_state_load_failed">Não foi possível carregar o estado</string>
     <string name="game_session_engine_error">Erro do motor (%1$d)</string>
+    <string name="game_session_sram_load_failed">O núcleo não conseguiu carregar o save existente. O arquivo original será preservado e não será sobrescrito nesta sessão.</string>
     <string name="game_session_paused">Em pausa</string>
     <string name="game_session_autosave_note">Salvamento automático a cada minuto</string>
     <string name="game_tab_library">Biblioteca</string>
