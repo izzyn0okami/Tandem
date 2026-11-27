@@ -74,3 +74,14 @@ REBASE APÓS MERGE DA PR #62 — 2026-11-27
 - [x] Branch reconstruída sobre game-mode-m2-dev após o merge da PR #62; nenhuma alteração de produção da PR #62 foi copiada para esta PR.
 - [x] CI #2012 (run 46071830237) passou no head 79b265b37efc8e8a94b6c8b065c7f0f4ebf745d9: Spotless, testes unitários, APK Debug e upload do artefato.
 - [ ] Nova CI no head reconstruído.
+
+
+CI APROVADA — PR #60 — 2026-11-27
+- [x] CI #2038 (run 46073211890) concluída com sucesso no head 9e8903bb1033bf92a5e387b00c0d0bc4863df13e.
+- [x] check-style / Spotless: sucesso.
+- [x] Testes unitários: sucesso.
+- [x] Build assembleLawnWithQuickstepGithubDebug: sucesso.
+- [x] Upload do artefato APK Debug: sucesso; artefato disponível no run 46073211890.
+- [x] final-status: sucesso; etapas condicionais de publicação/notificação foram ignoradas conforme esperado.
+- [ ] Testes físicos específicos desta PR permanecem pendentes; CI não comprova compatibilidade real no Motorola Edge 30 Fusion.
+- [ ] Não mesclar antes da validação física correspondente e revisão final do diff.
