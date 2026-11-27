@@ -777,3 +777,23 @@ ATUALIZAÇÃO — CORREÇÃO DE MULTITOUCH E CI #1661 — 2026-11-27
 - [ ] Testes instrumentados de toque simultâneo nos dois analógicos, botões + analógicos, cancelamento e ciclo de vida permanecem pendentes.
 - [ ] Confirmar no aparelho retorno dos eixos a zero ao levantar cada dedo, inclusive ao cancelar/pausar/sair/rotacionar.
 - PR #57 permanece aberta e draft, sem merge nem publicação em tandem-latest; PR #41 permanece intocada.
+
+
+ATUALIZAÇÃO — MULTITOUCH, CANCELAMENTO E CI #1670–#1672 — 2026-11-27
+- [x] CI #1666 — https://github.com/izzyn0okami/Tandem/actions/runs/45922524310 — sucesso no commit a6132131a0b140e10e56a8d0e1aefdcfed902a9b.
+- [x] CI #1667 — https://github.com/izzyn0okami/Tandem/actions/runs/45922637419 — sucesso no mesmo commit.
+- [x] CI #1668 — https://github.com/izzyn0okami/Tandem/actions/runs/45922666953 — sucesso no mesmo commit.
+- [x] CI #1669 — https://github.com/izzyn0okami/Tandem/actions/runs/45922768479 — sucesso no commit 90913bbb4d6af74bc26d21cd4c4ccb98a198e05c.
+- [x] CI #1670 — https://github.com/izzyn0okami/Tandem/actions/runs/45922786583 — sucesso no commit bc735cf2f4df7a15c010bfae30b7869885984b65.
+- [x] CI #1671 — https://github.com/izzyn0okami/Tandem/actions/runs/45922882296 — sucesso no mesmo commit.
+- [x] CI #1672 — https://github.com/izzyn0okami/Tandem/actions/runs/45922927555 — sucesso no mesmo commit.
+- [x] Em todas as CIs acima, check-style / Spotless e build assembleLawnWithQuickstepGithubDebug concluíram com sucesso; artefato APK foi gerado nas execuções finais.
+- [x] Ajustada a documentação de propriedade dos toques no VirtualGamepadView e GameSessionActivity: a Activity classifica a sequência completa e encaminha ao GLRetroView somente os ponteiros iniciados fora dos controles.
+- [x] Adicionado cancelamento do gesto de touchscreen encaminhado quando o overlay é liberado, evitando toque DS preso em pausa, ocultação ou desmontagem da view.
+- [x] Snapshot do último evento encaminhado é atualizado após ACTION_POINTER_UP para manter apenas os ponteiros ainda pressionados; eventos MotionEvent armazenados são reciclados ao limpar.
+- [x] Commit final validado: bc735cf2f4df7a15c010bfae30b7869885984b65.
+- [ ] Não existem testes instrumentados específicos para VirtualGamepadView; cobertura automatizada atual de matemática/deadzone não comprova eventos Android multitouch.
+- [ ] Testar no aparelho multitouch misto (touchscreen DS + controles), ACTION_CANCEL, pausa/retomada, rotação, ocultação por controle físico e desmontagem da Activity.
+- [ ] Validar simultaneamente os dois analógicos e botões, inclusive retorno dos eixos a zero.
+- [ ] Revisar geometria/áreas de toque e acessibilidade em diferentes proporções e tamanhos de tela.
+- [x] PR #57 continua aberta e draft, sem merge; tandem-latest não foi alterada; PR #41 permanece intocada.
