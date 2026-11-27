@@ -178,3 +178,18 @@ RESULTADO DE CI HISTÓRICA E VALIDAÇÃO PENDENTE DOS AJUSTES DSV — 2026-11-27
 - [ ] A CI #1936 é anterior aos commits e48c3cb, 4bdff08, bea734c, 6861c1c e e7217b5; portanto, não valida a restauração do adaptador DSV, SaveStore, catálogo, testes ou este log.
 - [ ] Aguardar/executar uma nova CI no head e7217b566bae7abcea7daebd0e5bd7ea42c9fdd5 antes de considerar os ajustes de saves compilados e testados.
 - [x] PR #58 permanece aberta e não mesclada, com base feat/libretro-stage-i; nenhuma mudança em game-mode-m2-dev ou tandem-latest.
+
+
+AMPLIAÇÃO CONTROLADA DO DEVICE SYNC PARA SAVES NATIVOS .DSV — 2026-11-27
+- [x] Verificada a documentação oficial do Device Sync Protocol RomM 5.4: o manifesto transporta file_name, hash, tamanho, slot e emulador; o protocolo documentado não impõe extensão .srm. A documentação de Saves & States também descreve save files genéricos e não limita o endpoint a SRAM.
+- [x] Inspecionada a implementação atual do endpoint POST /api/saves do RomM: valida/sanitiza o nome recebido e grava o arquivo, sem uma lista de extensões .srm exclusiva identificada no fluxo de upload.
+- [x] Identificada a restrição artificial no cliente Tandem: seleção de artefatos, manifesto, validação de download e upload recusavam qualquer extensão diferente de .srm.
+- [x] DeviceSyncArtifactPolicy agora seleciona o formato declarado pelo CoreSaveAdapter; para DeSmuME aceita .dsv, mantendo .srm para os demais adaptadores e cartão PSX.
+- [x] DeviceSyncProtocolJson e RomMDeviceSyncClient agora validam a extensão esperada pelo núcleo em manifesto, download e upload, sem relaxar a validação para extensões arbitrárias.
+- [x] RomMDeviceSyncRunner usa a extensão nativa nos nomes de arquivos enviados, arquivados e validados ao restaurar versões; a restauração manual do histórico também recusa extensão incompatível.
+- [x] Diagnóstico Device Sync passa a usar a extensão declarada pelo adaptador.
+- [x] Testes adicionados para seleção DSV, manifesto DSV, rejeição de extensão divergente, validação de download e upload DSV.
+- [ ] Nova CI ainda pendente para o conjunto de alterações de Device Sync; não considerar compilação/testes aprovados até a execução no head atual.
+- [ ] Teste físico ainda necessário com DeSmuME: criar save .dsv, upload ao RomM, download em nova sessão, resolução de conflito e verificação byte a byte.
+- [ ] A compatibilidade fica limitada aos IDs DeSmuME declarados; não presume compatibilidade de .dsv com melonDS nem com outros cores DS.
+- [x] PR #58 continua aberta e não mesclada; base continua feat/libretro-stage-i. Nenhuma publicação em game-mode-m2-dev ou tandem-latest.
