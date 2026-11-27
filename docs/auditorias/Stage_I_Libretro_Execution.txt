@@ -1429,3 +1429,18 @@ ACOMPANHAMENTO DE CI — 2026-11-27 — RECONSULTA
 - [ ] CI #1825 — run 45992668128 — commit 9d19d8b20b285cbc4327555c3631063b817e1689: em andamento.
 - [ ] CI #1826 — run 45992691513 — commit 3c6a522a287f7769d61b5ae3e2dce036b48f59ad: em andamento; ponta atual consultada.
 - PR #57 segue aberta como Draft e sem merge. Head 3c6a522a287f7769d61b5ae3e2dce036b48f59ad. Sem publicação em tandem-latest.
+
+
+ACOMPANHAMENTO DE CI — 2026-11-27 — RESULTADOS CONFIRMADOS
+- [x] CI #1822 — run 45991507650 — commit ecb5547d2bc30ad843c30001b8615c09bd652378: check-style, testes unitários, build-debug-apk, upload do artefato e final-status concluídos com sucesso.
+- [x] CI #1823 — run 45992619101 — commit 702c866a5db22e6b29fb0a519f2896ce2038bbb4: check-style, testes unitários, build-debug-apk, upload do artefato e final-status concluídos com sucesso.
+- [x] CI #1824 — run 45992647409 — commit 2372bc1d1a6325ca8c2f4cf2ffbbeb1f7665caca: check-style, testes unitários, build-debug-apk, upload do artefato e final-status concluídos com sucesso.
+- [x] CI #1825 — run 45992668128 — commit 9d19d8b20b285cbc4327555c3631063b817e1689: check-style, testes unitários, build-debug-apk, upload do artefato e final-status concluídos com sucesso.
+- [x] CI #1826 — run 45992691513 — commit 3c6a522a287f7769d61b5ae3e2dce036b48f59ad: check-style, testes unitários, build-debug-apk, upload do artefato e final-status concluídos com sucesso.
+- [x] CI #1827 — run 45992733583 — associada ao commit de auditoria ed857288c9c59d4dc79386523f7c3536ca0d5229: check-style, testes unitários, build-debug-apk, upload do artefato e final-status concluídos com sucesso.
+- [ ] A validação funcional no aparelho continua pendente; CI verde não comprova compatibilidade real de cada núcleo, BIOS, saves, áudio/vídeo, multitouch ou ergonomia do gamepad virtual.
+- [ ] A validação de assinatura do APK com a instalação atual do aparelho continua pendente.
+- [ ] A inspeção interna dos ZIPs Buildbot e a validação independente das assinaturas OpenPGP continuam pendentes.
+- PR #57 permanece aberta como Draft e não mesclada. Nenhuma publicação em tandem-latest foi executada.
+- Observação de publicação: os jobs tandem-release e nightly-release foram ignorados nessas execuções; o APK de debug foi gerado e enviado como artefato de CI, sem publicação de release.
+
