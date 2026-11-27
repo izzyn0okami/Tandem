@@ -10,8 +10,8 @@ data class CoreInfo(
     val id: String,
     val label: String,
     val note: String,
-    val supportsStates: Boolean = true,
-    val supportsRomMSaveSync: Boolean = true,
+    val supportsStates: Boolean = false,
+    val supportsRomMSaveSync: Boolean = false,
     val preferVulkan: Boolean? = null,
 )
 
@@ -37,6 +37,15 @@ object CoreRegistry {
         supportsRomMSaveSync: Boolean = true,
         preferVulkan: Boolean? = null,
     ) = CoreInfo(id, label, note, supportsStates, supportsRomMSaveSync, preferVulkan)
+
+    /** Núcleo sem auditoria específica: recursos permanecem desativados por segurança. */
+    private fun unknownCore(id: String) = CoreInfo(
+        id = id,
+        label = id,
+        note = "Capacidades ainda não auditadas; save states e sincronização RomM desativados",
+        supportsStates = false,
+        supportsRomMSaveSync = false,
+    )
 
     private val catalog: Map<String, List<CoreInfo>> = mapOf(
         "nes" to listOf(
@@ -250,11 +259,11 @@ object CoreRegistry {
     fun cores(platform: GamePlatform): List<CoreInfo> {
         val list = catalog[platform.slug].orEmpty()
         if (list.firstOrNull()?.id == platform.coreId) return list
-        val default = list.firstOrNull { it.id == platform.coreId } ?: core(platform.coreId, platform.coreId, "Padrão")
+        val default = list.firstOrNull { it.id == platform.coreId } ?: unknownCore(platform.coreId)
         return listOf(default) + list.filter { it.id != platform.coreId }
     }
 
-    fun info(platform: GamePlatform, coreId: String): CoreInfo = cores(platform).firstOrNull { it.id == coreId } ?: core(platform.coreId, platform.coreId, "Padrão")
+    fun info(platform: GamePlatform, coreId: String): CoreInfo = cores(platform).firstOrNull { it.id == coreId } ?: unknownCore(coreId)
 
     private fun prefs(context: Context) = context.getSharedPreferences(FILE, Context.MODE_PRIVATE)
 
