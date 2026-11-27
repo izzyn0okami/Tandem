@@ -24,6 +24,12 @@ class CoreInstallerTest {
     }
 
     @Test
+    fun hyphenatedCoreIdsKeepStandardAndroidArtifactNames() {
+        assertEquals("bsnes-jg_libretro_android.so", CoreInstaller.coreFileName("bsnes-jg"))
+        assertEquals("bsnes-jg", CoreInstaller.coreIdFromFileName("bsnes-jg_libretro_android.so"))
+    }
+
+    @Test
     fun melonDsDsUsesUpstreamAndroidReleaseNameAndPinnedArchiveDigest() {
         assertEquals("melondsds_libretro_android.so", CoreInstaller.coreFileName("melonds_ds"))
         assertEquals("melonds_ds", CoreInstaller.coreIdFromFileName("melondsds_libretro_android.so"))
