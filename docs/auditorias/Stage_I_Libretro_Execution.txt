@@ -1896,3 +1896,22 @@ VALIDAÇÃO NO APARELHO — MELONDS DS / PHANTOM HOURGLASS — 2026-11-27
 Resultado do usuário:
 - Mensagem de 2026-11-27: "Funcionou. Não encontrei nenhum outro erro".
 - Resultado: correção funcional confirmada no teste real; não declarar Estágio I concluído enquanto as verificações restantes e CI não estiverem documentadas.
+
+
+VALIDAÇÃO FUNCIONAL FINAL — CONFIRMAÇÃO DO USUÁRIO — 2026-11-27
+- [x] Usuário confirmou que todos os pontos funcionais listados anteriormente já estão OK.
+- [x] Instalação e carregamento do núcleo melonDS DS; abertura de The Legend of Zelda: Phantom Hourglass.
+- [x] Áudio e vídeo durante o uso.
+- [x] Disposição e alternância das duas telas Nintendo DS.
+- [x] Controles físicos e touchscreen/gamepad virtual.
+- [x] Persistência do save local .srm após encerrar e reabrir o jogo.
+- [x] Device Sync com RomM; considerar válida a confirmação do usuário para os testes realizados na rede local.
+- [x] Nenhuma outra falha funcional conhecida no escopo atual do Estágio I.
+- [x] Encerrado o ciclo de testes funcionais do Estágio I conforme confirmação do usuário. Qualquer erro que venha a ser descoberto futuramente será tratado em PR corretiva separada, sem reabrir o escopo desta PR automaticamente.
+- [ ] Confirmar CI integralmente aprovada para o commit final da correção do nome LICENSE; a CI #1915 falhou antes da correção do matcher e não valida o commit posterior.
+- [x] PR #57 permanece aberta/draft, sem merge e sem publicação em tandem-latest; aguardar autorização explícita para qualquer merge/publicação.
+
+Decisão de escopo do usuário:
+- Os testes funcionais remanescentes foram declarados OK pelo usuário em 2026-11-27.
+- Não solicitar novos testes de rotina para o Estágio I.
+- Se surgir erro futuro, corrigir em uma nova PR específica, quando aplicável.
