@@ -247,8 +247,7 @@ CI APROVADA — 2026-11-26 (ATUALIZAÇÃO)
 - [x] assembleLawnWithQuickstepGithubDebug: sucesso.
 - [x] Upload do APK de debug: sucesso.
 - Observação: o workflow aplicou/verificou Spotless e completou o build; esta execução valida o commit de documentação/escopo anterior à implementação funcional de I17.
-I17 — AUDITORIA DO CAMINHO DE ENTRADA — 2026-11-26
-- [x] Inspecionada a implementação local de LibretroDroid e GLRetroView.
+I17 — AUDITORIA DO CAMINHO DE ENTRADA — 2026-11-26- [x] Inspecionada a implementação local de LibretroDroid e GLRetroView.
 - [x] Confirmado que GLRetroView expõe sendKeyEvent(action, keyCode, port) e sendMotionEvent(source, xAxis, yAxis, port).
 - [x] Confirmados os canais nativos: MOTION_SOURCE_DPAD, MOTION_SOURCE_ANALOG_LEFT e MOTION_SOURCE_ANALOG_RIGHT. Portanto, os dois analógicos podem emitir eixos distintos sem alteração do JNI.
 - [x] Confirmado que o caminho de controle físico já usa os eixos X/Y para o analógico esquerdo e Z/RZ para o direito; o gamepad virtual pode enviar diretamente os dois canais nativos.
@@ -497,8 +496,7 @@ ATUALIZAÇÃO — CI #1566 E CI #1567 — 2026-11-26
 - [x] check-style / Spotless: sucesso.
 - [x] Testes unitários: sucesso.
 - [x] Build assembleLawnWithQuickstepGithubDebug: sucesso.- [x] Upload do artefato APK: sucesso.
-- [x] CI #1567 — https://github.com/izzyn0okami/Tandem/actions/runs/45758666128 — conclusão success.
-- [x] Commit validado pela execução #1567: 3a626ba24513f4db849d2708fc7bd4a485a74b1b (suíte dedicada RomUnzipperTest).
+- [x] CI #1567 — https://github.com/izzyn0okami/Tandem/actions/runs/45758666128 — conclusão success.- [x] Commit validado pela execução #1567: 3a626ba24513f4db849d2708fc7bd4a485a74b1b (suíte dedicada RomUnzipperTest).
 - [x] check-style / Spotless: sucesso.
 - [x] Testes unitários: sucesso.
 - [x] Build assembleLawnWithQuickstepGithubDebug: sucesso.
@@ -749,7 +747,6 @@ ATUALIZAÇÃO — CORREÇÃO DA RECUPERAÇÃO DE BACKUP E CI #1650 — 2026-11-2
 - [ ] Refinamentos avançados do gamepad virtual (multitouch misto, eixos simultâneos/deadzone, rotação, acessibilidade e personalização completa) continuam pendentes; funcionamento básico foi confirmado pelo usuário.
 - PR #57 permanece aberta e draft, sem merge ou publicação em tandem-latest; PR #41 permanece intocada.
 
-
 ATUALIZAÇÃO — CI #1655 E COBERTURA ADICIONAL DE RECUPERAÇÃO — 2026-11-26
 - [x] CI #1655 — https://github.com/izzyn0okami/Tandem/actions/runs/45918240330 — sucesso no commit 840fe607f98581b0d6214f944b09e31f124ad0d1.
 - [x] check-style / Spotless: sucesso, incluindo verificação após formatação automática.
@@ -907,3 +904,9 @@ ATUALIZAÇÃO — CONCLUSÃO DA CORREÇÃO DE KITS ANINHADOS / CI #1699 — 2026
 - [ ] Prosseguir com a revisão dos testes instrumentados de ciclo de vida, SRAM/estados rápidos e recuperação do CoreInstaller.
 - PR #57 permanece aberta e draft, sem merge; PR #41 permanece intocada.
 - Nenhuma alteração em tandem-latest foi realizada.
+
+ATUALIZAÇÃO — COBERTURA ADICIONAL DO VALIDADOR ELF — 2026-11-26
+- [x] Adicionados dois testes unitários para rejeitar ELF com classe incorreta (ELF32), endianness incorreto, arquitetura diferente de AArch64 e assinatura ELF inválida.
+- [x] Adicionado teste para arquivo vazio não ser aceito como núcleo ARM64.
+- [ ] CI da revisão de testes ainda não foi localizada/confirmada; não considerar esta alteração validada até execução bem-sucedida dos testes unitários e build.
+- Commit: 6cae366fe82bf563a84029d098bc0ed9367447a2.
