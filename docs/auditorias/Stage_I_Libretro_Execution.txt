@@ -1001,3 +1001,7 @@ AVANÇO — EXTRAÇÃO DE POLÍTICAS PURAS DO CICLO DE VIDA — 2026-11-26
 - [ ] Ainda não cobre callbacks reais GL/serializeSRAM/unserialize nem morte abrupta do processo; esses pontos continuam dependentes de teste instrumentado ou aparelho.
 - [x] Nenhuma alteração no intervalo de autosave (60 segundos), no protocolo RomM, na política de conflito ou na sincronização de estados rápidos.
 - PR #57 permanece aberta como Draft; não mesclar nem publicar em tandem-latest sem autorização. PR #41 e PR #55 intocadas.
+
+- CI #1722 — run 45934128551 — commit 92d840040214364684198a76621db5f81827a3f1: check-style e build-debug-apk em andamento na última consulta.
+- CI #1723 — run 45934135434 — commit d6b9a0adc4fdc33d55085e9f5f0fe3f49a862b03: check-style e build-debug-apk em andamento na última consulta.
+- CI #1724 — run 45934143095 — commit fe0b4ef178195390ee0a4b580fd382f2fcf51f2f: check-style e build-debug-apk em andamento na última consulta; inclui os novos testes JVM de política de ciclo de vida.
