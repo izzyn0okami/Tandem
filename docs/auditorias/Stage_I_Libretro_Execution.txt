@@ -878,3 +878,24 @@ IMPLEMENTAÇÃO — CATÁLOGO ARM64
 - [ ] Expandir o catálogo com Xenia Edge (Xbox 360) e Supermodel (Sega Model 3), ambos encontrados no Buildbot ARM64, além de oferecer PCSX2 como alternativa ao ARMSX2.
 - [ ] Testes em aparelho: verificar inicialização real dos novos núcleos, renderização Vulkan/Turnip, BIOS/firmware e compatibilidade dos jogos.
 - [ ] Não mesclar PR #57 nem publicar em tandem-latest sem autorização explícita; PR #41 permanece intocada.
+
+
+ATUALIZAÇÃO — CORREÇÃO DE BIOS E NOVOS NÚCLEOS — 2026-11-26
+- [x] CI #1692 — https://github.com/izzyn0okami/Tandem/actions/runs/45929592219 — check-style aprovado; testes falharam no teste de importação de kits aninhados. A promoção não criava a pasta pai do destino.
+- [x] CI #1693 — https://github.com/izzyn0okami/Tandem/actions/runs/45929606966 — check-style aprovado; mesma falha no teste de importação de kits aninhados.
+- [x] CI #1694 — https://github.com/izzyn0okami/Tandem/actions/runs/45929749855 — falha no mesmo teste, em revisão anterior à correção.
+- [x] CI #1695 — https://github.com/izzyn0okami/Tandem/actions/runs/45929960336 — check-style aprovado; build ainda em andamento no momento do registro.
+- [x] CI #1696 — https://github.com/izzyn0okami/Tandem/actions/runs/45930092297 — check-style aprovado; build ainda em andamento no momento do registro.
+- [x] CI #1697 — https://github.com/izzyn0okami/Tandem/actions/runs/45930158686 — check-style aprovado; build ainda em andamento no momento do registro.
+- [x] CI #1698 — https://github.com/izzyn0okami/Tandem/actions/runs/45930294030 — check-style aprovado; build ainda em andamento no momento do registro.
+- [ ] CI #1699 — https://github.com/izzyn0okami/Tandem/actions/runs/45930367792 — check-style e testes/build ainda em andamento no momento do registro; inclui correção para criar a pasta pai antes de promover kits aninhados.
+
+CORREÇÕES E EXPANSÃO
+- [x] Corrigida a instalação de kits aninhados: cria o diretório pai do destino antes de mover a pasta preparada.
+- [x] A validação local de firmware agora respeita a localização definida por BIOS, incluindo arquivos armazenados na pasta de saves.
+- [x] Xbox 360 adicionado via Xenia Edge; Vulkan 1.1 obrigatório, sem save states e sem sincronização RomM.
+- [x] Sega Model 3 adicionado via Supermodel; OpenGL ES 3.0, com Games.xml e Supermodel.ini obrigatórios.
+- [x] PCSX2 adicionado como alternativa ao ARMSX2; preferência de renderizador agora permite que núcleos que exigem OpenGL ignorem a preferência global por Vulkan.
+- [ ] Confirmar conclusão das CIs #1695–#1699 e corrigir qualquer falha restante.
+- [ ] Testar em aparelho: importação dos kits BIOS, inicialização de cada núcleo, Vulkan/Turnip em Snapdragon e estabilidade.
+- [ ] PR #57 permanece aberta; não mesclar nem publicar em tandem-latest sem autorização explícita. PR #41 permanece intocada.
