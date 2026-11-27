@@ -52,3 +52,14 @@ CORREÇÃO DE TESTE LEGADO — 2026-11-27
 - [x] A primeira CI (#2016) identificou um teste existente, NintendoDsDeviceSyncTest.deviceSyncAcceptsDsvAndRejectsWrongRemoteExtension, que ainda chamava localSave com a extensão padrão .srm.
 - [x] Atualizado o teste legado para declarar a extensão obtida do adapter DeSmuME, conforme o novo contrato de validação.
 - [ ] Nova CI no head atualizado.
+
+
+CI APROVADA — PR #63 — 2026-11-27
+- [x] CI #2034 (run 46072847800) concluída com sucesso no head cd601b07b1d2f93bbf5065a7673804751fdbb8bb.
+- [x] check-style / Spotless: sucesso.
+- [x] Testes unitários: sucesso.
+- [x] Build assembleLawnWithQuickstepGithubDebug: sucesso.
+- [x] Upload do artefato APK Debug: sucesso; artefato disponível no run 46072847800.
+- [x] final-status: sucesso; etapas condicionais de publicação/notificação foram ignoradas conforme esperado.
+- [ ] Testes físicos específicos desta PR permanecem pendentes; CI não comprova compatibilidade real no Motorola Edge 30 Fusion.
+- [ ] Não mesclar antes da validação física correspondente e revisão final do diff.
