@@ -18,6 +18,8 @@ internal object DeviceSyncArtifactPolicy {
 
     fun remoteSlotForCore(coreId: String): String = CoreSaveAdapterRegistry.resolve(coreId).remoteSlot
 
+    fun fileExtensionForCore(coreId: String): String = CoreSaveAdapterRegistry.resolve(coreId).fileExtension
+
     /**
      * RomM pode devolver o identificador original do núcleo (ex.: snes9x) ou
      * o identificador namespaced do cliente (ex.: tandem_snes9x). Aceitamos
@@ -41,12 +43,13 @@ internal object DeviceSyncArtifactPolicy {
         operation.reason?.contains("no sync history", ignoreCase = true) == true
 
     fun selectForRomM(artifacts: List<SaveArtifact>): SaveArtifact? {
-        val candidates = artifacts.filter {
-            it.type in setOf(SaveArtifactType.CORE_SAVE, SaveArtifactType.MEMORY_CARD) &&
-                it.format.equals("srm", ignoreCase = true)
+        val candidates = artifacts.filter { artifact ->
+            val expectedExtension = fileExtensionForCore(artifact.coreId)
+            artifact.type in setOf(SaveArtifactType.CORE_SAVE, SaveArtifactType.MEMORY_CARD) &&
+                artifact.format.equals(expectedExtension, ignoreCase = true)
         }
         if (candidates.size > 1) {
-            throw IOException("Mais de um artefato .srm elegível foi encontrado; sincronização interrompida por ambiguidade.")
+            throw IOException("Mais de um artefato de save elegível foi encontrado; sincronização interrompida por ambiguidade.")
         }
         return candidates.singleOrNull()
     }
