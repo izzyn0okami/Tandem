@@ -79,6 +79,7 @@ class GameSessionCoordinatorTest {
     fun postSessionSyncRequiresCompatibleCoreAndRomPath() {
         assertFalse(GameSessionLifecyclePolicy.shouldEnqueuePostSessionSync(false, true))
         assertFalse(GameSessionLifecyclePolicy.shouldEnqueuePostSessionSync(true, false))
+        assertFalse(GameSessionLifecyclePolicy.shouldEnqueuePostSessionSync(true, true, sramLoadFailed = true))
         assertTrue(GameSessionLifecyclePolicy.shouldEnqueuePostSessionSync(true, true))
     }
 
