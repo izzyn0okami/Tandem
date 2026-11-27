@@ -168,10 +168,10 @@ object CoreRegistry {
             ),
         ),
         "gc" to listOf(
-            core("dolphin", "Dolphin", "GameCube; Vulkan/OpenGL ES; requer a pasta Sys do Dolphin"),
+            core("dolphin", "Dolphin", "GameCube; Vulkan/OpenGL ES; requer a pasta Sys do Dolphin; saves em arquivos próprios na pasta User, fora do sync SRAM RomM", supportsRomMSaveSync = false),
         ),
         "wii" to listOf(
-            core("dolphin", "Dolphin", "Wii; Vulkan/OpenGL ES; requer a pasta Sys do Dolphin"),
+            core("dolphin", "Dolphin", "Wii; Vulkan/OpenGL ES; requer a pasta Sys do Dolphin; saves em arquivos próprios na pasta User, fora do sync SRAM RomM", supportsRomMSaveSync = false),
         ),
         "3ds" to listOf(
             core("azahar", "Azahar", "Fork atual do Citra; Vulkan ou OpenGL ES 3.2", preferVulkan = true),
