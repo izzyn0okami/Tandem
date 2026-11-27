@@ -1318,3 +1318,14 @@ Commits:
 - d58b160bbf8022e20dcf2cc70fc38323c4674222 — CoreRegistry: capacidades desativadas para cores sem auditoria.
 - 4d76e02b26f5c0e55ecd36625391894f6c376a90 — teste de fallback conservador.
 - 17c87f82de16e4bf76e9e28a88448235a2a4768f — GameSessionActivity: capacidades desconhecidas desativadas também na sessão.
+
+
+ACOMPANHAMENTO DE CI — RECONSULTA — 2026-11-27
+- [x] CI #1791 — run 45989509316 — commit bd773e9e0051e4e0a91125d339f3a52992572431: check-style, build-debug-apk, upload do artefato e final-status concluídos com sucesso. Artefato assembleLawnWithQuickstepGithubDebug disponível (46.624.561 bytes; SHA-256 informado pelo GitHub: ca740c90629ca71a97e465feb39e863959c3fce628e1e30bafbb86caa246fb70).
+- [ ] CI #1793 — run 45989772089: check-style aprovado; Build APK em execução, upload e final-status pendentes.
+- [ ] CI #1800 — run 45990219076: check-style aprovado; testes unitários em execução, build APK e final-status pendentes.
+- [ ] CI #1801 — run 45990307128: check-style aprovado; testes unitários em execução, build APK e final-status pendentes.
+- [ ] CI #1802 — run 45990313964: check-style aprovado; testes unitários em execução, build APK e final-status pendentes.
+- [ ] CI #1804 — run 45990371323 — commit e536ed662cb8622155d3c3235eea99ccbf364a98: check-style aprovado; testes unitários em execução, build APK e final-status pendentes.
+- [ ] A correção conservadora de capacidades (head atual 93df6e0ade57509716f0f99efa2fe478120b2a46) ainda não apresentou status/execução CI associado no endpoint consultado; monitorar novo workflow da PR.
+- PR #57 permanece aberta, Draft e não mesclada; head atual 93df6e0ade57509716f0f99efa2fe478120b2a46. Sem publicação em tandem-latest.
