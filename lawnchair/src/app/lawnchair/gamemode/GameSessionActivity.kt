@@ -194,7 +194,11 @@ class GameSessionActivity : ComponentActivity() {
             coreFilePath = corePath
             gameFilePath = loadPath
             systemDirectory = GameFolders.dir(this@GameSessionActivity, FolderKind.Bios).absolutePath
-            savesDirectory = effectiveSavesDirectory.absolutePath
+            savesDirectory = if (coreId in setOf("desmume", "desmume2015")) {
+                store.coreSaveDirectory.absolutePath
+            } else {
+                effectiveSavesDirectory.absolutePath
+            }
             preferVulkan = coreInfo?.preferVulkan ?: GameModeSettings.isVulkanPreferred(this@GameSessionActivity)
             vulkanDriver = if (GameModeSettings.isExternalVulkanDriverEnabled(this@GameSessionActivity)) {
                 GameModeSettings.vulkanDriver(this@GameSessionActivity)
