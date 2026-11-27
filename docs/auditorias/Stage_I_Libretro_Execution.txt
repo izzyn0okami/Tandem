@@ -48,7 +48,7 @@ CONCLUÍDO NESTA ABERTURA
 - [x] Inspecionados os arquivos-base listados acima e registrados os achados preliminares.
 
 PENDÊNCIAS
-- [ ] Concluir auditoria de código e contratos por I7–I16.\n- [x] I7 — reforçar seleção segura de entrada ZIP, rejeitando caminhos absolutos, traversal, segmentos inválidos e entradas sem metadados de tamanho/CRC; manter erro explícito para zero ou múltiplas ROMs compatíveis.\n- [x] I8 — manter bypass de extração para plataformas discBased e ZIPs nativos; confirmar preservação no código.\n- [ ] I7/I8 — testes automatizados e validação funcional dos casos ZIP ainda pendentes.
+- [ ] Concluir auditoria de código e contratos por I7–I16.\n- [x] I7 — reforçar seleção segura de entrada ZIP, rejeitando caminhos absolutos, traversal, segmentos inválidos e entradas sem metadados de tamanho/CRC; manter erro explícito para zero ou múltiplas ROMs compatíveis.\n- [x] I8 — manter bypass de extração para plataformas discBased e ZIPs nativos; confirmar preservação no código.\n- [x] I7/I8 — suíte automatizada de ZIP adicionada para extração única, múltiplas/zero candidatas, duplicatas, CRC/tamanho inválidos, limite de tamanho, corrupção, recuperação de backup, cache corrompido, caminhos inseguros e bypass discBased/ZIP nativo. CI da ponta corrigida e validação funcional no aparelho ainda pendentes.
 - [ ] Implementar correções comprovadas, preservando compatibilidade e comportamento existente.
 - [ ] Adicionar testes automatizados determinísticos para casos válidos, ambíguos e inválidos.
 - [ ] Executar CI completa (Spotless, testes unitários e build APK).
@@ -102,7 +102,7 @@ I10 — CONJUNTOS MULTIDISCO:
 - [ ] Validar no aparelho com uma playlist M3U real e com jogos independentes na mesma pasta.
 
 PENDÊNCIAS GERAIS ATUALIZADAS
-- [ ] I7/I8: adicionar testes automatizados específicos de extração ZIP (válido, múltiplas ROMs, zero candidatas, traversal, CRC/tamanho incorretos e ZIP corrompido).
+- [x] I7/I8: testes automatizados específicos de extração ZIP adicionados (válido, múltiplas ROMs, zero candidatas, entradas duplicadas, traversal, CRC/tamanho incorretos, limite de tamanho e ZIP corrompido). Aguardar CI da correção de source set; validação funcional no aparelho pendente.
 - [ ] I7/I8: validação funcional no aparelho.
 - [ ] I9: considerar extensãoless somente quando surgir uma plataforma real com contrato explícito; catálogo atual não contém esse caso.
 - [ ] I10: validar no aparelho a abertura de playlists multidisco e a preservação de jogos independentes.
@@ -1084,7 +1084,7 @@ AUDITORIA — ENTREGA DE ERROS DE INICIALIZAÇÃO DO NÚCLEO — 2026-11-27
 - [ ] Teste funcional no aparelho provocando falha real de inicialização de núcleo: confirmar aviso de erro e saída controlada, sem tela preta travada.
 - Esta correção não altera o comportamento de sessão saudável nem o ciclo de vida normal.
 
-- [x] Limpeza de recursos: removida a cópia redundante do texto de aviso do arquivo lawnchair/res/values/strings_game_mode.xml; o recurso fica apenas em go/quickstep/res/values/strings.xml, que gera o R usado pela GameSessionActivity. Evita duplicação entre source sets AOSP/Gradle.
+- [x] Limpeza de recursos: removida a cópia redundante do texto de aviso do arquivo lawnchair/res/values/strings_game_mode.xml; o recurso foi inicialmente colocado em go/quickstep/res/values/strings.xml, mas a auditoria de CI demonstrou que esse diretório não integra o source set Gradle; corrigido depois para quickstep/res/values/strings.xml. Evita duplicação entre source sets AOSP/Gradle.
 - Commit: 8a23456de35111456e38c43ea985d3fa8e991f35.
 
  
@@ -1109,3 +1109,10 @@ RESULTADO DAS CIs E CORREÇÃO DO RECURSO SRAM — 2026-11-27
 - [ ] Corrigir a nota histórica anterior que dizia que go/quickstep/res era o source set efetivo: essa conclusão estava incorreta; o source set ativo é quickstep/res.
 - [ ] Testes funcionais no aparelho continuam pendentes, inclusive SRAM rejeitado, sync pré/pós-jogo, erro real de inicialização, ZIPs e playlists M3U.
 - PR #57 permanece aberta como Draft. Nenhum merge ou publicação em tandem-latest foi realizado; PR #41 e #55 permanecem intocadas.
+
+
+REVISÃO DE COBERTURA I7/I8 — 2026-11-27
+- [x] Inspecionada a suíte RomUnzipperTest e confirmada cobertura automatizada para: extração de uma ROM compatível; cache validado e reutilização; cache corrompido; recuperação de backup após interrupção; entradas duplicadas; ZIP discBased e ZIP nativo sem extração; zero e múltiplas candidatas; traversal, caminhos absolutos POSIX/Windows, unidade Windows, segmentos dot/vazios; CRC e tamanho divergentes; limite de 8 GiB; ZIP corrompido e limpeza de arquivo temporário.
+- [x] Revisado RomUnzipper: saída é achatada para nome controlado pelo arquivo ZIP de origem, portanto nomes internos não definem caminhos de escrita; extração valida tamanho e CRC antes da promoção; substituição preserva backup anterior.
+- [ ] CI #1777 (run 45979600683) e #1778 (run 45979631712) ainda em andamento na última consulta; #1778 inclui a atualização do log.
+- [ ] Teste manual no aparelho continua necessário para confirmar comportamento com arquivos reais e sistemas de disco/multiarquivo.
