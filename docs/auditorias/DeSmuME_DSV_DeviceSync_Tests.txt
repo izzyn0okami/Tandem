@@ -32,3 +32,13 @@ CORREÇÃO DA CI #1987 — 2026-11-27
 - [x] Cobertura agora verifica que o DSV nativo do DeSmuME é inventariado e selecionado para Device Sync como CORE_SAVE/autosave, e que o arquivo DSV não é aceito como save de melonDS.
 - [x] Mantida a separação de adapters entre DeSmuME, DeSmuME 2015 e melonDS nos testes existentes de SaveArtifactCatalog.
 - [ ] Nova CI no head corrigido: Spotless, testes unitários, APK Debug e upload do artefato.
+
+
+RESULTADO FINAL DA CI — 2026-11-27
+- [x] PR event CI #2005 (run 46070598204), head validado: ddccf339032da6c4a1e7bc71a4db93c955a01940.
+- [x] CI adicional #2007 (run 46070720008) no mesmo head também aprovado.
+- [x] Spotless aprovado.
+- [x] Testes unitários aprovados.
+- [x] APK Debug assembleLawnWithQuickstepGithubDebug compilado.
+- [x] Artefato APK enviado com sucesso.
+- [x] Confirmado que a correção dos testes DSV não exige alteração em código de produção.
