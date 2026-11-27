@@ -642,7 +642,7 @@ class GameSessionActivity : ComponentActivity() {
             nativeDestroyed = true
         }
         coreLog?.close()
-        if (isFinishing) SessionDiagnostics.sessionEnded(this, "encerrado normalmente")
+        if (GameSessionLifecyclePolicy.shouldLogNormalEnd(isFinishing)) SessionDiagnostics.sessionEnded(this, "encerrado normalmente")
         super.onDestroy()
     }
 
@@ -702,7 +702,7 @@ class GameSessionActivity : ComponentActivity() {
         lostWatcher.stop()
         // Ao encerrar ou recriar a Activity, descarte o cliente RA e o núcleo antes de o
         // GLSurfaceView suspender o GL thread. Em uma pausa comum, preserve a sessão.
-        if (isFinishing || isChangingConfigurations) {
+        if (GameSessionLifecyclePolicy.shouldDestroyNativeOnPause(isFinishing, isChangingConfigurations)) {
             stopRaIdleLoop()
             raSession?.stop()
             retroView?.destroyNative()
@@ -712,7 +712,7 @@ class GameSessionActivity : ComponentActivity() {
         // Só libere e agende o upload depois que o GL foi pausado e o save local persistido.
         romPath?.let { path ->
             GameSessionCoordinator.markSessionInactive(this, path, intent.getStringExtra(EXTRA_PLATFORM), gameIdentity)
-            if (coreSupportsRomMSaveSync) {
+            if (GameSessionLifecyclePolicy.shouldEnqueuePostSessionSync(coreSupportsRomMSaveSync, path.isNotBlank())) {
                 coreIdOf()?.let { GameSessionCoordinator.enqueuePostSessionSync(this, path, it, intent.getStringExtra(EXTRA_PLATFORM), gameIdentity) }
             }
         }
