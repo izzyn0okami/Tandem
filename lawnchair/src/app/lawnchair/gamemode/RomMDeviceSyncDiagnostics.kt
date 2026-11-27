@@ -70,6 +70,7 @@ object RomMDeviceSyncDiagnostics {
                 file = localFile,
                 updatedAt = Instant.ofEpochMilli(localFile.lastModified()).toString(),
                 remoteSlot = remoteSlot,
+                expectedExtension = DeviceSyncArtifactPolicy.fileExtensionForCore(coreId),
             )
             val client = RomMDeviceSyncClient(connection.url, connection.token)
             val negotiation = client.inspectNegotiation(
