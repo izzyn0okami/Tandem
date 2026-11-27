@@ -61,7 +61,7 @@ object RomMDeviceSyncDiagnostics {
             val artifact = DeviceSyncArtifactPolicy.selectForRomM(store.inventory())
             val remoteSlot = artifact?.let(DeviceSyncArtifactPolicy::remoteSlot)
                 ?: DeviceSyncArtifactPolicy.remoteSlotForCore(coreId)
-            val localFile = artifact?.file ?: store.sramFile
+            val localFile = artifact?.file ?: store.deviceSyncSaveFile
             val emulator = "tandem_$coreId"
             val localSave = DeviceSyncProtocolJson.localSave(
                 romId = romId,
@@ -70,6 +70,7 @@ object RomMDeviceSyncDiagnostics {
                 file = localFile,
                 updatedAt = Instant.ofEpochMilli(localFile.lastModified()).toString(),
                 remoteSlot = remoteSlot,
+                expectedExtension = DeviceSyncArtifactPolicy.fileExtensionForCore(coreId),
             )
             val client = RomMDeviceSyncClient(connection.url, connection.token)
             val negotiation = client.inspectNegotiation(
