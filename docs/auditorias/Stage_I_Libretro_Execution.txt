@@ -820,3 +820,25 @@ CORREÇÃO DE AUDITORIA — INTERFACE DO GAMEPAD VIRTUAL — 2026-11-26
 - [x] Corrigida a pendência registrada após a CI #1673: não é necessário implementar uma nova tela de configurações do gamepad.
 - [ ] Testes no aparelho da aplicação dos ajustes (incluindo reiniciar sessão, opacidade, escala, deslocamentos e ocultação com controle físico) permanecem pendentes.
 - [ ] Testes de multitouch avançado e dos dois analógicos simultâneos permanecem pendentes.
+
+
+ATUALIZAÇÃO — CIs E SUPORTE VULKAN/DRIVERS EXTERNOS — 2026-11-26
+- [x] CI #1674 — https://github.com/izzyn0okami/Tandem/actions/runs/45926770292 — check-style, testes unitários, build debug APK, upload e final-status aprovados.
+- [x] CI #1675 — https://github.com/izzyn0okami/Tandem/actions/runs/45927425556 — check-style aprovado; build falhou antes da compilação porque o Gradle não conseguiu resolver o plugin KSP 2.3.13. Falha de resolução de dependência; não foi identificada falha de código.
+- [x] CI #1676 — https://github.com/izzyn0okami/Tandem/actions/runs/45927483638 — check-style, testes unitários, build debug APK e final-status aprovados.
+- [x] CI #1677 — https://github.com/izzyn0okami/Tandem/actions/runs/45927551658 — check-style, testes unitários, build debug APK e final-status aprovados.
+- [x] CI #1678 — https://github.com/izzyn0okami/Tandem/actions/runs/45927617217 — check-style, testes unitários e build debug APK aprovados; final-status em conclusão no momento do registro.
+- [x] CI #1679 — https://github.com/izzyn0okami/Tandem/actions/runs/45927791564 — check-style, testes unitários, build debug APK, upload e final-status aprovados. Build do código inicial de configuração Vulkan/drivers.
+- [x] CI #1680 — https://github.com/izzyn0okami/Tandem/actions/runs/45927810826 — Spotless aplicou formatação, mas o passo automático de commit falhou porque a branch avançou simultaneamente; não foi falha de compilação. O build ainda estava em andamento no momento do registro.
+- [x] CI #1681 — https://github.com/izzyn0okami/Tandem/actions/runs/45927951412 — check-style aprovado no HEAD formatado d7a7149ffd7ca02f3b35c36db1679dab41ff8f0a; testes/build ainda em andamento no momento do registro.
+
+IMPLEMENTAÇÃO — VULKAN E DRIVER ADRENO
+- [x] Inspecionada a integração nativa existente: LibretroDroid já dispõe de backend Vulkan e configuração de driver externo via libadrenotools.
+- [x] Adicionada preferência persistente para usar Vulkan quando disponível.
+- [x] Adicionada interface para importar pacote ZIP Turnip/Adreno, ativar/desativar o driver externo e removê-lo, com aplicação na próxima sessão.
+- [x] Criado importador privado e seguro: bloqueia caminhos ZIP fora da pasta, limita entradas e tamanho extraído, valida ELF64 little-endian AArch64 e preserva a instalação anterior se a importação falhar.
+- [x] GameSessionActivity agora encaminha a preferência Vulkan e a configuração do driver externo ao GLRetroViewData.
+- [ ] Validar em aparelho real: importação de pacote Turnip compatível com Adreno, fallback para driver do Android, inicialização Vulkan e estabilidade em sessões prolongadas.
+- [ ] Aguardar conclusão da CI #1681 antes de considerar a versão corrigida plenamente validada.
+- [ ] Ampliar catálogo ARM64 com ARMSX2, Dolphin, Azahar/Panda3DS, Cemu, RPCS3 e Vita3K, incluindo BIOS/firmware e particularidades de renderização.
+- [ ] Não mesclar PR #57 nem publicar em tandem-latest sem autorização explícita; PR #41 permanece intocada.
