@@ -220,3 +220,20 @@ VERIFICAÇÃO FINAL DE HEAD E CI — 2026-11-27
 - [ ] Nenhuma CI foi criada para o head 1b8d89186960e84d661461103b08618caf3274f2. A CI #1936 continua sendo sucesso histórico somente para d8b1e7829ef076562f4504f1b190cfddc70c9ddf.
 - [ ] Executar CI completa manualmente para o head atual e corrigir qualquer falha antes de prosseguir com rebase da PR #58.
 - [x] Nenhuma mudança em game-mode-m2-dev, tandem-latest, PR #41 ou PR #55.
+
+
+CORREÇÃO DO DESTINO NATIVO E DETECÇÃO DE PENDÊNCIA — 2026-11-27
+- [x] Criada a propriedade SaveStore.deviceSyncSaveFile: resolve para o arquivo nativo do adaptador (.dsv no DeSmuME/DeSmuME 2015) ou sram.srm nos demais núcleos.
+- [x] RomMDeviceSyncRunner passou a usar deviceSyncSaveFile como destino de download quando ainda não existe um artefato local; isso evita salvar conteúdo DSV em sram.srm.
+- [x] A captura temporária principal usa a extensão declarada pelo adaptador.
+- [x] A resolução de conflito valida também o nome/extensão e o emulador da versão remota antes de confirmar seu baseline.
+- [x] A restauração do histórico usa o destino nativo quando o arquivo local ainda não existe e recusa versões cujo nome não corresponde à extensão do núcleo.
+- [x] SavePathDiagnostics exibe o caminho do arquivo nativo e o destino efetivo do Device Sync.
+- [x] SaveSync.status já considera deviceSyncSaveFile; markPending agora também compara o hash do arquivo nativo para detectar alterações DSV antes de marcar o estado da sincronização.
+- [x] Adicionado teste JVM para confirmar que DeSmuME escolhe Pokemon.dsv e que núcleos convencionais continuam usando sram.srm.
+- [x] Adicionada validação compartilhada de nome/extensão por core, com testes para DeSmuME, DeSmuME 2015, melonDS e extensões ausentes.
+- [ ] CI continua pendente: a última execução disponível é CI #1936 no commit d8b1e7829ef076562f4504f1b190cfddc70c9ddf; não existe run que valide os commits posteriores. Head consultado nesta atualização: fca8f04151979533a236b4a9d15ec06ffa43530b.
+- [ ] Executar CI completa no head atual; validar compilação, Spotless e testes unitários antes de considerar a implementação DSV concluída.
+- [ ] Teste físico necessário no DeSmuME: criação do .dsv, upload RomM, download em instalação sem arquivo local, conflito, restauração de histórico e comparação byte a byte.
+- [ ] Auditoria separada do núcleo legado melonds permanece pendente: documentação consultada aponta .sav em Cache, diferente do .srm do melonDS DS e do .dsv do DeSmuME. Não alterar o adaptador sem confirmar o diretório Cache efetivamente disponível ao LibretroDroid.
+- [x] PR #58 continua aberta, não mesclada e baseada em feat/libretro-stage-i; seu estado Ready/Draft não foi alterado. Nenhuma alteração em game-mode-m2-dev, tandem-latest, PR #41 ou PR #55.
