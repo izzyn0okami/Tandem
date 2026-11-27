@@ -1,0 +1,468 @@
+
+
+CI APROVADA — PR #58 — atualização 2026-11-26
+- [x] CI #1522 — https://github.com/izzyn0okami/Tandem/actions/runs/45746878243 — conclusão success no commit cf70dad1ada109d4595db25b013f77187f241771.
+- [x] check-style / Spotless: sucesso; formatação aplicada e verificada.
+- [x] Testes unitários: sucesso.
+- [x] Build assembleLawnWithQuickstepGithubDebug: sucesso.
+- [x] Upload do APK de debug: sucesso.
+- [x] Job final-status: sucesso.
+- [x] Metadados de procedência do driver externo: nome do arquivo de origem, provedor, instante de importação e hash SHA-256 adicionados à instalação local.
+- [ ] Testar no aparelho os novos cores e respectivos BIOS/firmware, controles, áudio/vídeo, saves e estados.
+- [ ] Importar pacote Turnip/Adreno confiável e validar carregamento real no Snapdragon/Adreno, enumeração Vulkan, extensões e fallback.
+- [ ] Completar probe Vulkan explícito e testes de fallback; CI atual não valida inicialização de GPU física.
+- [ ] Completar auditoria integral de catálogo, extensões, BIOS/firmware e licenças/atribuições.
+- [ ] Rever integração RomM/RetroAchievements por core, respeitando armazenamento interno de emuladores sem save RAM Libretro.
+- PR #58 continua aberta e draft, baseada em PR #57; nenhuma mesclagem ou publicação em tandem-latest foi realizada.
+
+
+
+REVISÃO DE IMPLEMENTAÇÃO — 2026-11-26
+- [x] CI #1522 aprovada no commit cf70dad1ada109d4595db25b013f77187f241771; estilo, testes unitários, APK debug, upload de artefato e final-status passaram.
+- [x] Corrigido estado visual de seleção de driver Vulkan: preferências antigas que apontam para instalação ausente deixam de aparecer como selecionadas.
+- [x] Importação de drivers: consulta do nome de origem tornou-se opcional e não bloqueia importações quando o provedor SAF não oferece metadados.
+- [x] Vita3K: firmware passou a ser rastreado exclusivamente dentro do kit system/vita3k; removidos indicadores enganosos de PUP na raiz do sistema.
+- [x] Adicionado teste unitário garantindo que Vita3K exija o kit e não liste PUPs como BIOS na raiz.
+- [x] CI #1531 — https://github.com/izzyn0okami/Tandem/actions/runs/45748763904 — conclusão success no head 166b86857b47c12c6740d7aa79a99d4b62220250. Jobs build-debug-apk, check-style e final-status concluídos com sucesso; jobs condicionais de publicação/notificação foram ignorados conforme esperado.
+- [ ] Teste físico Vulkan/Turnip no Snapdragon/Adreno e validação dos cores avançados no aparelho continuam pendentes.
+
+
+REVISÃO VULKAN — 2026-11-26
+- [x] CI #1537 — https://github.com/izzyn0okami/Tandem/actions/runs/45750617958 — sucesso no commit c33df242704406b07279bff07608cd67bfa05e1d; build-debug-apk, check-style e final-status passaram; jobs condicionais de release/notificação foram ignorados.
+- [x] Revisado o probe nativo Vulkan existente: agora valida ponteiros de função, consulta versão com tratamento de erro, enumera todos os dispositivos físicos e procura um dispositivo com as extensões necessárias para exportação de frames.
+- [x] Fallback reforçado: se o driver customizado não carregar, falhar no probe, ou passar no probe mas falhar ao criar o contexto/dispositivo/recursos, o backend tenta novamente com o driver Vulkan do sistema.
+- [x] A configuração e o encerramento do loader limpam o estado de seleção do driver para evitar reaproveitar ponteiros/estado de uma biblioteca anterior.
+- [ ] CI da implementação Vulkan após os commits fc1e2e5, b190470 e posteriores ainda pendente; não considerar compilação validada até o resultado.
+- [ ] Teste físico no Snapdragon 888+ do usuário com pacote Turnip/Adreno confiável: importação, carregamento customizado, probe, fallback real, estabilidade e logs.
+- [ ] Testar núcleos que exigem Vulkan (Cemu, Vita3K, RPCS3, Xenia Edge) e os que apenas preferem Vulkan, verificando compatibilidade real no aparelho.
+
+- [x] Revisão adicional do backend: a seleção do dispositivo físico passou a escolher apenas GPUs que oferecem todas as extensões exigidas; não assume que o primeiro dispositivo enumerado é compatível.
+- [x] Verificação de funções Vulkan obrigatórias ampliada antes de criar recursos, evitando chamadas JNI/nativas por ponteiros ausentes em drivers incompletos.
+- [ ] CI da revisão Vulkan mais recente (commits b190470 e c59b500) ainda aguardando execução/conclusão.
+- [x] Seleção de GPU ampliada para exigir API Vulkan suficiente para o core, extensões de exportação de frame e fila gráfica/de computação utilizável pelo backend.
+- [ ] CI dos últimos ajustes de seleção de GPU ainda pendente; verificar build nativo, testes e Spotless antes de encerrar esta revisão.
+- [x] Probe Vulkan agora também trata a ausência inesperada de vkDestroyInstance sem dereferenciar ponteiro nulo; a disponibilidade é rejeitada com aviso.
+- [ ] CI incluindo a proteção final do probe (commit 80deb66) pendente.
+
+CI APROVADA — PR #58 — atualização 2026-11-27
+- [x] CI #1554 — https://github.com/izzyn0okami/Tandem/actions/runs/45752339074 — conclusão success no commit 79d9f56453b48e771acbf79c2ebaecea73a96f8c.
+- [x] check-style / Spotless: sucesso.
+- [x] Testes/build debug APK: sucesso.
+- [x] final-status: sucesso; jobs condicionais de release/notificação foram ignorados conforme esperado.
+- [ ] A CI confirma compilação e testes automatizados, não compatibilidade física de Vulkan/Turnip nem execução real de cada emulador/core.
+- [ ] Permanecem pendentes as validações de catálogo, BIOS/firmware, instalação/execução dos novos cores, importação e fallback de driver Vulkan, integração de saves/RomM/RetroAchievements e teste físico no Snapdragon 888+.
+- [ ] PR #58 continua draft, aberta e não mergeável contra sua base atual; depende da PR #57 e a branch está divergente da base (65 commits à frente e 228 atrás do head atual da #57). Rebase/atualização deve ocorrer somente depois da conclusão e merge autorizado da #57.
+- [x] Nenhum merge ou publicação em tandem-latest foi realizado nesta atualização.
+
+
+DEPENDÊNCIA CONCLUÍDA — MERGE DO ESTÁGIO I / PR #57 — 2026-11-27
+- [x] PR #57 foi mesclada em game-mode-m2-dev pelo commit f2ad315eedd814547bb47cfd060aaa87d27e0df5.
+- [x] A base definitiva do Estágio I agora é game-mode-m2-dev; a PR #58 não deve continuar dependendo da branch de feature já integrada.
+- [ ] Rebase/atualização da branch feat/arm64-core-expansion sobre game-mode-m2-dev, preservando integralmente os 66 commits de trabalho do Estágio J.
+- [ ] Resolver e revisar eventuais conflitos, especialmente em GamePlatforms.kt, CoreRegistry.kt, CoreInstaller.kt, BiosManager.kt, GameSessionActivity.kt e no log do Estágio I.
+- [ ] Após a atualização da branch, conferir diff da PR #58 para garantir que não reapresente alterações do Estágio I nem reverta correções já mescladas.
+- [ ] Executar CI completa sobre o novo head; a CI #1554 aprovada no commit 79d9f56453b48e771acbf79c2ebaecea73a96f8c é histórica e não valida a branch atualizada.
+- [ ] Continuam pendentes todos os testes físicos de cores avançados, BIOS/firmware, Vulkan/Turnip, saves/RomM e RetroAchievements listados neste log.
+- [x] PR #58 permanece aberta e draft; nenhum merge ou publicação em tandem-latest foi realizado.
+
+
+
+AUDITORIA DE DEPENDÊNCIA / DIVERGÊNCIA DA PR #58 — 2026-11-27
+- [x] Reconsultado o log do Estágio I na branch game-mode-m2-dev e confirmado o merge da PR #57 no commit f2ad315eedd814547bb47cfd060aaa87d27e0df5.
+- [x] Reconsultado o estado da PR #58: aberta, Draft, não mesclada; base ainda definida como feat/libretro-stage-i; head feat/arm64-core-expansion.
+- [x] Comparação realizada antes desta atualização documental: game-mode-m2-dev...feat/arm64-core-expansion = diverged, 67 commits à frente e 234 atrás; merge-base antigo 2d6ba3cc1e7ef1a4978907ed121b6e6f1c57e5d7.
+- [x] Confirmado que a PR contém 67 commits no total: 66 commits de implementação/auditoria do Stage J e 1 commit final que registrou a dependência do merge da PR #57.
+- [x] Diff atual contém 15 arquivos: 13 arquivos de código/testes e 2 logs de auditoria. Os pontos de maior sobreposição com Stage I são GamePlatforms.kt, CoreRegistry.kt, CoreInstaller.kt, BiosManager.kt e GameSessionActivity.kt.
+- [ ] Rebase real da branch feat/arm64-core-expansion sobre game-mode-m2-dev continua pendente. As ações GitHub disponíveis nesta sessão permitem consultar refs, criar commits/árvores e mover refs, mas não oferecem uma operação de rebase nem aplicação segura e sequencial dos patches dos 67 commits.
+- [ ] Não foi alterada a base da PR, não foi movida a ref da branch e não foi criado um snapshot/squash substituindo o histórico; essas alternativas poderiam descartar a sequência de commits ou produzir uma PR enganosa.
+- [ ] Próxima operação técnica deve ser um rebase Git verdadeiro, preservando a sequência dos 66 commits de trabalho, resolvendo conflitos contra a base atual e mantendo o commit documental final de dependência.
+- [ ] Depois do rebase: verificar que o diff não reapresenta/reverte Stage I, revisar os 15 arquivos e executar CI integral no novo head.
+- [ ] Permanecem pendentes testes físicos de cores avançados, BIOS/firmware, Vulkan/Turnip, integração de saves/RomM e RetroAchievements, conforme itens anteriores deste log.
+- [x] PR #58 permanece aberta e Draft; nenhum merge ou publicação em tandem-latest foi realizado.
+- [x] PR #55 e PR #41 não foram alteradas.
+
+
+TERCEIRA TENTATIVA DE REBASE — 2026-11-27
+- [x] CI temporária #46034945737 concluiu o checkout completo do histórico e iniciou o rebase verdadeiro de feat/arm64-core-expansion sobre game-mode-m2-dev.
+- [x] O log Stage I foi preservado conforme planejado; o commit documental antigo que apenas corrigia o Stage I tornou-se vazio e foi omitido.
+- [x] O conflito em CoreInstaller.kt foi reconciliado preservando o instalador mais robusto da base, incluindo o suporte à distribuição externa do melonDS DS, e reaplicando os helpers de artefato/Azahar e IDs com hífen.
+- [ ] O rebase foi interrompido ao encontrar conflito add/add fora dos arquivos previamente revisados: lawnchair/src/app/lawnchair/gamemode/VulkanDriverManager.kt.
+- [x] A branch foi restaurada com --force-with-lease para o head original a8f64fe5003293d8f3ce70eedca5da01b7170e16; verificação da ref confirma esse SHA. Os 68 commits originais continuam preservados.
+- [x] PR #58 permanece aberta e não mesclada; base ainda feat/libretro-stage-i. Nenhuma alteração em game-mode-m2-dev ou tandem-latest.
+- [x] O workflow temporário não está presente no head restaurado; nenhum arquivo auxiliar de rebase foi mantido na branch.
+- [ ] Resolver manualmente a divergência de VulkanDriverManager.kt. A versão Stage I da base contém importação simples e segura de libvulkan_freedreno.so; Stage J contém o gerenciador AdrenoTools completo com meta.json, hash, dependências, seleção de driver e compatibilidade com bundles multi-plataforma. A reconciliação precisa preservar as melhorias de segurança da base e as capacidades completas do Stage J, além de compatibilizar os pontos de chamada da interface.
+- [ ] Antes de nova tentativa, auditar todos os pontos de uso de VulkanDriverManager em ambas as branches e elaborar uma implementação combinada coerente; não resolver o conflito escolhendo cegamente ours/theirs.
+- [ ] Depois da reconciliação, reexecutar rebase Git real, validar histórico e diff, atualizar a base da PR somente após validação e executar CI completa no novo head.
+- [ ] Permanecem pendentes testes físicos de cores avançados, BIOS/firmware, Vulkan/Turnip, integração de saves/RomM e RetroAchievements.
+- [x] Nenhum merge ou publicação em tandem-latest foi realizado.
+
+ANÁLISE DE RECONCILIAÇÃO — VULKAN DRIVER MANAGER — 2026-11-27
+- [x] Reexaminado o resultado bruto da CI temporária #46034945737 (run 46034945737, job 140627860480): o rebase avançou até o commit 452f9ba3af (quinto item da sequência), depois de preservar o log Stage I e reconciliar CoreInstaller.
+- [x] Confirmado no log do job que o único conflito que interrompeu essa tentativa foi add/add em lawnchair/src/app/lawnchair/gamemode/VulkanDriverManager.kt; a automação abortou o rebase e restaurou a branch de trabalho ao commit original a8f64fe5003293d8f3ce70eedca5da01b7170e16 antes do commit documental de auditoria.
+- [x] Revisada a implementação da base: importação de ZIP para armazenamento privado, normalização de separadores, contenção por caminho canônico, rejeição de traversal/absolutos/unidades Windows, limite de 512 entradas e 384 MiB, validação ELF64/AArch64, staging e backup/rollback.
+- [x] Revisada a implementação Stage J: AdrenoTools meta.json schemaVersion 1, detecção Qualcomm/Adreno, seleção persistida, validação de API mínima, vendor, biblioteca principal e SHA-256, validação de todas as bibliotecas .so, limites mais restritos (64 entradas, 256 MiB total e 128 MiB por arquivo), suporte a bundle Turnip com pasta android/ e exclusão de componentes linux/ e LICENSES/.
+- [x] Mapeada a integração de runtime: a base usa GameModeSettings para fornecer VulkanDriver à GameSessionActivity e expõe importação simples em GameModeActivity; Stage J substitui isso por VulkanDriverManager.selected() em GameSessionActivity e adiciona a UI de importação/seleção em CoresScreen.
+- [ ] Implementar uma versão combinada do VulkanDriverManager que preserve contenção canônica, validação de caminhos, staging e rollback da base, junto com o parser AdrenoTools, metadados, hash, seleção e suporte a bundles Android do Stage J.
+- [ ] A implementação combinada deve manter o armazenamento em diretório privado do app, limitar entradas/tamanhos, validar cada .so como ELF64/AArch64 e nunca permitir que um pacote malformado substitua um driver instalado válido.
+- [ ] Adicionar testes de regressão para ZIP com raiz android/, bundle multi-plataforma, caminho traversal/absoluto, entradas duplicadas, .so inválida, meta.json ausente/inválido, hash divergente e rollback após falha.
+- [ ] Auditar a sequência posterior de commits de GameSessionActivity, GameModeActivity, GameModeSettings e CoresScreen para resolver as integrações de forma consistente; não assumir que a resolução do arquivo do gerenciador isoladamente conclui a migração.
+- [x] A PR #58 permanece aberta, não mesclada e com base ainda feat/libretro-stage-i. O head contém apenas commits documentais de auditoria após a tentativa; não foi publicado em game-mode-m2-dev nem tandem-latest.
+- [x] Nenhuma alteração em PR #41 ou PR #55.
+
+INTEGRAÇÃO DE UI E SESSÃO — VULKAN — 2026-11-27
+- [x] Inspecionado o patch do commit Stage J 71709e03fc: GameSessionActivity passa a derivar coreId por CoreInstaller.coreIdFromFile(), ativa preferVulkan somente para os cores Vulkan definidos e injeta VulkanDriverManager.selected() na sessão LibretroDroid.
+- [x] Inspecionado o patch do commit Stage J 6822e06dcf: CoresScreen recebe o seletor AdrenoTools, importação ZIP, lista de drivers instalados e opção explícita de voltar ao driver do sistema.
+- [x] Identificado conflito de integração que não aparece como add/add: game-mode-m2-dev ainda contém o painel antigo de Vulkan em GameModeActivity/GameScreens e GameModeSettings; a branch Stage J usa CoresScreen como interface e não contém essas chamadas antigas.
+- [ ] Ao reconciliar, remover o painel antigo de Vulkan de GameModeActivity/GameScreens e suas chamadas/estados, para evitar UI duplicada e chamadas ao método legado importTurnipDriver que não existem no gerenciador AdrenoTools.
+- [ ] Remover ou deixar explicitamente obsoletas as preferências globais antigas de Vulkan/driver em GameModeSettings; a fonte de verdade passa a ser VulkanDriverManager.selected()/selectedId(), com preferência Vulkan aplicada por core no GameSessionActivity.
+- [ ] Preservar integralmente as demais configurações e a lógica da base em GameModeActivity/GameScreens/GameModeSettings; a remoção deve limitar-se ao bloco antigo de Vulkan.
+- [ ] Revisar GameSessionActivity após aplicar o commit 71709e03fc, confirmando que a regra de saves de DeSmuME da base continua intacta e que o novo driver selecionado é aplicado apenas aos cores Vulkan suportados.
+
+ENDURECIMENTO DO IMPORTADOR VULKAN — 2026-11-27
+- [x] Adicionado safeArchiveOutput(): cada arquivo extraído é resolvido por caminho canônico e precisa permanecer diretamente dentro da pasta temporária privada; nomes com separadores, traversal, unidade de disco ou nomes especiais são rejeitados.
+- [x] Importador AdrenoTools agora usa a validação canônica antes de criar cada arquivo, mantendo o formato root/android do bundle e os limites de entradas/tamanho já existentes.
+- [x] Reorganizado o commit da instalação: a nova instalação só substitui definitivamente a anterior depois de readInstalled() validar metadados, ELF64/AArch64 e SHA-256 no destino final.
+- [x] Em falha de instalação ou validação final, a nova pasta é removida e o backup anterior é restaurado; falhas de limpeza/restauração não são ignoradas silenciosamente.
+- [x] Criado VulkanDriverManagerTest.kt com testes JVM para caminho canônico válido e rejeição de traversal/separadores/unidade Windows.
+- [ ] CI de validação para os commits a377e13dd914201fc21b3c30ddf54ca912b7303d e 2951e2378b2676ab1cd7b6b9f7cbead1490b249d ainda não foi executada. A conexão GitHub atual não disponibiliza dispatch manual de workflow e os commits via API não geraram execução pull_request; não declarar compilação/testes aprovados.
+- [x] Tentativa de criar workflow temporário de validação reutilizando ci.yml não gerou execução; arquivo .github/workflows/stage-j-validation.yml foi removido para não deixar automação auxiliar permanente.
+- [ ] Antes de rebase, executar CI real para o head com endurecimento; depois reconciliar o conflito add/add do VulkanDriverManager preservando esta implementação combinada e remover o painel Vulkan legado de GameModeActivity/GameScreens.
+- [x] Nenhum merge, mudança da base da PR, publicação em game-mode-m2-dev/tandem-latest ou alteração em PR #41/#55 foi realizado.
+
+CI #1934 APROVADA — HARDENING VULKAN — 2026-11-27
+- [x] CI #1934 executada por workflow_dispatch no head d60e12d861ef393e91f3ff763094dc293dbe94a5 (run 46036862086).
+- [x] Job build-debug-apk: sucesso; passo Run unit tests: sucesso; Build APK assembleLawnWithQuickstepGithubDebug: sucesso; upload do artefato: sucesso.
+- [x] Job check-style: sucesso; Spotless automático não precisou gerar commit e a verificação final passou.
+- [x] Artefato assembleLawnWithQuickstepGithubDebug criado (artifact ID 15219671225, 46.634.389 bytes; expira em 2027-02-25).
+- [x] A CI confirma compilação e testes unitários da branch Stage J antes do rebase; não valida integração com game-mode-m2-dev nem comportamento em dispositivo.
+- [x] Sincronizado docs/auditorias/Stage_I_Libretro_Execution.txt da branch Stage J com o conteúdo integral atual da base game-mode-m2-dev (blob SHA bb f6b6a718c09415ec222aeb929f0b3ce077ec03), removendo a cópia antiga/truncada que causava diff documental.
+- [ ] Conferir o diff novamente e executar CI após a sincronização documental se a mudança disparar workflow; confirmar que o log Stage I está idêntico à base.
+- [ ] Prosseguir com rebase real somente depois de planejar a reconciliação de VulkanDriverManager e a remoção do painel Vulkan legado de GameModeActivity/GameScreens, sem descartar recursos não relacionados da base.
+- [x] PR #58 permanece aberta, não mesclada, ainda baseada em feat/libretro-stage-i; nenhuma publicação em tandem-latest.
+REGRESSÃO DE SAVES DS DETECTADA E CORRIGIDA — 2026-11-27
+- [x] Na comparação linha a linha de GameSessionActivity entre game-mode-m2-dev e Stage J, detectado que a implementação Stage J substituía savesDirectory pelo diretório global, removendo a exceção necessária para DeSmuME/DeSmuME 2015.
+- [x] Restaurada na branch Stage J a regra da base: cores desmume e desmume2015 continuam usando store.coreSaveDirectory; demais cores usam GameFolders.dir(FolderKind.Saves).
+- [x] SavePathDiagnostics.effectiveDirectory também voltou a refletir o diretório por core para DeSmuME, evitando diagnóstico divergente do caminho real.
+- [ ] A correção foi feita após a CI #1934; precisa de nova CI no head atualizado 537ff8ac1e95cc4ff4f6edb867884d602feb588a antes de rebase.
+- [x] Comparação de auditoria confirmou que Stage_I_Libretro_Execution.txt agora é byte a byte idêntico ao arquivo da base game-mode-m2-dev.
+- [ ] PR #58 segue com base antiga feat/libretro-stage-i. Não mudar a base até reconciliar todos os conflitos e confirmar CI.
+
+
+FALHA DE CI E CORREÇÃO DE COMPATIBILIDADE COM STAGE I — 2026-11-27
+- [x] CI #1935 (run 46039381394) analisada: Spotless passou, mas a compilação Kotlin falhou em GameSessionActivity.kt nas linhas 192 e 210 porque SaveStore.coreSaveDirectory não existia na branch Stage J.
+- [x] Restaurada em SaveStore.kt a propriedade pública coreSaveDirectory, apontando para o diretório isolado do jogo/núcleo já resolvido pelo próprio SaveStore; isso mantém DeSmuME/DeSmuME 2015 no diretório por-core sem alterar o caminho dos demais cores.
+- [x] Correção registrada no commit 05d5ee7d835aa3ac4ec601996683b2777891feb2.
+- [ ] Nova CI ainda necessária: a CI #1935 validou o head anterior 548e76d0c0f0d9817afe1f1efd91c75663f16d08 e não valida esta correção.
+- [ ] Auditoria comparativa adicional identificou que game-mode-m2-dev também contém nativeSaveFile (incluindo .dsv para núcleos compatíveis) e sua inclusão no inventário SaveArtifact; esses elementos não existem na versão Stage J de SaveStore.kt. A integração depende de CoreSaveAdapterRegistry e dos arquivos de suporte presentes na base Stage I, portanto deve ser recuperada durante o rebase real, não referenciada isoladamente antes de importar suas dependências.
+- [ ] Não iniciar novo rebase até a CI do head corrigido passar e até a reconciliação dos arquivos Stage I/Stage J estar planejada.
+- [x] PR #58 permanece aberta, sem merge e sem alteração de base; game-mode-m2-dev e tandem-latest permanecem intocadas.
+
+
+RESTAURAÇÃO DE COMPATIBILIDADE DE SAVES NINTENDO DS — 2026-11-27
+- [x] Comparação estática de SaveStore.kt, CoreSaveAdapter.kt, SaveArtifactCatalog.kt e GameSessionActivity.kt entre game-mode-m2-dev e feat/arm64-core-expansion.
+- [x] Confirmado que a versão Stage I já possuía CoreSaveAdapterRegistry e o adaptador nativo DeSmuME para arquivos .dsv; a classe CoreSaveAdapter.kt também existe no Stage J, mas a regra DeSmuME e o campo fileExtension tinham sido perdidos.
+- [x] Restaurado no Stage J o campo fileExtension com padrão srm e o mapeamento explícito de desmume/desmume2015 para .dsv, mantendo cada core DS compatível apenas consigo mesmo.
+- [x] SaveStore agora expõe o arquivo nativo <nome-da-ROM>.dsv e o inclui no inventário tipado quando presente.
+- [x] SaveArtifactCatalog classifica .dsv como CORE_SAVE somente para os cores cujo adaptador declara essa extensão.
+- [x] Adicionados testes JVM para inventário do DSV, classificação/slot e isolamento de compatibilidade entre DeSmuME, DeSmuME 2015 e melonDS.
+- [x] GameSessionActivity já preservava o diretório por-core de DeSmuME após a correção anterior; essa regra foi mantida.
+- [ ] Executar CI após os commits de restauração DSV; nenhuma compilação/teste automatizado foi validado ainda para esta sequência.
+- [ ] Validar no aparelho a criação, leitura e sincronização RomM do arquivo .dsv; o código e os testes JVM não comprovam o comportamento real do núcleo.
+- [ ] Continuar auditoria das diferenças de SaveStore e fluxo RomM entre Stage I e Stage J antes de retomar o rebase real.
+- [x] PR #58 permanece aberta, não mesclada e com base inalterada; game-mode-m2-dev e tandem-latest não foram modificadas.
+
+
+RESULTADO DE CI HISTÓRICA E VALIDAÇÃO PENDENTE DOS AJUSTES DSV — 2026-11-27
+- [x] Reconsultado Actions: CI #1936 — https://github.com/izzyn0okami/Tandem/actions/runs/46040639108 — conclusão success.
+- [x] A CI #1936 foi executada no commit d8b1e7829ef076562f4504f1b190cfddc70c9ddf, após a restauração de coreSaveDirectory, e valida aquele head.
+- [ ] A CI #1936 é anterior aos commits e48c3cb, 4bdff08, bea734c, 6861c1c e e7217b5; portanto, não valida a restauração do adaptador DSV, SaveStore, catálogo, testes ou este log.
+- [ ] Aguardar/executar uma nova CI no head e7217b566bae7abcea7daebd0e5bd7ea42c9fdd5 antes de considerar os ajustes de saves compilados e testados.
+- [x] PR #58 permanece aberta e não mesclada, com base feat/libretro-stage-i; nenhuma mudança em game-mode-m2-dev ou tandem-latest.
+
+
+AMPLIAÇÃO CONTROLADA DO DEVICE SYNC PARA SAVES NATIVOS .DSV — 2026-11-27
+- [x] Verificada a documentação oficial do Device Sync Protocol RomM 5.4: o manifesto transporta file_name, hash, tamanho, slot e emulador; o protocolo documentado não impõe extensão .srm. A documentação de Saves & States também descreve save files genéricos e não limita o endpoint a SRAM.
+- [x] Inspecionada a implementação atual do endpoint POST /api/saves do RomM: valida/sanitiza o nome recebido e grava o arquivo, sem uma lista de extensões .srm exclusiva identificada no fluxo de upload.
+- [x] Identificada a restrição artificial no cliente Tandem: seleção de artefatos, manifesto, validação de download e upload recusavam qualquer extensão diferente de .srm.
+- [x] DeviceSyncArtifactPolicy agora seleciona o formato declarado pelo CoreSaveAdapter; para DeSmuME aceita .dsv, mantendo .srm para os demais adaptadores e cartão PSX.
+- [x] DeviceSyncProtocolJson e RomMDeviceSyncClient agora validam a extensão esperada pelo núcleo em manifesto, download e upload, sem relaxar a validação para extensões arbitrárias.
+- [x] RomMDeviceSyncRunner usa a extensão nativa nos nomes de arquivos enviados, arquivados e validados ao restaurar versões; a restauração manual do histórico também recusa extensão incompatível.
+- [x] Diagnóstico Device Sync passa a usar a extensão declarada pelo adaptador.
+- [x] Testes adicionados para seleção DSV, manifesto DSV, rejeição de extensão divergente, validação de download e upload DSV.
+- [ ] Nova CI ainda pendente para o conjunto de alterações de Device Sync; não considerar compilação/testes aprovados até a execução no head atual.
+- [ ] Teste físico ainda necessário com DeSmuME: criar save .dsv, upload ao RomM, download em nova sessão, resolução de conflito e verificação byte a byte.
+- [ ] A compatibilidade fica limitada aos IDs DeSmuME declarados; não presume compatibilidade de .dsv com melonDS nem com outros cores DS.
+- [x] PR #58 continua aberta e não mesclada; base continua feat/libretro-stage-i. Nenhuma publicação em game-mode-m2-dev ou tandem-latest.
+
+
+DISTINÇÃO DOS FORMATOS DOS CORES NINTENDO DS — 2026-11-27
+- [x] Consultada a documentação oficial Libretro: melonDS DS usa .srm na pasta Save do frontend; o núcleo legado melonDS usa .sav na pasta Cache; DeSmuME mantém seu formato nativo .dsv.
+- [x] O catálogo Stage J oferece os IDs melonds, desmume, desmume2015 e melondsds; melondsds permanece no fluxo .srm já suportado, enquanto DeSmuME agora usa .dsv no Device Sync.
+- [ ] O núcleo legado melonds ainda exige auditoria separada: a sessão atual passa a pasta Save, mas a documentação Libretro aponta a pasta Cache e extensão .sav. Não presumir que o suporte .srm genérico cubra esse core.
+- [ ] Antes de implementar melonds legado, confirmar a propriedade de diretório Cache disponível no GLRetroViewData/LibretroDroid e desenhar migração/isolamento por ROM para .sav, sem misturar com saves de melonDS DS.
+- [ ] CI do conjunto DSV/Device Sync continua pendente no head atual; não há run posterior aos commits de ampliação.
+
+
+DESTINO NATIVO DE DOWNLOAD E ESTADO DE SINCRONIZAÇÃO — 2026-11-27
+- [x] SaveStore agora expõe deviceSyncSaveFile: usa o arquivo nativo declarado pelo adaptador (por exemplo .dsv) ou sram.srm nos cores convencionais.
+- [x] RomMDeviceSyncRunner usa deviceSyncSaveFile como destino quando ainda não existe artefato local, evitando descarregar um save DeSmuME em sram.srm e deixá-lo invisível ao core.
+- [x] Arquivos temporários de captura do Device Sync usam a extensão declarada pelo núcleo.
+- [x] SavePathDiagnostics agora mostra o arquivo nativo do core e o destino efetivo do Device Sync.
+- [x] SaveSync.status consulta deviceSyncSaveFile, permitindo que o estado de sincronização seja exibido também quando o único save local é um arquivo nativo como .dsv.
+- [ ] markPending ainda depende do fluxo de agendamento do Worker para refletir a mudança de saves nativos; revisar se a UI precisa antecipar o estado PENDING antes do enfileiramento.
+- [ ] CI permanece pendente no head 08b888bd43a53b653e9a9989c45d494d383f612d; não há execução nova confirmada.
+- [ ] Testes físicos continuam necessários para upload/download/conflict do .dsv no DeSmuME.
+
+
+VERIFICAÇÃO FINAL DE HEAD E CI — 2026-11-27
+- [x] PR #58 permanece aberta e não mesclada; base ainda feat/libretro-stage-i; head atual 1b8d89186960e84d661461103b08618caf3274f2.
+- [x] Conferidos no head atual: adaptador .dsv, SaveStore.nativeSaveFile/deviceSyncSaveFile, inventário DSV, política de extensão por core, manifesto/upload/download com extensão declarada, runner, diagnóstico e teste de protocolo.
+- [ ] Nenhuma CI foi criada para o head 1b8d89186960e84d661461103b08618caf3274f2. A CI #1936 continua sendo sucesso histórico somente para d8b1e7829ef076562f4504f1b190cfddc70c9ddf.
+- [ ] Executar CI completa manualmente para o head atual e corrigir qualquer falha antes de prosseguir com rebase da PR #58.
+- [x] Nenhuma mudança em game-mode-m2-dev, tandem-latest, PR #41 ou PR #55.
+
+
+CORREÇÃO DO DESTINO NATIVO E DETECÇÃO DE PENDÊNCIA — 2026-11-27
+- [x] Criada a propriedade SaveStore.deviceSyncSaveFile: resolve para o arquivo nativo do adaptador (.dsv no DeSmuME/DeSmuME 2015) ou sram.srm nos demais núcleos.
+- [x] RomMDeviceSyncRunner passou a usar deviceSyncSaveFile como destino de download quando ainda não existe um artefato local; isso evita salvar conteúdo DSV em sram.srm.
+- [x] A captura temporária principal usa a extensão declarada pelo adaptador.
+- [x] A resolução de conflito valida também o nome/extensão e o emulador da versão remota antes de confirmar seu baseline.
+- [x] A restauração do histórico usa o destino nativo quando o arquivo local ainda não existe e recusa versões cujo nome não corresponde à extensão do núcleo.
+- [x] SavePathDiagnostics exibe o caminho do arquivo nativo e o destino efetivo do Device Sync.
+- [x] SaveSync.status já considera deviceSyncSaveFile; markPending agora também compara o hash do arquivo nativo para detectar alterações DSV antes de marcar o estado da sincronização.
+- [x] Adicionado teste JVM para confirmar que DeSmuME escolhe Pokemon.dsv e que núcleos convencionais continuam usando sram.srm.
+- [x] Adicionada validação compartilhada de nome/extensão por core, com testes para DeSmuME, DeSmuME 2015, melonDS e extensões ausentes.
+- [ ] CI continua pendente: a última execução disponível é CI #1936 no commit d8b1e7829ef076562f4504f1b190cfddc70c9ddf; não existe run que valide os commits posteriores. Head consultado nesta atualização: fca8f04151979533a236b4a9d15ec06ffa43530b.
+- [ ] Executar CI completa no head atual; validar compilação, Spotless e testes unitários antes de considerar a implementação DSV concluída.
+- [ ] Teste físico necessário no DeSmuME: criação do .dsv, upload RomM, download em instalação sem arquivo local, conflito, restauração de histórico e comparação byte a byte.
+- [ ] Auditoria separada do núcleo legado melonds permanece pendente: documentação consultada aponta .sav em Cache, diferente do .srm do melonDS DS e do .dsv do DeSmuME. Não alterar o adaptador sem confirmar o diretório Cache efetivamente disponível ao LibretroDroid.
+- [x] PR #58 continua aberta, não mesclada e baseada em feat/libretro-stage-i; seu estado Ready/Draft não foi alterado. Nenhuma alteração em game-mode-m2-dev, tandem-latest, PR #41 ou PR #55.
+
+
+AUDITORIA DO NÚCLEO LEGADO MELONDS E MARCAÇÃO DE PENDÊNCIA — 2026-11-27
+- [x] Confirmado no código local de LibretroDroid que GLRetroViewData expõe systemDirectory e savesDirectory, mas não possui cacheDirectory; o objeto é passado a LibretroDroid.create() somente com esses dois caminhos.
+- [x] Confirmada na documentação Libretro a diferença entre os dois núcleos: melonDS legado grava *.sav no Cache do frontend; melonDS DS grava *.srm no Save do frontend. O fluxo de saves DSV é exclusivo de DeSmuME/DeSmuME 2015.
+- [x] Não foi redirecionado systemDirectory para tentar simular Cache: esse caminho também é usado para BIOS/firmware e dados de sistema, portanto misturá-lo ao cache de saves pode quebrar o carregamento dos jogos.
+- [ ] Suporte ao .sav do melonDS legado permanece pendente até ampliar LibretroDroid com um caminho Cache explícito e confirmar no código nativo como o core recebe esse diretório; não tratar .sav como .srm nem como .dsv.
+- [x] Corrigido SaveSync.markPending para comparar também RemoteFileKind.Save em store.deviceSyncSaveFile; agora alterações em .dsv podem marcar a sincronização como pendente antes do Worker.
+- [x] Criado teste JVM para seleção do destino Device Sync nativo do DeSmuME e fallback sram.srm nos demais núcleos.
+- [ ] CI ainda não executada para o conjunto completo. Head de código após as últimas correções: fca8f04151979533a236b4a9d15ec06ffa43530b; a CI #1936 não cobre nenhum desses commits posteriores.
+- [ ] Teste físico permanece pendente para DeSmuME: criação do .dsv, upload, download sem arquivo local, conflito e restauração de histórico.
+- [x] PR #58 continua aberta e sem merge; base antiga feat/libretro-stage-i, estado Ready mantido. Nenhuma alteração em game-mode-m2-dev, tandem-latest, PR #41 ou PR #55.
+
+Referências técnicas consultadas:
+- https://docs.libretro.com/library/melonds/
+- https://docs.libretro.com/library/melonds_ds/
+- libretrodroid/src/main/java/com/swordfish/libretrodroid/GLRetroViewData.kt (blob f9c9e61c5d3669a8fc7b34bc535a289728174825 na branch feat/arm64-core-expansion)
+
+
+NOVA TENTATIVA DE MESCLAGEM / REAUDITORIA — 2026-11-27
+- [x] Reconsultada a PR #57: encerrada com merged=true; merge commit f2ad315eedd814547bb47cfd060aaa87d27e0df5 em game-mode-m2-dev.
+- [x] Reconsultada a PR #58: aberta, não mesclada, head dea824aacb6c956af8351a9eecffd732cb2f5d2d; base ainda feat/libretro-stage-i.
+- [x] Comparação atual game-mode-m2-dev...feat/arm64-core-expansion: diverged; 116 commits exclusivos do head, 234 commits exclusivos da base; merge-base 2d6ba3cc1e7ef1a4978907ed121b6e6f1c57e5d7.
+- [x] Diff reportado contém 28 arquivos, incluindo cópia histórica de Stage_I_Libretro_Execution.txt (1559 adições/5 remoções), além dos arquivos de Stage J. A revisão deve impedir que essa cópia antiga reverta ou duplique mudanças da base.
+- [x] Verificados reviews e threads: nenhuma review submetida e nenhum thread inline pendente.
+- [x] Verificados workflow runs associados ao head consultado: nenhum run pull_request retornado; CI #1554 e #1934 permanecem históricas e não validam o head atual.
+- [x] Tentativa de merge squash pelo GitHub API, protegida por expected_head_sha, recusada pelo GitHub com HTTP 405: Pull Request has merge conflicts. Nenhum merge foi realizado.
+- [ ] Rebase Git verdadeiro de feat/arm64-core-expansion sobre game-mode-m2-dev ainda necessário. A integração deve preservar os 116 commits de Stage J e reconciliar VulkanDriverManager, integração Vulkan legada, GamePlatforms/CoreRegistry/CoreInstaller/BiosManager, GameSessionActivity e os arquivos de saves/Device Sync DS.
+- [ ] Não alterar a base da PR nem mover a branch por snapshot/squash antes do rebase; isso ocultaria a divergência e poderia reintroduzir regressões do Stage I.
+- [ ] Após rebase: conferir diff final sem duplicação de Stage I, executar CI completa no novo head, revisar resultado e somente então tentar novo merge.
+- [ ] Permanecem pendentes testes físicos dos cores avançados, BIOS/firmware, Vulkan/Turnip no Snapdragon/Adreno, saves/RomM e RetroAchievements conforme escopo Stage J.
+- [x] Nenhuma alteração em tandem-latest, PR #41 ou PR #55.
+
+
+AUDITORIA GLOBAL DAS PRs ABERTAS — 2026-11-27
+- [x] Inventário completo das PRs abertas do repositório: #55 e #58. PR #56 já mesclada; PR #57 já mesclada.
+- [x] PR #55 foi rebaseada documentalmente sobre o head atual de game-mode-m2-dev, preservando as conclusões G5/G7 em arquivo dedicado e evitando substituir o checklist vivo. CI #1937 iniciada; aguardar resultado antes do merge.
+- [x] PR #58 teve sua base corrigida de feat/libretro-stage-i para game-mode-m2-dev, pois a PR #57 já foi mesclada.
+- [x] Comparação de histórico da PR #58: 117 commits no head contra 234 commits posteriores na base, com merge-base 2d6ba3cc1e7ef1a4978907ed121b6e6f1c57e5d7.
+- [x] Confirmado que há sobreposição em arquivos centrais: BiosManager, CoreInstaller, CoreRegistry, CoreSaveAdapter, DeviceSyncArtifactPolicy, GamePlatforms, GameSessionActivity, RomMDeviceSyncClient, RomMDeviceSyncRunner, SaveArtifactCatalog, SaveStore, VulkanDriverManager e respectivos testes, além do log do Estágio I.
+- [ ] Rebase funcional da PR #58 ainda pendente. Não escolher automaticamente a versão antiga ou nova dos arquivos sobrepostos: as mudanças posteriores da base incluem correções do Estágio I, sincronização DS, lifecycle de sessão, unzipper e instalação de núcleos. Resolver por integração semântica e preservar ambos os conjuntos de comportamento.
+- [ ] Depois da reconciliação, executar CI completa no head atualizado, corrigir Spotless/testes/build e validar que o diff da PR contém apenas Stage J mais ajustes necessários.
+- [ ] Testes no aparelho continuam necessários para importação/fallback Vulkan e instalação/execução dos novos núcleos; CI não substitui esses testes.
+- [x] Nenhuma publicação em tandem-latest foi realizada. PR #41 não foi alterada.
+
+
+ATUALIZAÇÃO DA AUDITORIA GLOBAL — PR #55 CONCLUÍDA — 2026-11-27
+- [x] CI #1937 concluída com sucesso no commit 8089d52a003def9515efa8db968b926a752ce2aa: testes unitários, Spotless, build do APK e upload do artefato aprovados.
+- [x] PR #55 mesclada por squash em game-mode-m2-dev; merge commit e6949de1a62809e21772b51071f2f2a3c88fd130.
+- [x] Log docs/auditorias/Stage_G_Specialized_Audit.txt atualizado na base game-mode-m2-dev com o resultado real da CI e do merge.
+- [x] Inventário atualizado: PR #58 é a única PR aberta neste momento; PR #55 encerrada por merge. PR #56 e #57 já estavam mescladas.
+- [ ] PR #58 continua divergente de game-mode-m2-dev (118 commits exclusivos do head e 236 commits exclusivos da base; merge-base 2d6ba3cc1e7ef1a4978907ed121b6e6f1c57e5d7) e mergeable=false.
+- [ ] Não foi tentado merge forçado da PR #58. Rebase Git real e integração semântica dos arquivos sobrepostos continuam necessários.
+- [ ] Após integração: revisar diff final, executar CI completa no novo head e validar cores/Vulkan/Turnip fisicamente antes do merge.
+- [x] tandem-latest permanece intocada; nenhuma publicação ou atualização dessa branch foi realizada.
+
+
+REVISÃO ESTÁTICA ADICIONAL — 2026-11-27
+- [x] Reaberta a comparação contra o head atual de game-mode-m2-dev (base f13c7932cd006c086ca94b197a717462b495a899) e confirmada a divergência: 119 commits exclusivos da PR, 236 da base; merge-base 2d6ba3cc1e7ef1a4978907ed121b6e6f1c57e5d7.
+- [x] Inspecionado o diff de VulkanBackend: a proposta separa o probe do loader do driver selecionado, tenta o driver customizado e prevê fallback para libvulkan.so do sistema quando o probe customizado falha; a seleção física também passa a verificar extensões e filas requeridas.
+- [x] Inspecionado VulkanDriverManager: importação para armazenamento privado, limites de ZIP, rejeição de caminhos inseguros, validação ELF64/AArch64 e SHA-256 local estão presentes no código proposto.
+- [x] Inspecionadas as alterações de BiosManager, CoreInstaller e GamePlatforms: incluem requisitos específicos de kits BIOS, mapeamento de artefatos especiais (Azahar) e ampliação extensa do catálogo de plataformas.
+- [ ] Cobertura automatizada ainda não comprova o comportamento nativo do loader Vulkan (custom → fallback system), enumeração de múltiplas GPUs, seleção de fila compatível, nem recuperação após falha de criação de device/surface. Os testes Kotlin do gerenciador não substituem testes do backend C++.
+- [ ] Revisar com build NDK real a resolução de símbolos e o ciclo de vida de dlopen/dlclose; confirmar que nenhum objeto Vulkan continua usando funções de um loader já descarregado.
+- [ ] Confirmar em CI que a base atual e a integração semântica compilam juntas; nenhum resultado de CI foi obtido nesta rodada para o head 5030f359a2b81679cf6edab931ae492dd2ee6218.
+- [ ] A PR continua bloqueada por divergência e conflitos. Esta revisão estática não autoriza merge nem confirma funcionamento em hardware.
+- [x] Nenhuma alteração funcional foi feita nesta rodada; nenhum arquivo de implementação foi substituído. tandem-latest permanece intocada.
+
+
+RECONCILIAÇÃO DE CONFLITOS — INSPEÇÃO COMPARATIVA 2026-11-27
+- [x] Comparados os arquivos atuais da base e da PR, usando hashes de blob independentes.
+- [!] BLOQUEIO CRÍTICO — CoreInstaller.kt: a versão atual da base contém suporte explícito ao núcleo melonDS DS (melonds_ds), download externo fixado na versão 1.4.0, SHA-256 esperado, nomes próprios de arquivo, identificação reversa do core, extração validada e recuperação de backup. A versão da PR substitui o arquivo por uma implementação mais antiga/menor que não contém esse fluxo e adiciona apenas o mapeamento Azahar. Não aceitar a versão da PR por inteiro; a integração deve adicionar Azahar ao CoreInstaller atual sem remover melonds_ds nem seus mecanismos de integridade/rollback.
+- [!] BLOQUEIO CRÍTICO — VulkanDriverManager.kt: a base já possui um gerenciador de importação Turnip em `filesDir/vulkan/drivers/adreno`, API `importTurnipDriver/remove`, limite de 512 entradas e 384 MiB descompactados, validação ELF64/AArch64 e preservação do driver anterior. A PR introduz um modelo de catálogo/seleção multi-driver diferente, com `gpu-drivers`, metadados e API `importPackage/select/selected`. É conflito add/add sem equivalência de API; integrar os dois contratos cuidadosamente, preservando compatibilidade de chamadas/UI existentes e rollback.
+- [!] BIOSManager: a PR adiciona validações de conteúdo específicas para kits PS2/Vita/Dolphin; precisa ser aplicada sobre a implementação atual da base, não substituí-la. Verificar também que a versão da PR altera `rootDir/has` e mantém compatibilidade com a localização SAVES do modelo de BIOS da base.
+- [!] GamePlatforms: a PR adiciona catálogo e IDs de cores avançados, mas modifica definições existentes (PS2, GC, Wii, 3DS, Wii U e outras). A integração precisa preservar atributos e políticas recentes da base (extensões, aliases, multi-file/disc, BIOS, ROM ZIP e decisões Stage I), revisando cada plataforma alterada.
+- [!] SaveStore.kt: a PR acrescenta caminhos nativos DSV para melonDS; preservar isso sem perder o fluxo de sincronização/hash/artifacts atual da base. Validar compatibilidade do contrato `deviceSyncSaveFile` com DeviceSyncArtifactPolicy e SaveArtifactCatalog.
+- [x] Risco concreto identificado: a aplicação literal de CoreInstaller da PR regrediria o suporte melonDS DS que já foi implementado e testado na base. Portanto, não realizar merge/rebase automático ou cópia integral dos arquivos.
+- [ ] Próxima integração deve ser feita em branch nova baseada no head atual de game-mode-m2-dev, com alterações aditivas por arquivo, testes de regressão específicos para melonDS DS/Azahar e VulkanDriverManager, e revisão de todos os 28 arquivos.
+- [ ] Nenhuma implementação foi sobrescrita nesta inspeção; nenhuma branch de integração foi criada; nenhuma CI foi disparada; PR #58 segue bloqueada.
+
+
+REAUDITORIA DE CONTINUIDADE — 2026-11-27 15:00 (UTC-4)
+- [x] Consultado novamente o log Stage I na base game-mode-m2-dev; o arquivo está presente e confirma o merge da PR #57 no commit f2ad315eedd814547bb47cfd060aaa87d27e0df5.
+- [x] Consultado o log Stage G na base; confirma PR #55 mesclada no commit e6949de1a62809e21772b51071f2f2a3c88fd130 e suas decisões de escopo.
+- [x] Estado GitHub confirmado: PR #58 aberta, não mesclada, base game-mode-m2-dev, head feat/arm64-core-expansion; head 7b0979510618be91988490e414507fde89399dc9; base f13c7932cd006c086ca94b197a717462b495a899.
+- [x] Comparação atualizada: diverged, 121 commits exclusivos do head e 236 exclusivos da base; merge-base 2d6ba3cc1e7ef1a4978907ed121b6e6f1c57e5d7; 28 arquivos alterados.
+- [x] Confirmado que o diff ainda inclui docs/auditorias/Stage_I_Libretro_Execution.txt com 1564 linhas de alteração; esse arquivo é a cópia histórica da PR e não deve substituir o log atual da base.
+- [x] Consultados os workflow runs associados ao head 7b0979510618be91988490e414507fde89399dc9: nenhum run pull_request retornado. CI #1522/#1531/#1537/#1554 e demais execuções anteriores são históricas e não validam este head.
+- [x] Confirmado que o head atual da PR não mudou durante esta auditoria; não foi realizado merge, rebase, alteração funcional ou movimentação de refs.
+- [ ] Bloqueio principal permanece: rebase Git verdadeiro e reconciliação semântica dos 28 arquivos; a divergência não pode ser resolvida por merge direto, snapshot ou substituição integral de arquivos.
+- [ ] Após reconciliação: remover do diff a cópia obsoleta do log Stage I, preservar melonDS DS/Device Sync e integrar Azahar, reconciliar VulkanDriverManager e VulkanBackend, revisar catálogo/BIOS/saves e executar CI integral no novo head.
+- [ ] Validar no Motorola Edge 30 Fusion os cores/BIOS avançados e o fluxo Vulkan/Turnip; CI não substitui esses testes físicos.
+- [x] game-mode-m2-dev e tandem-latest não foram alteradas. PR #41 não foi alterada.
+
+
+CONTINUIDADE DA RECONCILIAÇÃO — 2026-11-27
+- [x] Confirmado novamente o único PR aberto: #58. Nenhuma outra PR aberta no repositório.
+- [x] Criada branch isolada `integration/stage-j-reconcile` a partir do head exato atual de `game-mode-m2-dev` (`f13c7932cd006c086ca94b197a717462b495a899`). A branch não altera a base nem a branch da PR.
+- [x] Revalidado CoreInstaller.kt da base: já contém tratamento especial de Azahar (`azahar_libretro.so`) e melonDS DS (`melonds_ds`, release v1.4.0, SHA-256 fixado, validação ELF e rollback). A descrição anterior do bloqueio foi corrigida: não portar o CoreInstaller antigo da PR; manter a versão atual da base. O ganho de Azahar do PR já está presente na base.
+- [!] VulkanDriverManager segue incompatível: base tem importTurnipDriver/remove e layout `vulkan/drivers/adreno`; PR tem importPackage/select/selected, catálogo de pacotes AdrenoTools e layout `gpu-drivers`. Requer adaptação compatível e revisão de chamadas/UI, não substituição integral.
+- [!] CoreRegistry.kt da PR deriva de versão antiga e usa CoreInfo com modelo simplificado; base atual já tem suporte a capabilities (states, RomM save sync e Vulkan preference). Portar apenas entradas e capacidades validadas para o catálogo atual, preservando o modelo mais novo.
+- [!] DeviceSyncArtifactPolicy da PR adiciona extensão por core e validação de nomes DSV; há possibilidade de port aditivo, mas exige validar os adapters de melonDS DS e a política atual de seleção de artefatos.
+- [!] C++ VulkanBackend da PR traz mudanças extensas no carregamento do loader, fallback custom→system e seleção de GPU/queue. Ainda precisa de análise linha a linha contra a implementação atual; não foi copiado nem compilado.
+- [ ] Revisar todos os 28 arquivos e portar somente diferenças ausentes, por grupos pequenos, com testes de regressão.
+- [ ] CI integral e validação física permanecem pendentes. Nenhum merge foi feito; `game-mode-m2-dev` e `tandem-latest` continuam intactas.
+
+
+PORTES INICIAIS — 2026-11-27
+- [x] CoreInstaller: validação de IDs de core agora aceita hífen (ex.: `bsnes-jg`), sem alterar nomes especiais Azahar/melonDS DS. Teste unitário correspondente adicionado. Commits `a6597567ab871b4e6fb6f56c77173c1c409a380b` e `492379de53b3ddaeaf4b1165f77a53788c6b5da6`.
+- [x] GamePlatforms: adicionadas 46 plataformas ausentes da base, copiando apenas entradas novas da PR; definições existentes da base foram preservadas (incluindo PS2, GameCube, Wii, 3DS, Wii U, PS3, Vita e Xbox 360). Commit `41887db5f0684f9419a3df2901b004e08ec374cb`.
+- [x] CoreRegistry: adicionadas 48 entradas de catálogo ausentes, sem substituir as definições existentes. Novos núcleos usam capacidades conservadoras (save states e RomM sync desativados até auditoria específica). Commit `c3fc1dade46d65aa1d53a78cdfd953c80d81f12f`.
+- [x] Teste de catálogo adicionado para sistemas retro/arcade e para garantir que os novos núcleos não anunciem capacidades de saves ainda não validadas. Commit `43a45206064fafcffd68c3df984ac4ae3555881b`.
+- [ ] CI ainda não executada para os commits de integração. Aguardando PR de validação; nenhum resultado de compilação/testes deve ser presumido.
+- [ ] Restam reconciliação Vulkan/Turnip, backend C++ Vulkan, BIOS avançadas, saves DSV/Device Sync, fluxo de saves para núcleos avançados, UI de seleção de drivers e revisão dos testes restantes.
+- [x] Alterações feitas somente na branch `integration/stage-j-reconcile`, derivada da base `f13c7932cd006c086ca94b197a717462b495a899`; branches `game-mode-m2-dev`, `feat/arm64-core-expansion` e `tandem-latest` não foram movidas por estes commits.
+
+
+CI #1942 APROVADA — PRIMEIRO LOTE DE RECONCILIAÇÃO STAGE J — 2026-11-27
+- [x] PR #59: https://github.com/izzyn0okami/Tandem/pull/59 — aberta, Draft, base game-mode-m2-dev, mergeable=true; head validado 9ec3581c842c1f5a17874a08e5db08b53ac65c57.
+- [x] CI #1942: https://github.com/izzyn0okami/Tandem/actions/runs/46056681802 — workflow_dispatch concluído com sucesso exatamente no head acima.
+- [x] check-style / Spotless: sucesso.
+- [x] Testes unitários: sucesso.
+- [x] Build assembleLawnWithQuickstepGithubDebug: sucesso.
+- [x] Upload do artefato APK: sucesso.
+- [x] final-status: sucesso; jobs condicionais de publicação/notificação foram ignorados conforme esperado.
+- [x] Esta CI valida o primeiro lote da branch integration/stage-j-reconcile; não valida integração de Vulkan multi-driver/backend C++, BIOS avançadas nem comportamento em hardware.
+- [x] Esclarecimento de escopo: o suporte DSV/DeSmuME e Device Sync já existe na base game-mode-m2-dev; não deve ser registrado como recurso Stage J ainda por portar. melonDS DS externo continua usando SRAM .srm no fluxo RomM atual.
+- [ ] Adicionar alternativas de cores ausentes em plataformas já existentes, como mudanças aditivas e conservadoras; não substituir defaults atuais nem duplicar melonds_ds.
+- [ ] Auditar e portar validações BIOS/firmware sobre os kits e caminhos atuais da base.
+- [ ] Reconciliar VulkanDriverManager AdrenoTools com importador Turnip atual, preservando validação canônica, limites, staging e rollback; integrar UI e chamadas sem duplicar painel legado.
+- [ ] Auditar e integrar backend C++ Vulkan (loader, seleção de GPU/queue e fallback custom→system), com testes nativos/CI.
+- [ ] Revisar catálogo/licenças/atribuições e realizar testes físicos no Motorola Edge 30 Fusion; CI não comprova compatibilidade dos cores nem Vulkan/Turnip real.
+- [x] Nenhuma mesclagem foi realizada. PR #59 continua Draft; PR #58 permanece aberta; game-mode-m2-dev e tandem-latest não foram alteradas diretamente.
+
+
+ALTERNATIVAS DE NÚCLEOS — LOTE ADITIVO — 2026-11-27
+- [x] Adicionadas como opções experimentais, sem alterar os núcleos padrão: PCEE2 (PS2), bsnes-jg (SNES), Beetle GBA/Meteor (GBA), Genesis Plus GX Wide (Genesis), Beetle PSX HW (PSX), Beetle SuperGrafx (PCE), Stella 2023 (Atari 2600), Ymir (Saturn) e Parallel DC (Dreamcast).
+- [x] Todas as alternativas novas usam experimentalCore: save states e RomM Device Sync permanecem explicitamente desativados até auditoria individual de formatos, BIOS/firmware e execução.
+- [x] Não foi adicionado o ID antigo melondsds: a plataforma NDS mantém melonds_ds como padrão externo atual; DeSmuME/DSV continua coberto pelo fluxo existente da base.
+- [x] Testes unitários adicionados para confirmar presença das alternativas, capacidades conservadoras e ausência do alias legado melondsds.
+- [ ] CI após os commits a19eb1f3a0eadb093e048040e31153529ad5213c e 7138b7031bade97ced641a9a8c087fff6586721d ainda pendente. A conexão atual não oferece dispatch de workflow; a CI #1942 anterior validou somente o head 9ec3581c842c1f5a17874a08e5db08b53ac65c57 e não cobre este lote.
+- [ ] Confirmar que os pacotes ARM64 dos novos cores estão realmente disponíveis no repositório de distribuição antes de expor a seleção em release; catálogo por si só não garante binário instalável.
+- [ ] Após CI, seguir com BIOS/firmware e Vulkan multi-driver/backend C++ em lotes independentes.
+
+
+BIOS E FIRMWARE — RECONCILIAÇÃO ADITIVA — 2026-11-27
+- [x] Preservado o BiosManager atual da base, incluindo BiosLocation.SAVES, hash MD5 oficial, verificação por metadados RomM, importação segura e staging/backup/rollback de kits.
+- [x] Portada somente a validação de conteúdo mínimo dos diretórios de kit, adaptada aos caminhos reais da base: PS2 usa pcsx2/bios e pcsx2/resources; GameCube/Wii usam dolphin-emu/Sys.
+- [x] Adicionado teste unitário para garantir que diretórios vazios não sejam considerados kits válidos e que os caminhos aninhados atuais sejam reconhecidos.
+- [x] Não foi importada a semântica antiga da PR #58 que procurava kits PS2 em uma única pasta pcsx2, tratava Vita3K como kit sem correspondência com a base atual ou ignorava BiosLocation.SAVES.
+- [x] Vita3K continua usando os dois grupos explícitos de firmware PUP já catalogados na base; não foram exigidos data/ e shaders-builtin/ sem confirmação de que o kit atual os instala.
+- [ ] CI #1948 (run 46059896038) foi iniciada no head 4ab0aef79c1f31df87788a4dea488e0188ef9336, antes dos commits de BIOS. Seus resultados não validam os commits posteriores; uma nova execução precisa validar o head final.
+- [ ] Confirmar os requisitos mínimos de cada BIOS/firmware com documentação upstream e testar importação/boot dos cores no aparelho. A validação estrutural não comprova autenticidade ou compatibilidade integral.
+- [x] Nenhum arquivo da base game-mode-m2-dev foi alterado diretamente; tandem-latest permanece intocada.
+
+
+CI #1948 — RESULTADO FINAL E RESSALVA DE HEAD — 2026-11-27
+- [x] Run #1948 concluiu com sucesso: https://github.com/izzyn0okami/Tandem/actions/runs/46059896038.
+- [x] Spotless, testes unitários, build APK Debug e upload do artefato passaram; final-status passou; etapas condicionais de publicação foram ignoradas.
+- [!] O run foi criado com head_sha 4ab0aef79c1f31df87788a4dea488e0188ef9336, enquanto a PR #59 atualmente aponta para f24c6e985de1f1bce41e0abee75115c86e76fd8f. Logo, apesar do sucesso do workflow, ele não comprova o código dos commits posteriores (validação de BIOS e log). Não marcar o head atual como validado.
+- [ ] Executar CI no head f24c6e985de1f1bce41e0abee75115c86e76fd8f e atualizar este registro com o SHA realmente testado.
+- [x] Revisão Vulkan: o importador multi-driver da PR #58 não pode substituir o Turnip importador da base. A PR antiga introduz nova pasta gpu-drivers e prefs próprias, enquanto a base utiliza vulkan/drivers/adreno e GameModeSettings; a Activity lê o driver dessas preferências. A substituição integral quebraria a seleção já existente e a compatibilidade dos pacotes ZIP antigos.
+- [ ] Projetar migração aditiva para múltiplos drivers, mantendo a API importTurnipDriver/remove, caminho antigo, seleção por preferência atual e rollback. Importador AdrenoTools precisa validar formato real dos pacotes e integridade de dependências antes de habilitar UI.
+
+
+REVISÃO DE DISPONIBILIDADE DOS BINÁRIOS ARM64 — CORREÇÃO DO CATÁLOGO — 2026-11-27
+- [x] Consultada a listagem efetiva do Buildbot Android ARM64: https://buildbot.libretro.com/nightly/android/latest/arm64-v8a/ (snapshot indexado em 2026-11-27).
+- [x] Confirmada a existência de pacotes para bsnes-jg, pcee2, mednafen_gba, meteor, genesis_plus_gx_wide, mednafen_psx_hw, mednafen_supergrafx e parallel_dc. Meteor e Parallel DC foram restaurados ao catálogo depois de confirmar seus ZIPs ARM64 reais; a receita Android do libretro-super isoladamente não representa a listagem atual de binários.
+- [x] Stella já existe na base com o ID correto stella; o ID inventado stella2023 foi removido.
+- [x] Ymir não consta na listagem ARM64 consultada nem na receita Android do libretro-super; foi removido do catálogo desta etapa. A alternativa Saturn já disponível na base permanece mednafen_saturn/YabaSanshiro/Yabause.
+- [x] O teste de catálogo cobre as oito alternativas confirmadas; todas continuam com save states e RomM sync desativados até auditoria de execução/formato.
+- [ ] A presença do ZIP no Buildbot comprova distribuição, não funcionamento no app ou compatibilidade no aparelho; baixar e iniciar cada core continua pendente.
+
+
+CORREÇÃO FINAL DA CHECAGEM DE BINÁRIOS ARM64 — 2026-11-27
+- [x] Reaberta a listagem direta do diretório Android ARM64 do Buildbot, que é mais atual e abrangente que a tabela de receitas Android do libretro-super.
+- [x] Confirmados pacotes Android ARM64 para bsnes-jg, pcee2, mednafen_gba, meteor, genesis_plus_gx_wide, mednafen_psx_hw, mednafen_supergrafx, parallel_dc e stella2023.
+- [x] Stella 2023 foi restaurado ao catálogo experimental: o arquivo stella2023_libretro_android.so.zip existe no Buildbot. A anotação anterior que dizia que esse pacote não existia estava incorreta.
+- [x] Meteor e Parallel DC permanecem no catálogo: ambos também aparecem como ZIP ARM64 no diretório atual do Buildbot.
+- [x] Ymir permanece excluído por não haver pacote Ymir no diretório consultado. Hypseus também não foi adicionado ao catálogo reconciliado porque não há ZIP hypseus_libretro_android.so.zip na listagem; outros cores de arcade disponíveis seguem listados separadamente.
+- [x] Teste unitário inclui Stella 2023 e as oito outras alternativas que foram adicionadas/confirmadas neste lote; todas ficam com states e RomM sync desativados até auditoria funcional.
+- [x] CI #1966 run 46065244607 concluiu com sucesso no head 5d9d032c7fff92c492bb38e733e029cb5d594c32; esse head foi superado e não valida as correções posteriores. A validação final do código reconciliado foi feita nas CIs #1971 e #1973.
+- [ ] Teste físico no aparelho continua pendente.
+
+
+CI #1971 APROVADA — PR #59 / RECONCILIAÇÃO DO CATÁLOGO ARM64 — 2026-11-27
+- [x] CI #1971 — https://github.com/izzyn0okami/Tandem/actions/runs/46065405701 — conclusão success no head e1a65024942b66567b2ed1bfcf3d4a835c86470a.
+- [x] check-style: Spotless automático executado sem necessidade de commit corretivo; verificação final passou.
+- [x] build-debug-apk: testes unitários passaram, APK assembleLawnWithQuickstepGithubDebug compilado e artefato enviado.
+- [x] final-status: sucesso; jobs condicionais de publicação/notificação ignorados conforme esperado.
+- [x] PR #59 permanece mergeable e sem commits atrás da base game-mode-m2-dev (base f13c7932cd006c086ca94b197a717462b495a899) na consulta desta auditoria.
+- [ ] Testar no Motorola Edge 30 Fusion instalação/download/execução dos cores alternativos, em especial PCEE2, bsnes-jg, Beetle GBA, Meteor, Genesis Plus GX Wide, Beetle PSX HW, Beetle SuperGrafx, Stella 2023 e Parallel DC.
+- [ ] Validar BIOS PS2/Dolphin com kits reais; CI e testes unitários não comprovam compatibilidade de firmware real.
+- [ ] Auditar individualmente compatibilidade de save states, SRAM, RomM Device Sync e RetroAchievements antes de habilitar esses recursos nos novos cores.
+- [ ] Revisar atribuições/licenças dos pacotes e metadados de catálogo antes de encerrar Stage J.
+- [x] Nenhuma mesclagem foi realizada; PR #59 continua Draft. PR #58 continua aberta para reconciliação restante. game-mode-m2-dev e tandem-latest não foram modificadas diretamente.
+
+
+PORTABILIDADE DA INTERFACE BIOS — 2026-11-27
+- [x] Reconciliadas as instruções de importação de BIOS da PR #58 em BiosScreen.kt sem substituir a tela atual.
+- [x] PS2: orientar importação da pasta pcsx2 completa, incluindo bios/.
+- [x] Vita3K: informar PSP2UPDAT.PUP, PSP2UPDAT_PREINST.PUP, data/ e shaders-builtin/.
+- [x] GameCube/Wii: informar a subpasta Sys/ do Dolphin.
+- [x] Wii U/Cemu: kit tratado como opcional e orientado como tal.
+- [x] Kits opcionais não são exibidos como falha obrigatória quando ausentes.
+- [ ] CI da nova versão da PR #59 e testes físicos de firmware permanecem pendentes.
+
+
+PORTABILIDADE DA BIOS UI — CI PENDENTE — 2026-11-27
+- [x] Portadas as instruções de importação da BIOS da PR #58 para a tela atual.
+- [ ] CI #1986 (PR event) e #1989 (workflow_dispatch) estão validando o head 952f0385c481227fbda5ed44d365a39c823bcf9e, que inclui BiosScreen.kt e este log.
+- [ ] Confirmar testes unitários e build APK debug antes de marcar a PR pronta.
+
+
+RESULTADO FINAL DA CI — 2026-11-27
+- [x] PR event CI #2000 (run 46069192616), head validado: 455849cc80c36732fc91091c9c0f3a95b6345b14.
+- [x] Spotless aprovado.
+- [x] Testes unitários aprovados.
+- [x] APK Debug assembleLawnWithQuickstepGithubDebug compilado.
+- [x] Artefato APK enviado com sucesso.
+- [ ] Permanecem pendentes testes físicos de instalação/execução dos cores e validação dos kits BIOS reais no aparelho.
+
+
+RECONCILIAÇÃO DA PR #58 — PREFERÊNCIA VULKAN DOS CORES AVANÇADOS — 2026-11-27
+- [x] Identificado que a PR #58 forçava preferVulkan para um conjunto de núcleos avançados, mas a base atual já usa CoreInfo.preferVulkan por núcleo.
+- [x] Preservada a intenção com preferVulkan=true para PCEE2 e Dolphin, mantendo as declarações já existentes para ARMSX2, PCSX2, Azahar, Vita3K, RPCS3, Xenia Edge e Cemu.
+- [x] Panda3DS permanece em OpenGL ES, conforme a declaração específica do catálogo atual; não foi forçado para Vulkan sem comprovação.
+- [x] Adicionados testes para as preferências Vulkan de PCEE2 e Dolphin.
+- [ ] Nova CI no head atualizado.
