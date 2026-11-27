@@ -330,7 +330,7 @@ private fun GameModeRoot(refreshKey: Int, onExit: () -> Unit) {
             status = ""
             return
         }
-        val migrationSources = if (supportsRomMSaveSync) migrationPlan.sources else emptyList()
+        val migrationSources = if (supportsRomMSaveSync) migrationPlan.sources else emptyMap()
         val core = CoreInstaller.ensureInstalled(context, coreId) { bytes ->
             status = context.getString(R.string.game_mode_status_downloading, coreId, bytes / 1024)
         }.getOrThrow()
