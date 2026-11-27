@@ -191,3 +191,12 @@ Nenhum código foi alterado nesta auditoria. O arquivo registra o estado, as evi
 - [ ] CI da PR.
 - [ ] Teste físico no Android com PSX e DS.
 - Status: [EM ANDAMENTO — NÃO MESCLAR ANTES DA CI E REVISÃO].
+
+
+ATUALIZAÇÃO 2026-11-27 — CI #2083
+- Spotless passou.
+- CI falhou na compilação: GameScreens.kt:767 não forneceu coreId à chamada RaSettings.blocksStates.
+- Corrigida a chamada para usar o núcleo selecionado (chosenCoreId), commit a5cd993fe052dc60de3409a23b4882fbe1e8a84c.
+- [ ] Nova CI, build APK e teste físico PSX/DS.
+- [ ] Confirmar IDs ativos via API oficial GetConsoleIDs.
+- Status: implementação ainda não homologada.
