@@ -1381,3 +1381,29 @@ ACOMPANHAMENTO DE CI — RESULTADOS CONFIRMADOS — 2026-11-27
 - [ ] CI #1822 — run 45991507650 — commit ecb5547d2bc30ad843c30001b8615c09bd652378: check-style aprovado; build-debug-apk ainda em etapa Build APK; artefato e final-status pendentes.
 - [ ] Commits Saturn 1617920 e 702c866 ainda aguardam CI da ponta atual.
 - PR #57 continua aberta como Draft e não mesclada. Ponta atual após as alterações Saturn: 702c866a5db22e6b29fb0a519f2896ce2038bbb4. Nenhuma publicação em tandem-latest.
+
+
+AUDITORIA DE FORMATO DE SAVE — SEGA CD / MEGA CD — 2026-11-27
+- [x] Documentação oficial Genesis Plus GX distingue *.srm (cartuchos MS/GG/MD/Pico/SG-1000) de cart.brm e scd_U.brm (backup RAM Sega/Mega CD).
+- [x] No catálogo da plataforma Sega CD, Genesis Plus GX agora mantém save states, mas desativa RomM SRAM Device Sync; o backup RAM do CD exige transporte de arquivo BRM próprio.
+- [x] PicoDrive permanece com sincronização habilitada conforme documentação atual que lista *.srm como cartridge backup save; a compatibilidade funcional ainda depende de teste no aparelho.
+- [x] Teste JVM garante comportamento distinto entre Genesis Plus GX e PicoDrive na plataforma Sega CD.
+- [ ] Avaliar sincronização específica de arquivos BRM para Sega CD, com identificação por região/BIOs e proteção contra conflito.
+- [ ] Confirmar no aparelho se PicoDrive Sega CD realmente expõe save compatível com o fluxo SRAM atual.
+
+Fonte:
+- https://docs.libretro.com/library/genesis_plus_gx/
+- https://docs.libretro.com/library/picodrive/
+
+Commits:
+- 4d232a83690984a33ca7f2cace4107075f582792 — metadados Sega CD.
+- 9d19d8b20b285cbc4327555c3631063b817e1689 — teste Sega CD.
+
+
+ACOMPANHAMENTO DE CI — 2026-11-27
+- [x] CIs #1811–#1821: check-style, build-debug-apk e final-status aprovados integralmente.
+- [ ] CI #1822 — run 45991507650 — commit ecb5547d2bc30ad843c30001b8615c09bd652378: check-style aprovado; build-debug-apk ainda em execução.
+- [ ] CI #1823 — run 45992619101 — commit 702c866a5db22e6b29fb0a519f2896ce2038bbb4: em andamento.
+- [ ] CI #1824 — run 45992647409 — commit 2372bc1d1a6325ca8c2f4cf2ffbbeb1f7665caca: em andamento.
+- [ ] Aguardando CIs para os commits Sega CD 4d232a8 e 9d19d8b; monitorar workflow da ponta atual.
+- PR #57 permanece aberta como Draft, não mesclada; head consultado 9d19d8b20b285cbc4327555c3631063b817e1689. Sem publicação em tandem-latest.
