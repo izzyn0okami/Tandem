@@ -117,3 +117,14 @@ INTEGRAÇÃO DE UI E SESSÃO — VULKAN — 2026-11-27
 - [ ] Remover ou deixar explicitamente obsoletas as preferências globais antigas de Vulkan/driver em GameModeSettings; a fonte de verdade passa a ser VulkanDriverManager.selected()/selectedId(), com preferência Vulkan aplicada por core no GameSessionActivity.
 - [ ] Preservar integralmente as demais configurações e a lógica da base em GameModeActivity/GameScreens/GameModeSettings; a remoção deve limitar-se ao bloco antigo de Vulkan.
 - [ ] Revisar GameSessionActivity após aplicar o commit 71709e03fc, confirmando que a regra de saves de DeSmuME da base continua intacta e que o novo driver selecionado é aplicado apenas aos cores Vulkan suportados.
+
+ENDURECIMENTO DO IMPORTADOR VULKAN — 2026-11-27
+- [x] Adicionado safeArchiveOutput(): cada arquivo extraído é resolvido por caminho canônico e precisa permanecer diretamente dentro da pasta temporária privada; nomes com separadores, traversal, unidade de disco ou nomes especiais são rejeitados.
+- [x] Importador AdrenoTools agora usa a validação canônica antes de criar cada arquivo, mantendo o formato root/android do bundle e os limites de entradas/tamanho já existentes.
+- [x] Reorganizado o commit da instalação: a nova instalação só substitui definitivamente a anterior depois de readInstalled() validar metadados, ELF64/AArch64 e SHA-256 no destino final.
+- [x] Em falha de instalação ou validação final, a nova pasta é removida e o backup anterior é restaurado; falhas de limpeza/restauração não são ignoradas silenciosamente.
+- [x] Criado VulkanDriverManagerTest.kt com testes JVM para caminho canônico válido e rejeição de traversal/separadores/unidade Windows.
+- [ ] CI de validação para os commits a377e13dd914201fc21b3c30ddf54ca912b7303d e 2951e2378b2676ab1cd7b6b9f7cbead1490b249d ainda não foi executada. A conexão GitHub atual não disponibiliza dispatch manual de workflow e os commits via API não geraram execução pull_request; não declarar compilação/testes aprovados.
+- [x] Tentativa de criar workflow temporário de validação reutilizando ci.yml não gerou execução; arquivo .github/workflows/stage-j-validation.yml foi removido para não deixar automação auxiliar permanente.
+- [ ] Antes de rebase, executar CI real para o head com endurecimento; depois reconciliar o conflito add/add do VulkanDriverManager preservando esta implementação combinada e remover o painel Vulkan legado de GameModeActivity/GameScreens.
+- [x] Nenhum merge, mudança da base da PR, publicação em game-mode-m2-dev/tandem-latest ou alteração em PR #41/#55 foi realizado.
