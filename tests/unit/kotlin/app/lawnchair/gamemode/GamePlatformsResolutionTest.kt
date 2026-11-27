@@ -96,6 +96,25 @@ class GamePlatformsResolutionTest {
         assertTrue(pcsx2.preferVulkan == true)
     }
     @Test
+    fun atariCoresDoNotAdvertiseUnsupportedSaveRam() {
+        val atari2600 = GamePlatforms.bySlug("atari2600")!!
+        val stella = CoreRegistry.info(atari2600, "stella")
+        val stella2014 = CoreRegistry.info(atari2600, "stella2014")
+        assertTrue(stella.supportsStates)
+        assertFalse(stella.supportsRomMSaveSync)
+        assertTrue(stella2014.supportsStates)
+        assertFalse(stella2014.supportsRomMSaveSync)
+
+        val atari5200 = GamePlatforms.bySlug("atari5200")!!
+        val atari800 = CoreRegistry.info(atari5200, "atari800")
+        val a5200 = CoreRegistry.info(atari5200, "a5200")
+        assertTrue(atari800.supportsStates)
+        assertFalse(atari800.supportsRomMSaveSync)
+        assertFalse(a5200.supportsStates)
+        assertFalse(a5200.supportsRomMSaveSync)
+    }
+
+    @Test
     fun undocumentedBlastEmCapabilitiesRemainDisabled() {
         val platform = GamePlatforms.bySlug("genesis")!!
         val blastEm = CoreRegistry.info(platform, "blastem")
