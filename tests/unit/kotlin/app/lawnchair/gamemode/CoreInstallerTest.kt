@@ -157,6 +157,62 @@ class CoreInstallerTest {
         }
     }
 
+
+    @Test
+    fun preservesValidTargetAndInvalidBackupForDiagnosis() {
+        val directory = Files.createTempDirectory("core-recovery-invalid-backup").toFile()
+        val target = File(directory, "core.so")
+        val backup = File(directory, "core.so.backup")
+        try {
+            writeArm64Elf(target, 1)
+            backup.writeText("corrupt backup")
+            val targetDigest = CoreInstaller.sha256(target)
+
+            CoreInstaller.recoverBackup(target, backup, targetDigest)
+
+            assertEquals(targetDigest, CoreInstaller.sha256(target))
+            assertTrue(backup.isFile)
+            assertFalse(CoreInstaller.isArm64Elf(backup))
+        } finally {
+            directory.deleteRecursively()
+        }
+    }
+
+    @Test
+    fun preservesInvalidTargetAndInvalidBackupForDiagnosis() {
+        val directory = Files.createTempDirectory("core-recovery-both-invalid").toFile()
+        val target = File(directory, "core.so")
+        val backup = File(directory, "core.so.backup")
+        try {
+            target.writeText("corrupt target")
+            backup.writeText("corrupt backup")
+
+            CoreInstaller.recoverBackup(target, backup, null)
+
+            assertEquals("corrupt target", target.readText())
+            assertEquals("corrupt backup", backup.readText())
+        } finally {
+            directory.deleteRecursively()
+        }
+    }
+
+    @Test
+    fun preservesInvalidBackupWhenTargetIsMissing() {
+        val directory = Files.createTempDirectory("core-recovery-missing-invalid-backup").toFile()
+        val target = File(directory, "core.so")
+        val backup = File(directory, "core.so.backup")
+        try {
+            backup.writeText("corrupt backup")
+
+            CoreInstaller.recoverBackup(target, backup, null)
+
+            assertFalse(target.exists())
+            assertEquals("corrupt backup", backup.readText())
+        } finally {
+            directory.deleteRecursively()
+        }
+    }
+
     private fun writeArm64Elf(file: File, marker: Int = 0) {
         val header = ByteArray(20)
         header[0] = 0x7F
