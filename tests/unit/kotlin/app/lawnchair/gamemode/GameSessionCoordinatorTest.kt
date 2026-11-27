@@ -82,6 +82,12 @@ class GameSessionCoordinatorTest {
         assertTrue(GameSessionLifecyclePolicy.shouldEnqueuePostSessionSync(true, true))
     }
 
+    @Test
+    fun rejectedExistingSramIsNeverPersistedOverByFreshCoreMemory() {
+        assertTrue(GameSessionSavePolicy.shouldPersistSram(false))
+        assertFalse(GameSessionSavePolicy.shouldPersistSram(true))
+    }
+
     private fun result(
         noOp: Int = 0,
         conflicts: Int = 0,
