@@ -1474,3 +1474,30 @@ ACOMPANHAMENTO DE CI — 2026-11-27 — REVISÃO
 - [ ] CI #1833 — run 45993858399 — commit 2978eeaed60ae9deed6c27c78e9ec10012a2b7e2: em andamento na última consulta; corresponde ao registro de auditoria anterior às mudanças Nintendo DS.
 - [ ] Aguardar CIs dos commits 8f29f1b e 56703a4; não declarar as mudanças DS validadas até a conclusão integral dos workflows.
 - PR #57 continua aberta como Draft, sem merge e sem publicação em tandem-latest.
+
+
+AUDITORIA DE SAVES — PLAYSTATION 1 — 2026-11-27
+- [x] PCSX ReARMed: cartão de memória primário usa formato Libretro *.srm e é elegível ao transporte SRAM; cartão secundário, quando habilitado, usa pcsx-card2.mcd e não é coberto pelo transporte atual.
+- [x] Beetle PSX: cartão de memória 0 usa *.srm por padrão; cartão 1 usa *.1.mcr no formato Mednafen. Somente o cartão primário é elegível ao transporte SRAM RomM.
+- [x] SwanStation: código oficial do core define cartão primário como Libretro (.srm) por padrão e cartão secundário desativado; formatos alternativos por jogo usam .mcd. O transporte atual cobre somente a região SRAM principal.
+- [x] Notas do CoreRegistry atualizadas para explicar limites dos slots de cartão, sem desativar sync da região Libretro principal.
+- [x] Teste JVM adicionado para garantir save states e transporte SRAM primário habilitados nos três núcleos PSX.
+- [ ] Validar no aparelho criação/restauração de cartão primário com cada core e confirmar que cartão secundário não é confundido com SRAM sincronizada.
+- [ ] Verificar a interação entre save states e cartão de memória: a documentação alerta que restaurar um estado antigo pode sobrescrever o cartão atual; avaliar uma proteção equivalente ao "Don't overwrite SaveRAM on loading savestate" antes de liberar comportamento adicional.
+- [ ] Testar playlists M3U multidisco: a identidade do save deve permanecer vinculada ao conjunto/playlist, não alternar indevidamente entre arquivos de disco.
+
+Fontes:
+- https://docs.libretro.com/library/pcsx_rearmed/ — slot 0 *.srm; slot 1 pcsx-card2.mcd.
+- https://docs.libretro.com/library/beetle_psx/ — slot 0 *.srm; slot 1 *.1.mcr.
+- https://github.com/libretro/swanstation/blob/main/src/libretro/libretro_core_options.h — cartão 1 Libretro (.srm) como padrão; cartão 2 desativado por padrão; formatos alternativos .mcd.
+- https://docs.libretro.com/library/beetle_psx_hw/ — documentação complementar de slots e risco de save states sobrescreverem cartões.
+
+Commits:
+- 49e9cbd7e4ab7787a2324aa69e48c83dee9cda92 — notas de slots PSX.
+- 7bdb0b71bc429f178480c39936e982650546a3ed — teste de capacidades PSX.
+
+ACOMPANHAMENTO DE CI — 2026-11-27 — MUDANÇAS EM ANDAMENTO
+- [ ] CI #1833 — run 45993858399 — commit 2978eeaed60ae9deed6c27c78e9ec10012a2b7e2: em andamento na última consulta.
+- [ ] CI #1834 — run 45993944137 — commit 56703a4373e4754e25f5b5b3b864d473b7bff5c7: em andamento na última consulta; inclui a mudança de capacidades Nintendo DS.
+- [ ] Aguardar CI para os commits PSX 49e9cbd e 7bdb0b7.
+- [ ] CI dos commits de documentação posteriores também deve ser conferida antes de encerrar esta rodada.
