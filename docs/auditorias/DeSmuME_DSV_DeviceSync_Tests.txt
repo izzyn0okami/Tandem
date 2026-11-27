@@ -1,0 +1,26 @@
+AUDITORIA — TESTES DE SAVE NATIVO DESMUME / DEVICE SYNC
+Data: 2026-11-27
+Repositório: izzyn0okami/Tandem
+Branch: test/desmume-dsv-device-sync
+Base: game-mode-m2-dev
+Commit base: f13c7932cd006c086ca94b197a717462b495a899
+
+OBJETIVO
+Completar a cobertura de regressão para o suporte DSV nativo do DeSmuME que já existe na base atual. Esta PR não altera o comportamento de produção.
+
+CONCLUÍDO
+- [x] Testar seleção de artefato DSV apenas para núcleos que declaram a extensão DSV.
+- [x] Testar isolamento de compatibilidade entre DeSmuME, DeSmuME 2015 e melonDS.
+- [x] Testar aceitação de nomes .dsv e rejeição de .srm para DeSmuME.
+- [x] Testar geração de manifesto Device Sync com extensão DSV declarada.
+- [x] Testar upload RomM Device Sync de Pokemon.dsv.
+- [x] Testar SaveStore apontando para o DSV nativo e mantendo SRAM genérica para outros núcleos.
+
+PENDÊNCIAS
+- [ ] CI Spotless, testes unitários e build APK debug.
+- [ ] Confirmar que os novos testes passam sem alterações no código de produção.
+
+ESCOPO/SEGURANÇA
+- [x] Apenas testes e documentação; nenhum arquivo de produção alterado.
+- [x] Nenhuma PR foi mesclada.
+- [x] game-mode-m2-dev e tandem-latest não foram modificadas diretamente.
