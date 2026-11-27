@@ -1527,3 +1527,29 @@ ACOMPANHAMENTO DE CI — 2026-11-27
 - [ ] CI #1834 — run 45993944137: em andamento na última consulta.
 - [ ] CI #1836 — run 45994006501 — commit 7bdb0b71bc429f178480c39936e982650546a3ed: em andamento na última consulta.
 - [ ] Aguardar CIs dos commits 9768c1b e 19b5e3b.
+
+
+AUDITORIA DE SAVES — ATARI 2600 / 5200 — 2026-11-27
+- [x] Stella: documentação Libretro declara Saves = não e States = sim; sync SRAM RomM desativado, save states mantidos.
+- [x] Stella 2014: documentação Libretro declara Saves = não e States = sim; sync SRAM RomM desativado, save states mantidos.
+- [x] Atari800: documentação Libretro declara Saves = não e States = sim; sync SRAM RomM desativado, save states mantidos.
+- [x] a5200: não foi localizada documentação oficial Libretro suficiente para comprovar saves ou states; ambos os recursos permanecem desativados até confirmação.
+- [x] CoreRegistry e teste JVM atualizados para refletir essas diferenças.
+- [ ] Teste no aparelho não deve ser interpretado como autorização para sincronizar arquivos internos de armazenamento sem adaptador explícito.
+
+Fontes:
+- https://docs.libretro.com/library/stella/ — Stella: Saves ✕, States ✔.
+- https://docs.libretro.com/library/stella2014/ — Stella 2014: Saves ✕, States ✔.
+- https://docs.libretro.com/library/atari800/ — Atari800: Saves ✕, States ✔; inclui sistema Atari 5200.
+- https://docs.libretro.com/guides/core-list/ — identifica a5200 como core Atari 5200, mas não descreve capacidades de persistência.
+
+Commits:
+- d9e06caa854ba73ff834cf173d6826c45938ba1c — capacidades Atari.
+- ae35c84633eb9e4bc7a9270c5140d6ef86785430 — testes Atari.
+
+ACOMPANHAMENTO DE CI — 2026-11-27 — PENDENTE
+- [ ] CI #1833 — run 45993858399.
+- [ ] CI #1834 — run 45993944137.
+- [ ] CI #1836 — run 45994006501.
+- [ ] CI #1839 — run 45994059394 — commit 19b5e3bd98b220b11d4997cc821c0e3f82447080.
+- [ ] Aguardar CIs para commits Atari d9e06ca e ae35c84; atualizar após conclusão integral.
