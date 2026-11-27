@@ -50,6 +50,8 @@ internal object SavePathDiagnostics {
                 appendLine("Caminho entregue ao LibretroDroid (savesDirectory): ${effectiveDirectory.absolutePath}")
                 appendLine("Diretório usado pelo SaveStore: ${saveStore.sramFile.parentFile?.absolutePath}")
                 appendLine("SRAM do SaveStore: ${describe(saveStore.sramFile)}")
+                saveStore.nativeSaveFile?.let { appendLine("Save nativo do núcleo: ${describe(it)}") }
+                appendLine("Destino de Device Sync: ${describe(saveStore.deviceSyncSaveFile)}")
                 appendLine("Estado rápido do SaveStore: ${describe(saveStore.stateFile)}")
                 appendLine("Arquivos diretamente na raiz efetiva:")
                 appendFileList(effectiveDirectory)
