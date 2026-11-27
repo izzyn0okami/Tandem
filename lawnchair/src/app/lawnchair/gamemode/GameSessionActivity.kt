@@ -526,7 +526,7 @@ class GameSessionActivity : ComponentActivity() {
         val store = saveStore ?: return
         if (!GameSessionSavePolicy.shouldPersistSram(view.sramLoadFailed)) {
             if (!sramLoadFailureLogged) {
-                GameLog.error("saves", "o núcleo rejeitou o SRAM existente; persistência bloqueada para preservar o arquivo original")
+                GameLog.log("saves", "o núcleo rejeitou o SRAM existente; persistência bloqueada para preservar o arquivo original")
                 sramLoadFailureLogged = true
             }
             return
