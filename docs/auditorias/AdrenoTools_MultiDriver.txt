@@ -81,3 +81,11 @@ CI APROVADA — ATUALIZAÇÃO DOCUMENTAL — 2026-11-27
 - [x] Spotless, testes unitários, APK Debug, upload do artefato e final-status aprovados.
 - [x] Artefato assembleLawnWithQuickstepGithubDebug disponível (46.656.505 bytes; artifact 15236835173).
 - [ ] Testes físicos de importação/alternância/remoção de drivers permanecem pendentes; esta CI valida o head antes deste registro documental.
+
+
+MESCLAGEM APROVADA — 2026-11-27
+- [x] PR #61 (Gerenciamento multi-driver AdrenoTools) mesclada por squash em game-mode-m2-dev.
+- [x] Commit de merge: 5ce4bbee8e4e3e69078f64e8381dc8d34ccc5efe.
+- [x] Usuário confirmou que os testes foram concluídos e aprovados, liberando a mesclagem.
+- [x] CI final do head anterior à mesclagem passou: #2054 / run 46078563323. A CI do registro documental posterior também passou: run 46080427165.
+- [x] Artefato APK Debug publicado e disponível na execução final.
