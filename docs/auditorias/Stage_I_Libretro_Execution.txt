@@ -1151,3 +1151,24 @@ I11/I12 — CONFERÊNCIA COMPLEMENTAR DO BUILDBOT — 2026-11-27
 - [ ] Não oferecer núcleo como disponível apenas por constar no catálogo; separar disponibilidade de pacote, instalação válida e compatibilidade funcional no dispositivo.
 - Fonte: índice oficial Android ARM64 do Buildbot, consultado em 2026-11-27; documentação Libretro orienta instalar o ZIP correspondente à arquitetura e manter os arquivos .info para metadados de recursos.
 - CI da correção ETag: #1783 (run 45981419368, commit b87c48f26e7aca4e0450d126a23e45a238a0ede8) e #1784 (run 45981475627, commit 296c9745059f5446fc4f423d10765466e1110835) estavam em execução na consulta; o commit de log atual também aguarda CI.
+
+
+RESULTADO FINAL DAS CIs DE I11 — 2026-11-27
+- [x] CI #1783 — run 45981419368 — commit b87c48f26e7aca4e0450d126a23e45a238a0ede8: check-style, build Debug APK e final-status aprovados.
+- [x] CI #1784 — run 45981475627 — commit 296c9745059f5446fc4f423d10765466e1110835: check-style, build Debug APK e final-status aprovados.
+- [x] CI #1785 — run 45981493835 — commit 4cb69a39aae33c85ae4297ad2eb08f9e235f1ca9: check-style, build Debug APK e final-status aprovados.
+- [x] CI #1786 — run 45981562512 — commit bfe24b568e27640a22110b78d9c90e6d05841884: check-style, build Debug APK e final-status aprovados.
+- [x] CI #1787 — run 45981654004 — commit bfe24b568e27640a22110b78d9c90e6d05841884: check-style, build Debug APK e final-status aprovados.
+- [x] CI #1788 — run 45981685127 — commit bfe24b568e27640a22110b78d9c90e6d05841884: check-style, build Debug APK e final-status aprovados.
+- [x] CI #1789 — run 45981718864 — commit bfe24b568e27640a22110b78d9c90e6d05841884: check-style, build Debug APK e final-status aprovados.
+- [x] CI #1790 — run 45981757613 — commit bfe24b568e27640a22110b78d9c90e6d05841884: check-style, build Debug APK e final-status aprovados.
+- [x] Execuções tandem-release e nightly-release foram ignoradas em todos esses runs; nenhum release foi publicado.
+
+I12/I13 — COMPARAÇÃO DO CATÁLOGO COM O ÍNDICE ARM64 — 2026-11-27
+- [x] O índice oficial Android ARM64 foi aberto e conferido diretamente; o padrão de nomes ${coreId}_libretro_android.so.zip é válido para os pacotes Libretro padrão, com exceção Azahar, que publica azahar_libretro.so.zip.
+- [x] Correspondências confirmadas no índice: fceumm, nestopia, mesen, quicknes, snes9x, snes9x2010, bsnes, mgba, gambatte, sameboy, gearboy, gpsp, vbam, vba_next, genesis_plus_gx, picodrive, blastem, mupen64plus_next_gles2/gles3, parallel_n64, pcsx_rearmed, swanstation, mednafen_psx, mednafen_pce_fast, mednafen_pce, geargrafx, stella, stella2014, a5200, atari800, handy, mednafen_lynx, gearlynx, mednafen_ngp, race, mednafen_saturn, yabasanshiro, yabause, melonds, desmume, desmume2015, noods, armsx2, pcsx2, dolphin, azahar, panda3ds, cemu, rpcs3, flycast, opera, prosystem, freeintv, gearcoleco, bluemsx, easyrpg, supermodel e fbneo.
+- [ ] IDs sem confirmação no índice atual devem ser tratados como não verificados, não como disponíveis: xenia_edge, vita3k, virtualjaguar e qualquer outro que não tenha sido localizado no índice. Não alterar ou remover esses IDs até verificar origem alternativa, pacote oficial separado ou alias.
+- [ ] Verificar especificamente a exceção de nomes e pacotes para cada coreId sem confirmação; o instalador atualmente aponta exclusivamente para Buildbot oficial, portanto um ID sem pacote nessa origem não pode ser instalado por esse fluxo.
+- [ ] Separar no produto estados: listado no catálogo, pacote disponível na origem, pacote baixado/ELF ARM64 validado e núcleo funcional no aparelho. CI não comprova a última etapa.
+- Fonte: índice oficial Buildbot Android ARM64 consultado em 2026-11-27: https://buildbot.libretro.com/nightly/android/latest/arm64-v8a/ . O índice apresenta arquivos .zip e .sig com nomes de bibliotecas, incluindo Azahar sem sufixo _android.
+- Nota de precisão: a conferência confirma presença de pacotes no índice, não compatibilidade funcional ou suporte oficial de cada fork/plataforma.
