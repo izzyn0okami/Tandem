@@ -177,3 +177,17 @@ Nenhum código foi alterado nesta auditoria. O arquivo registra o estado, as evi
 - Correção requerida: matriz explícita de compatibilidade platform + coreId + Console ID; obter IDs da API oficial GetConsoleIDs; bloquear somente RA/Hardcore para núcleos não suportados, sem impedir a execução do jogo.
 - Relatório detalhado: docs/auditorias/Auditoria_Compatibilidade_Nucleos_RA_Tandem.txt
 - Status: [PENDENTE — CORREÇÃO DE CÓDIGO, TESTES UNITÁRIOS E TESTE FÍSICO PSX/DS]
+
+
+12. IMPLEMENTAÇÃO DA MATRIZ DE COMPATIBILIDADE — 2026-11-27
+- Branch: feat/ra-core-compatibility.
+- RaCoreCompatibility criada para validar platform slug + coreId + existência de Console ID antes de iniciar RA.
+- PSX Console ID 12; DS Console ID 18. Beetle PSX passou a ser o núcleo padrão da plataforma PSX; PCSX ReARMed é bloqueado para RA.
+- DS permite melonDS DS, melonDS e DeSmuME; NooDS não é elegível.
+- A mesma política foi aplicada aos núcleos das plataformas com IDs existentes e sistemas adicionais mapeados.
+- Núcleo incompatível continua executando o jogo normalmente; RA/Hardcore são desativados e o usuário recebe aviso.
+- Testes unitários adicionados para PSX, DS, NES e ausência de Console ID.
+- [ ] Confirmar IDs ativos pela API oficial GetConsoleIDs usando Web API Key.
+- [ ] CI da PR.
+- [ ] Teste físico no Android com PSX e DS.
+- Status: [EM ANDAMENTO — NÃO MESCLAR ANTES DA CI E REVISÃO].
