@@ -1217,3 +1217,11 @@ Fontes desta correção:
 - Documentação Vita3K: https://docs.libretro.com/library/vita3k/
 - Core Xenia Edge: https://github.com/WizzardSK/xenia-libretro
 - Core Virtual Jaguar: https://github.com/libretro/virtualjaguar-libretro/releases
+
+
+STATUS DE CI — CONSULTA POSTERIOR — 2026-11-27
+- [x] CI #1791 — run 45989509316 — commit bd773e9e0051e4e0a91125d339f3a52992572431: job check-style concluiu com sucesso.
+- [ ] CI #1791: job build-debug-apk ainda estava em execução; resultado final da suíte unitária/build APK não confirmado.
+- [ ] CI #1793 — run 45989772089 — commit 5556bf7a1ba0339d73ab7548aabc30e7b1ee8b7d: check-style e build-debug-apk ainda em execução na consulta. Não registrar sucesso prematuramente.
+- [ ] Commit documental ae3f0d77fd0dec3d6d175ddd0bf44419b0fdc7c0 (correção de disponibilidade ARM64) ainda não apresentava workflow associado na consulta.
+- PR #57 permanece aberta, Draft e não mesclada. Sem merge ou publicação em tandem-latest.
