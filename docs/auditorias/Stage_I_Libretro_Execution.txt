@@ -1005,3 +1005,13 @@ AVANÇO — EXTRAÇÃO DE POLÍTICAS PURAS DO CICLO DE VIDA — 2026-11-26
 - CI #1722 — run 45934128551 — commit 92d840040214364684198a76621db5f81827a3f1: check-style e build-debug-apk em andamento na última consulta.
 - CI #1723 — run 45934135434 — commit d6b9a0adc4fdc33d55085e9f5f0fe3f49a862b03: check-style e build-debug-apk em andamento na última consulta.
 - CI #1724 — run 45934143095 — commit fe0b4ef178195390ee0a4b580fd382f2fcf51f2f: check-style e build-debug-apk em andamento na última consulta; inclui os novos testes JVM de política de ciclo de vida.
+
+ 
+RESULTADO — CI APÓS EXTRAÇÃO DAS POLÍTICAS DE CICLO DE VIDA — 2026-11-27
+- [x] CI #1729 — run 45934330859 — commit final b2e458525fb7cfc7ec04885873ee446b2b84835b: check-style/Spotless, build-debug-apk (incluindo testes unitários) e final-status aprovados.
+- [x] A execução Spotless aplicou a formatação e a revisão final foi validada pela CI #1729.
+- [x] O build da CI #1729 compilou GameSessionLifecyclePolicy e executou os testes JVM novos sem falhas.
+- [x] As CIs #1722, #1723 e #1724 falharam durante a concorrência de commits automáticos do Spotless; #1722 também compilou um commit intermediário anterior à inclusão da política. A branch recebeu a formatação e a CI consolidada #1729 passou integralmente.
+- [x] Publicações tandem-release e nightly-release ignoradas; nenhum APK foi publicado em tandem-latest.
+- [ ] Continuam pendentes testes instrumentados/funcionais reais de GL thread, callbacks SRAM, pausa/retomada, recriação Activity e encerramento abrupto; CI JVM não substitui esses testes.
+- PR #57 continua aberta como Draft, sem merge. PR #41 e PR #55 permanecem intocadas.
