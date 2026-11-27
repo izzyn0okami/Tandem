@@ -454,7 +454,7 @@ object RomMDeviceSyncRunner {
                 val emulator = DeviceSyncArtifactPolicy.canonicalEmulator(coreId)
                 val localSave = DeviceSyncProtocolJson.localSave(
                     romId = romId,
-                    fileName = romSaveFileName(romFile, localArtifact?.format ?: CoreSaveAdapterRegistry.resolve(coreId).fileExtension),
+                    fileName = romSaveFileName(romFile, artifact?.format ?: CoreSaveAdapterRegistry.resolve(coreId).fileExtension),
                     emulator = emulator,
                     file = localSnapshot,
                     updatedAt = Instant.ofEpochMilli(artifact.modifiedAtEpochMs).toString(),
@@ -496,7 +496,7 @@ object RomMDeviceSyncRunner {
                     sessionId = negotiation.sessionId,
                     slot = remoteSlot,
                     emulator = emulator,
-                    fileName = romSaveFileName(romFile, localArtifact?.format ?: CoreSaveAdapterRegistry.resolve(coreId).fileExtension),
+                    fileName = romSaveFileName(romFile, artifact?.format ?: CoreSaveAdapterRegistry.resolve(coreId).fileExtension),
                     file = localSnapshot,
                 )
                 client.complete(negotiation.sessionId, operationsCompleted = 1, operationsFailed = 0)
@@ -575,7 +575,7 @@ object RomMDeviceSyncRunner {
                 val localSave = if (beforeHash != null) {
                     DeviceSyncProtocolJson.localSave(
                         romId = romId,
-                        fileName = romSaveFileName(romFile, localArtifact?.format ?: CoreSaveAdapterRegistry.resolve(coreId).fileExtension),
+                        fileName = romSaveFileName(romFile, artifact?.format ?: CoreSaveAdapterRegistry.resolve(coreId).fileExtension),
                         emulator = emulator,
                         file = snapshot,
                         updatedAt = Instant.ofEpochMilli(target.lastModified()).toString(),
@@ -656,7 +656,7 @@ object RomMDeviceSyncRunner {
                         sessionId = negotiation.sessionId,
                         slot = remoteSlot,
                         emulator = emulator,
-                        fileName = romSaveFileName(romFile, localArtifact?.format ?: CoreSaveAdapterRegistry.resolve(coreId).fileExtension),
+                        fileName = romSaveFileName(romFile, artifact?.format ?: CoreSaveAdapterRegistry.resolve(coreId).fileExtension),
                         file = selectedStage,
                     )
                 }
