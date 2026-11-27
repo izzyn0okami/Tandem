@@ -28,7 +28,7 @@ data class DeviceSyncExecutionResult(
  * Só opera a save do jogo explicitamente vinculado e fora de uma sessão ativa. O
  * GameSessionCoordinator usa este executor antes e depois da partida; a tela também pode
  * acioná-lo manualmente. Conflitos ficam preservados; operações delete e desconhecidas nunca são aplicadas.
- * O inventário tipado escolhe somente save de núcleo ou cartão PSX em .srm; estados rápidos e progresso RA ficam locais.
+ * O inventário tipado escolhe somente o save nativo declarado pelo núcleo ou cartão PSX; estados rápidos e progresso RA ficam locais.
  */
 object RomMDeviceSyncRunner {
 
@@ -604,6 +604,12 @@ object RomMDeviceSyncRunner {
                     ?: throw IOException("A versão escolhida não está mais disponível nesse slot.")
                 val latest = versions.firstOrNull()
                     ?: throw IOException("O RomM não retornou uma versão ativa para este slot.")
+                val expectedExtension = DeviceSyncArtifactPolicy.fileExtensionForCore(coreId)
+                if (selected.fileName?.endsWith(".$expectedExtension", ignoreCase = true) != true ||
+                    latest.fileName?.endsWith(".$expectedExtension", ignoreCase = true) != true
+                ) {
+                    throw IOException("A versão remota não corresponde à extensão de save esperada por este núcleo.")
+                }
                 if (!DeviceSyncArtifactPolicy.isCompatibleRemote(coreId, selected.emulator)) {
                     throw IOException("A versão escolhida pertence a um núcleo sem compatibilidade declarada.")
                 }
