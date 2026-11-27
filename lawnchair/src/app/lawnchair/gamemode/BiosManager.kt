@@ -129,6 +129,7 @@ object BiosManager {
             for (folder in kit) {
                 val staged = File(stagingRoot, folder)
                 val target = File(root, folder)
+                target.parentFile?.mkdirs()
                 check(staged.renameTo(target)) { "Não foi possível instalar a pasta '$folder'" }
                 promoted += folder
             }
@@ -173,7 +174,7 @@ object BiosManager {
             .flatMap { platform -> platform.bios + platform.biosGroups.flatten() }
             .distinctBy { it.name.lowercase() }
         for (bios in localBios) {
-            val file = File(systemDir(context), bios.name)
+            val file = File(rootDir(context, bios), bios.name)
             if (!file.isFile) continue
             results[bios.name] = if (bios.md5Hash == null) {
                 FirmwareIntegrity.UNKNOWN
