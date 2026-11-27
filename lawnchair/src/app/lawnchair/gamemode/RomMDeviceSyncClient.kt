@@ -97,10 +97,11 @@ object DeviceSyncProtocolJson {
         file: File,
         updatedAt: String,
         remoteSlot: String = "autosave",
+        expectedExtension: String = "srm",
     ): DeviceSyncSave? {
         require(romId > 0L)
-        require(fileName.endsWith(".srm", ignoreCase = true)) {
-            "O Device Sync desta etapa aceita somente arquivos .srm."
+        require(fileName.endsWith(".$expectedExtension", ignoreCase = true)) {
+            "A extensão do arquivo não corresponde ao formato de save declarado pelo núcleo."
         }
         require(emulator.isNotBlank())
         require(updatedAt.isNotBlank())
@@ -193,6 +194,7 @@ object DeviceSyncProtocolJson {
         operation: DeviceSyncOperation,
         compatibleEmulators: Set<String>,
         expectedSlot: String = "autosave",
+        expectedExtension: String = "srm",
     ) {
         if (operation.action != DeviceSyncAction.Download) {
             throw IOException("A operação recebida não é um download.")
@@ -200,8 +202,8 @@ object DeviceSyncProtocolJson {
         if (operation.slot != expectedSlot) {
             throw IOException("Download fora do slot $expectedSlot foi preservado sem alteração.")
         }
-        if (operation.fileName?.endsWith(".srm", ignoreCase = true) != true) {
-            throw IOException("O arquivo remoto não é um save .srm compatível; download recusado.")
+        if (operation.fileName?.endsWith(".$expectedExtension", ignoreCase = true) != true) {
+            throw IOException("A extensão do save remoto não corresponde ao formato esperado; download recusado.")
         }
         if (operation.emulator == null || compatibleEmulators.none { it.equals(operation.emulator, ignoreCase = true) }) {
             throw IOException("O save remoto pertence a um núcleo sem compatibilidade declarada; download recusado.")
@@ -351,11 +353,14 @@ class RomMDeviceSyncClient(
         emulator: String,
         fileName: String,
         file: File,
+        expectedExtension: String = "srm",
     ): JSONObject {
         require(romId > 0L && sessionId > 0L)
         require(deviceId.isNotBlank() && emulator.isNotBlank())
         require(slot == null || slot.isNotBlank())
-        require(fileName.endsWith(".srm", ignoreCase = true)) { "O upload Device Sync aceita somente arquivos .srm." }
+        require(fileName.endsWith(".$expectedExtension", ignoreCase = true)) {
+            "A extensão do arquivo não corresponde ao formato de save declarado pelo núcleo."
+        }
         require(file.isFile && file.length() > 0L) { "O save local está ausente ou vazio." }
         val contentHash = md5(file)
         val urlBuilder = base.resolve("api/saves")!!.newBuilder()
