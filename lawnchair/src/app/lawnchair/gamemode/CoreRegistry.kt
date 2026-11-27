@@ -6,7 +6,14 @@ import com.swordfish.libretrodroid.Variable
 import org.json.JSONObject
 
 /** Um núcleo Libretro que sabe jogar uma plataforma. */
-data class CoreInfo(val id: String, val label: String, val note: String)
+data class CoreInfo(
+    val id: String,
+    val label: String,
+    val note: String,
+    val supportsStates: Boolean = true,
+    val supportsRomMSaveSync: Boolean = true,
+    val preferVulkan: Boolean = false,
+)
 
 /** Uma opção do núcleo (nome, valores permitidos e valor atual), lida do próprio núcleo em execução. */
 data class CoreOption(val key: String, val label: String, val values: List<String>, val current: String) {
@@ -22,7 +29,14 @@ object CoreRegistry {
 
     private const val FILE = "game_mode_cores"
 
-    private fun core(id: String, label: String, note: String) = CoreInfo(id, label, note)
+    private fun core(
+        id: String,
+        label: String,
+        note: String,
+        supportsStates: Boolean = true,
+        supportsRomMSaveSync: Boolean = true,
+        preferVulkan: Boolean = false,
+    ) = CoreInfo(id, label, note, supportsStates, supportsRomMSaveSync, preferVulkan)
 
     private val catalog: Map<String, List<CoreInfo>> = mapOf(
         "nes" to listOf(
@@ -98,6 +112,55 @@ object CoreRegistry {
             core("desmume2015", "DeSmuME 2015", "Mais leve"),
             core("noods", "NooDS", "Leve"),
         ),
+        "ps2" to listOf(
+            core(
+                "armsx2",
+                "ARMSX2",
+                "PS2 para ARM64; Vulkan recomendado ou OpenGL ES 3.2; requer BIOS e recursos PCSX2",
+                supportsRomMSaveSync = false,
+                preferVulkan = true,
+            ),
+        ),
+        "gc" to listOf(
+            core("dolphin", "Dolphin", "GameCube; Vulkan/OpenGL ES; requer a pasta Sys do Dolphin"),
+        ),
+        "wii" to listOf(
+            core("dolphin", "Dolphin", "Wii; Vulkan/OpenGL ES; requer a pasta Sys do Dolphin"),
+        ),
+        "3ds" to listOf(
+            core("azahar", "Azahar", "Fork atual do Citra; Vulkan ou OpenGL ES 3.2", preferVulkan = true),
+            core("panda3ds", "Panda3DS", "Alternativa experimental; requer OpenGL ES 3.1 ou superior"),
+        ),
+        "wiiu" to listOf(
+            core(
+                "cemu",
+                "Cemu",
+                "Wii U; Vulkan obrigatório no Android; saves internos e sem save states",
+                supportsStates = false,
+                supportsRomMSaveSync = false,
+                preferVulkan = true,
+            ),
+        ),
+        "ps3" to listOf(
+            core(
+                "rpcs3",
+                "RPCS3",
+                "Experimental e muito exigente; Vulkan obrigatório no Android; firmware PS3",
+                supportsStates = false,
+                supportsRomMSaveSync = false,
+                preferVulkan = true,
+            ),
+        ),
+        "vita" to listOf(
+            core(
+                "vita3k",
+                "Vita3K",
+                "Experimental; Vulkan 1.1; saves no armazenamento virtual do Vita; sem save states",
+                supportsStates = false,
+                supportsRomMSaveSync = false,
+                preferVulkan = true,
+            ),
+        ),
         "coleco" to listOf(
             core("gearcoleco", "Gearcoleco", "Padrão"),
             core("bluemsx", "blueMSX", "Alternativa"),
@@ -130,6 +193,9 @@ object CoreRegistry {
         val default = list.firstOrNull { it.id == platform.coreId } ?: core(platform.coreId, platform.coreId, "Padrão")
         return listOf(default) + list.filter { it.id != platform.coreId }
     }
+
+    fun info(platform: GamePlatform, coreId: String): CoreInfo =
+        cores(platform).firstOrNull { it.id == coreId } ?: core(platform.coreId, platform.coreId, "Padrão")
 
     private fun prefs(context: Context) = context.getSharedPreferences(FILE, Context.MODE_PRIVATE)
 

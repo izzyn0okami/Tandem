@@ -89,6 +89,38 @@ class BiosManagerTest {
     }
 
     @Test
+    fun requiredBiosGroupsAndSystemKitMustBothBeReady() {
+        val required = platform(groups = listOf(listOf(biosA)), kit = listOf("System"))
+        assertFalse(ready(required, biosA, kitReady = false))
+        assertTrue(ready(required, biosA, kitReady = true))
+    }
+
+    @Test
+    fun nestedKitFoldersAreRecognizedAndImported() {
+        val required = platform(kit = listOf("pcsx2/bios", "pcsx2/resources"))
+        val source = File(root, "nested-source")
+        File(source, "pcsx2/bios").apply { mkdirs() }
+        File(source, "pcsx2/bios/scph39001.bin").writeText("bios")
+        File(source, "pcsx2/resources").apply { mkdirs() }
+        File(source, "pcsx2/resources/gameindex.yaml").writeText("resources")
+
+        val copied = BiosManager.importKitFiles(File(root, "nested-system"), required, source)
+
+        assertEquals(2, copied)
+        assertEquals("bios", File(root, "nested-system/pcsx2/bios/scph39001.bin").readText())
+        assertEquals("resources", File(root, "nested-system/pcsx2/resources/gameindex.yaml").readText())
+    }
+
+    @Test
+    fun vita3kRequiresBothFirmwarePackagesButNotOptionalFonts() {
+        val vita = GamePlatforms.all.single { it.slug == "vita" }
+        val firmware = vita.biosGroups.map { it.single() }
+        assertEquals(2, firmware.size)
+        assertFalse(BiosManager.isReady(vita, hasBios = { it == firmware.first() }, isKitReady = { true }))
+        assertTrue(BiosManager.isReady(vita, hasBios = { it in firmware }, isKitReady = { true }))
+    }
+
+    @Test
     fun auditedCoreCatalogKeepsOptionalAndRequiredFirmwareAccurate() {
         val atari5200 = GamePlatforms.all.single { it.slug == "atari5200" }
         val coleco = GamePlatforms.all.single { it.slug == "coleco" }

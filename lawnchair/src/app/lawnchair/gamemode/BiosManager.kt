@@ -21,14 +21,21 @@ object BiosManager {
     /** O nome pode trazer uma subpasta (ex.: "dc/dc_boot.bin"); o arquivo escolhido só precisa ter o mesmo nome final. */
     private fun BiosFile.fileOnly(): String = File(name).name.lowercase()
 
-    fun has(context: Context, file: BiosFile): Boolean = File(systemDir(context), file.name).isFile
+    private fun rootDir(context: Context, file: BiosFile): File =
+        if (file.location == BiosLocation.SAVES) GameFolders.dir(context, FolderKind.Saves) else systemDir(context)
+
+    fun has(context: Context, file: BiosFile): Boolean = File(rootDir(context, file), file.name).isFile
 
     /**
      * Cada grupo representa alternativas entre si; todos os grupos precisam ter pelo menos
      * um arquivo presente. Sem grupos explícitos, a lista antiga [GamePlatform.bios] continua
      * sendo tratada como um único grupo de alternativas.
      */
-    private fun requiredBiosGroups(platform: GamePlatform): List<List<BiosFile>> = platform.biosGroups.ifEmpty { listOf(platform.bios) }
+    private fun requiredBiosGroups(platform: GamePlatform): List<List<BiosFile>> = when {
+        platform.biosGroups.isNotEmpty() -> platform.biosGroups
+        platform.bios.isNotEmpty() -> listOf(platform.bios)
+        else -> emptyList()
+    }
 
     /** O jogo pode rodar? BIOS opcionais dispensam arquivos; requisitos explícitos usam AND/OR. */
     fun isReady(context: Context, platform: GamePlatform): Boolean = isReady(platform, hasBios = { has(context, it) }, isKitReady = { kitReady(context, platform) })
@@ -37,14 +44,14 @@ object BiosManager {
         platform: GamePlatform,
         hasBios: (BiosFile) -> Boolean,
         isKitReady: () -> Boolean,
-    ): Boolean = when {
-        !platform.biosRequired -> true
-
-        platform.biosKit != null -> isKitReady()
-
-        else -> requiredBiosGroups(platform).let { groups ->
-            groups.isNotEmpty() && groups.all { group -> group.any(hasBios) }
-        }
+    ): Boolean {
+        if (!platform.biosRequired) return true
+        val groups = requiredBiosGroups(platform)
+        val hasRequirement = platform.biosKit != null || groups.isNotEmpty()
+        if (!hasRequirement) return false
+        val kitReady = platform.biosKit == null || isKitReady()
+        val filesReady = groups.isEmpty() || groups.all { group -> group.any(hasBios) }
+        return kitReady && filesReady
     }
 
     /** Plataformas que precisam de uma pasta de sistema inteira (ex.: blueMSX), em vez de um arquivo só. */
@@ -77,9 +84,13 @@ object BiosManager {
         val suffix = "${platform.slug}-${System.nanoTime()}"
         val stagingRoot = File(root, ".bios-kit-stage-$suffix")
         val backupRoot = File(root, ".bios-kit-backup-$suffix")
+        val candidates = source.walkTopDown().maxDepth(3).filter { it.isDirectory }.toList()
         val sources = kit.associateWith { folder ->
-            source.walkTopDown().maxDepth(2).firstOrNull {
-                it.isDirectory && it.name.equals(folder, ignoreCase = true)
+            val wanted = folder.replace('\\', '/').trim('/')
+            candidates.firstOrNull {
+                it.relativeTo(source).invariantSeparatorsPath.equals(wanted, ignoreCase = true)
+            } ?: candidates.firstOrNull {
+                it.name.equals(File(wanted).name, ignoreCase = true)
             } ?: throw IllegalArgumentException("A pasta obrigatória '$folder' não foi encontrada no kit")
         }
 
@@ -179,7 +190,7 @@ object BiosManager {
             for (firmware in client.listFirmware()) {
                 val bios = canonical(File(firmware.fileName).name) ?: continue
                 if (bios.md5Hash != null || bios.name !in results) continue
-                val file = File(systemDir(context), bios.name)
+                val file = File(rootDir(context, bios), bios.name)
                 val hasReference = firmware.sizeBytes != null ||
                     firmware.crcHash != null ||
                     firmware.md5Hash != null ||
@@ -223,7 +234,7 @@ object BiosManager {
     /** Copia o arquivo para a pasta de sistema se o nome for de um BIOS conhecido; devolve o BIOS ou nulo. */
     fun import(context: Context, displayName: String, input: InputStream): BiosFile? {
         val bios = canonical(File(displayName).name) ?: return null
-        val target = File(systemDir(context), bios.name)
+        val target = File(rootDir(context, bios), bios.name)
         target.parentFile?.mkdirs()
         val temp = File(target.parentFile, "${target.name}.part")
         val backup = File(target.parentFile, "${target.name}.backup")

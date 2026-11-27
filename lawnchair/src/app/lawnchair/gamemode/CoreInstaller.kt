@@ -21,7 +21,13 @@ object CoreInstaller {
 
     fun coresDir(context: Context): File = File(context.filesDir, "libretro/cores").apply { mkdirs() }
 
-    fun coreFile(context: Context, coreId: String): File = File(coresDir(context), "${coreId}_libretro_android.so")
+    fun coreFile(context: Context, coreId: String): File = File(coresDir(context), coreFileName(coreId))
+
+    internal fun coreFileName(coreId: String): String =
+        if (coreId == "azahar") "${coreId}_libretro.so" else "${coreId}_libretro_android.so"
+
+    internal fun coreIdFromFileName(fileName: String): String =
+        fileName.removeSuffix("_libretro_android.so").removeSuffix("_libretro.so")
 
     fun isInstalled(context: Context, coreId: String): Boolean {
         val file = coreFile(context, coreId)

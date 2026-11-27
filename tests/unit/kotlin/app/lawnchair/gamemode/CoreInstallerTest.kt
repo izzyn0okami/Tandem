@@ -10,6 +10,14 @@ import org.junit.Test
 class CoreInstallerTest {
 
     @Test
+    fun androidCoreFileNamesSupportAzaharBuildbotNaming() {
+        assertEquals("azahar_libretro.so", CoreInstaller.coreFileName("azahar"))
+        assertEquals("vita3k_libretro_android.so", CoreInstaller.coreFileName("vita3k"))
+        assertEquals("azahar", CoreInstaller.coreIdFromFileName("azahar_libretro.so"))
+        assertEquals("vita3k", CoreInstaller.coreIdFromFileName("vita3k_libretro_android.so"))
+    }
+
+    @Test
     fun sha256MatchesKnownDigest() {
         val file = Files.createTempFile("core-digest", ".bin").toFile()
         try {
