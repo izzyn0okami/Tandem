@@ -1130,3 +1130,13 @@ ATUALIZAÇÃO DE CI E ESTADO DA PONTA — 2026-11-27
 - [ ] Completar a conferência integral do catálogo CoreRegistry contra os binários Android ARM64 publicados.
 - [ ] Definir e validar uma chave pública/fingerprint oficial confiável antes de habilitar verificação OpenPGP dos pacotes Buildbot; SHA-256 local detecta alterações posteriores, mas não autentica a origem do primeiro download.
 - PR #57 permanece aberta como Draft, base game-mode-m2-dev, head 09b56005619ac4d39ce212d1fd27b618fc8027c7. Nenhum merge ou publicação em tandem-latest foi autorizado ou realizado.
+
+
+I11 — DETECÇÃO DE ATUALIZAÇÃO POR ETAG — 2026-11-27
+- [x] Revisada a comparação de metadados HTTP do CoreInstaller.
+- [x] Identificada lacuna: quando Last-Modified era comparável nos dois lados, a lógica anterior ignorava completamente uma mudança de ETag; uma substituição publicada com timestamp preservado poderia não ser detectada.
+- [x] Extraída a decisão para updateAvailableFromMetadata, que considera tanto Last-Modified quanto ETag quando ambos os lados fornecem o respectivo metadado; retorna desconhecido quando nenhum par é comparável.
+- [x] Adicionados testes para ETag alterado com Last-Modified idêntico, metadados iguais, Last-Modified avançado e metadados insuficientes.
+- Commits: CoreInstaller 65ed020f8cd310ce389411611a0ece2507757f4e; CoreInstallerTest 296c9745059f5446fc4f423d10765466e1110835.
+- [ ] Aguardar CI de Spotless, testes unitários e build Debug APK para os commits de comparação de metadados.
+- Observação: ETag/Last-Modified continuam sendo indicadores de atualização, não autenticação criptográfica da origem. A verificação OpenPGP com fingerprint oficial confiável permanece pendente.
