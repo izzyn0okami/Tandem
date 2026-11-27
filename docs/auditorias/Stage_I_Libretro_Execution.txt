@@ -1303,3 +1303,18 @@ ACOMPANHAMENTO DE CI — ATUALIZAÇÃO — 2026-11-27
 - [ ] CI #1800: check-style estava executando Apply Spotless automatically e build-debug-apk executando Run unit tests; sem resultado final.
 - A atualização documental 27c3e3e3f2dcfba7b07c493657d03425ebdea44c ainda não apresentou workflow associado na consulta.
 - Não declarar nenhuma dessas CIs como integralmente aprovada enquanto build-debug-apk, artefato e final-status não concluírem.
+
+
+CORREÇÃO DE SEGURANÇA — FALLBACK CONSERVADOR DE CAPACIDADES — 2026-11-27
+- [x] Corrigido CoreRegistry: núcleo alternativo não catalogado não herda mais o ID/capacidades do núcleo padrão; passa a receber o próprio ID e capacidades desconhecidas desativadas.
+- [x] Corrigido fallback de plataforma sem entrada no catálogo: save states e RomM Device Sync ficam desativados até auditoria explícita.
+- [x] CoreInfo agora usa defaults conservadores (false) quando instanciado sem capacidades declaradas; entradas do catálogo continuam preservando os valores explícitos/atuais do helper catalogado.
+- [x] GameSessionActivity também inicia com capacidades desativadas e mantém esse estado quando não consegue resolver a plataforma/núcleo.
+- [x] Teste JVM adicionado: núcleo alternativo desconhecido e plataforma desconhecida não habilitam save states nem sincronização RomM; núcleo conhecido FCEUmm mantém capacidades declaradas.
+- [ ] Aguardar CI completa para validar formatação, testes e build APK.
+- [ ] Validar em aparelho os núcleos alternativos e formatos especiais; esta correção é uma proteção de fallback, não certificação funcional dos cores.
+
+Commits:
+- d58b160bbf8022e20dcf2cc70fc38323c4674222 — CoreRegistry: capacidades desativadas para cores sem auditoria.
+- 4d76e02b26f5c0e55ecd36625391894f6c376a90 — teste de fallback conservador.
+- 17c87f82de16e4bf76e9e28a88448235a2a4768f — GameSessionActivity: capacidades desconhecidas desativadas também na sessão.
