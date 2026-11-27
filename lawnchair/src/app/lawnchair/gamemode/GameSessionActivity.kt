@@ -110,8 +110,8 @@ class GameSessionActivity : ComponentActivity() {
     private var coreOptions by mutableStateOf<List<CoreOption>>(emptyList())
     private var coreLog: Closeable? = null
     private var coreIdForOptions = ""
-    private var coreSupportsStates = true
-    private var coreSupportsRomMSaveSync = true
+    private var coreSupportsStates = false
+    private var coreSupportsRomMSaveSync = false
     private var sramLoadFailureLogged = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -167,8 +167,8 @@ class GameSessionActivity : ComponentActivity() {
 
         val platformObject = platformSlug?.let(GamePlatforms::bySlug)
         val coreInfo = platformObject?.let { CoreRegistry.info(it, coreId) }
-        coreSupportsStates = coreInfo?.supportsStates ?: true
-        coreSupportsRomMSaveSync = coreInfo?.supportsRomMSaveSync ?: true
+        coreSupportsStates = coreInfo?.supportsStates ?: false
+        coreSupportsRomMSaveSync = coreInfo?.supportsRomMSaveSync ?: false
         // Calculado uma vez, sem depender de rede: o menu de pausa usa isso para travar "Carregar estado"
         // desde o primeiro frame, sem esperar a sessão do RetroAchievements (que é assíncrona) confirmar.
         val statesBlocked = platformObject != null && RaSettings.blocksStates(this, platformObject)
