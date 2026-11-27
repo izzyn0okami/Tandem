@@ -1634,3 +1634,51 @@ Fontes:
 - https://docs.libretro.com/library/desmume_2015/ — *.dsv no Save directory.
 
 Conclusão revisada: Nintendo DS pode sincronizar com RomM. melonDS DS tem caminho de menor esforço por usar .srm; melonDS legado e DeSmuME precisam de adaptador de arquivo. A implementação atual do Tandem ainda não sincroniza esses arquivos DS específicos.
+
+
+IMPLEMENTAÇÃO — DEVICE SYNC DE SAVES NATIVOS DO NINTENDO DS — 2026-11-27
+- [x] Confirmado no protocolo RomM 5.4 que Device Sync transporta arquivos de save identificados por nome, slot, emulador e hash; não exige que todo arquivo seja .srm.
+- [x] Criado suporte explícito ao formato .dsv de DeSmuME e DeSmuME 2015.
+- [x] Os dois núcleos escrevem em diretório isolado por jogo/conta/núcleo, usando o Save directory efetivo passado ao Libretro.
+- [x] O inventário tipado identifica somente o arquivo .dsv do núcleo DeSmuME; firmware.dfc, states e outros arquivos não entram na sincronização.
+- [x] Device Sync preserva a extensão nativa .dsv no manifesto, snapshot, upload, download e arquivo de arquivo de conflitos.
+- [x] Download remoto exige extensão .dsv e ID de emulador exatamente compatível com o núcleo local; DeSmuME e DeSmuME 2015 não são considerados intercambiáveis automaticamente.
+- [x] Download sem save local tem como destino o arquivo .dsv nativo, e não sram.srm.
+- [x] Núcleos DeSmuME/DeSmuME 2015 habilitados para sync de arquivo nativo; melonDS legado e NooDS permanecem desativados.
+- [x] Testes JVM adicionados para inventário .dsv, seleção de artefato, isolamento de compatibilidade entre os dois núcleos e validação de extensão no protocolo.
+- [ ] CI da implementação .dsv ainda não executada/confirmada.
+- [ ] Testar no aparelho: salvar dentro do jogo DeSmuME, sair normalmente, confirmar upload no RomM; apagar somente a cópia local de teste, sincronizar novamente e confirmar restauração antes do primeiro frame.
+- [ ] Testar conflito local/remoto e confirmar que backup local é preservado.
+- [ ] Verificar ROM em ZIP: o nome-base usado pelo núcleo para gerar .dsv deve corresponder ao arquivo nativo identificado pelo SaveStore; caso a extração altere o nome, adaptar a resolução ao loadPath.
+- [ ] melonDS legado permanece pendente: a documentação coloca *.sav no Cache directory. É necessário um mecanismo persistente e isolado por conta/jogo para o diretório de cache antes de habilitar sync; não sincronizar cache global diretamente.
+- [ ] melonDS DS é um núcleo distinto, não presente no catálogo atual; sua documentação usa *.srm no Save directory e poderá ser integrado quando o catálogo oferecer esse binário.
+- [ ] NooDS permanece sem sync de save de cartucho até comprovação de arquivo frontend-level.
+
+Arquivos alterados:
+- CoreSaveAdapter.kt — formato nativo .dsv e compatibilidade estrita por core.
+- SaveArtifactCatalog.kt — inventário de arquivos .dsv sem classificar arquivos auxiliares.
+- DeviceSyncArtifactPolicy.kt — seleção pelo formato declarado pelo adaptador.
+- RomMDeviceSyncClient.kt — protocolo aceita .dsv além de .srm e valida extensão esperada em downloads.
+- RomMDeviceSyncRunner.kt — snapshots, uploads, downloads e arquivos de conflito preservam .dsv.
+- SaveStore.kt — arquivo .dsv e diretório por jogo.
+- GameSessionActivity.kt — Save directory específico por jogo para DeSmuME/DeSmuME 2015 e diagnóstico do caminho real.
+- CoreRegistry.kt — capacidades atualizadas.
+- GamePlatformsResolutionTest.kt e NintendoDsDeviceSyncTest.kt — cobertura JVM.
+
+Commits:
+- ea2d00378f3c91e98e746a305ba787035cea55aa — metadados de formato nativo do adaptador.
+- 75d118687992faf000c1da50c976c020edb05631 — inventário .dsv.
+- 91af45eef8d9dd48dd38dcc3458737042216e085 — seleção do artefato.
+- e0fadd36fb9304b768e81848c75912c75a42ab9e — protocolo .dsv.
+- 731b63ca705f68e9f781a8a310a9f2c74740cb6f — fluxo inicial de snapshot .dsv.
+- 7da177c64cdb141211b9460152f3a53342c35beb — armazenamento por jogo.
+- d1817c010982f2fb290d51104580b8ec3709dd86 — diretório nativo por jogo na sessão.
+- 24653aff94bab776fbf18dcfa28bdc0db111c8be — capacidades DeSmuME.
+- a4947db9f5aea69c87b7d638b3ba7cde0a238d37 — destino nativo de download e nomes de arquivo.
+- 35b4c9c498c0a7f1158c9101098ecb28be91286e — teste de capacidades.
+- af8dc0d27989c481bbbf67f61f92efea7b294e48 — testes do Device Sync DS.
+- b25992233863db6f62d1f9b55412ce38d468620c — diagnóstico do diretório.
+
+CI:
+- Nenhum workflow foi retornado para o commit de teste no momento da consulta. Aguardar disparo/execução e registrar resultado integral antes de declarar a implementação validada.
+- PR #57 permanece aberta, draft e sem merge. Não publicar em tandem-latest.
