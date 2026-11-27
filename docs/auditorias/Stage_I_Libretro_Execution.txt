@@ -1095,3 +1095,5 @@ I7/I8 — COBERTURA ADICIONAL DE CAMINHOS DE ENTRADA ZIP — 2026-11-27
 - [ ] CI #1767 (run 45938129925) e #1768 (run 45938133145) aguardando fila para validar os testes ZIP.
 - [ ] CIs #1753 (45937735863), #1756 (45937889900), #1757 (45937896430), #1760 (45937994022), #1761 (45938012682), #1762 (45938017859), #1763 (45938029770) e #1764 (45938086388) estavam em execução; múltiplos commits sequenciais da mesma PR provocaram execuções concorrentes.
 - [ ] Depois de concluir as execuções, consolidar resultado final da branch; não considerar os commits intermediários aprovados individualmente como validação da ponta mais recente.
+
+- Atualização de fila na última consulta: CIs #1753, #1756, #1757, #1760, #1761, #1762, #1763, #1764 e #1767 em execução; CI #1768 ainda aguardando. Nenhuma dessas execuções havia concluído na consulta.
