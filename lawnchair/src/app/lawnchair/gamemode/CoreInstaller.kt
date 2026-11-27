@@ -273,10 +273,11 @@ object CoreInstaller {
             }
 
             else -> {
+                val status = "destino válido=$targetIsValid, backup válido=$backupIsValid"
                 GameLog.error(
                     "núcleos",
-                    "destino e backup de ${target.name} são inválidos; arquivos preservados para recuperação",
-                    IllegalStateException("Nenhum dos arquivos disponíveis é um ELF ARM64 válido"),
+                    "recuperação de ${target.name} não pôde ser concluída; arquivos preservados ($status)",
+                    IllegalStateException("Nenhuma cópia pôde ser confirmada com segurança"),
                 )
             }
         }
