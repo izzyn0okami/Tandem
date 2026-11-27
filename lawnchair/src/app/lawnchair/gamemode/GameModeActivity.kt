@@ -262,6 +262,9 @@ private fun GameModeRoot(refreshKey: Int, onExit: () -> Unit) {
     ) {
         GameThemeMusic.stop("início de jogo")
         GameLog.log("jogo", "abrir: $title (plataforma=${platform?.slug ?: "?"}, núcleo=$coreId)")
+        val coreInfo = platform?.let { CoreRegistry.info(it, coreId) }
+        val supportsRomMSaveSync = coreInfo?.supportsRomMSaveSync != false
+        val effectiveLoadState = loadState && coreInfo?.supportsStates != false
         if (platform != null && platform.launch != LaunchMode.LIBRETRO) {
             status = context.getString(R.string.game_external_opening, title)
             ExternalEmulators.launch(context, LocalGame(title, platform, romPath))
@@ -314,7 +317,7 @@ private fun GameModeRoot(refreshKey: Int, onExit: () -> Unit) {
                 "Não foi possível confirmar a qual jogo pertence o save antigo. Os arquivos foram preservados e o jogo não será iniciado.",
             )
         }
-        if (migrationPlan.confirmationSources.isNotEmpty()) {
+        if (supportsRomMSaveSync && migrationPlan.confirmationSources.isNotEmpty()) {
             pendingLegacySaveClaim = PendingLegacySaveClaim(
                 coreId = coreId,
                 romPath = romPath,
@@ -327,11 +330,11 @@ private fun GameModeRoot(refreshKey: Int, onExit: () -> Unit) {
             status = ""
             return
         }
-        val migrationSources = migrationPlan.sources
+        val migrationSources = if (supportsRomMSaveSync) migrationPlan.sources else emptyList()
         val core = CoreInstaller.ensureInstalled(context, coreId) { bytes ->
             status = context.getString(R.string.game_mode_status_downloading, coreId, bytes / 1024)
         }.getOrThrow()
-        if (RomMSettings.isConnected(context) && !useLocalSave) {
+        if (RomMSettings.isConnected(context) && !useLocalSave && supportsRomMSaveSync) {
             status = context.getString(R.string.game_mode_status_syncing)
             try {
                 // A partida só começa depois que o pull terminou de verdade.
@@ -346,7 +349,7 @@ private fun GameModeRoot(refreshKey: Int, onExit: () -> Unit) {
                     coreId = coreId,
                     romPath = romPath,
                     title = title,
-                    loadState = loadState,
+                    loadState = effectiveLoadState,
                     platform = platform,
                     error = error.message ?: error.toString(),
                     localSaveAvailable = error !is SaveRollbackException && withContext(Dispatchers.IO) {
@@ -367,7 +370,7 @@ private fun GameModeRoot(refreshKey: Int, onExit: () -> Unit) {
             }
         }
         status = context.getString(R.string.game_mode_status_starting, title)
-        context.startActivity(GameSessionActivity.intent(context, core.absolutePath, romPath, loadState, platform?.slug, gameIdentity, migrationSources))
+        context.startActivity(GameSessionActivity.intent(context, core.absolutePath, romPath, effectiveLoadState, platform?.slug, gameIdentity, migrationSources))
         status = ""
     }
 

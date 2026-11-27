@@ -758,9 +758,13 @@ internal fun GameDetailScreen(
     val context = LocalContext.current
     val local = entry.local
     val group = entry.group
+    val chosenCoreId = remember(entry.platform.slug) { CoreRegistry.chosen(context, entry.platform) }
+    val coreInfo = remember(entry.platform.slug, chosenCoreId) { CoreRegistry.info(entry.platform, chosenCoreId) }
     val history = remember(local?.path) { local?.let { PlayHistory.get(context, it.path) } ?: PlayHistory.Entry(0L, 0L) }
-    val hasState = remember(local?.path) {
-        local != null && SaveStore(context, CoreRegistry.chosen(context, local.platform), File(local.path)).hasState() && !RaSettings.blocksStates(context, local.platform)
+    val hasState = remember(local?.path, chosenCoreId, coreInfo.supportsStates) {
+        local != null && coreInfo.supportsStates &&
+            SaveStore(context, chosenCoreId, File(local.path)).hasState() &&
+            !RaSettings.blocksStates(context, local.platform)
     }
     val percent = entry.percent(progress)
     val firstFocus = remember { FocusRequester() }
@@ -816,7 +820,6 @@ internal fun GameDetailScreen(
                 .getOrNull()
         }
     }
-    val chosenCoreId = remember(entry.platform.slug) { CoreRegistry.chosen(context, entry.platform) }
     var remoteSaveVersions by remember(entry.key) { mutableStateOf<List<RemoteFile>?>(null) }
     var remoteSaveVersionsLoading by remember(entry.key) { mutableStateOf(false) }
     var remoteSaveVersionsError by remember(entry.key) { mutableStateOf<String?>(null) }
@@ -831,12 +834,13 @@ internal fun GameDetailScreen(
     var deviceSyncExecutionError by remember(entry.key) { mutableStateOf<String?>(null) }
     val canInspectDeviceSyncSave = local != null &&
         entry.platform.launch == LaunchMode.LIBRETRO &&
+        coreInfo.supportsRomMSaveSync &&
         chosenCoreId.isNotBlank() &&
         RomMSettings.isConnected(context) &&
         RomMSettings.deviceSyncDeviceId(context) != null &&
         runCatching { GameIdentityResolver.hasRomMLink(context, File(local.path)) }.getOrDefault(false)
-    val syncStatus by produceState<SaveSyncStatus?>(null, local?.path, chosenCoreId, syncVersion) {
-        value = local?.let { SaveSync.status(context, it.path, chosenCoreId) }
+    val syncStatus by produceState<SaveSyncStatus?>(null, local?.path, chosenCoreId, syncVersion, coreInfo.supportsRomMSaveSync) {
+        value = if (coreInfo.supportsRomMSaveSync) local?.let { SaveSync.status(context, it.path, chosenCoreId) } else null
     }
     var rommLinked by remember(local?.path) {
         mutableStateOf(local?.let { runCatching { GameIdentityResolver.hasRomMLink(context, File(it.path)) }.getOrDefault(false) } ?: false)
@@ -950,6 +954,7 @@ internal fun GameDetailScreen(
                 if (
                     local != null &&
                     entry.platform.launch == LaunchMode.LIBRETRO &&
+                    coreInfo.supportsRomMSaveSync &&
                     RomMSettings.isConnected(context)
                 ) {
                     if (rommLinked) {
