@@ -248,7 +248,7 @@ object CoreInstaller {
             var foundCore = false
             var entry = zip.nextEntry
             while (entry != null) {
-                val normalizedName = entry.name.replace('\\\\', '/')
+                val normalizedName = entry.name.replace("\\\\", "/")
                 val segments = normalizedName.split('/').filter { it.isNotEmpty() }
                 check(
                     normalizedName.isNotBlank() &&
