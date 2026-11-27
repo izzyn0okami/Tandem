@@ -475,6 +475,12 @@ object RomMDeviceSyncRunner {
                         it.action in setOf(DeviceSyncAction.Conflict, DeviceSyncAction.Download, DeviceSyncAction.Upload)
                 }
                 if (remoteHead != null) {
+                    val expectedExtension = DeviceSyncArtifactPolicy.fileExtensionForCore(coreId)
+                    if (remoteHead.fileName?.endsWith(".$expectedExtension", ignoreCase = true) != true ||
+                        !DeviceSyncArtifactPolicy.isCompatibleRemote(coreId, remoteHead.emulator)
+                    ) {
+                        throw IOException("O save remoto não corresponde ao formato/núcleo compatível; baseline não confirmado.")
+                    }
                     val remoteHash = remoteHead.serverContentHash
                         ?: throw IOException("O RomM não informou o hash da versão remota.")
                     val remoteSaveId = remoteHead.saveId
@@ -555,6 +561,7 @@ object RomMDeviceSyncRunner {
                 migrationSourcesOverride = emptyMap(),
             )
             val artifact = DeviceSyncArtifactPolicy.selectForRomM(store.inventory())
+            val fileExtension = artifact?.format ?: DeviceSyncArtifactPolicy.fileExtensionForCore(coreId)
             val target = artifact?.file ?: store.deviceSyncSaveFile
             val remoteSlot = artifact?.let(DeviceSyncArtifactPolicy::remoteSlot)
                 ?: DeviceSyncArtifactPolicy.remoteSlotForCore(coreId)
@@ -564,9 +571,9 @@ object RomMDeviceSyncRunner {
             if (!snapshotRoot.exists() && !snapshotRoot.mkdirs()) {
                 throw IOException("Não foi possível preparar a área temporária de restauração.")
             }
-            val snapshot = File(snapshotRoot, "history-current-${UUID.randomUUID()}.srm")
-            val latestStage = File(snapshotRoot, "history-latest-${UUID.randomUUID()}.srm")
-            val selectedStage = File(snapshotRoot, "history-selected-${UUID.randomUUID()}.srm")
+            val snapshot = File(snapshotRoot, "history-current-${UUID.randomUUID()}.$fileExtension")
+            val latestStage = File(snapshotRoot, "history-latest-${UUID.randomUUID()}.$fileExtension")
+            val selectedStage = File(snapshotRoot, "history-selected-${UUID.randomUUID()}.$fileExtension")
             var sessionId: Long? = null
             var sessionCompleted = false
             try {
@@ -604,9 +611,8 @@ object RomMDeviceSyncRunner {
                     ?: throw IOException("A versão escolhida não está mais disponível nesse slot.")
                 val latest = versions.firstOrNull()
                     ?: throw IOException("O RomM não retornou uma versão ativa para este slot.")
-                val expectedExtension = DeviceSyncArtifactPolicy.fileExtensionForCore(coreId)
-                if (selected.fileName?.endsWith(".$expectedExtension", ignoreCase = true) != true ||
-                    latest.fileName?.endsWith(".$expectedExtension", ignoreCase = true) != true
+                if (selected.fileName?.endsWith(".$fileExtension", ignoreCase = true) != true ||
+                    latest.fileName?.endsWith(".$fileExtension", ignoreCase = true) != true
                 ) {
                     throw IOException("A versão remota não corresponde à extensão de save esperada por este núcleo.")
                 }
