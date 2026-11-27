@@ -774,4 +774,49 @@ class DeviceSyncProtocolTest {
         }
     }
 
+    @Test
+    fun deviceSyncSelectsNativeDeSmuMeDsvArtifactForRomM() {
+        val directory = java.io.File.createTempFile("device-sync-dsv-", "").apply {
+            delete()
+            mkdirs()
+        }
+        try {
+            val save = java.io.File(directory, "Pokemon.dsv").apply { writeBytes(byteArrayOf(1, 2, 3)) }
+            val artifacts = SaveArtifactCatalog.inspect(
+                gameIdentity = "romm-ds-game",
+                coreId = "desmume",
+                files = listOf(save),
+            )
+
+            val selected = DeviceSyncArtifactPolicy.selectForRomM(artifacts)
+
+            assertEquals(SaveArtifactType.CORE_SAVE, selected?.type)
+            assertEquals("dsv", selected?.format)
+            assertEquals("autosave", DeviceSyncArtifactPolicy.remoteSlot(selected!!))
+            assertTrue(DeviceSyncArtifactPolicy.isCompatibleRemote("desmume", "desmume"))
+            assertFalse(DeviceSyncArtifactPolicy.isCompatibleRemote("melonds", "desmume"))
+        } finally {
+            directory.deleteRecursively()
+        }
+    }
+
+    @Test
+    fun nativeDsvArtifactIsNotSelectedForMelonDs() {
+        val directory = java.io.File.createTempFile("device-sync-melonds-", "").apply {
+            delete()
+            mkdirs()
+        }
+        try {
+            val save = java.io.File(directory, "Pokemon.dsv").apply { writeBytes(byteArrayOf(1, 2, 3)) }
+            val artifacts = SaveArtifactCatalog.inspect(
+                gameIdentity = "romm-ds-game",
+                coreId = "melonds",
+                files = listOf(save),
+            )
+
+            assertNull(DeviceSyncArtifactPolicy.selectForRomM(artifacts))
+        } finally {
+            directory.deleteRecursively()
+        }
+    }
 }
