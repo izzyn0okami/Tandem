@@ -96,6 +96,15 @@ class GamePlatformsResolutionTest {
         assertTrue(pcsx2.preferVulkan == true)
     }
     @Test
+    fun undocumentedBlastEmCapabilitiesRemainDisabled() {
+        val platform = GamePlatforms.bySlug("genesis")!!
+        val blastEm = CoreRegistry.info(platform, "blastem")
+
+        assertFalse(blastEm.supportsStates)
+        assertFalse(blastEm.supportsRomMSaveSync)
+    }
+
+    @Test
     fun playstationCoresUseLibretroMemoryCardFormatForPrimarySlot() {
         val platform = GamePlatforms.bySlug("psx")!!
         listOf("pcsx_rearmed", "swanstation", "mednafen_psx").forEach { coreId ->
@@ -178,7 +187,7 @@ class GamePlatformsResolutionTest {
         assertTrue(genesisPlus.supportsStates)
         assertFalse(genesisPlus.supportsRomMSaveSync)
         assertTrue(picoDrive.supportsStates)
-        assertTrue(picoDrive.supportsRomMSaveSync)
+        assertFalse(picoDrive.supportsRomMSaveSync)
     }
 
 }
