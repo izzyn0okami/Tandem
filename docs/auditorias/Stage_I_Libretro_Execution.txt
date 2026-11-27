@@ -951,3 +951,21 @@ STATUS CI #1705
 - [x] check-style/Spotless aprovado.
 - [ ] Job build-debug-apk ainda executava testes unitários; build APK e upload ainda não iniciados na última consulta. Run: https://github.com/izzyn0okami/Tandem/actions/runs/45932394279.
 - PR #57 segue aberta e draft. Sem merge e sem publicação em tandem-latest.
+
+
+REVISÃO — RECUPERAÇÃO DE SRAM APÓS INTERRUPÇÃO DE GRAVAÇÃO — 2026-11-26
+- [x] Revisada a implementação real de SaveStore.write: grava no mesmo diretório em arquivo temporário com sufixo .tmp e promove por rename, sem apagar primeiro o save comprometido.
+- [x] Confirmado que readSram lê somente sram.srm; um .tmp deixado por interrupção não é tratado como save válido nem substitui o último arquivo comprometido.
+- [x] Confirmado que a próxima gravação reutiliza/substitui o temporário obsoleto e só retorna após a promoção bem-sucedida; falha de rename gera erro e mantém o destino anterior como referência.
+- [x] Adicionado teste unitário interruptedTemporarySramDoesNotReplaceOrHideLastCommittedSave: simula temporário parcial deixado por encerramento, confirma leitura do save anterior e confirma promoção de uma nova gravação sem resgatar bytes parciais.
+- Commit do teste: 8e8e217409352a91c3186286120b8c1e45b5e2a5.
+- [ ] Aguardar CI do novo teste e validar que SaveStoreTest continua verde.
+- [ ] Não implementar recuperação automática a partir de .tmp: sem checksum/tamanho esperado/metadado de commit, não é possível distinguir com segurança um temporário completo de um parcial. Promovê-lo automaticamente poderia substituir um save válido por dados incompletos.
+- [ ] Considerar futuramente fsync/flush explícito e um protocolo de temporário com metadados/digest, somente se houver evidência de necessidade e testes específicos de durabilidade; rename atômico protege contra substituição parcial, mas não garante por si só persistência física após perda abrupta de energia.
+- Conclusão: o comportamento atual preserva o último save comprometido e descarta implicitamente temporários órfãos; não foi identificado motivo seguro para alterar o código de produção.
+
+STATUS CI — ATUALIZAÇÃO DE CONTINUIDADE
+- [ ] CI #1705 — run 45932394279, commit 6cae366fe82bf563a84029d098bc0ed9367447a2: ainda in_progress; check-style/Spotless passou; testes unitários continuam em execução; build APK e upload pendentes.
+- [ ] CI #1706 — run 45932419148, commit 8887a0ba00c2a8d5607cfb363571ef9cb85a916d: ainda in_progress na última consulta.
+- [ ] A nova alteração de teste (commit 8e8e217409352a91c3186286120b8c1e45b5e2a5) ainda precisa de CI própria.
+- PR #57 continua aberta e draft; não mesclar nem publicar em tandem-latest sem autorização explícita. PR #41 e PR #55 permanecem intocadas.
