@@ -39,6 +39,7 @@ object RaCoreCompatibility {
         "msx" to setOf("bluemsx"),
         "intellivision" to setOf("freeintv"),
         "neogeo" to setOf("fbneo"),
+        "arcade" to setOf("fbneo"),
         "neogeocd" to setOf("neocd"),
         "supergrafx" to setOf("mednafen_supergrafx"),
         "pcfx" to setOf("mednafen_pcfx"),
