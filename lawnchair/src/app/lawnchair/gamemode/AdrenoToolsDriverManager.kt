@@ -1,0 +1,309 @@
+package app.lawnchair.gamemode
+
+import android.content.Context
+import android.net.Uri
+import android.os.Build
+import android.provider.OpenableColumns
+import com.swordfish.libretrodroid.VulkanDriver
+import java.io.File
+import java.security.MessageDigest
+import java.util.zip.ZipInputStream
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import org.json.JSONObject
+
+/** Metadata for a rootless AdrenoTools-compatible Vulkan driver package. */
+data class InstalledAdrenoDriver(
+    val id: String,
+    val name: String,
+    val vendor: String,
+    val version: String,
+    val author: String,
+    val libraryName: String,
+    val sha256: String,
+    val directory: File,
+) {
+    fun asLibretroDriver() = VulkanDriver(directory.absolutePath, libraryName)
+}
+
+/**
+ * Imports AdrenoTools/Turnip driver packages into app-private storage.
+ *
+ * libadrenotools loads native libraries with dlopen, so drivers must never be loaded
+ * from shared storage. This manager does not modify /vendor and does not require root.
+ */
+object AdrenoToolsDriverManager {
+    const val LEGACY_TURNIP_ID = "legacy-turnip"
+    private const val MAX_ARCHIVE_BYTES = 256L * 1024L * 1024L
+    private const val MAX_FILE_BYTES = 128L * 1024L * 1024L
+    private const val MAX_ENTRIES = 64
+
+    fun driversDir(context: Context) = File(context.filesDir, "gpu-drivers").apply { mkdirs() }
+
+    /** Descobre a instalação Turnip antiga sem movê-la nem alterar seu conteúdo. */
+    fun legacyTurnipDriver(context: Context): VulkanDriver? {
+        val root = File(context.filesDir, "vulkan/drivers/adreno")
+        val libraries = root.walkTopDown().filter {
+            it.isFile && it.name == "libvulkan_freedreno.so" && CoreInstaller.isArm64Elf(it)
+        }.toList()
+        if (libraries.size != 1) return null
+        val library = libraries.single()
+        return VulkanDriver(library.parentFile?.absolutePath ?: return null, library.name)
+    }
+
+    fun installedIdFor(context: Context, selected: VulkanDriver?): String? {
+        if (selected == null) return null
+        return installed(context).firstOrNull { driver ->
+            runCatching {
+                File(selected.directory).canonicalFile == driver.directory.canonicalFile &&
+                    selected.libraryName == driver.libraryName
+            }.getOrDefault(false)
+        }?.id
+    }
+
+    fun selectedId(context: Context): String? {
+        if (!GameModeSettings.isExternalVulkanDriverEnabled(context)) return null
+        val selected = GameModeSettings.vulkanDriver(context) ?: return null
+        val installedId = installed(context).firstOrNull { driver ->
+            runCatching {
+                File(selected.directory).canonicalFile == driver.directory.canonicalFile &&
+                    selected.libraryName == driver.libraryName
+            }.getOrDefault(false)
+        }?.id
+        if (installedId != null) return installedId
+        val legacy = legacyTurnipDriver(context) ?: return null
+        return LEGACY_TURNIP_ID.takeIf {
+            runCatching {
+                File(selected.directory).canonicalFile == File(legacy.directory).canonicalFile &&
+                    selected.libraryName == legacy.libraryName
+            }.getOrDefault(false)
+        }
+    }
+
+    /** Seleciona um pacote novo, a instalação Turnip existente ou o driver Vulkan do Android. */
+    fun select(context: Context, id: String?) {
+        if (id == null) {
+            GameModeSettings.setVulkanDriver(context, null)
+            GameModeSettings.setExternalVulkanDriverEnabled(context, false)
+            GameLog.log("Vulkan", "driver do sistema selecionado")
+            return
+        }
+        val driver = if (id == LEGACY_TURNIP_ID) {
+            legacyTurnipDriver(context) ?: error("A instalação Turnip existente não passou pela validação ELF ARM64")
+        } else {
+            installed(context).firstOrNull { it.id == id }?.asLibretroDriver()
+                ?: error("Driver Vulkan não encontrado")
+        }
+        require(isLikelyAdreno()) { "Drivers Turnip/Adreno só podem ser ativados em GPUs Qualcomm Adreno" }
+        GameModeSettings.setVulkanDriver(context, driver)
+        GameModeSettings.setExternalVulkanDriverEnabled(context, true)
+        GameLog.log("Vulkan", "driver externo selecionado: $id")
+    }
+
+    /** Remove apenas o pacote indicado; o importador Turnip legado permanece intacto. */
+    fun removePackage(context: Context, id: String) {
+        val driver = installed(context).firstOrNull { it.id == id }
+            ?: error("Driver Vulkan não encontrado")
+        if (selectedId(context) == id) select(context, null)
+        check(driver.directory.deleteRecursively()) { "Não foi possível remover o pacote do driver" }
+        GameLog.log("Vulkan", "pacote AdrenoTools removido: ${driver.name} ${driver.version}")
+    }
+
+    internal fun safeArchiveOutput(staging: File, fileName: String): File {
+        require(fileName.matches(Regex("[A-Za-z0-9_.+-]+")) && fileName !in setOf(".", "..")) {
+            "Nome de arquivo inválido no pacote"
+        }
+        val canonicalRoot = staging.canonicalFile
+        val output = File(canonicalRoot, fileName).canonicalFile
+        require(output.parentFile == canonicalRoot && output.path.startsWith(canonicalRoot.path + File.separator)) {
+            "O pacote tenta gravar fora da pasta temporária do driver"
+        }
+        return output
+    }
+
+    fun isLikelyAdreno(): Boolean {
+        val identifiers = buildString {
+            append(Build.MANUFACTURER).append(' ')
+            append(Build.HARDWARE).append(' ')
+            append(Build.BOARD).append(' ')
+            if (Build.VERSION.SDK_INT >= 31) append(Build.SOC_MODEL)
+        }.lowercase()
+        return listOf("qualcomm", "qcom", "adreno", "sm8350", "sm8450", "sm8475", "sm8550", "sm8650", "sm8750", "kona", "lahaina", "taro", "kalama", "pineapple").any { identifiers.contains(it) }
+    }
+
+    fun installed(context: Context): List<InstalledAdrenoDriver> = driversDir(context).listFiles().orEmpty()
+        .filter { it.isDirectory && File(it, "meta.json").isFile }
+        .mapNotNull { readInstalled(it) }
+        .sortedWith(compareBy<InstalledAdrenoDriver> { it.vendor }.thenBy { it.name })
+
+    suspend fun importPackage(context: Context, uri: Uri): Result<InstalledAdrenoDriver> = withContext(Dispatchers.IO) {
+        runCatching {
+            require(isLikelyAdreno()) { "Este pacote é destinado a GPUs Qualcomm Adreno" }
+            val staging = File(driversDir(context), ".import-${System.nanoTime()}").apply {
+                check(mkdirs()) { "Não foi possível criar a pasta temporária do driver" }
+            }
+            try {
+                val files = mutableSetOf<String>()
+                var wrapper: String? = null
+                var totalBytes = 0L
+                var entries = 0
+                val input = requireNotNull(context.contentResolver.openInputStream(uri)) { "Não foi possível abrir o pacote selecionado" }
+                ZipInputStream(input).use { zip ->
+                    while (true) {
+                        val entry = zip.nextEntry ?: break
+                        entries++
+                        check(entries <= MAX_ENTRIES) { "Pacote contém entradas demais" }
+                        if (entry.isDirectory) {
+                            zip.closeEntry()
+                            continue
+                        }
+                        val raw = entry.name
+                        // Bundles Turnip multi-plataforma podem conter manifest.json, LICENSES e
+                        // uma pasta linux/ ao lado de android/. Esses itens não são carregados no Android.
+                        if (raw == "manifest.json" || raw == "NOTICE" || raw.startsWith("linux/") || raw.startsWith("LICENSES/")) {
+                            zip.closeEntry()
+                            continue
+                        }
+                        check(!raw.startsWith("/") && !raw.startsWith("\\") && !raw.contains('\\')) { "Caminho inválido no pacote" }
+                        val segments = raw.split('/').filter { it.isNotEmpty() }
+                        check(segments.isNotEmpty() && segments.none { it == "." || it == ".." || ':' in it }) {
+                            "O pacote contém um caminho inseguro"
+                        }
+                        val fileName = when (segments.size) {
+                            1 -> {
+                                check(wrapper == null) { "Pacote mistura arquivos na raiz e em uma subpasta" }
+                                segments[0]
+                            }
+
+                            2 -> {
+                                val root = segments[0]
+                                check(wrapper == null || wrapper == root) { "Pacote contém múltiplas pastas raiz" }
+                                check(files.isEmpty() || wrapper == root) { "Pacote mistura arquivos na raiz e em uma subpasta" }
+                                wrapper = root
+                                segments[1]
+                            }
+
+                            else -> error("Pacote de driver deve conter arquivos na raiz, sem subpastas internas")
+                        }
+                        check(fileName.matches(Regex("[A-Za-z0-9_.+-]+"))) { "Nome de arquivo inválido no pacote" }
+                        check(files.add(fileName)) { "Arquivo duplicado no pacote: $fileName" }
+                        val target = safeArchiveOutput(staging, fileName)
+                        var written = 0L
+                        target.outputStream().buffered().use { output ->
+                            val buffer = ByteArray(64 * 1024)
+                            while (true) {
+                                val read = zip.read(buffer)
+                                if (read < 0) break
+                                written += read
+                                totalBytes += read
+                                check(written <= MAX_FILE_BYTES && totalBytes <= MAX_ARCHIVE_BYTES) {
+                                    "Pacote de driver excede o limite de tamanho"
+                                }
+                                output.write(buffer, 0, read)
+                            }
+                        }
+                        zip.closeEntry()
+                    }
+                }
+
+                val metadataFile = File(staging, "meta.json")
+                check(metadataFile.isFile) { "Pacote incompatível: meta.json não encontrado" }
+                val metadata = JSONObject(metadataFile.readText())
+                check(metadata.optInt("schemaVersion", -1) == 1) { "Versão de pacote AdrenoTools não suportada" }
+                val name = metadata.optString("name").takeIf { it.isNotBlank() } ?: error("Nome do driver ausente")
+                val author = metadata.optString("author").takeIf { it.isNotBlank() } ?: error("Autor do driver ausente")
+                val packageVersion = metadata.optString("packageVersion").takeIf { it.isNotBlank() } ?: error("Versão do pacote ausente")
+                val vendor = metadata.optString("vendor").takeIf { it in setOf("Mesa", "Qualcomm") }
+                    ?: error("Fornecedor do driver deve ser Mesa ou Qualcomm")
+                val version = metadata.optString("driverVersion").takeIf { it.isNotBlank() } ?: error("Versão do driver ausente")
+                check(packageVersion.length <= 80 && version.length <= 80) { "Metadados de versão inválidos" }
+                val minApi = metadata.optInt("minApi", 0)
+                check(minApi > 0 && Build.VERSION.SDK_INT >= minApi) { "Este driver exige Android API $minApi" }
+                val libraryName = metadata.optString("libraryName").takeIf {
+                    it.isNotBlank() && it.endsWith(".so") && File(it).name == it
+                } ?: error("Nome da biblioteca principal inválido")
+                val mainLibrary = File(staging, libraryName)
+                check(mainLibrary.isFile && CoreInstaller.isArm64Elf(mainLibrary)) {
+                    "A biblioteca principal não é ELF64/AArch64"
+                }
+                staging.listFiles().orEmpty().filter { it.isFile && it.extension == "so" }.forEach { library ->
+                    check(CoreInstaller.isArm64Elf(library)) { "${library.name} não é uma biblioteca ELF64/AArch64" }
+                    check(library.setReadable(true, true)) { "Não foi possível preparar ${library.name}" }
+                }
+                val digest = sha256(mainLibrary)
+                val id = "${safeId(name)}-${safeId(version)}-${digest.take(12)}"
+                val installedDir = File(driversDir(context), id)
+                val sourceName = runCatching {
+                    context.contentResolver.query(
+                        uri,
+                        arrayOf(OpenableColumns.DISPLAY_NAME),
+                        null,
+                        null,
+                        null,
+                    )?.use { cursor -> if (cursor.moveToFirst()) cursor.getString(0) else null }
+                }.getOrNull()
+                val installedMetadata = JSONObject(metadata.toString())
+                    .put("installedSha256", digest)
+                    .put("installedLibrary", libraryName)
+                    .put("importSourceProvider", uri.authority ?: uri.scheme ?: "unknown")
+                    .put("importSourceName", sourceName ?: uri.lastPathSegment ?: "unknown")
+                    .put("importedAtEpochMs", System.currentTimeMillis())
+                File(staging, "meta.json").writeText(installedMetadata.toString())
+                check(mainLibrary.setReadable(true, true)) { "Não foi possível preparar a biblioteca principal" }
+
+                val backup = File(driversDir(context), ".$id.backup")
+                if (backup.exists()) check(backup.deleteRecursively()) { "Não foi possível limpar o backup anterior do driver" }
+                if (installedDir.exists()) check(installedDir.renameTo(backup)) { "Não foi possível preservar a versão anterior do driver" }
+                try {
+                    check(staging.renameTo(installedDir)) { "Não foi possível concluir a instalação do driver" }
+                    val verified = readInstalled(installedDir)
+                        ?: error("Driver instalado não passou pela verificação final")
+                    if (backup.exists()) check(backup.deleteRecursively()) { "Não foi possível limpar o backup do driver anterior" }
+                    verified
+                } catch (error: Throwable) {
+                    if (installedDir.exists()) check(installedDir.deleteRecursively()) { "Não foi possível remover a instalação inválida do driver" }
+                    if (backup.exists()) check(backup.renameTo(installedDir)) { "Falha ao restaurar o driver anterior" }
+                    throw error
+                }
+            } catch (error: Throwable) {
+                staging.deleteRecursively()
+                throw error
+            }
+        }.onFailure { GameLog.error("Vulkan", "falha ao importar driver externo", it) }
+    }
+
+    private fun readInstalled(directory: File): InstalledAdrenoDriver? = runCatching {
+        val metadata = JSONObject(File(directory, "meta.json").readText())
+        val libraryName = metadata.optString("installedLibrary").ifBlank { metadata.optString("libraryName") }
+        val library = File(directory, libraryName)
+        val digest = sha256(library)
+        val expected = metadata.optString("installedSha256")
+        require(library.isFile && CoreInstaller.isArm64Elf(library))
+        require(expected.isNotBlank() && digest.equals(expected, ignoreCase = true))
+        InstalledAdrenoDriver(
+            id = directory.name,
+            name = metadata.getString("name"),
+            vendor = metadata.getString("vendor"),
+            version = metadata.getString("driverVersion"),
+            author = metadata.getString("author"),
+            libraryName = libraryName,
+            sha256 = digest,
+            directory = directory,
+        )
+    }.getOrNull()
+
+    private fun safeId(value: String) = value.lowercase().replace(Regex("[^a-z0-9]+"), "-").trim('-').take(32).ifBlank { "driver" }
+
+    private fun sha256(file: File): String {
+        val digest = MessageDigest.getInstance("SHA-256")
+        file.inputStream().use { input ->
+            val buffer = ByteArray(64 * 1024)
+            while (true) {
+                val read = input.read(buffer)
+                if (read < 0) break
+                digest.update(buffer, 0, read)
+            }
+        }
+        return digest.digest().joinToString("") { "%02x".format(it.toInt() and 0xFF) }
+    }
+}
