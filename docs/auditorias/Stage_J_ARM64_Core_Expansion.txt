@@ -212,3 +212,11 @@ DESTINO NATIVO DE DOWNLOAD E ESTADO DE SINCRONIZAÇÃO — 2026-11-27
 - [ ] markPending ainda depende do fluxo de agendamento do Worker para refletir a mudança de saves nativos; revisar se a UI precisa antecipar o estado PENDING antes do enfileiramento.
 - [ ] CI permanece pendente no head 08b888bd43a53b653e9a9989c45d494d383f612d; não há execução nova confirmada.
 - [ ] Testes físicos continuam necessários para upload/download/conflict do .dsv no DeSmuME.
+
+
+VERIFICAÇÃO FINAL DE HEAD E CI — 2026-11-27
+- [x] PR #58 permanece aberta e não mesclada; base ainda feat/libretro-stage-i; head atual 1b8d89186960e84d661461103b08618caf3274f2.
+- [x] Conferidos no head atual: adaptador .dsv, SaveStore.nativeSaveFile/deviceSyncSaveFile, inventário DSV, política de extensão por core, manifesto/upload/download com extensão declarada, runner, diagnóstico e teste de protocolo.
+- [ ] Nenhuma CI foi criada para o head 1b8d89186960e84d661461103b08618caf3274f2. A CI #1936 continua sendo sucesso histórico somente para d8b1e7829ef076562f4504f1b190cfddc70c9ddf.
+- [ ] Executar CI completa manualmente para o head atual e corrigir qualquer falha antes de prosseguir com rebase da PR #58.
+- [x] Nenhuma mudança em game-mode-m2-dev, tandem-latest, PR #41 ou PR #55.
