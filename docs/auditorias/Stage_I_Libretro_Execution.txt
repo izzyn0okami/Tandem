@@ -1293,3 +1293,13 @@ Fontes técnicas:
 - Flycast: https://docs.libretro.com/library/flycast/
 - Beetle Cygne: https://docs.libretro.com/library/beetle_cygne/
 - Beetle VB: https://docs.libretro.com/library/beetle_vb/
+
+
+ACOMPANHAMENTO DE CI — ATUALIZAÇÃO — 2026-11-27
+- [x] CI #1801 — run 45990307128 — commit ccd2e7897ce153164a59cb5e4c6ab3cc1371b970: workflow iniciado; check-style e build-debug-apk em execução na etapa checkout na última consulta.
+- [x] CI #1802 — run 45990313964 — commit 44221f574848a9a8fb5311c45b0d8f934a4d9595: workflow iniciado; check-style e build-debug-apk em execução na etapa checkout na última consulta.
+- [x] CI #1791: check-style aprovado; build-debug-apk avançou para Build APK, ainda sem conclusão.
+- [x] CI #1793: check-style aprovado; build-debug-apk ainda executando Run unit tests.
+- [ ] CI #1800: check-style estava executando Apply Spotless automatically e build-debug-apk executando Run unit tests; sem resultado final.
+- A atualização documental 27c3e3e3f2dcfba7b07c493657d03425ebdea44c ainda não apresentou workflow associado na consulta.
+- Não declarar nenhuma dessas CIs como integralmente aprovada enquanto build-debug-apk, artefato e final-status não concluírem.
