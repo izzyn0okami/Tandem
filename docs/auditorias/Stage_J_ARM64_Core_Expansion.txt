@@ -170,3 +170,11 @@ RESTAURAÇÃO DE COMPATIBILIDADE DE SAVES NINTENDO DS — 2026-11-27
 - [ ] Validar no aparelho a criação, leitura e sincronização RomM do arquivo .dsv; o código e os testes JVM não comprovam o comportamento real do núcleo.
 - [ ] Continuar auditoria das diferenças de SaveStore e fluxo RomM entre Stage I e Stage J antes de retomar o rebase real.
 - [x] PR #58 permanece aberta, não mesclada e com base inalterada; game-mode-m2-dev e tandem-latest não foram modificadas.
+
+
+RESULTADO DE CI HISTÓRICA E VALIDAÇÃO PENDENTE DOS AJUSTES DSV — 2026-11-27
+- [x] Reconsultado Actions: CI #1936 — https://github.com/izzyn0okami/Tandem/actions/runs/46040639108 — conclusão success.
+- [x] A CI #1936 foi executada no commit d8b1e7829ef076562f4504f1b190cfddc70c9ddf, após a restauração de coreSaveDirectory, e valida aquele head.
+- [ ] A CI #1936 é anterior aos commits e48c3cb, 4bdff08, bea734c, 6861c1c e e7217b5; portanto, não valida a restauração do adaptador DSV, SaveStore, catálogo, testes ou este log.
+- [ ] Aguardar/executar uma nova CI no head e7217b566bae7abcea7daebd0e5bd7ea42c9fdd5 antes de considerar os ajustes de saves compilados e testados.
+- [x] PR #58 permanece aberta e não mesclada, com base feat/libretro-stage-i; nenhuma mudança em game-mode-m2-dev ou tandem-latest.
