@@ -43,7 +43,7 @@ object VulkanDriverManager {
                             !relative.startsWith("/") &&
                             !Regex("^[A-Za-z]:").containsMatchIn(relative) &&
                             relative.split('/').none { it == ".." } &&
-                            !relative.contains('\u0000')
+                            !relative.contains('\u0000'),
                     ) { "O pacote contém um caminho de arquivo inválido." }
 
                     val output = File(staging, relative).canonicalFile

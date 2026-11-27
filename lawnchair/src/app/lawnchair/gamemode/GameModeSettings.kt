@@ -1,9 +1,9 @@
 package app.lawnchair.gamemode
 
 import android.content.Context
-import java.io.File
-import com.swordfish.libretrodroid.VulkanDriver
 import androidx.core.content.edit
+import com.swordfish.libretrodroid.VulkanDriver
+import java.io.File
 
 /**
  * Preferências mínimas do modo jogos (M1). Ficam em SharedPreferences simples
@@ -66,15 +66,13 @@ object GameModeSettings {
         context.getSharedPreferences(FILE, Context.MODE_PRIVATE).edit { putFloat(KEY_VIRTUAL_GAMEPAD_OFFSET_Y, value.coerceIn(-0.08f, 0.08f)) }
     }
 
-    fun isVulkanPreferred(context: Context): Boolean =
-        context.getSharedPreferences(FILE, Context.MODE_PRIVATE).getBoolean(KEY_PREFER_VULKAN, false)
+    fun isVulkanPreferred(context: Context): Boolean = context.getSharedPreferences(FILE, Context.MODE_PRIVATE).getBoolean(KEY_PREFER_VULKAN, false)
 
     fun setVulkanPreferred(context: Context, preferred: Boolean) {
         context.getSharedPreferences(FILE, Context.MODE_PRIVATE).edit { putBoolean(KEY_PREFER_VULKAN, preferred) }
     }
 
-    fun isExternalVulkanDriverEnabled(context: Context): Boolean =
-        context.getSharedPreferences(FILE, Context.MODE_PRIVATE).getBoolean(KEY_EXTERNAL_VULKAN_DRIVER_ENABLED, false)
+    fun isExternalVulkanDriverEnabled(context: Context): Boolean = context.getSharedPreferences(FILE, Context.MODE_PRIVATE).getBoolean(KEY_EXTERNAL_VULKAN_DRIVER_ENABLED, false)
 
     fun setExternalVulkanDriverEnabled(context: Context, enabled: Boolean) {
         context.getSharedPreferences(FILE, Context.MODE_PRIVATE).edit { putBoolean(KEY_EXTERNAL_VULKAN_DRIVER_ENABLED, enabled) }
