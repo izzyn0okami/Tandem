@@ -342,8 +342,8 @@ class RomMDeviceSyncClient(
     }
 
     /**
-     * Envia um arquivo .srm como Save comum do Device Sync. Nunca sobrescreve e desativa a limpeza
-     * automática do servidor para preservar versões anteriores.
+     * Envia um arquivo de save nativo como Save comum do Device Sync. Nunca sobrescreve e desativa
+     * a limpeza automática do servidor para preservar versões anteriores.
      */
     fun uploadSave(
         romId: Long,
