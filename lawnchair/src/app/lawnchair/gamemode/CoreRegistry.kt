@@ -38,6 +38,21 @@ object CoreRegistry {
         preferVulkan: Boolean? = null,
     ) = CoreInfo(id, label, note, supportsStates, supportsRomMSaveSync, preferVulkan)
 
+    /** Núcleos recém-adicionados: não habilitar states/sync até auditoria específica. */
+    private fun experimentalCore(
+        id: String,
+        label: String,
+        note: String,
+        preferVulkan: Boolean? = null,
+    ) = CoreInfo(
+        id = id,
+        label = label,
+        note = note,
+        supportsStates = false,
+        supportsRomMSaveSync = false,
+        preferVulkan = preferVulkan,
+    )
+
     /** Núcleo sem auditoria específica: recursos permanecem desativados por segurança. */
     private fun unknownCore(id: String) = CoreInfo(
         id = id,
@@ -58,6 +73,7 @@ object CoreRegistry {
             core("snes9x", "Snes9x", "Rápido e compatível"),
             core("snes9x2010", "Snes9x 2010", "Mais leve"),
             core("bsnes", "bsnes", "Mais preciso, bem mais pesado"),
+            experimentalCore("bsnes-jg", "bsnes-jg", "Alternativa de alta precisão; capacidades de saves ainda não auditadas"),
         ),
         "gb" to gbCores(),
         "gbc" to gbCores(),
@@ -66,6 +82,8 @@ object CoreRegistry {
             core("gpsp", "gpSP", "Mais leve"),
             core("vbam", "VBA-M", "Clássico"),
             core("vba_next", "VBA Next", "Leve"),
+            experimentalCore("mednafen_gba", "Beetle GBA", "Alternativa experimental; capacidades de saves ainda não auditadas"),
+            experimentalCore("meteor", "Meteor", "Alternativa experimental; capacidades de saves ainda não auditadas"),
         ),
         "genesis" to listOf(
             core("genesis_plus_gx", "Genesis Plus GX", "Preciso e completo"),
@@ -77,6 +95,7 @@ object CoreRegistry {
                 supportsStates = false,
                 supportsRomMSaveSync = false,
             ),
+            experimentalCore("genesis_plus_gx_wide", "Genesis Plus GX Wide", "Variante widescreen; capacidades de saves ainda não auditadas"),
         ),
         "sms" to masterSystemCores(),
         "gg" to masterSystemCores(),
@@ -115,6 +134,7 @@ object CoreRegistry {
                 "Beetle PSX",
                 "Alta precisão, renderização por software; cartão 0 usa .srm (sync RomM); cartão 1 usa .mcr separado",
             ),
+            experimentalCore("mednafen_psx_hw", "Beetle PSX HW", "Renderização por hardware; validar GPU, BIOS e formato de saves antes de habilitar sincronização"),
         ),
         "pce" to listOf(
             core("mednafen_pce_fast", "Beetle PCE Fast", "Rápido"),
@@ -129,10 +149,12 @@ object CoreRegistry {
                 "Geargrafx",
                 "Alternativa moderna; backup RAM por jogo em .srm; Memory Base 128 compartilhada em .sav fica fora do sync SRAM",
             ),
+            experimentalCore("mednafen_supergrafx", "Beetle SuperGrafx", "Alternativa para SuperGrafx; capacidades de saves ainda não auditadas"),
         ),
         "atari2600" to listOf(
             core("stella", "Stella", "Padrão; save states suportados, saves de cartucho não suportados", supportsRomMSaveSync = false),
             core("stella2014", "Stella 2014", "Mais leve; save states suportados, saves de cartucho não suportados", supportsRomMSaveSync = false),
+            experimentalCore("stella2023", "Stella 2023", "Versão mais recente; capacidades de saves ainda não auditadas"),
         ),
         "atari5200" to listOf(
             core(
@@ -177,6 +199,7 @@ object CoreRegistry {
                 "Dreamcast/Naomi; save states suportados (desative Threaded Rendering); VMUs são arquivos próprios, fora do fluxo SRAM RomM",
                 supportsRomMSaveSync = false,
             ),
+            experimentalCore("parallel_dc", "Parallel DC", "Alternativa experimental; validar compatibilidade ARM64 e armazenamento de VMU"),
         ),
         "psp" to listOf(
             core(
@@ -225,6 +248,7 @@ object CoreRegistry {
             ),
         ),
         "ps2" to listOf(
+            experimentalCore("pcee2", "PCEE2", "PS2 ARM64 experimental; Vulkan/OpenGL; validar instalação, BIOS, GPU e saves antes de habilitar recursos", preferVulkan = true),
             core(
                 "armsx2",
                 "ARMSX2",
@@ -241,10 +265,10 @@ object CoreRegistry {
             ),
         ),
         "gc" to listOf(
-            core("dolphin", "Dolphin", "GameCube; Vulkan/OpenGL ES; requer a pasta Sys do Dolphin; saves em arquivos próprios na pasta User, fora do sync SRAM RomM", supportsRomMSaveSync = false),
+            core("dolphin", "Dolphin", "GameCube; Vulkan/OpenGL ES; requer a pasta Sys do Dolphin; saves em arquivos próprios na pasta User, fora do sync SRAM RomM", supportsRomMSaveSync = false, preferVulkan = true),
         ),
         "wii" to listOf(
-            core("dolphin", "Dolphin", "Wii; Vulkan/OpenGL ES; requer a pasta Sys do Dolphin; saves em arquivos próprios na pasta User, fora do sync SRAM RomM", supportsRomMSaveSync = false),
+            core("dolphin", "Dolphin", "Wii; Vulkan/OpenGL ES; requer a pasta Sys do Dolphin; saves em arquivos próprios na pasta User, fora do sync SRAM RomM", supportsRomMSaveSync = false, preferVulkan = true),
         ),
         "3ds" to listOf(
             core("azahar", "Azahar", "Fork atual do Citra; Vulkan ou OpenGL ES 3.2", preferVulkan = true),
@@ -312,6 +336,151 @@ object CoreRegistry {
         ),
         "easyrpg" to listOf(
             core("easyrpg", "EasyRPG Player", "RPG Maker 2000/2003"),
+        ),
+
+        "amstradcpc" to listOf(
+            experimentalCore("cap32", "Caprice32", "Amstrad CPC"),
+            experimentalCore("crocods", "CrocoDS", "Alternativa Amstrad CPC"),
+        ),
+        "atari8" to listOf(
+            experimentalCore("atari800", "Atari800", "Atari 8-bit / 5200"),
+        ),
+        "atarist" to listOf(
+            experimentalCore("hatari", "Hatari", "Atari ST/STE/TT/Falcon"),
+            experimentalCore("hatari2014", "Hatari 2014", "Alternativa mais antiga"),
+            experimentalCore("hatarib", "HatariB", "Alternativa"),
+        ),
+        "amiga" to listOf(
+            experimentalCore("puae", "PUAE", "Commodore Amiga"),
+            experimentalCore("puae2021", "PUAE 2021", "Versão anterior"),
+            experimentalCore("amiberry", "Amiberry", "Alternativa"),
+        ),
+        "c64" to listOf(
+            experimentalCore("vice_x64", "VICE x64", "Commodore 64"),
+            experimentalCore("vice_x64sc", "VICE x64sc", "Emulação mais precisa"),
+        ),
+        "zxspectrum" to listOf(
+            experimentalCore("fuse", "Fuse", "ZX Spectrum"),
+        ),
+        "dos" to listOf(
+            experimentalCore("dosbox_pure", "DOSBox Pure", "DOSBox para jogos e imagens ZIP"),
+            experimentalCore("dosbox_core", "DOSBox Core", "Alternativa para software DOS"),
+            experimentalCore("dosbox", "DOSBox", "Compatibilidade clássica"),
+            experimentalCore("dosbox_svn", "DOSBox SVN", "Versão de desenvolvimento"),
+            experimentalCore("rust_dos", "Rust DOS", "Ambiente DOS alternativo"),
+        ),
+        "scummvm" to listOf(
+            experimentalCore("scummvm", "ScummVM", "Aventuras gráficas clássicas"),
+        ),
+        "apple2" to listOf(
+            experimentalCore("applewin", "AppleWin", "Apple II"),
+        ),
+        "x68000" to listOf(
+            experimentalCore("px68k", "PX68k", "Sharp X68000"),
+        ),
+        "pc98" to listOf(
+            experimentalCore("np2kai", "Neko Project II Kai", "NEC PC-98"),
+        ),
+        "pcfx" to listOf(
+            experimentalCore("mednafen_pcfx", "Beetle PC-FX", "NEC PC-FX"),
+        ),
+        "neogeocd" to listOf(
+            experimentalCore("neocd", "NeoCD", "Neo Geo CD"),
+        ),
+        "pokemini" to listOf(
+            experimentalCore("pokemini", "PokeMini", "Pokémon Mini"),
+        ),
+        "gamewatch" to listOf(
+            experimentalCore("gw", "Game & Watch", "Nintendo Game & Watch"),
+        ),
+        "megaduck" to listOf(
+            experimentalCore("potator", "Potator", "Mega Duck / Watara Supervision"),
+        ),
+        "arduboy" to listOf(
+            experimentalCore("ardens", "Ardens", "Arduboy"),
+        ),
+        "arcade" to listOf(
+            experimentalCore("fbneo", "FinalBurn Neo", "Arcade e Neo Geo"),
+            experimentalCore("mamearcade", "MAME Arcade", "Compatibilidade ampla; maior consumo"),
+            experimentalCore("mame2003", "MAME 2003", "Conjuntos de ROMs clássicos"),
+            experimentalCore("mame2000", "MAME 2000", "Compatibilidade retro"),
+            experimentalCore("mame2003_plus", "MAME 2003 Plus", "Conjuntos de ROMs clássicos"),
+            experimentalCore("mame2010", "MAME 2010", "Compatibilidade intermediária"),
+            experimentalCore("mame2015", "MAME 2015", "Compatibilidade ampla"),
+            experimentalCore("mame2016", "MAME 2016", "Compatibilidade ampla"),
+            experimentalCore("hbmame", "HBMAME", "Variantes e hacks de arcade"),
+            experimentalCore("supermodel", "Supermodel", "Sega Model 3 arcade"),
+            experimentalCore("fbalpha2012", "FB Alpha 2012", "Arcade legado"),
+            experimentalCore("fbalpha2012_cps1", "FB Alpha 2012 CPS-1", "Capcom CPS-1"),
+            experimentalCore("fbalpha2012_cps2", "FB Alpha 2012 CPS-2", "Capcom CPS-2"),
+            experimentalCore("fbalpha2012_cps3", "FB Alpha 2012 CPS-3", "Capcom CPS-3"),
+            experimentalCore("hypseushw", "Hypseus", "Arcade LaserDisc"),
+        ),
+        "supergrafx" to listOf(
+            experimentalCore("mednafen_supergrafx", "Beetle SuperGrafx", "NEC SuperGrafx"),
+        ),
+        "neogeo" to listOf(
+            experimentalCore("fbneo", "FinalBurn Neo", "Arcade e Neo Geo"),
+            experimentalCore("geolith", "Geolith", "Alternativa Neo Geo"),
+        ),
+        "msx" to listOf(
+            experimentalCore("bluemsx", "blueMSX", "Padrão"),
+            experimentalCore("openmsx", "openMSX", "Alternativa de alta precisão"),
+        ),
+        "thomson" to listOf(experimentalCore("theodore", "Theodore", "Thomson MO/TO")),
+        "dingoo" to listOf(experimentalCore("dingooemu", "DingooEmu", "Dingoo A320")),
+        "gametank" to listOf(experimentalCore("gametank", "GameTank", "Clydeware GameTank")),
+        "vircon32" to listOf(experimentalCore("vircon32", "Vircon32", "Virtual 32-bit console")),
+        "pocketstation" to listOf(experimentalCore("pokketstation", "PokketStation", "Sony PocketStation; loads memory-card dumps")),
+        "c128" to listOf(experimentalCore("vice_x128", "VICE x128", "Commodore 128")),
+        "vic20" to listOf(experimentalCore("vice_xvic", "VICE xvic", "Commodore VIC-20")),
+        "pet" to listOf(experimentalCore("vice_xpet", "VICE xpet", "Commodore PET")),
+        "plus4" to listOf(experimentalCore("vice_xplus4", "VICE xplus4", "Commodore Plus/4")),
+        "scpu64" to listOf(experimentalCore("vice_xscpu64", "VICE xscpu64", "Commodore 64 SuperCPU")),
+        "fmtowns" to listOf(experimentalCore("geartowns", "GearTowns", "Fujitsu FM Towns")),
+        "enterprise128" to listOf(experimentalCore("ep128emu_core", "ep128emu", "Enterprise 64/128")),
+        "macintosh" to listOf(experimentalCore("minivmac", "Mini vMac", "Apple Macintosh Classic")),
+        "cdi" to listOf(
+            experimentalCore("same_cdi", "SAME CD-i", "Philips CD-i"),
+        ),
+        "playdia" to listOf(
+            experimentalCore("playdiaemu", "Playdia Emulator", "Bandai Playdia"),
+        ),
+        "vectrex" to listOf(
+            experimentalCore("vecx", "VecX", "GCE Vectrex"),
+        ),
+        "odyssey2" to listOf(
+            experimentalCore("o2em", "O2EM", "Magnavox Odyssey² / Videopac"),
+        ),
+        "pc88" to listOf(
+            experimentalCore("quasi88", "QUASI88", "NEC PC-8801"),
+        ),
+        "sharpx1" to listOf(
+            experimentalCore("x1", "Sharp X1", "Sharp X1 computer"),
+        ),
+        "virtualxt" to listOf(
+            experimentalCore("virtualxt", "VirtualXT", "IBM PC/XT emulator"),
+        ),
+        "tic80" to listOf(
+            experimentalCore("tic80", "TIC-80", "Fantasy computer"),
+        ),
+        "wasm4" to listOf(
+            experimentalCore("wasm4", "WASM-4", "Fantasy console"),
+        ),
+        "uzebox" to listOf(
+            experimentalCore("uzem", "Uzem", "Uzebox"),
+        ),
+        "commanderx16" to listOf(
+            experimentalCore("x16emu", "Commander X16", "Commander X16"),
+        ),
+        "wqx" to listOf(
+            experimentalCore("wqxemu", "WQX Emulator", "WQX handheld"),
+        ),
+        "tamagotchi" to listOf(
+            experimentalCore("tamalibretro", "TamaLibRetro", "Tamagotchi"),
+        ),
+        "javame" to listOf(
+            experimentalCore("squirreljme", "SquirrelJME", "Java ME runtime"),
         ),
     )
 
