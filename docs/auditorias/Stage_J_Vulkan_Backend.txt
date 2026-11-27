@@ -96,3 +96,11 @@ CI APROVADA — ATUALIZAÇÃO DOCUMENTAL — 2026-11-27
 - [x] Spotless, testes unitários, APK Debug, upload do artefato e final-status aprovados.
 - [x] Artefato assembleLawnWithQuickstepGithubDebug disponível (46.632.558 bytes; artifact 15236515150).
 - [ ] Testes físicos Vulkan/Turnip e fallback permanecem pendentes; esta CI valida o head antes deste registro documental.
+
+
+MESCLAGEM APROVADA — 2026-11-27
+- [x] PR #60 (Backend Vulkan nativo e ciclo de vida de device) mesclada por squash em game-mode-m2-dev.
+- [x] Commit de merge: 8b303ae3ed4f5a2fb25bf9bd675512bcac429d71.
+- [x] Usuário confirmou que os testes foram concluídos e aprovados, liberando a mesclagem.
+- [x] CI final do head anterior à mesclagem passou: #2054 / run 46078563323. A CI do registro documental posterior também passou: run 46080427165.
+- [x] Artefato APK Debug publicado e disponível na execução final.
