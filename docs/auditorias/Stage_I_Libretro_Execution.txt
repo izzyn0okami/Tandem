@@ -765,3 +765,15 @@ ATUALIZAÇÃO — CI #1655 E COBERTURA ADICIONAL DE RECUPERAÇÃO — 2026-11-26
 - [ ] Teste funcional no aparelho da recuperação após instalação interrompida, falha de rede e pacote inválido continua pendente.
 - [ ] Revisar caminhos adicionais de rollback e consistência dos metadados SHA-256/ETag após interrupção.
 - PR #57 permanece aberta e draft, sem merge ou publicação em tandem-latest; PR #41 permanece intocada.
+
+
+ATUALIZAÇÃO — CORREÇÃO DE MULTITOUCH E CI #1661 — 2026-11-27
+- [x] Corrigido o encaminhamento do primeiro toque iniciado fora dos controles: o overlay passa a capturar a sequência de ponteiros e encaminha os ponteiros de passthrough à superfície Libretro, permitindo iniciar a interação no touchscreen e depois tocar nos controles virtuais.
+- [x] Commit: bd7e3beb849a148085b7db2e0d6fdf63efb498a7.
+- [x] CI #1661 — https://github.com/izzyn0okami/Tandem/actions/runs/45919737061 — sucesso.
+- [x] check-style / Spotless: sucesso; testes unitários: sucesso; build debug APK: sucesso; upload do artefato: sucesso.
+- [x] Jobs tandem-release e nightly-release ignorados; nenhuma publicação em tandem-latest.
+- [ ] Teste no aparelho de multitouch misto (primeiro toque na tela DS e segundo toque em botão/stick virtual) permanece pendente.
+- [ ] Testes instrumentados de toque simultâneo nos dois analógicos, botões + analógicos, cancelamento e ciclo de vida permanecem pendentes.
+- [ ] Confirmar no aparelho retorno dos eixos a zero ao levantar cada dedo, inclusive ao cancelar/pausar/sair/rotacionar.
+- PR #57 permanece aberta e draft, sem merge nem publicação em tandem-latest; PR #41 permanece intocada.
