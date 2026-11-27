@@ -260,6 +260,45 @@ class CoreInstallerTest {
         }
     }
 
+    @Test
+    fun arm64ElfValidationRejectsWrongClassEndiannessAndMachine() {
+        val file = Files.createTempFile("core-elf-invalid-abi", ".so").toFile()
+        try {
+            val valid = ByteArray(20)
+            valid[0] = 0x7F
+            valid[1] = 'E'.code.toByte()
+            valid[2] = 'L'.code.toByte()
+            valid[3] = 'F'.code.toByte()
+            valid[4] = 2
+            valid[5] = 1
+            valid[18] = 183.toByte()
+
+            val invalidHeaders = listOf(
+                valid.copyOf().apply { this[4] = 1 },
+                valid.copyOf().apply { this[5] = 2 },
+                valid.copyOf().apply { this[18] = 62 },
+                valid.copyOf().apply { this[0] = 0 },
+            )
+
+            invalidHeaders.forEach { header ->
+                file.writeBytes(header)
+                assertFalse(CoreInstaller.isArm64Elf(file))
+            }
+        } finally {
+            file.delete()
+        }
+    }
+
+    @Test
+    fun emptyFileIsNotAValidArm64Elf() {
+        val file = Files.createTempFile("core-elf-empty", ".so").toFile()
+        try {
+            assertFalse(CoreInstaller.isArm64Elf(file))
+        } finally {
+            file.delete()
+        }
+    }
+
     private fun writeArm64Elf(file: File, marker: Int = 0) {
         val header = ByteArray(20)
         header[0] = 0x7F
