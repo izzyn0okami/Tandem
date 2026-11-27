@@ -1140,3 +1140,14 @@ I11 — DETECÇÃO DE ATUALIZAÇÃO POR ETAG — 2026-11-27
 - Commits: CoreInstaller 65ed020f8cd310ce389411611a0ece2507757f4e; CoreInstallerTest 296c9745059f5446fc4f423d10765466e1110835.
 - [ ] Aguardar CI de Spotless, testes unitários e build Debug APK para os commits de comparação de metadados.
 - Observação: ETag/Last-Modified continuam sendo indicadores de atualização, não autenticação criptográfica da origem. A verificação OpenPGP com fingerprint oficial confiável permanece pendente.
+
+
+I11/I12 — CONFERÊNCIA COMPLEMENTAR DO BUILDBOT — 2026-11-27
+- [x] Reconfirmado que o endpoint atualmente configurado em CoreInstaller (https://buildbot.libretro.com/nightly/android/latest/arm64-v8a/) continua acessível e lista pacotes Android ARM64 atualizados em 2026-11-27.
+- [x] A rota alternativa android/arm64-v8a/latest/ não foi acessível na consulta; não alterar BASE_URL com base apenas na proposta de reestruturação de diretórios aberta no issue libretro/RetroArch#19354. O caminho antigo permanece o endpoint funcional observado.
+- [x] Amostra adicional de pacotes confirmados no índice: fceumm, nestopia, mesen, quicknes, snes9x, snes9x2010, bsnes, armsx2, azahar, panda3ds, cemu, dolphin, pcsx2, rpcs3, parallel_n64, freeintv, noods, race, stella, stella2014 e smsplus.
+- [ ] A conferência acima é amostral e não valida todos os IDs do CoreRegistry. Alguns nomes pesquisados não apareceram no índice na consulta; antes de alterar catálogo, verificar se são IDs antigos, aliases, builds ausentes temporariamente ou nomes de pacote diferentes.
+- [ ] Comparar integralmente cada coreId com o nome exato do ZIP e da biblioteca interna. A regra padrão do CoreInstaller é ${coreId}_libretro_android.so.zip; Azahar é exceção já tratada como azahar_libretro.so.zip.
+- [ ] Não oferecer núcleo como disponível apenas por constar no catálogo; separar disponibilidade de pacote, instalação válida e compatibilidade funcional no dispositivo.
+- Fonte: índice oficial Android ARM64 do Buildbot, consultado em 2026-11-27; documentação Libretro orienta instalar o ZIP correspondente à arquitetura e manter os arquivos .info para metadados de recursos.
+- CI da correção ETag: #1783 (run 45981419368, commit b87c48f26e7aca4e0450d126a23e45a238a0ede8) e #1784 (run 45981475627, commit 296c9745059f5446fc4f423d10765466e1110835) estavam em execução na consulta; o commit de log atual também aguarda CI.
