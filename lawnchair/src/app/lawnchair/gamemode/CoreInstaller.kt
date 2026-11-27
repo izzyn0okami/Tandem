@@ -259,7 +259,7 @@ object CoreInstaller {
 
                 if (!entry.isDirectory) {
                     check(!foundCore && segments.lastOrNull() == expectedFileName) {
-                        "ZIP inesperado: esperava um único arquivo ${expectedFileName}, veio ${entry.name}"
+                        "ZIP inesperado: esperava um único arquivo $expectedFileName, veio ${entry.name}"
                     }
                     FileOutputStream(target).use { output ->
                         val buffer = ByteArray(64 * 1024)
@@ -279,7 +279,7 @@ object CoreInstaller {
                 zip.closeEntry()
                 entry = zip.nextEntry
             }
-            check(foundCore) { "ZIP não contém o núcleo esperado: ${expectedFileName}" }
+            check(foundCore) { "ZIP não contém o núcleo esperado: $expectedFileName" }
         }
     }
 
