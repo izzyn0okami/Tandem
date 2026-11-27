@@ -1,0 +1,83 @@
+AUDITORIA — IMPORTADOR ADRENOTOOLS MULTI-DRIVER
+Data: 2026-11-27
+Repositório: izzyn0okami/Tandem
+Branch de integração: integration/adrenotools-multidriver
+Base: game-mode-m2-dev
+Commit base: f13c7932cd006c086ca94b197a717462b495a899
+
+OBJETIVO
+Integrar suporte a múltiplos pacotes Vulkan AdrenoTools/Turnip sem substituir o importador Turnip legado já usado pelo Tandem.
+
+CONCLUÍDO
+- [x] Criada implementação isolada AdrenoToolsDriverManager, mantendo VulkanDriverManager.importTurnipDriver/remove intactos.
+- [x] Pacotes novos ficam em armazenamento privado do app (filesDir/gpu-drivers), separados da instalação legada (filesDir/vulkan/drivers/adreno).
+- [x] Validação de pacote meta.json, schemaVersion, vendor, minApi, nome da biblioteca, ELF64/AArch64 e SHA-256.
+- [x] Limites de quantidade de entradas e tamanho total/por arquivo.
+- [x] Rejeição de path traversal, separadores e nomes de arquivo inesperados; staging canônico e instalação com backup/rollback.
+- [x] Importação assíncrona em Dispatchers.IO.
+- [x] Seleção grava nas preferências já consumidas por GameSessionActivity; não altera contrato JNI/Libretro.
+- [x] Opção explícita para driver Vulkan do sistema.
+- [x] Descoberta e seleção da instalação Turnip legada sem mover ou apagar seus arquivos; migração de preferências é não destrutiva.
+- [x] Remoção individual de pacotes novos; remover pacote atualmente selecionado retorna ao driver do sistema.
+- [x] UI de importação/seleção/remoção integrada à tela de núcleos existente; lista de núcleos mantém rolagem.
+- [x] Testes unitários adicionados para validar caminho de saída e rejeitar traversal/separadores.
+
+PENDÊNCIAS
+- [ ] CI completa: Spotless, testes unitários, build APK debug e artefato.
+- [ ] Revisão da compatibilidade real do formato meta.json com pacotes AdrenoTools que o usuário pretende importar.
+- [ ] Teste no Motorola Edge 30 Fusion: listar driver Turnip antigo, importar segundo pacote, alternar entre sistema/legado/novo e iniciar sessão Vulkan.
+- [ ] Confirmar rollback em pacote inválido e remoção do pacote selecionado sem apagar a instalação legada.
+- [ ] Confirmar que o app não tenta carregar pacotes customizados em dispositivos que não sejam Qualcomm Adreno.
+
+SEGURANÇA E ESCOPO
+- [x] PR #58 não foi mesclada.
+- [x] PRs #59 e #60 não foram mescladas.
+- [x] game-mode-m2-dev e tandem-latest não foram modificadas diretamente.
+- [x] O importador Turnip atual e as preferências existentes foram preservados.
+- [ ] Não mesclar antes de CI e testes físicos.
+
+
+HISTÓRICO DE CI E CORREÇÕES — 2026-11-27
+- [x] CI #1979 (run 46068355445) falhou por KDoc dentro do corpo do objeto (ktlint standard:kdoc) e, no job de build, import incorreto de Modifier.weight em CoresScreen.
+- [x] Causa KDoc removida; documentação da instalação legada mantida como comentário de função.
+- [x] Import explícito de androidx.compose.foundation.layout.weight removido; a chamada Modifier.weight(1f) usa o escopo ColumnScope, evitando acesso ao membro interno RowColumnParentData.
+- [x] CI #1980–#1984 executaram revisões intermediárias do mesmo branch; não considerar seus resultados como validação final.
+- [ ] CI #1988 (PR event) no commit 4083159bf180306d9c4d9830790072c19218a115: Spotless passou; testes unitários e build APK ainda em andamento.
+- [ ] Repetir CI após esta atualização documental e confirmar todos os jobs.
+
+
+RESULTADO FINAL DA CI — 2026-11-27
+- [x] PR event CI #1998 (run 46069169757), head validado: 8310d655f2db93810e341fabd15b95c1e4983461.
+- [x] Spotless aprovado.
+- [x] Testes unitários aprovados.
+- [x] APK Debug assembleLawnWithQuickstepGithubDebug compilado.
+- [x] Artefato APK enviado com sucesso.
+- [ ] Permanecem pendentes testes físicos de importação, alternância, rollback e execução com drivers reais no aparelho.
+
+
+RECONCILIAÇÃO DA PR #58 — VISIBILIDADE DE PLATAFORMAS COM UM ÚNICO CORE — 2026-11-27
+- [x] A PR #58 também alterava CoresScreen para mostrar todas as plataformas Libretro, não apenas as que possuem mais de um núcleo.
+- [x] Portada a regra para a branch desta PR: plataformas com um único core agora aparecem no gerenciador para instalação/atualização e consulta.
+- [ ] Nova CI no head atualizado e revisão do APK.
+
+
+CI APROVADA — PR #61 — 2026-11-27
+- [x] CI #2039 (run 46073257616) concluída com sucesso no head 5e3eefb566a8aa76ca0c58202afa31c7061313d5.
+- [x] check-style / Spotless: sucesso.
+- [x] Testes unitários: sucesso.
+- [x] Build assembleLawnWithQuickstepGithubDebug: sucesso.
+- [x] Upload do artefato APK Debug: sucesso; artefato disponível no run 46073257616.
+- [x] final-status: sucesso; etapas condicionais de publicação/notificação foram ignoradas conforme esperado.
+- [ ] Testes físicos específicos desta PR permanecem pendentes; CI não comprova compatibilidade real no Motorola Edge 30 Fusion.
+- [ ] Não mesclar antes da validação física correspondente e revisão final do diff.
+
+- [x] CI pós-atualização documental #2045 (run 46075508612) concluída com sucesso no commit a85c798fcf642d7d51eb880eb3c8dedc589dd242; Spotless, testes unitários, APK Debug, upload do artefato e final-status passaram.
+- [x] Artefato assembleLawnWithQuickstepGithubDebug disponível (46.656.675 bytes; run 46075508612). Jobs condicionais de release/notificação foram ignorados conforme esperado.
+- [ ] Esta validação automatizada não substitui os testes físicos específicos descritos acima.
+
+
+CI APROVADA — ATUALIZAÇÃO DOCUMENTAL — 2026-11-27
+- [x] CI #2053 (run 46078559451) concluída com sucesso no head 79e4aeab43405b71d68f332b9de10e77c2263642.
+- [x] Spotless, testes unitários, APK Debug, upload do artefato e final-status aprovados.
+- [x] Artefato assembleLawnWithQuickstepGithubDebug disponível (46.656.505 bytes; artifact 15236835173).
+- [ ] Testes físicos de importação/alternância/remoção de drivers permanecem pendentes; esta CI valida o head antes deste registro documental.
