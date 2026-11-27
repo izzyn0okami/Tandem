@@ -292,3 +292,15 @@ ATUALIZAÇÃO DA AUDITORIA GLOBAL — PR #55 CONCLUÍDA — 2026-11-27
 - [ ] Não foi tentado merge forçado da PR #58. Rebase Git real e integração semântica dos arquivos sobrepostos continuam necessários.
 - [ ] Após integração: revisar diff final, executar CI completa no novo head e validar cores/Vulkan/Turnip fisicamente antes do merge.
 - [x] tandem-latest permanece intocada; nenhuma publicação ou atualização dessa branch foi realizada.
+
+
+REVISÃO ESTÁTICA ADICIONAL — 2026-11-27
+- [x] Reaberta a comparação contra o head atual de game-mode-m2-dev (base f13c7932cd006c086ca94b197a717462b495a899) e confirmada a divergência: 119 commits exclusivos da PR, 236 da base; merge-base 2d6ba3cc1e7ef1a4978907ed121b6e6f1c57e5d7.
+- [x] Inspecionado o diff de VulkanBackend: a proposta separa o probe do loader do driver selecionado, tenta o driver customizado e prevê fallback para libvulkan.so do sistema quando o probe customizado falha; a seleção física também passa a verificar extensões e filas requeridas.
+- [x] Inspecionado VulkanDriverManager: importação para armazenamento privado, limites de ZIP, rejeição de caminhos inseguros, validação ELF64/AArch64 e SHA-256 local estão presentes no código proposto.
+- [x] Inspecionadas as alterações de BiosManager, CoreInstaller e GamePlatforms: incluem requisitos específicos de kits BIOS, mapeamento de artefatos especiais (Azahar) e ampliação extensa do catálogo de plataformas.
+- [ ] Cobertura automatizada ainda não comprova o comportamento nativo do loader Vulkan (custom → fallback system), enumeração de múltiplas GPUs, seleção de fila compatível, nem recuperação após falha de criação de device/surface. Os testes Kotlin do gerenciador não substituem testes do backend C++.
+- [ ] Revisar com build NDK real a resolução de símbolos e o ciclo de vida de dlopen/dlclose; confirmar que nenhum objeto Vulkan continua usando funções de um loader já descarregado.
+- [ ] Confirmar em CI que a base atual e a integração semântica compilam juntas; nenhum resultado de CI foi obtido nesta rodada para o head 5030f359a2b81679cf6edab931ae492dd2ee6218.
+- [ ] A PR continua bloqueada por divergência e conflitos. Esta revisão estática não autoriza merge nem confirma funcionamento em hardware.
+- [x] Nenhuma alteração funcional foi feita nesta rodada; nenhum arquivo de implementação foi substituído. tandem-latest permanece intocada.
