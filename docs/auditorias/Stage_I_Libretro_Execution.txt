@@ -1343,3 +1343,17 @@ AUDITORIA DE FORMATO DE SAVE — DOLPHIN (GAMECUBE/WII) — 2026-11-27
 Commits:
 - e41d6e43c91c07295c63970aff61cd9a60ee62bd — metadados Dolphin GameCube/Wii.
 - ca420f54fb6fdf6d4955986aa7750daa08ba35cd — teste de capacidades e formato de save.
+
+
+ACOMPANHAMENTO DE CI — APÓS CORREÇÕES DE FALLBACK E DOLPHIN — 2026-11-27
+- [x] CI #1793 — run 45989772089: check-style e build-debug-apk concluídos com sucesso; final-status ainda em fila na última consulta. Não marcar workflow integralmente concluído enquanto final-status não encerrar.
+- [ ] CI #1800 — run 45990219076: check-style aprovado; build APK ainda em execução.
+- [ ] CI #1801 — run 45990307128: check-style aprovado; testes unitários ainda em execução.
+- [ ] CI #1802 — run 45990313964: check-style aprovado; testes unitários ainda em execução.
+- [ ] CI #1804–#1810: execuções da PR em andamento; aguardam conclusão dos jobs de compilação/testes e final-status.
+- [ ] CI #1811 — run 45990796318 — commit 4d76e02b26f5c0e55ecd36625391894f6c376a90: check-style executando Spotless automático; build-debug-apk em preparação/execução.
+- [ ] CI #1812 — run 45990826612 — commit 93df6e0ade57509716f0f99efa2fe478120b2a46: workflow na fila.
+- [ ] CI #1813 — run 45990895729 — commit b48bed1864e83dc8982b0bbf71a433c6566275fe: workflow na fila.
+- [ ] CI #1814 — run 45990915300 — commit ca420f54fb6fdf6d4955986aa7750daa08ba35cd: workflow na fila.
+- [ ] CI #1815 — run 45990925869 — commit c0b26f81fae74a85b0217521b3c9e40cab4d2434: workflow na fila; valida a ponta atual da PR.
+- PR #57 permanece aberta como Draft, não mesclada. Head consultado: c0b26f81fae74a85b0217521b3c9e40cab4d2434. Sem publicação em tandem-latest.
