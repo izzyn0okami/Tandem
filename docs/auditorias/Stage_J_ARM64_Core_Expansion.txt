@@ -156,3 +156,17 @@ FALHA DE CI E CORREÇÃO DE COMPATIBILIDADE COM STAGE I — 2026-11-27
 - [ ] Auditoria comparativa adicional identificou que game-mode-m2-dev também contém nativeSaveFile (incluindo .dsv para núcleos compatíveis) e sua inclusão no inventário SaveArtifact; esses elementos não existem na versão Stage J de SaveStore.kt. A integração depende de CoreSaveAdapterRegistry e dos arquivos de suporte presentes na base Stage I, portanto deve ser recuperada durante o rebase real, não referenciada isoladamente antes de importar suas dependências.
 - [ ] Não iniciar novo rebase até a CI do head corrigido passar e até a reconciliação dos arquivos Stage I/Stage J estar planejada.
 - [x] PR #58 permanece aberta, sem merge e sem alteração de base; game-mode-m2-dev e tandem-latest permanecem intocadas.
+
+
+RESTAURAÇÃO DE COMPATIBILIDADE DE SAVES NINTENDO DS — 2026-11-27
+- [x] Comparação estática de SaveStore.kt, CoreSaveAdapter.kt, SaveArtifactCatalog.kt e GameSessionActivity.kt entre game-mode-m2-dev e feat/arm64-core-expansion.
+- [x] Confirmado que a versão Stage I já possuía CoreSaveAdapterRegistry e o adaptador nativo DeSmuME para arquivos .dsv; a classe CoreSaveAdapter.kt também existe no Stage J, mas a regra DeSmuME e o campo fileExtension tinham sido perdidos.
+- [x] Restaurado no Stage J o campo fileExtension com padrão srm e o mapeamento explícito de desmume/desmume2015 para .dsv, mantendo cada core DS compatível apenas consigo mesmo.
+- [x] SaveStore agora expõe o arquivo nativo <nome-da-ROM>.dsv e o inclui no inventário tipado quando presente.
+- [x] SaveArtifactCatalog classifica .dsv como CORE_SAVE somente para os cores cujo adaptador declara essa extensão.
+- [x] Adicionados testes JVM para inventário do DSV, classificação/slot e isolamento de compatibilidade entre DeSmuME, DeSmuME 2015 e melonDS.
+- [x] GameSessionActivity já preservava o diretório por-core de DeSmuME após a correção anterior; essa regra foi mantida.
+- [ ] Executar CI após os commits de restauração DSV; nenhuma compilação/teste automatizado foi validado ainda para esta sequência.
+- [ ] Validar no aparelho a criação, leitura e sincronização RomM do arquivo .dsv; o código e os testes JVM não comprovam o comportamento real do núcleo.
+- [ ] Continuar auditoria das diferenças de SaveStore e fluxo RomM entre Stage I e Stage J antes de retomar o rebase real.
+- [x] PR #58 permanece aberta, não mesclada e com base inalterada; game-mode-m2-dev e tandem-latest não foram modificadas.
