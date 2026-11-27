@@ -1,0 +1,33 @@
+AUDITORIA DE RECURSOS ESPECIALIZADOS ROMM — ESTÁGIO G
+Projeto: izzyn0okami/Tandem
+Data da consolidação: 2026-11-27
+Base: game-mode-m2-dev
+PR de origem: #55
+Implementação relacionada: PR #56 (mesclada)
+
+ESCOPO E DECISÕES
+- G1 feeds externos: fora do escopo por decisão do usuário.
+- G2 tarefas administrativas: fora do escopo por decisão do usuário.
+- G3 streaming remoto: fora do escopo por decisão do usuário.
+- G4 netplay: fora do escopo por decisão do usuário.
+- G5 memory cards: auditoria concluída; não há conversão segura demonstrada entre os cartões Libretro usados pelo Tandem e o contrato dedicado de memory cards RomM para PCSX2/Dolphin. Não converter por extensão ou encapsulamento ZIP. Preservar o Device Sync de saves atualmente suportado.
+- G6 música/artistas/álbuns/playlists: implementado separadamente na PR #56, mesclada em game-mode-m2-dev. A PR #56 registra CI #1398/#1400 aprovadas e validação funcional no aparelho confirmada pelo usuário. Formatos SPC/VGM/VGZ/GYM aparecem no catálogo mas não são reproduzidos pelo MediaPlayer nativo; não declarar suporte de reprodução para esses formatos.
+- G7 sockets/eventos: auditoria concluída. Não manter socket persistente sem consumidor funcional; REST permanece suficiente para o escopo aprovado. O namespace geral exige sessão web; /devices exige token de dispositivo e scope apropriado.
+- G8 administração de usuários/permissões: fora do escopo por decisão do usuário.
+
+SEGURANÇA
+- Nenhuma chamada foi feita à conta RomM pessoal do usuário nesta auditoria.
+- Nenhum token foi lido, alterado ou transmitido.
+- Nenhum save, memory card, arquivo, usuário, permissão ou tarefa remota foi alterado.
+- Não adicionar permissões administrativas nem ampliar scopes automaticamente.
+
+VALIDAÇÃO E SITUAÇÃO
+- [x] Decisões G1–G8 consolidadas com o estado atual após merge da PR #56.
+- [x] Implementação G6 mantida na PR #56 já mesclada; esta auditoria não duplica seu código.
+- [x] Auditoria separada criada para evitar reverter o checklist principal atualizado por outras etapas.
+- [ ] CI para o commit desta consolidação: aguardar execução automática no GitHub Actions; não presumir sucesso.
+- [ ] Nenhuma publicação em tandem-latest autorizada ou realizada por esta PR.
+
+HISTÓRICO
+- PR #55 original continha somente alterações documentais num checklist que ficou 281 commits atrás da base atual. Seu patch integral não deve ser aplicado sobre o checklist atualizado, pois poderia reverter registros posteriores.
+- Esta consolidação preserva as decisões técnicas e de escopo relevantes em um arquivo independente, sem substituir o checklist vivo.
