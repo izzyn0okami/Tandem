@@ -53,7 +53,8 @@ object VulkanDriverManager {
                     if (entry.isDirectory) {
                         check(output.mkdirs() || output.isDirectory) { "Não foi possível criar uma pasta do driver." }
                     } else {
-                        check(output.parentFile?.mkdirs() != false) { "Não foi possível criar a pasta do driver." }
+                        val outputParent = output.parentFile ?: error("Caminho do driver inválido.")
+                        check(outputParent.mkdirs() || outputParent.isDirectory) { "Não foi possível criar a pasta do driver." }
                         FileOutputStream(output).use { stream ->
                             val buffer = ByteArray(64 * 1024)
                             while (true) {
