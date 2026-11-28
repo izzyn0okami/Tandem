@@ -1530,7 +1530,6 @@ private fun formatPlaytime(ms: Long): String {
     }
 }
 
-@Composable
 private enum class SettingsCategory(val title: String, val subtitle: String, val icon: String) {
     LIBRARY("Biblioteca e armazenamento", "Pastas, importação e organização dos jogos", "▦"),
     EMULATION("Emulação", "Núcleos, BIOS, emuladores e gráficos", "◉"),
@@ -1540,6 +1539,7 @@ private enum class SettingsCategory(val title: String, val subtitle: String, val
     SYSTEM("Sistema e diagnóstico", "Logs, informações e encerramento", "⚙"),
 }
 
+@Composable
 internal fun SettingsScreen(
     rootPath: String,
     needsAccess: Boolean,
