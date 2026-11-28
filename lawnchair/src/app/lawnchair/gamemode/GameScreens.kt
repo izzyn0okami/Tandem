@@ -999,7 +999,7 @@ internal fun GameDetailScreen(
                             modifier = Modifier.width(170.dp),
                         )
                     }
-                    GameButton(label = stringResource(R.string.game_hint_back), onClick = onBack, modifier = Modifier.width(100.dp))
+                    GameIconButton(label = stringResource(R.string.game_hint_back), symbol = "←", onClick = onBack)
                 }
                 if (syncStatus != null) {
                     SaveSyncBadge(syncStatus)
