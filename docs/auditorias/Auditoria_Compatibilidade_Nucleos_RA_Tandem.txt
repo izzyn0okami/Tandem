@@ -180,3 +180,18 @@ ATUALIZAÇÃO 2026-11-27 — CI #2087 / PR #64
 - [ ] Revisar casos especiais da matriz (Arcade/hash, PC-88, SuperGrafx, Watara e demais divergências).
 - [ ] Revisão final da PR #64 e decisão de merge; PR permanece aberta e não mesclada.
 - Status: CI aprovada; implementação ainda não homologada integralmente.
+
+
+ATUALIZAÇÃO 2026-11-27 — CI APÓS ATUALIZAÇÃO DOS LOGS / PR #64
+- [CI APROVADA] Workflow run `46086477622` (execução subsequente à CI #2087) no HEAD `d809a7345ca040c50add6176a751c49c128d6e8f` concluído com sucesso.
+- [TESTES] `Run unit tests`: success.
+- [ESTILO] `Apply Spotless automatically`, `Commit formatting and rerun CI` e `Verify formatting`: success.
+- [BUILD] `assembleLawnWithQuickstepGithubDebug`: success.
+- [ARTEFATO] APK Debug publicado: `assembleLawnWithQuickstepGithubDebug`, artifact ID `15240095052`, tamanho 46.667.099 bytes, SHA-256 `b67001c16fb3f24975ef039e0ea97eb6201daf914e1cc49c5983125c48d934b9`; expira em 26/02/2027. Execução: https://github.com/izzyn0okami/Tandem/actions/runs/46086477622
+- [x] CI completa aprovada no HEAD que contém as três atualizações dos logs.
+- [ ] Confirmar IDs ativos pela API oficial GetConsoleIDs usando Web API Key.
+- [ ] Teste físico/online de RA com jogos reconhecidos de PSX e Nintendo DS no Android.
+- [ ] Revisão final de casos especiais da matriz (Arcade/hash, PC-88, SuperGrafx, Watara e outros).
+- [ ] Revisão e decisão de merge; PR #64 permanece aberta e não mesclada.
+- Estado de merge consultado: mergeable=true; branch-base sem commits pendentes de integração (22 ahead, 0 behind na comparação anterior).
+- Status: CI aprovada; compatibilidade ainda não homologada integralmente.
