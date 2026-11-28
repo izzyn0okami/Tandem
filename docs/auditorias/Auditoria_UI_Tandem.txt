@@ -176,8 +176,8 @@ Proposta:
 [ ] Remover redundâncias após confirmar cobertura funcional.
 [EM ANDAMENTO] CI #46095737119 / #46095733058 no commit 7e3967c88707f72dedfa6a2a41a98b8ce731117f; commits posteriores continuam gerando novas execuções. A primeira falha de compilação foi localizada em GameScreens.kt:1687 (acesso anulável a SettingsCategory?) e corrigida no commit 1630b82. Spotless passou nos runs mais recentes anteriores, mas o build ainda precisa ser confirmado no HEAD final.
 [ ] Revisar artefato/assinatura e resultado da CI.
-[ ] Testar no Motorola Edge 30 Fusion: navegação por toque e gamepad, detalhes, metadados, opções de núcleos, RA, mensagens e telas em paisagem.
-[ ] Atualizar este log após cada CI/PR concluída com sucesso.
+[~] Teste físico parcial confirmado pelo usuário: APK instalado e funcionando. Ainda não foi informado teste individual de todos os fluxos (toque/gamepad, metadados, opções de núcleo, notificações RA e acessibilidade).
+[✓] Atualizar este log após cada CI/PR concluída com sucesso.
 
 ATUALIZAÇÃO DE IMPLEMENTAÇÃO — 2026-11-28
 - PR #65 aberta em Draft: https://github.com/izzyn0okami/Tandem/pull/65.
@@ -216,3 +216,19 @@ ATUALIZAÇÃO DE VALIDAÇÃO — 2026-11-28 (HEAD f49e290b258584dfb91d991b463011
 - CI adicional #46098952241, disparada manualmente no mesmo HEAD, também concluiu com sucesso.
 - CI e APK estão validados. Permanecem pendentes a revisão funcional/visual de redundâncias e a validação física no Motorola Edge 30 Fusion (toque, gamepad, metadados, menus de núcleo, popups RA, paisagem e acessibilidade).
 - PR #65 permanece aberta em Draft, base game-mode-m2-dev. Nenhuma mesclagem foi realizada.
+
+
+ATUALIZAÇÃO DE VALIDAÇÃO — 2026-11-28 (HEAD e7906f4584af08d036a49df9643a0b0d2d4a5afe)
+- PR #65: https://github.com/izzyn0okami/Tandem/pull/65.
+- Organização dos detalhes dos jogos em quatro abas implementada:
+  1. Visão geral: descrição, tempo de jogo, última partida, dados básicos, compatibilidade EasyRPG e resumo de conquistas.
+  2. RomM: metadados, dados pessoais, mídia e notas.
+  3. Arquivos e versões: versões, identificadores técnicos, arquivos associados e checksums.
+  4. Saves e sincronização: estado, inspeção, histórico e ferramentas de sincronização/restauração.
+- Ações principais do jogo permanecem no cabeçalho; abas podem rolar horizontalmente em telas estreitas.
+- Correção de chave de fechamento excedente em GameScreens.kt aplicada no commit dab832898e727c5cbcf5c545ea1b428a1e6c6c6a. Spotless aplicou/validou formatação no HEAD final e a CI concluiu com sucesso.
+- CI #46101608465 no HEAD e7906f4584af08d036a49df9643a0b0d2d4a5afe: check-style/Spotless, testes unitários, build assembleLawnWithQuickstepGithubDebug e upload do artefato concluídos com sucesso.
+- APK: artefato assembleLawnWithQuickstepGithubDebug, ID 15245926257, 46.716.562 bytes (aprox. 46,7 MB decimal), SHA-256 ddb68bf1974717ddd76fee2acf01368aec1966efe9938afcb7d5bbd99a223abc; expira em 2027-02-26.
+- O usuário confirmou que instalou/testou o APK e que está funcionando. Isso valida o funcionamento básico do pacote no aparelho; não equivale a uma validação individual documentada de todos os fluxos e tamanhos de tela.
+- PR #65 permanece aberta em Draft e não foi mesclada. Não houve autorização explícita de merge nesta etapa.
+- Pendências: revisão final de redundâncias de navegação; padronização visual residual da biblioteca/telas auxiliares; testes direcionais/gamepad e acessibilidade em todos os fluxos; confirmar visualmente as quatro abas e ferramentas de saves em diferentes jogos.
