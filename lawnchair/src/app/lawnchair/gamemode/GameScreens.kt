@@ -824,12 +824,18 @@ internal fun GameDetailScreen(
             appendValues("IDs RomM", detailGames.map { it.id.toString() })
             appendValues("Arquivos principais", detailGames.map { it.fileName })
             appendValues("Nomes no servidor", detailGames.map { it.serverName })
-            appendValues("IDs de arquivo", detailGames.flatMap { game ->
-                listOfNotNull(game.fileId?.toString()) + game.fileIds.map { it.toString() }
-            })
-            appendValues("IDs de versões relacionadas", detailGames.flatMap { game ->
-                game.siblingIds.map { it.toString() } + listOfNotNull(game.mainSiblingId?.toString())
-            })
+            appendValues(
+                "IDs de arquivo",
+                detailGames.flatMap { game ->
+                    listOfNotNull(game.fileId?.toString()) + game.fileIds.map { it.toString() }
+                },
+            )
+            appendValues(
+                "IDs de versões relacionadas",
+                detailGames.flatMap { game ->
+                    game.siblingIds.map { it.toString() } + listOfNotNull(game.mainSiblingId?.toString())
+                },
+            )
             appendValues("Arquivos associados (IDs)", associatedFiles.map { it.id.toString() })
             appendValues("Formato", detailGames.map { if (it.folder) "Pasta de jogo" else "Arquivo único" })
             if (detailGames.any { it.isEasyRpgGame }) append("Compatível com EasyRPG.\n")
@@ -861,12 +867,15 @@ internal fun GameDetailScreen(
                 values.mapNotNull { it.updatedAtMs.takeIf { timestamp -> timestamp > 0L } }
                     .map { DateFormat.getDateTimeInstance(DateFormat.MEDIUM, DateFormat.SHORT).format(Date(it)) },
             )
-            appendValues("Marcadores", buildList {
-                if (values.any { it.isMainSibling }) add("Versão principal")
-                if (values.any { it.backlogged }) add("Backlog")
-                if (values.any { it.nowPlaying }) add("Jogando agora")
-                if (values.any { it.hidden }) add("Oculto")
-            })
+            appendValues(
+                "Marcadores",
+                buildList {
+                    if (values.any { it.isMainSibling }) add("Versão principal")
+                    if (values.any { it.backlogged }) add("Backlog")
+                    if (values.any { it.nowPlaying }) add("Jogando agora")
+                    if (values.any { it.hidden }) add("Oculto")
+                },
+            )
             appendValues("Mídia fixada", values.flatMap { it.pinnedMedia })
         }.trim()
     }
