@@ -30,6 +30,9 @@ import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -171,6 +174,7 @@ private data class ScreenState(val key: String, val depth: Int)
 private fun GameModeRoot(refreshKey: Int, onExit: () -> Unit) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
+    val snackbarHostState = remember { SnackbarHostState() }
     var tab by remember { mutableStateOf(GameTab.Library) }
     var detailKey by remember { mutableStateOf<String?>(null) }
     var status by remember { mutableStateOf("") }
@@ -506,6 +510,19 @@ private fun GameModeRoot(refreshKey: Int, onExit: () -> Unit) {
         }
     }
 
+    LaunchedEffect(status, busy) {
+        if (status.isNotBlank() && !busy) {
+            val message = status
+            snackbarHostState.showSnackbar(message, withDismissAction = true, duration = SnackbarDuration.Short)
+            if (status == message) status = ""
+        }
+    }
+    LaunchedEffect(remote.error) {
+        if (remote.error.isNotBlank()) {
+            snackbarHostState.showSnackbar(remote.error, withDismissAction = true, duration = SnackbarDuration.Long)
+        }
+    }
+
     val needsAccess = !hasAccess && !GameLibrarySettings.isInsideApp(context, rootPath)
 
     val selectTab: (GameTab) -> Unit = {
@@ -517,6 +534,7 @@ private fun GameModeRoot(refreshKey: Int, onExit: () -> Unit) {
         showScraper = false
         showServer = false
     }
+    Box(modifier = Modifier.fillMaxSize()) {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -675,24 +693,12 @@ private fun GameModeRoot(refreshKey: Int, onExit: () -> Unit) {
                 modifier = Modifier.padding(horizontal = 24.dp, vertical = 2.dp),
             )
         }
-        if (remote.error.isNotEmpty()) {
-            Text(
-                text = remote.error,
-                color = GameColors.danger,
-                fontSize = 12.sp,
-                maxLines = 2,
-                modifier = Modifier.padding(horizontal = 24.dp, vertical = 2.dp),
-            )
-        }
-        if (status.isNotEmpty()) {
-            Text(
-                text = status,
-                color = GameColors.textDim,
-                fontSize = 12.sp,
-                modifier = Modifier.padding(horizontal = 24.dp, vertical = 4.dp),
-            )
-        }
         HintBar(inDetail = current != null, tab = tab)
+    }
+        SnackbarHost(
+            hostState = snackbarHostState,
+            modifier = Modifier.align(Alignment.BottomCenter).padding(16.dp),
+        )
     }
     pendingSaveSync?.let { pending ->
         SaveSyncFailureDialog(
