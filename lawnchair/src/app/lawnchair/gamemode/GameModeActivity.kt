@@ -809,9 +809,11 @@ private fun LegacySaveClaimDialog(
     ) {
         Column(
             modifier = Modifier
-                .width(520.dp)
+                .fillMaxWidth(0.94f)
+                .widthIn(max = 520.dp)
                 .background(GameColors.backgroundTop, RoundedCornerShape(14.dp))
-                .padding(28.dp),
+                .padding(28.dp)
+                .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             Text(
