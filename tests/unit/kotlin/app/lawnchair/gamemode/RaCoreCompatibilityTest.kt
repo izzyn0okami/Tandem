@@ -40,7 +40,7 @@ class RaCoreCompatibilityTest {
     fun famicomDiskSystemUsesItsDedicatedConsoleAndMesenCore() {
         val fds = GamePlatforms.bySlug("fds")!!
 
-        assertTrue(fds.raConsoleId == 7)
+        assertTrue(fds.raConsoleId == 81)
         assertTrue(RaCoreCompatibility.isSupported(fds, "mesen"))
         assertFalse(RaCoreCompatibility.isSupported(fds, "fceumm"))
     }
