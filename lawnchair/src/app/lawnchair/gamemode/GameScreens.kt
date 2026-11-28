@@ -811,6 +811,30 @@ internal fun GameDetailScreen(
     val summary = remember(entry.key, detailGames) {
         detailGames.firstNotNullOfOrNull { game -> game.summary?.trim()?.takeIf { it.isNotBlank() } }
     }
+    val personalDataText = remember(entry.key, detailGames) {
+        buildString {
+            val values = detailGames.mapNotNull { it.userData }.distinct()
+            fun appendValues(label: String, entries: List<String>) {
+                val distinct = entries.filter { it.isNotBlank() }.distinct()
+                if (distinct.isNotEmpty()) append("$label: ${distinct.joinToString(" · ")}\\n")
+            }
+            appendValues("Status", values.mapNotNull { it.status })
+            appendValues("Avaliação pessoal", values.map { it.rating.toString() })
+            appendValues("Dificuldade", values.map { it.difficulty.toString() })
+            appendValues("Conclusão", values.map { it.completion.toString() })
+            appendValues("Última vez jogado", values.mapNotNull { it.lastPlayedAtMs }
+                .map { DateFormat.getDateTimeInstance(DateFormat.MEDIUM, DateFormat.SHORT).format(Date(it)) })
+            appendValues("Criado no RomM", values.map { DateFormat.getDateTimeInstance(DateFormat.MEDIUM, DateFormat.SHORT).format(Date(it.createdAtMs)) })
+            appendValues("Atualizado no RomM", values.map { DateFormat.getDateTimeInstance(DateFormat.MEDIUM, DateFormat.SHORT).format(Date(it.updatedAtMs)) })
+            appendValues("Marcadores", buildList {
+                if (values.any { it.isMainSibling }) add("Versão principal")
+                if (values.any { it.backlogged }) add("Backlog")
+                if (values.any { it.nowPlaying }) add("Jogando agora")
+                if (values.any { it.hidden }) add("Oculto")
+            })
+            appendValues("Mídia fixada", values.flatMap { it.pinnedMedia })
+        }.trim()
+    }
     val noteGames = remember(entry.key) { group?.versions?.filter { it.hasNotes }.orEmpty() }
     val rommNotes by produceState<List<Pair<String, RemoteGameNote>>?>(null, entry.key, RomMSettings.url(context), RomMSettings.token(context)) {
         value = if (noteGames.isEmpty() || !RomMSettings.isConnected(context)) {
@@ -1331,6 +1355,12 @@ internal fun GameDetailScreen(
                     Column(verticalArrangement = Arrangement.spacedBy(3.dp), modifier = Modifier.padding(top = 8.dp).width(520.dp)) {
                         Text("Metadados do RomM", color = GameColors.text, fontSize = 16.sp, fontWeight = FontWeight.Bold)
                         Text(metadataText, color = GameColors.textDim, fontSize = 12.sp)
+                    }
+                }
+                if (personalDataText.isNotBlank()) {
+                    Column(verticalArrangement = Arrangement.spacedBy(3.dp), modifier = Modifier.padding(top = 8.dp).width(520.dp)) {
+                        Text("Dados pessoais no RomM", color = GameColors.text, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                        Text(personalDataText, color = GameColors.textDim, fontSize = 12.sp)
                     }
                 }
                 if (associatedFiles.isNotEmpty()) {
