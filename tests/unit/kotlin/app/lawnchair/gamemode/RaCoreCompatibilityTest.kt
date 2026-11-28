@@ -47,7 +47,8 @@ class RaCoreCompatibilityTest {
 
     @Test
     fun nintendoDsiUsesItsOwnConsoleAndOnlyMelonDsDs() {
-        val dsi = platform("dsi", 78)
+        val dsi = GamePlatforms.bySlug("dsi")!!
+        assertTrue(dsi.raConsoleId == 78)
 
         assertTrue(RaCoreCompatibility.isSupported(dsi, "melonds_ds"))
         assertFalse(RaCoreCompatibility.isSupported(dsi, "melonds"))
@@ -62,6 +63,7 @@ class RaCoreCompatibilityTest {
         assertTrue(RaCoreCompatibility.isSupported(pc88, "quasi88"))
         assertTrue(RaCoreCompatibility.isSupported(supergrafx, "mednafen_supergrafx"))
         assertFalse(RaCoreCompatibility.isSupported(supergrafx, "mednafen_pce_fast"))
+        assertTrue(RaCoreCompatibility.isSupported(platform("pce", 8), "mednafen_supergrafx"))
     }
 
     @Test
@@ -83,6 +85,12 @@ class RaCoreCompatibilityTest {
     fun ambiguousNdsExtensionKeepsNintendoDsAsSafeFallback() {
         assertTrue(GamePlatforms.resolve(emptyList(), "nds")?.slug == "nds")
         assertTrue(GamePlatforms.resolve(listOf("dsi"), "nds")?.slug == "dsi")
+    }
+
+    @Test
+    @Test
+    fun nintendo64AllowsTheOfficialParallelCore() {
+        assertTrue(RaCoreCompatibility.isSupported(platform("n64", 2), "parallel_n64"))
     }
 
     @Test
