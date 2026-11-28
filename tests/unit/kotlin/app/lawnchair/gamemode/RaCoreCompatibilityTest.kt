@@ -89,6 +89,15 @@ class RaCoreCompatibilityTest {
 
     @Test
     @Test
+    fun masterSystemRejectsUnlistedSmsPlusCore() {
+        val masterSystem = platform("sms", 11)
+
+        assertTrue(RaCoreCompatibility.isSupported(masterSystem, "genesis_plus_gx"))
+        assertTrue(RaCoreCompatibility.isSupported(masterSystem, "gearsystem"))
+        assertFalse(RaCoreCompatibility.isSupported(masterSystem, "smsplus"))
+    }
+
+    @Test
     fun nintendo64AllowsTheOfficialParallelCore() {
         assertTrue(RaCoreCompatibility.isSupported(platform("n64", 2), "parallel_n64"))
     }
