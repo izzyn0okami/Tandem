@@ -775,7 +775,8 @@ internal fun GameDetailScreen(
     val manyVersions = (group?.versions?.size ?: 0) > 1
     val detailGames = group?.versions.orEmpty()
     val metadataGames = detailGames.filter {
-        it.metadata?.hasContent == true || it.alternativeNames.isNotEmpty() || it.providerIds.isNotEmpty()
+        it.metadata?.hasContent == true || it.metadata?.hasManualMetadata == true ||
+            it.alternativeNames.isNotEmpty() || it.providerIds.isNotEmpty()
     }
     val associatedFiles = detailGames.flatMap { it.associatedFiles }.distinctBy { it.id }
     val isEasyRpgGame = detailGames.any { it.isEasyRpgGame }
