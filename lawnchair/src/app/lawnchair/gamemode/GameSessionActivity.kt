@@ -108,6 +108,7 @@ class GameSessionActivity : ComponentActivity() {
     private val raMasteryQueue = mutableStateListOf<RaMastery>()
     private var optionsOpen by mutableStateOf(false)
     private var coreOptions by mutableStateOf<List<CoreOption>>(emptyList())
+    private var coreOptionsCategory by mutableStateOf<CoreOptionCategory?>(null)
     private var coreLog: Closeable? = null
     private var coreIdForOptions = ""
     private var coreSupportsStates = false
@@ -400,6 +401,11 @@ class GameSessionActivity : ComponentActivity() {
                                 CoreOptionsPanel(
                                     coreLabel = coreLabel(),
                                     options = coreOptions,
+                                    selectedCategory = coreOptionsCategory,
+                                    onSelectCategory = { coreOptionsCategory = it },
+                                    onBack = {
+                                        if (coreOptionsCategory != null) coreOptionsCategory = null else optionsOpen = false
+                                    },
                                     onChange = { option, value -> changeCoreOption(option, value) },
                                     onReset = {
                                         CoreRegistry.resetOptions(this@GameSessionActivity, coreIdForOptions)
@@ -678,6 +684,7 @@ class GameSessionActivity : ComponentActivity() {
     /** Fecha a lista de opções ou a de conquistas, se alguma estiver aberta; senão faz [otherwise]. */
     private fun closeTopPanelOr(otherwise: () -> Unit) {
         when {
+            optionsOpen && coreOptionsCategory != null -> coreOptionsCategory = null
             optionsOpen -> optionsOpen = false
             raListOpen -> raListOpen = false
             else -> otherwise()
@@ -706,6 +713,7 @@ class GameSessionActivity : ComponentActivity() {
 
     private fun openCoreOptions() {
         coreOptions = retroView?.let { CoreRegistry.parse(it.getVariables()) }.orEmpty()
+        coreOptionsCategory = null
         GameLog.log("núcleos", "opções abertas: ${coreOptions.size} no núcleo $coreIdForOptions")
         optionsOpen = true
     }
