@@ -1430,7 +1430,7 @@ internal fun GameDetailScreen(
                         }
                     }
                     if (personalDataText.isNotBlank()) {
-                        Column(verticalArrangement = Arrangement.spacedBy(3.dp), modifier = Modifier.padding(top = 8.dp).width(520.dp)) {
+                        Column(verticalArrangement = Arrangement.spacedBy(3.dp), modifier = Modifier.padding(top = 8.dp).fillMaxWidth().widthIn(max = 520.dp)) {
                             Text("Dados pessoais no RomM", color = GameColors.text, fontSize = 16.sp, fontWeight = FontWeight.Bold)
                             Text(personalDataText, color = GameColors.textDim, fontSize = 12.sp)
                         }
@@ -1438,13 +1438,13 @@ internal fun GameDetailScreen(
                 }
                 if (selectedDetailTab == "files") {
                     if (rommIdentityText.isNotBlank()) {
-                        Column(verticalArrangement = Arrangement.spacedBy(3.dp), modifier = Modifier.padding(top = 8.dp).width(520.dp)) {
+                        Column(verticalArrangement = Arrangement.spacedBy(3.dp), modifier = Modifier.padding(top = 8.dp).fillMaxWidth().widthIn(max = 520.dp)) {
                             Text("Identificação e versões RomM", color = GameColors.text, fontSize = 16.sp, fontWeight = FontWeight.Bold)
                             Text(rommIdentityText, color = GameColors.textDim, fontSize = 12.sp)
                         }
                     }
                     if (associatedFiles.isNotEmpty()) {
-                        Column(verticalArrangement = Arrangement.spacedBy(3.dp), modifier = Modifier.padding(top = 8.dp).width(520.dp)) {
+                        Column(verticalArrangement = Arrangement.spacedBy(3.dp), modifier = Modifier.padding(top = 8.dp).fillMaxWidth().widthIn(max = 520.dp)) {
                             Text("Arquivos associados do RomM", color = GameColors.text, fontSize = 16.sp, fontWeight = FontWeight.Bold)
                             associatedFiles.forEach { file ->
                                 val category = file.category?.replaceFirstChar { it.uppercase() } ?: "Jogo"
@@ -1462,7 +1462,7 @@ internal fun GameDetailScreen(
                     }
                 }
                 if (selectedDetailTab == "romm" && noteGames.isNotEmpty()) {
-                    Column(verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(top = 8.dp).width(520.dp)) {
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(top = 8.dp).fillMaxWidth().widthIn(max = 520.dp)) {
                         Text("Notas do RomM", color = GameColors.text, fontSize = 16.sp, fontWeight = FontWeight.Bold)
                         when {
                             rommNotes == null -> Text("Carregando notas…", color = GameColors.textDim, fontSize = 12.sp)
