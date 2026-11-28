@@ -18,7 +18,8 @@ class RaCoreCompatibilityTest {
 
     @Test
     fun playStationAllowsOnlyOfficialLibretroCores() {
-        val psx = platform("psx", 12)
+        val psx = GamePlatforms.bySlug("psx")!!
+        assertTrue(psx.raConsoleId == 12)
 
         assertTrue(RaCoreCompatibility.isSupported(psx, "mednafen_psx"))
         assertTrue(RaCoreCompatibility.isSupported(psx, "mednafen_psx_hw"))
@@ -28,7 +29,8 @@ class RaCoreCompatibilityTest {
 
     @Test
     fun nintendoDsAllowsSupportedCoresAndRejectsNooDS() {
-        val nds = platform("nds", 18)
+        val nds = GamePlatforms.bySlug("nds")!!
+        assertTrue(nds.raConsoleId == 18)
 
         assertTrue(RaCoreCompatibility.isSupported(nds, "melonds_ds"))
         assertTrue(RaCoreCompatibility.isSupported(nds, "melonds"))
@@ -57,13 +59,15 @@ class RaCoreCompatibilityTest {
 
     @Test
     fun pc88AndSuperGrafxUseOfficiallyListedCores() {
-        val pc88 = platform("pc88", 47)
-        val supergrafx = platform("supergrafx", 8)
+        val pc88 = GamePlatforms.bySlug("pc88")!!
+        val supergrafx = GamePlatforms.bySlug("supergrafx")!!
+        assertTrue(pc88.raConsoleId == 47)
+        assertTrue(supergrafx.raConsoleId == 8)
 
         assertTrue(RaCoreCompatibility.isSupported(pc88, "quasi88"))
         assertTrue(RaCoreCompatibility.isSupported(supergrafx, "mednafen_supergrafx"))
         assertFalse(RaCoreCompatibility.isSupported(supergrafx, "mednafen_pce_fast"))
-        assertTrue(RaCoreCompatibility.isSupported(platform("pce", 8), "mednafen_supergrafx"))
+        assertTrue(RaCoreCompatibility.isSupported(GamePlatforms.bySlug("pce")!!, "mednafen_supergrafx"))
     }
 
     @Test
@@ -89,7 +93,8 @@ class RaCoreCompatibilityTest {
 
     @Test
     fun masterSystemRejectsUnlistedSmsPlusCore() {
-        val masterSystem = platform("sms", 11)
+        val masterSystem = GamePlatforms.bySlug("sms")!!
+        assertTrue(masterSystem.raConsoleId == 11)
 
         assertTrue(RaCoreCompatibility.isSupported(masterSystem, "genesis_plus_gx"))
         assertTrue(RaCoreCompatibility.isSupported(masterSystem, "gearsystem"))
@@ -98,12 +103,15 @@ class RaCoreCompatibilityTest {
 
     @Test
     fun nintendo64AllowsTheOfficialParallelCore() {
-        assertTrue(RaCoreCompatibility.isSupported(platform("n64", 2), "parallel_n64"))
+        val n64 = GamePlatforms.bySlug("n64")!!
+        assertTrue(n64.raConsoleId == 2)
+        assertTrue(RaCoreCompatibility.isSupported(n64, "parallel_n64"))
     }
 
     @Test
     fun knownPlatformDoesNotEnableRaForAnUnlistedCore() {
-        val nes = platform("nes", 7)
+        val nes = GamePlatforms.bySlug("nes")!!
+        assertTrue(nes.raConsoleId == 7)
 
         assertTrue(RaCoreCompatibility.isSupported(nes, "fceumm"))
         assertTrue(RaCoreCompatibility.isSupported(nes, "mesen"))
