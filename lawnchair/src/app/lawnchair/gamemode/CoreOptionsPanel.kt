@@ -164,11 +164,13 @@ internal fun CoreOptionsPanel(
                 }
             }
 
-            GameButton(
-                label = stringResource(R.string.game_core_options_reset),
-                onClick = { confirmReset = true },
-                compact = true,
-            )
+            if (options.isNotEmpty()) {
+                GameButton(
+                    label = stringResource(R.string.game_core_options_reset),
+                    onClick = { confirmReset = true },
+                    compact = true,
+                )
+            }
         }
     }
 
