@@ -162,6 +162,8 @@ Proposta:
 [✓] Criar branch isolada para a reformulação.
 [✓] Reduzir dimensões dos popups RA (commit d73c6965c4230b529355d9268167e5a9c3f8520b).
 [✓] Simplificar a navegação principal em quatro botões de ícone acessíveis (Biblioteca, Música, Conquistas e Configurações); manter as áreas funcionais existentes sem remover atalhos essenciais.
+[✓] Criar cabeçalho único com botão Voltar para BIOS, Núcleos, Emuladores, Pastas, Scraper e RomM; remover títulos duplicados da tela de conexão/gestão RomM.
+[✓] Adicionar retorno visível nas telas internas, mantendo também o botão B/Voltar do Android.
 [ ] Revisar redundâncias de navegação entre categorias e submenus.
 [✓] Transformar opções de núcleo em menu de categorias + telas de opções, sem janela flutuante (PR #65).
 [✓] Converter avisos curtos e erros do menu inicial em Snackbar/Popup (PR #65).
@@ -182,7 +184,8 @@ ATUALIZAÇÃO DE IMPLEMENTAÇÃO — 2026-11-28
 - Commits de UI nesta branch: redução de popups RA; menus independentes de opções de núcleo; Snackbar para status do menu inicial; metadados agregados e arquivos com checksums; categorias de Configurações; botão de ícone com descrição acessível.
 - A branch tandem-latest não existe no repositório consultado (API retornou 404); a PR usa game-mode-m2-dev, branch padrão atual.
 - As execuções iniciais falharam na compilação Kotlin por acesso anulável à categoria selecionada; o erro foi corrigido. As execuções seguintes estão em andamento e não devem ser registradas como sucesso antes da conclusão do HEAD final.
-- Novas melhorias após a primeira versão: barra principal convertida em botões de ícone; ações secundárias do jogo em destaque convertidas em ícones; detalhes ampliados com dados pessoais e identificadores técnicos RomM; reset de opções do núcleo protegido por confirmação.
+- Novas melhorias após a primeira versão: barra principal convertida em botões de ícone; ações secundárias do jogo em destaque e retorno dos detalhes convertidos em ícones; cabeçalhos e botões Voltar padronizados nas telas BIOS, Núcleos, Emuladores, Pastas, Scraper e RomM; detalhes ampliados com dados pessoais e identificadores técnicos RomM; reset de opções do núcleo protegido por confirmação.
+- A etapa de formatação Spotless concluiu a tarefa localmente, mas o commit automático não conseguiu enviar alterações porque várias execuções concorrentes tentaram atualizar a mesma branch. A CI está sendo acompanhada no HEAD mais recente; não tratar isso como falha funcional do código nem como validação concluída.
 - Nenhuma mesclagem foi feita. A PR permanece Draft e depende de CI no HEAD final e teste no aparelho.
 
 10. CRITÉRIO DE CONCLUSÃO
