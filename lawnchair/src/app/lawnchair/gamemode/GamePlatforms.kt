@@ -669,6 +669,7 @@ object GamePlatforms {
             extensions = setOf("min", "pnm"),
             folderAliases = setOf("pokemini", "pokemonmini"),
             sortOrder = 132,
+            raConsoleId = 24,
         ),
         GamePlatform(
             slug = "gamewatch",
@@ -684,8 +685,17 @@ object GamePlatforms {
             name = "Mega Duck / Watara Supervision",
             coreId = "potator",
             extensions = setOf("bin", "ws", "sv"),
-            folderAliases = setOf("megaduck", "watara", "supervision", "watara-supervision"),
+            folderAliases = setOf("megaduck"),
             sortOrder = 134,
+        ),
+        GamePlatform(
+            slug = "supervision",
+            name = "Watara Supervision",
+            coreId = "potator",
+            extensions = setOf("bin", "ws", "sv"),
+            folderAliases = setOf("watara", "supervision", "watara-supervision"),
+            sortOrder = 165,
+            raConsoleId = 63,
         ),
         GamePlatform(
             slug = "arduboy",
@@ -823,6 +833,7 @@ object GamePlatforms {
             extensions = setOf("dsk", "sna", "tap", "cdt", "cpr"),
             folderAliases = setOf("amstradcpc", "amstrad-cpc", "cpc"),
             sortOrder = 151,
+            raConsoleId = 37,
         ),
         GamePlatform(
             slug = "c128",
