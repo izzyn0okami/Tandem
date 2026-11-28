@@ -618,17 +618,17 @@ private fun GameModeRoot(refreshKey: Int, onExit: () -> Unit) {
                             },
                         )
 
-                        targetScreen.key == "bios" -> BiosScreen(rootPath = rootPath)
+                        targetScreen.key == "bios" -> BiosScreen(rootPath = rootPath, onBack = { showBios = false })
 
-                        targetScreen.key == "emulators" -> EmulatorsScreen()
+                        targetScreen.key == "emulators" -> EmulatorsScreen(onBack = { showEmulators = false })
 
-                        targetScreen.key == "folders" -> FoldersScreen()
+                        targetScreen.key == "folders" -> FoldersScreen(onBack = { showFolders = false })
 
-                        targetScreen.key == "cores" -> CoresScreen()
+                        targetScreen.key == "cores" -> CoresScreen(onBack = { showCores = false })
 
-                        targetScreen.key == "scraper" -> ScraperScreen()
+                        targetScreen.key == "scraper" -> ScraperScreen(onBack = { showScraper = false })
 
-                        targetScreen.key == "server" -> ServerScreen(remote)
+                        targetScreen.key == "server" -> ServerScreen(remote, onBack = { showServer = false })
 
                         targetScreen.key == "tab:Music" -> RomMMusicScreen()
 
