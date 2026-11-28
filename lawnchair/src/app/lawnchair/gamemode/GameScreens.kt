@@ -1479,7 +1479,6 @@ internal fun GameDetailScreen(
                         }
                     }
                 }
-                }
                 if (selectedDetailTab == "overview") {
                 AchievementSummaryRow(
                     platform = entry.platform,
