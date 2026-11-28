@@ -931,22 +931,32 @@ private fun TopBar(selected: GameTab, onSelect: (GameTab) -> Unit) {
             color = GameColors.text,
             fontSize = 18.sp,
             fontWeight = FontWeight.Bold,
-            modifier = Modifier.padding(end = 12.dp),
+            modifier = Modifier.weight(1f),
         )
-        GameTab.entries.forEach { entry ->
-            FocusSurface(
-                onClick = { onSelect(entry) },
-                background = if (entry == selected) GameColors.surfaceHigh else GameColors.background.copy(alpha = 0f),
-            ) {
-                Text(
-                    text = stringResource(entry.label),
-                    color = if (entry == selected) GameColors.text else GameColors.textDim,
-                    fontSize = 14.sp,
-                    fontWeight = if (entry == selected) FontWeight.SemiBold else FontWeight.Normal,
-                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                )
-            }
-        }
+        GameIconButton(
+            label = stringResource(R.string.game_tab_library),
+            symbol = "▦",
+            selected = selected == GameTab.Library,
+            onClick = { onSelect(GameTab.Library) },
+        )
+        GameIconButton(
+            label = stringResource(R.string.game_tab_music),
+            symbol = "♫",
+            selected = selected == GameTab.Music,
+            onClick = { onSelect(GameTab.Music) },
+        )
+        GameIconButton(
+            label = stringResource(R.string.game_tab_achievements),
+            symbol = "🏆",
+            selected = selected == GameTab.Achievements,
+            onClick = { onSelect(GameTab.Achievements) },
+        )
+        GameIconButton(
+            label = stringResource(R.string.game_tab_settings),
+            symbol = "⚙",
+            selected = selected == GameTab.Settings,
+            onClick = { onSelect(GameTab.Settings) },
+        )
     }
 }
 
