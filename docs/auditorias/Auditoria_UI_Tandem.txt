@@ -161,24 +161,29 @@ Proposta:
 [✓] Identificar campos de metadados já consumidos nos detalhes dos jogos.
 [✓] Criar branch isolada para a reformulação.
 [✓] Reduzir dimensões dos popups RA (commit d73c6965c4230b529355d9268167e5a9c3f8520b).
-[ ] Reestruturar navegação principal fora da área Configurações e revisar menus redundantes.
+[✓] Simplificar a navegação principal em quatro botões de ícone acessíveis (Biblioteca, Música, Conquistas e Configurações); manter as áreas funcionais existentes sem remover atalhos essenciais.
+[ ] Revisar redundâncias de navegação entre categorias e submenus.
 [✓] Transformar opções de núcleo em menu de categorias + telas de opções, sem janela flutuante (PR #65).
 [✓] Converter avisos curtos e erros do menu inicial em Snackbar/Popup (PR #65).
 [✓] Agregar metadados de todas as versões, exibir títulos alternativos e IDs sem limite e mostrar checksums dos arquivos (PR #65).
-[✓] Criar botão de ícone acessível e aplicá-lo aos retornos e categorias de configurações (PR #65).
+[✓] Criar botão de ícone acessível e aplicá-lo à navegação principal, retornos, categorias de configurações e ações secundárias do jogo em destaque (PR #65).
+[✓] Exibir dados pessoais do RomM (status, avaliação, dificuldade, conclusão, datas, marcadores e mídia fixada) nos detalhes.
+[✓] Exibir IDs RomM, IDs de arquivos/versões relacionadas, nomes de servidor, IDs dos arquivos associados e formato da entrada.
+[✓] Confirmar redefinição das opções do núcleo com diálogo explícito e informar que o reset afeta somente o núcleo atual.
 [✓] Organizar Configurações em seis categorias independentes (PR #65).
 [ ] Remover redundâncias após confirmar cobertura funcional.
-[ ] Confirmar Spotless, testes unitários e assembleLawnWithQuickstepGithubDebug no HEAD final.
+[EM ANDAMENTO] CI #46095737119 / #46095733058 no commit 7e3967c88707f72dedfa6a2a41a98b8ce731117f; commits posteriores continuam gerando novas execuções. A primeira falha de compilação foi localizada em GameScreens.kt:1687 (acesso anulável a SettingsCategory?) e corrigida no commit 1630b82. Spotless passou nos runs mais recentes anteriores, mas o build ainda precisa ser confirmado no HEAD final.
 [ ] Revisar artefato/assinatura e resultado da CI.
 [ ] Testar no Motorola Edge 30 Fusion: navegação por toque e gamepad, detalhes, metadados, opções de núcleos, RA, mensagens e telas em paisagem.
 [ ] Atualizar este log após cada CI/PR concluída com sucesso.
 
-ATUALIZAÇÃO DE IMPLEMENTAÇÃO — 2026-11-27
+ATUALIZAÇÃO DE IMPLEMENTAÇÃO — 2026-11-28
 - PR #65 aberta em Draft: https://github.com/izzyn0okami/Tandem/pull/65.
 - Commits de UI nesta branch: redução de popups RA; menus independentes de opções de núcleo; Snackbar para status do menu inicial; metadados agregados e arquivos com checksums; categorias de Configurações; botão de ícone com descrição acessível.
 - A branch tandem-latest não existe no repositório consultado (API retornou 404); a PR usa game-mode-m2-dev, branch padrão atual.
-- CI mais recente observada no momento da atualização: run 46094482305, ainda em andamento. Não registrar sucesso até conclusão real.
-- Nenhuma mesclagem foi feita. A PR permanece Draft e depende de CI e teste no aparelho.
+- As execuções iniciais falharam na compilação Kotlin por acesso anulável à categoria selecionada; o erro foi corrigido. As execuções seguintes estão em andamento e não devem ser registradas como sucesso antes da conclusão do HEAD final.
+- Novas melhorias após a primeira versão: barra principal convertida em botões de ícone; ações secundárias do jogo em destaque convertidas em ícones; detalhes ampliados com dados pessoais e identificadores técnicos RomM; reset de opções do núcleo protegido por confirmação.
+- Nenhuma mesclagem foi feita. A PR permanece Draft e depende de CI no HEAD final e teste no aparelho.
 
 10. CRITÉRIO DE CONCLUSÃO
 A auditoria só será encerrada quando todas as pendências acima estiverem implementadas ou justificadas, a CI passar, a revisão de regressão estiver concluída e o usuário validar o APK no aparelho. Não mesclar automaticamente para release.
