@@ -910,3 +910,17 @@ ATUALIZAÇÃO — AUDITORIA RA / CI #2083 (2026-11-27)
 - [ ] Nova CI e build APK.
 - [ ] Validar PSX/DS no aparelho e confirmar IDs pela API oficial.
 - Status da matriz RA: EM ANDAMENTO; não mesclada.
+
+
+ATUALIZAÇÃO 2026-11-27 — CI #2087 / PR #64
+- [CI APROVADA] Workflow run #2087 / 46085298608 concluído com SUCCESS no commit `3f57453b9430ad3c5c7e02751ad072a1836c97b4` da branch `feat/ra-core-compatibility`.
+- [TESTES] `Run unit tests` concluído com sucesso.
+- [ESTILO] Spotless automático, commit/validação de formatação concluídos com sucesso.
+- [BUILD] `assembleLawnWithQuickstepGithubDebug` compilou o APK Debug com sucesso.
+- [ARTEFATO] `assembleLawnWithQuickstepGithubDebug`, ID `15238628418`, tamanho 46.667.041 bytes, SHA-256 `180b6f2a369aef225b1dde1c73a4d2703c47f8ea3f6deefa4ee7f51177441555`; disponível até 25/02/2027. Execução: https://github.com/izzyn0okami/Tandem/actions/runs/46085298608
+- [x] CI automatizada concluída: testes unitários, Spotless, build APK, upload e final-status aprovados.
+- [ ] Validar IDs ativos pela API oficial GetConsoleIDs usando Web API Key.
+- [ ] Testar RA com jogos reconhecidos de PSX e Nintendo DS no Android; a CI não substitui teste físico/online.
+- [ ] Revisar casos especiais da matriz (Arcade/hash, PC-88, SuperGrafx, Watara e demais divergências).
+- [ ] Revisão final da PR #64 e decisão de merge; PR permanece aberta e não mesclada.
+- Status: CI aprovada; implementação ainda não homologada integralmente.
