@@ -63,6 +63,7 @@ object CoreRegistry {
     )
 
     private val catalog: Map<String, List<CoreInfo>> = mapOf(
+        "fds" to listOf(core("mesen", "Mesen", "Famicom Disk System; núcleo oficialmente compatível")),
         "nes" to listOf(
             core("fceumm", "FCEUmm", "Rápido e compatível"),
             core("nestopia", "Nestopia", "Mais preciso"),
