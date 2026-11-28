@@ -403,7 +403,10 @@ object CoreRegistry {
             experimentalCore("gw", "Game & Watch", "Nintendo Game & Watch"),
         ),
         "megaduck" to listOf(
-            experimentalCore("potator", "Potator", "Mega Duck / Watara Supervision"),
+            experimentalCore("potator", "Potator", "Mega Duck legado; sem compatibilidade RA confirmada para este sistema"),
+        ),
+        "supervision" to listOf(
+            experimentalCore("potator", "Potator", "Watara Supervision; núcleo listado como compatível pelo RetroAchievements"),
         ),
         "arduboy" to listOf(
             experimentalCore("ardens", "Ardens", "Arduboy"),
