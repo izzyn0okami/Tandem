@@ -97,6 +97,27 @@ fun FocusSurface(
 }
 
 @Composable
+fun GameScreenHeader(
+    title: String,
+    onBack: () -> Unit,
+    subtitle: String? = null,
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(bottom = 6.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        GameIconButton(label = "Voltar", symbol = "←", onClick = onBack)
+        Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            Text(title, color = GameColors.text, fontSize = 19.sp, fontWeight = FontWeight.Bold)
+            if (!subtitle.isNullOrBlank()) {
+                Text(subtitle, color = GameColors.textDim, fontSize = 11.sp)
+            }
+        }
+    }
+}
+
+@Composable
 fun GameIconButton(
     label: String,
     symbol: String,
