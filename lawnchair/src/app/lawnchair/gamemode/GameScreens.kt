@@ -1531,13 +1531,13 @@ private fun formatPlaytime(ms: Long): String {
 }
 
 @Composable
-private enum class SettingsCategory(val title: String, val subtitle: String) {
-    LIBRARY("Biblioteca e armazenamento", "Pastas, importação e organização dos jogos"),
-    EMULATION("Emulação", "Núcleos, BIOS, emuladores e gráficos"),
-    ONLINE("RomM e serviços online", "Servidor, dispositivos e sincronização"),
-    MEDIA("Mídia e metadados", "Capas, scraping e trilhas sonoras"),
-    CONTROLS("Controles e interface", "Gamepad virtual, navegação e comportamento"),
-    SYSTEM("Sistema e diagnóstico", "Logs, informações e encerramento"),
+private enum class SettingsCategory(val title: String, val subtitle: String, val icon: String) {
+    LIBRARY("Biblioteca e armazenamento", "Pastas, importação e organização dos jogos", "▦"),
+    EMULATION("Emulação", "Núcleos, BIOS, emuladores e gráficos", "◉"),
+    ONLINE("RomM e serviços online", "Servidor, dispositivos e sincronização", "☁"),
+    MEDIA("Mídia e metadados", "Capas, scraping e trilhas sonoras", "▧"),
+    CONTROLS("Controles e interface", "Gamepad virtual, navegação e comportamento", "⌖"),
+    SYSTEM("Sistema e diagnóstico", "Logs, informações e encerramento", "⚙"),
 }
 
 internal fun SettingsScreen(
@@ -1664,6 +1664,7 @@ internal fun SettingsScreen(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(12.dp),
                     ) {
+                        Text(category.icon, color = GameColors.accent, fontSize = 22.sp, fontWeight = FontWeight.Bold)
                         Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
                             Text(category.title, color = GameColors.text, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
                             Text(category.subtitle, color = GameColors.textDim, fontSize = 11.sp)
@@ -1678,7 +1679,11 @@ internal fun SettingsScreen(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                GameButton("Voltar", onClick = { selectedCategory = null }, compact = true)
+                GameIconButton(
+                    label = "Voltar às configurações",
+                    symbol = "←",
+                    onClick = { selectedCategory = null },
+                )
                 Text(selectedCategory.title, color = GameColors.text, fontSize = 18.sp, fontWeight = FontWeight.Bold)
             }
             when (selectedCategory) {
