@@ -211,5 +211,4 @@ private fun categoryFor(option: CoreOption): CoreOptionCategory {
     }
 }
 
-private fun groupByCategory(options: List<CoreOption>): Map<CoreOptionCategory, List<CoreOption>> =
-    options.groupBy(::categoryFor)
+private fun groupByCategory(options: List<CoreOption>): Map<CoreOptionCategory, List<CoreOption>> = options.groupBy(::categoryFor)

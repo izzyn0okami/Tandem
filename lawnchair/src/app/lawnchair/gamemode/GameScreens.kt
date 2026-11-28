@@ -1688,299 +1688,305 @@ internal fun SettingsScreen(
             }
             when (selectedCategory) {
                 SettingsCategory.LIBRARY -> {
-SettingsSection(stringResource(R.string.game_mode_section_library))
-        Text(
-            text = stringResource(R.string.game_mode_folder_label, rootPath),
-            color = GameColors.textDim,
-            fontSize = 14.sp,
-        )
-        GameButton(stringResource(R.string.game_mode_choose_folder), onChooseFolder)
-        GameButton(stringResource(R.string.game_mode_refresh), onRefresh)
-        if (needsAccess) {
-            Text(text = stringResource(R.string.game_mode_needs_access), color = GameColors.danger, fontSize = 14.sp)
-            GameButton(stringResource(R.string.game_mode_grant_access), onGrantAccess, primary = true)
-        }
-        GameButton(stringResource(R.string.game_mode_play_rom), onPickRom, enabled = !busy)
-        GameButton(stringResource(R.string.game_folders_open), onOpenFolders)
+                    SettingsSection(stringResource(R.string.game_mode_section_library))
+                    Text(
+                        text = stringResource(R.string.game_mode_folder_label, rootPath),
+                        color = GameColors.textDim,
+                        fontSize = 14.sp,
+                    )
+                    GameButton(stringResource(R.string.game_mode_choose_folder), onChooseFolder)
+                    GameButton(stringResource(R.string.game_mode_refresh), onRefresh)
+                    if (needsAccess) {
+                        Text(text = stringResource(R.string.game_mode_needs_access), color = GameColors.danger, fontSize = 14.sp)
+                        GameButton(stringResource(R.string.game_mode_grant_access), onGrantAccess, primary = true)
+                    }
+                    GameButton(stringResource(R.string.game_mode_play_rom), onPickRom, enabled = !busy)
+                    GameButton(stringResource(R.string.game_folders_open), onOpenFolders)
                 }
-                SettingsCategory.EMULATION -> {
-SettingsSection(stringResource(R.string.game_mode_section_platforms))
-        GameButton(stringResource(R.string.game_bios_open), onOpenBios)
-        GameButton(stringResource(R.string.game_cores_open), onOpenCores)
-        GameButton(stringResource(R.string.game_emulators_open), onOpenEmulators)
 
-SettingsSection("Gráficos e Vulkan")
-        SettingsSwitchRow(
-            label = "Preferir Vulkan quando disponível",
-            checked = preferVulkan,
-            onToggle = onTogglePreferVulkan,
-        )
-        Text(
-            "O Tandem usa Vulkan quando o núcleo solicita esse modo e o dispositivo oferece suporte. A preferência também orienta núcleos que permitem escolher o renderizador.",
-            color = GameColors.textDim,
-            fontSize = 12.sp,
-        )
-        Text(
-            "Driver Adreno: ${vulkanDriverLabel ?: "driver padrão do Android"}",
-            color = GameColors.text,
-            fontSize = 13.sp,
-        )
-        if (vulkanDriverLabel != null) {
-            SettingsSwitchRow(
-                label = "Usar driver externo Adreno (Turnip)",
-                checked = externalVulkanDriverEnabled,
-                onToggle = onToggleExternalVulkanDriver,
-            )
-        }
-        GameButton(
-            label = if (vulkanDriverLabel == null) "Importar driver Turnip (.zip)" else "Substituir driver Turnip (.zip)",
-            onClick = onImportVulkanDriver,
-        )
-        if (vulkanDriverLabel != null) {
-            GameButton("Remover driver externo", onRemoveVulkanDriver, danger = true)
-        }
-        if (vulkanDriverStatus.isNotBlank()) {
-            Text(vulkanDriverStatus, color = GameColors.textDim, fontSize = 12.sp)
-        }
-        Text(
-            "Importe um pacote ZIP compatível com Android ARM64 que contenha libvulkan_freedreno.so. Recurso destinado a GPUs Adreno (Snapdragon); os ajustes são aplicados na próxima sessão.",
-            color = GameColors.textDim,
-            fontSize = 12.sp,
-        )
+                SettingsCategory.EMULATION -> {
+                    SettingsSection(stringResource(R.string.game_mode_section_platforms))
+                    GameButton(stringResource(R.string.game_bios_open), onOpenBios)
+                    GameButton(stringResource(R.string.game_cores_open), onOpenCores)
+                    GameButton(stringResource(R.string.game_emulators_open), onOpenEmulators)
+
+                    SettingsSection("Gráficos e Vulkan")
+                    SettingsSwitchRow(
+                        label = "Preferir Vulkan quando disponível",
+                        checked = preferVulkan,
+                        onToggle = onTogglePreferVulkan,
+                    )
+                    Text(
+                        "O Tandem usa Vulkan quando o núcleo solicita esse modo e o dispositivo oferece suporte. A preferência também orienta núcleos que permitem escolher o renderizador.",
+                        color = GameColors.textDim,
+                        fontSize = 12.sp,
+                    )
+                    Text(
+                        "Driver Adreno: ${vulkanDriverLabel ?: "driver padrão do Android"}",
+                        color = GameColors.text,
+                        fontSize = 13.sp,
+                    )
+                    if (vulkanDriverLabel != null) {
+                        SettingsSwitchRow(
+                            label = "Usar driver externo Adreno (Turnip)",
+                            checked = externalVulkanDriverEnabled,
+                            onToggle = onToggleExternalVulkanDriver,
+                        )
+                    }
+                    GameButton(
+                        label = if (vulkanDriverLabel == null) "Importar driver Turnip (.zip)" else "Substituir driver Turnip (.zip)",
+                        onClick = onImportVulkanDriver,
+                    )
+                    if (vulkanDriverLabel != null) {
+                        GameButton("Remover driver externo", onRemoveVulkanDriver, danger = true)
+                    }
+                    if (vulkanDriverStatus.isNotBlank()) {
+                        Text(vulkanDriverStatus, color = GameColors.textDim, fontSize = 12.sp)
+                    }
+                    Text(
+                        "Importe um pacote ZIP compatível com Android ARM64 que contenha libvulkan_freedreno.so. Recurso destinado a GPUs Adreno (Snapdragon); os ajustes são aplicados na próxima sessão.",
+                        color = GameColors.textDim,
+                        fontSize = 12.sp,
+                    )
                 }
+
                 SettingsCategory.ONLINE -> {
-SettingsSection(stringResource(R.string.game_mode_section_online))
-        GameButton(stringResource(R.string.game_server_open), onOpenServer)
-        if (RomMSettings.isConnected(context)) {
-            Text("Dispositivos registrados no RomM", color = GameColors.text, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
-            GameButton(
-                if (remoteDevicesLoading) "Atualizando dispositivos…" else "Atualizar dispositivos",
-                refreshRemoteDevices,
-                enabled = !remoteDevicesLoading,
-            )
-            if (remoteDevicesError.isNotEmpty()) {
-                Text(remoteDevicesError, color = GameColors.danger, fontSize = 12.sp)
-            }
-            remoteDevices?.let { devices ->
-                if (devices.isEmpty()) {
-                    Text("Nenhum dispositivo registrado foi retornado pelo servidor.", color = GameColors.textDim, fontSize = 12.sp)
-                } else {
-                    devices.forEach { device ->
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .background(GameColors.surface, RoundedCornerShape(12.dp))
-                                .padding(12.dp),
-                            verticalArrangement = Arrangement.spacedBy(4.dp),
-                        ) {
-                            Text(
-                                device.name.ifBlank { "Dispositivo ${device.id}" },
-                                color = GameColors.text,
-                                fontSize = 14.sp,
-                                fontWeight = FontWeight.SemiBold,
-                            )
-                            Text(
-                                listOfNotNull(device.platform, device.client, device.clientVersion?.let { "v$it" }, device.syncMode?.let { "sync $it" }).joinToString(" • ")
-                                    .ifBlank { "Tipo não informado pelo servidor" },
-                                color = GameColors.textDim,
-                                fontSize = 12.sp,
-                            )
-                            Text(
-                                when (device.online) {
-                                    true -> "Online"
-                                    false -> "Offline"
-                                    null -> "Presença indisponível (endpoint de dispositivos online não disponível)"
-                                },
-                                color = if (device.online == true) GameColors.accent else GameColors.textDim,
-                                fontSize = 12.sp,
-                            )
-                            device.syncEnabled?.let { enabled ->
-                                Text(
-                                    if (enabled) "Sincronização habilitada" else "Sincronização desabilitada",
-                                    color = GameColors.textDim,
-                                    fontSize = 11.sp,
-                                )
-                            }
-                            if (device.capabilities.isEmpty()) {
-                                Text("Capacidades não declaradas pelo servidor.", color = GameColors.textDim, fontSize = 12.sp)
+                    SettingsSection(stringResource(R.string.game_mode_section_online))
+                    GameButton(stringResource(R.string.game_server_open), onOpenServer)
+                    if (RomMSettings.isConnected(context)) {
+                        Text("Dispositivos registrados no RomM", color = GameColors.text, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
+                        GameButton(
+                            if (remoteDevicesLoading) "Atualizando dispositivos…" else "Atualizar dispositivos",
+                            refreshRemoteDevices,
+                            enabled = !remoteDevicesLoading,
+                        )
+                        if (remoteDevicesError.isNotEmpty()) {
+                            Text(remoteDevicesError, color = GameColors.danger, fontSize = 12.sp)
+                        }
+                        remoteDevices?.let { devices ->
+                            if (devices.isEmpty()) {
+                                Text("Nenhum dispositivo registrado foi retornado pelo servidor.", color = GameColors.textDim, fontSize = 12.sp)
                             } else {
-                                device.capabilities.toSortedMap().forEach { (capability, supported) ->
-                                    Text(
-                                        "$capability: ${if (supported) "suportado" else "não suportado"}",
-                                        color = GameColors.textDim,
-                                        fontSize = 11.sp,
-                                    )
+                                devices.forEach { device ->
+                                    Column(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .background(GameColors.surface, RoundedCornerShape(12.dp))
+                                            .padding(12.dp),
+                                        verticalArrangement = Arrangement.spacedBy(4.dp),
+                                    ) {
+                                        Text(
+                                            device.name.ifBlank { "Dispositivo ${device.id}" },
+                                            color = GameColors.text,
+                                            fontSize = 14.sp,
+                                            fontWeight = FontWeight.SemiBold,
+                                        )
+                                        Text(
+                                            listOfNotNull(device.platform, device.client, device.clientVersion?.let { "v$it" }, device.syncMode?.let { "sync $it" }).joinToString(" • ")
+                                                .ifBlank { "Tipo não informado pelo servidor" },
+                                            color = GameColors.textDim,
+                                            fontSize = 12.sp,
+                                        )
+                                        Text(
+                                            when (device.online) {
+                                                true -> "Online"
+                                                false -> "Offline"
+                                                null -> "Presença indisponível (endpoint de dispositivos online não disponível)"
+                                            },
+                                            color = if (device.online == true) GameColors.accent else GameColors.textDim,
+                                            fontSize = 12.sp,
+                                        )
+                                        device.syncEnabled?.let { enabled ->
+                                            Text(
+                                                if (enabled) "Sincronização habilitada" else "Sincronização desabilitada",
+                                                color = GameColors.textDim,
+                                                fontSize = 11.sp,
+                                            )
+                                        }
+                                        if (device.capabilities.isEmpty()) {
+                                            Text("Capacidades não declaradas pelo servidor.", color = GameColors.textDim, fontSize = 12.sp)
+                                        } else {
+                                            device.capabilities.toSortedMap().forEach { (capability, supported) ->
+                                                Text(
+                                                    "$capability: ${if (supported) "suportado" else "não suportado"}",
+                                                    color = GameColors.textDim,
+                                                    fontSize = 11.sp,
+                                                )
+                                            }
+                                        }
+                                    }
                                 }
                             }
                         }
+                    } else {
+                        Text("Conecte-se ao RomM para consultar os dispositivos registrados.", color = GameColors.textDim, fontSize = 12.sp)
                     }
+                    GameButton(stringResource(R.string.game_sgdb_open), onOpenScraper)
+                    SettingsSwitchRow(label = stringResource(R.string.game_mode_scraper), checked = scraper, onToggle = toggleScraper)
+                    SettingsSwitchRow(label = "Exibir Rich Presence durante o jogo", checked = raRichPresenceVisible, onToggle = toggleRaRichPresence)
+                    Text(
+                        text = "Quando desativado, somente a sobreposição visual é ocultada. O RetroAchievements continua atualizando o estado da partida em segundo plano.",
+                        color = GameColors.textDim,
+                        fontSize = 12.sp,
+                    )
                 }
-            }
-        } else {
-            Text("Conecte-se ao RomM para consultar os dispositivos registrados.", color = GameColors.textDim, fontSize = 12.sp)
-        }
-        GameButton(stringResource(R.string.game_sgdb_open), onOpenScraper)
-        SettingsSwitchRow(label = stringResource(R.string.game_mode_scraper), checked = scraper, onToggle = toggleScraper)
-        SettingsSwitchRow(label = "Exibir Rich Presence durante o jogo", checked = raRichPresenceVisible, onToggle = toggleRaRichPresence)
-        Text(
-            text = "Quando desativado, somente a sobreposição visual é ocultada. O RetroAchievements continua atualizando o estado da partida em segundo plano.",
-            color = GameColors.textDim,
-            fontSize = 12.sp,
-        )
-                }
-                SettingsCategory.MEDIA -> {
-SettingsSection("iiDB — soundbites")
-        Text(
-            text = if (apiKeyConfigured) "Chave da iiDB configurada e protegida pelo Android Keystore." else "Informe sua chave pessoal da iiDB. Ela não será incluída no APK nem enviada aos servidores de assets.",
-            color = GameColors.textDim,
-            fontSize = 12.sp,
-        )
-        OutlinedTextField(
-            value = apiKeyInput,
-            onValueChange = { apiKeyInput = it },
-            modifier = Modifier.fillMaxWidth(),
-            label = { Text("Chave de API iiDB") },
-            singleLine = true,
-            visualTransformation = PasswordVisualTransformation(),
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-        )
-        GameButton(
-            label = if (checkingIidb) "Validando chave…" else "Validar e salvar chave",
-            onClick = {
-                if (apiKeyInput.isBlank() || checkingIidb) {
-                    iidbStatus = "Informe uma chave válida."
-                } else {
-                    checkingIidb = true
-                    iidbStatus = "Verificando acesso à iiDB…"
-                    val candidate = apiKeyInput
-                    scope.launch {
-                        val result = withContext(Dispatchers.IO) { IidbSoundbites.checkAccess(candidate) }
-                        if (result == IidbSoundbites.AccessResult.VALID) {
-                            val saved = runCatching { withContext(Dispatchers.IO) { IidbKeyStore.save(context, candidate) } }.isSuccess
-                            if (saved) {
-                                apiKeyConfigured = true
-                                apiKeyInput = ""
-                                iidbStatus = "Chave validada e salva com segurança."
-                            } else {
-                                iidbStatus = "A chave foi validada, mas não pôde ser protegida neste aparelho."
-                            }
-                        } else {
-                            iidbStatus = when (result) {
-                                IidbSoundbites.AccessResult.INVALID_KEY -> "A iiDB rejeitou a chave. Confira e tente novamente."
-                                IidbSoundbites.AccessResult.DENIED -> "A chave não tem permissão para acessar a API."
-                                else -> "Não foi possível validar. Verifique a conexão e tente novamente."
-                            }
-                        }
-                        checkingIidb = false
-                    }
-                }
-            },
-            primary = true,
-            enabled = !checkingIidb,
-        )
-        if (apiKeyConfigured) {
-            GameButton(
-                label = "Remover chave da iiDB",
-                onClick = {
-                    IidbKeyStore.clear(context)
-                    apiKeyConfigured = false
-                    apiKeyInput = ""
-                    iidbStatus = "Chave removida."
-                    GameThemeMusic.stop("chave removida")
-                },
-                danger = true,
-            )
-        }
-        if (iidbStatus.isNotBlank()) {
-            Text(text = iidbStatus, color = GameColors.textDim, fontSize = 12.sp)
-        }
-        Text(
-            text = "Os soundbites são clips curtos fornecidos pela iiDB. São baixados sob demanda para o cache local, não são distribuídos pelo Tandem e não repetem em loop.",
-            color = GameColors.textDim,
-            fontSize = 12.sp,
-        )
-        GameButton(
-            label = "Sobre a iiDB / iiSU",
-            onClick = { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://iisu.network/wiki/iidb-developers"))) },
-        )
-                }
-                SettingsCategory.CONTROLS -> {
-SettingsSection("Controles virtuais")
-        SettingsSwitchRow(
-            label = "Exibir controles na tela durante os jogos",
-            checked = virtualGamepadEnabled,
-            onToggle = {
-                virtualGamepadEnabled = !virtualGamepadEnabled
-                GameModeSettings.setVirtualGamepadEnabled(context, virtualGamepadEnabled)
-            },
-        )
-        SettingsSwitchRow(
-            label = "Ocultar quando conectar controle físico",
-            checked = virtualGamepadAutoHide,
-            onToggle = {
-                virtualGamepadAutoHide = !virtualGamepadAutoHide
-                GameModeSettings.setVirtualGamepadAutoHideEnabled(context, virtualGamepadAutoHide)
-            },
-        )
-        Text("Opacidade: ${(virtualGamepadOpacity * 100).toInt()}%", color = GameColors.textDim, fontSize = 13.sp)
-        Slider(
-            value = virtualGamepadOpacity,
-            onValueChange = {
-                virtualGamepadOpacity = it
-                GameModeSettings.setVirtualGamepadOpacity(context, it)
-            },
-            valueRange = 0.25f..1f,
-        )
-        Text("Tamanho: ${(virtualGamepadScale * 100).toInt()}%", color = GameColors.textDim, fontSize = 13.sp)
-        Slider(
-            value = virtualGamepadScale,
-            onValueChange = {
-                virtualGamepadScale = it
-                GameModeSettings.setVirtualGamepadScale(context, it)
-            },
-            valueRange = 0.7f..1.3f,
-        )
-        Text("Posição horizontal: ${(virtualGamepadOffsetX * 100).toInt()}%", color = GameColors.textDim, fontSize = 13.sp)
-        Slider(
-            value = virtualGamepadOffsetX,
-            onValueChange = {
-                virtualGamepadOffsetX = it
-                GameModeSettings.setVirtualGamepadOffsetX(context, it)
-            },
-            valueRange = -0.08f..0.08f,
-        )
-        Text("Posição vertical: ${(virtualGamepadOffsetY * 100).toInt()}%", color = GameColors.textDim, fontSize = 13.sp)
-        Slider(
-            value = virtualGamepadOffsetY,
-            onValueChange = {
-                virtualGamepadOffsetY = it
-                GameModeSettings.setVirtualGamepadOffsetY(context, it)
-            },
-            valueRange = -0.08f..0.08f,
-        )
-        Text(
-            "As alterações são salvas automaticamente e aplicadas na próxima sessão de jogo. O layout mantém dois analógicos independentes.",
-            color = GameColors.textDim,
-            fontSize = 12.sp,
-        )
 
-SettingsSection(stringResource(R.string.game_mode_section_interface))
-        SettingsSwitchRow(label = stringResource(R.string.game_mode_auto_enter), checked = autoEnter, onToggle = toggleAuto)
-        SettingsSwitchRow(label = stringResource(R.string.game_mode_sound), checked = sound, onToggle = toggleSound)
-        SettingsSwitchRow(label = stringResource(R.string.game_theme_music_toggle), checked = themeMusic, onToggle = toggleThemeMusic)
-        SettingsSwitchRow(label = stringResource(R.string.game_theme_music_auto_details), checked = autoThemeMusicOnDetails, onToggle = toggleAutoThemeMusicOnDetails)
-        Text(
-            text = stringResource(R.string.game_theme_music_note),
-            color = GameColors.textDim,
-            fontSize = 12.sp,
-        )
+                SettingsCategory.MEDIA -> {
+                    SettingsSection("iiDB — soundbites")
+                    Text(
+                        text = if (apiKeyConfigured) "Chave da iiDB configurada e protegida pelo Android Keystore." else "Informe sua chave pessoal da iiDB. Ela não será incluída no APK nem enviada aos servidores de assets.",
+                        color = GameColors.textDim,
+                        fontSize = 12.sp,
+                    )
+                    OutlinedTextField(
+                        value = apiKeyInput,
+                        onValueChange = { apiKeyInput = it },
+                        modifier = Modifier.fillMaxWidth(),
+                        label = { Text("Chave de API iiDB") },
+                        singleLine = true,
+                        visualTransformation = PasswordVisualTransformation(),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                    )
+                    GameButton(
+                        label = if (checkingIidb) "Validando chave…" else "Validar e salvar chave",
+                        onClick = {
+                            if (apiKeyInput.isBlank() || checkingIidb) {
+                                iidbStatus = "Informe uma chave válida."
+                            } else {
+                                checkingIidb = true
+                                iidbStatus = "Verificando acesso à iiDB…"
+                                val candidate = apiKeyInput
+                                scope.launch {
+                                    val result = withContext(Dispatchers.IO) { IidbSoundbites.checkAccess(candidate) }
+                                    if (result == IidbSoundbites.AccessResult.VALID) {
+                                        val saved = runCatching { withContext(Dispatchers.IO) { IidbKeyStore.save(context, candidate) } }.isSuccess
+                                        if (saved) {
+                                            apiKeyConfigured = true
+                                            apiKeyInput = ""
+                                            iidbStatus = "Chave validada e salva com segurança."
+                                        } else {
+                                            iidbStatus = "A chave foi validada, mas não pôde ser protegida neste aparelho."
+                                        }
+                                    } else {
+                                        iidbStatus = when (result) {
+                                            IidbSoundbites.AccessResult.INVALID_KEY -> "A iiDB rejeitou a chave. Confira e tente novamente."
+                                            IidbSoundbites.AccessResult.DENIED -> "A chave não tem permissão para acessar a API."
+                                            else -> "Não foi possível validar. Verifique a conexão e tente novamente."
+                                        }
+                                    }
+                                    checkingIidb = false
+                                }
+                            }
+                        },
+                        primary = true,
+                        enabled = !checkingIidb,
+                    )
+                    if (apiKeyConfigured) {
+                        GameButton(
+                            label = "Remover chave da iiDB",
+                            onClick = {
+                                IidbKeyStore.clear(context)
+                                apiKeyConfigured = false
+                                apiKeyInput = ""
+                                iidbStatus = "Chave removida."
+                                GameThemeMusic.stop("chave removida")
+                            },
+                            danger = true,
+                        )
+                    }
+                    if (iidbStatus.isNotBlank()) {
+                        Text(text = iidbStatus, color = GameColors.textDim, fontSize = 12.sp)
+                    }
+                    Text(
+                        text = "Os soundbites são clips curtos fornecidos pela iiDB. São baixados sob demanda para o cache local, não são distribuídos pelo Tandem e não repetem em loop.",
+                        color = GameColors.textDim,
+                        fontSize = 12.sp,
+                    )
+                    GameButton(
+                        label = "Sobre a iiDB / iiSU",
+                        onClick = { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://iisu.network/wiki/iidb-developers"))) },
+                    )
                 }
+
+                SettingsCategory.CONTROLS -> {
+                    SettingsSection("Controles virtuais")
+                    SettingsSwitchRow(
+                        label = "Exibir controles na tela durante os jogos",
+                        checked = virtualGamepadEnabled,
+                        onToggle = {
+                            virtualGamepadEnabled = !virtualGamepadEnabled
+                            GameModeSettings.setVirtualGamepadEnabled(context, virtualGamepadEnabled)
+                        },
+                    )
+                    SettingsSwitchRow(
+                        label = "Ocultar quando conectar controle físico",
+                        checked = virtualGamepadAutoHide,
+                        onToggle = {
+                            virtualGamepadAutoHide = !virtualGamepadAutoHide
+                            GameModeSettings.setVirtualGamepadAutoHideEnabled(context, virtualGamepadAutoHide)
+                        },
+                    )
+                    Text("Opacidade: ${(virtualGamepadOpacity * 100).toInt()}%", color = GameColors.textDim, fontSize = 13.sp)
+                    Slider(
+                        value = virtualGamepadOpacity,
+                        onValueChange = {
+                            virtualGamepadOpacity = it
+                            GameModeSettings.setVirtualGamepadOpacity(context, it)
+                        },
+                        valueRange = 0.25f..1f,
+                    )
+                    Text("Tamanho: ${(virtualGamepadScale * 100).toInt()}%", color = GameColors.textDim, fontSize = 13.sp)
+                    Slider(
+                        value = virtualGamepadScale,
+                        onValueChange = {
+                            virtualGamepadScale = it
+                            GameModeSettings.setVirtualGamepadScale(context, it)
+                        },
+                        valueRange = 0.7f..1.3f,
+                    )
+                    Text("Posição horizontal: ${(virtualGamepadOffsetX * 100).toInt()}%", color = GameColors.textDim, fontSize = 13.sp)
+                    Slider(
+                        value = virtualGamepadOffsetX,
+                        onValueChange = {
+                            virtualGamepadOffsetX = it
+                            GameModeSettings.setVirtualGamepadOffsetX(context, it)
+                        },
+                        valueRange = -0.08f..0.08f,
+                    )
+                    Text("Posição vertical: ${(virtualGamepadOffsetY * 100).toInt()}%", color = GameColors.textDim, fontSize = 13.sp)
+                    Slider(
+                        value = virtualGamepadOffsetY,
+                        onValueChange = {
+                            virtualGamepadOffsetY = it
+                            GameModeSettings.setVirtualGamepadOffsetY(context, it)
+                        },
+                        valueRange = -0.08f..0.08f,
+                    )
+                    Text(
+                        "As alterações são salvas automaticamente e aplicadas na próxima sessão de jogo. O layout mantém dois analógicos independentes.",
+                        color = GameColors.textDim,
+                        fontSize = 12.sp,
+                    )
+
+                    SettingsSection(stringResource(R.string.game_mode_section_interface))
+                    SettingsSwitchRow(label = stringResource(R.string.game_mode_auto_enter), checked = autoEnter, onToggle = toggleAuto)
+                    SettingsSwitchRow(label = stringResource(R.string.game_mode_sound), checked = sound, onToggle = toggleSound)
+                    SettingsSwitchRow(label = stringResource(R.string.game_theme_music_toggle), checked = themeMusic, onToggle = toggleThemeMusic)
+                    SettingsSwitchRow(label = stringResource(R.string.game_theme_music_auto_details), checked = autoThemeMusicOnDetails, onToggle = toggleAutoThemeMusicOnDetails)
+                    Text(
+                        text = stringResource(R.string.game_theme_music_note),
+                        color = GameColors.textDim,
+                        fontSize = 12.sp,
+                    )
+                }
+
                 SettingsCategory.SYSTEM -> {
-SettingsSection(stringResource(R.string.game_mode_section_other))
-        GameButton(stringResource(R.string.game_log_export), rememberLogExporter())
-        GameButton(stringResource(R.string.game_mode_exit), onExit, danger = true)
-        Box(modifier = Modifier.height(12.dp))
+                    SettingsSection(stringResource(R.string.game_mode_section_other))
+                    GameButton(stringResource(R.string.game_log_export), rememberLogExporter())
+                    GameButton(stringResource(R.string.game_mode_exit), onExit, danger = true)
+                    Box(modifier = Modifier.height(12.dp))
                 }
+
                 null -> Unit
             }
         }
