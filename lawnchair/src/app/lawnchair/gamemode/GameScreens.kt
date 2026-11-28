@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
@@ -986,17 +987,27 @@ internal fun GameDetailScreen(
                 ),
             ),
         )
-        Row(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(horizontal = 32.dp, vertical = 12.dp),
-            horizontalArrangement = Arrangement.spacedBy(28.dp),
-        ) {
-            CoverTile(entry.cover, modifier = Modifier.size(width = 150.dp, height = 200.dp).clip(RoundedCornerShape(14.dp)))
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.verticalScroll(rememberScrollState())) {
+        BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+            val compactLayout = maxWidth < 680.dp
+            Row(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = if (compactLayout) 16.dp else 32.dp, vertical = 12.dp),
+                horizontalArrangement = Arrangement.spacedBy(if (compactLayout) 12.dp else 28.dp),
+            ) {
+                if (!compactLayout) {
+                    CoverTile(entry.cover, modifier = Modifier.size(width = 150.dp, height = 200.dp).clip(RoundedCornerShape(14.dp)))
+                }
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.weight(1f).verticalScroll(rememberScrollState()),
+                ) {
+                    if (compactLayout) {
+                        CoverTile(entry.cover, modifier = Modifier.size(width = 104.dp, height = 138.dp).clip(RoundedCornerShape(12.dp)))
+                    }
                 Text(text = entry.platform.name.uppercase(), color = GameColors.textDim, fontSize = 12.sp)
                 Text(text = entry.title, color = GameColors.text, fontSize = 26.sp, fontWeight = FontWeight.Bold, maxLines = 3)
-                Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.padding(top = 4.dp)) {
+                Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.padding(top = 4.dp).horizontalScroll(rememberScrollState())) {
                     when {
                         local != null -> GameButton(
                             label = stringResource(R.string.game_play),
@@ -1375,7 +1386,7 @@ internal fun GameDetailScreen(
                     if (!summary.isNullOrBlank()) {
                         Column(
                             verticalArrangement = Arrangement.spacedBy(5.dp),
-                            modifier = Modifier.padding(top = 8.dp).width(520.dp),
+                            modifier = Modifier.padding(top = 8.dp).fillMaxWidth().widthIn(max = 520.dp),
                         ) {
                             Text("Descrição", color = GameColors.text, fontSize = 16.sp, fontWeight = FontWeight.Bold)
                             Text(
@@ -1413,7 +1424,7 @@ internal fun GameDetailScreen(
                         RomMMediaPanel(games = detailGames)
                     }
                     if (metadataText.isNotBlank()) {
-                        Column(verticalArrangement = Arrangement.spacedBy(3.dp), modifier = Modifier.padding(top = 8.dp).width(520.dp)) {
+                        Column(verticalArrangement = Arrangement.spacedBy(3.dp), modifier = Modifier.padding(top = 8.dp).fillMaxWidth().widthIn(max = 520.dp)) {
                             Text("Metadados do RomM", color = GameColors.text, fontSize = 16.sp, fontWeight = FontWeight.Bold)
                             Text(metadataText, color = GameColors.textDim, fontSize = 12.sp)
                         }
@@ -1489,6 +1500,7 @@ internal fun GameDetailScreen(
                     local?.let { Text(text = it.path, color = GameColors.textDim, fontSize = 12.sp, modifier = Modifier.padding(top = 8.dp)) }
                 }
             }
+            }
         }
         achievements?.let { list ->
             if (showAchievements) {
@@ -1502,9 +1514,11 @@ internal fun GameDetailScreen(
         Dialog(onDismissRequest = { if (!saveVersionRestoreLoading) pendingSaveVersionRestore = null }) {
             Column(
                 modifier = Modifier
-                    .width(440.dp)
+                    .fillMaxWidth(0.94f)
+                    .widthIn(max = 440.dp)
                     .background(GameColors.backgroundTop, RoundedCornerShape(14.dp))
-                    .padding(24.dp),
+                    .padding(24.dp)
+                    .verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 Text("Restaurar versão de SRAM?", color = GameColors.text, fontSize = 20.sp, fontWeight = FontWeight.Bold)
@@ -1751,7 +1765,7 @@ internal fun SettingsScreen(
             .verticalScroll(rememberScrollState())
             .padding(horizontal = 24.dp, vertical = 4.dp)
             .onShortcutKey(Key.ButtonB) { if (selectedCategory != null) selectedCategory = null }
-            .width(520.dp),
+            .fillMaxWidth().widthIn(max = 520.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         if (selectedCategory == null) {
