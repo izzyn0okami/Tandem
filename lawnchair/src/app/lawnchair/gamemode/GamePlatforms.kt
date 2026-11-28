@@ -223,7 +223,7 @@ object GamePlatforms {
             slug = "nds",
             name = "Nintendo DS",
             coreId = "melonds_ds",
-            extensions = setOf("nds"),
+            extensions = setOf("nds", "ids"),
             folderAliases = setOf("nds", "ds", "nintendods"),
             sortOrder = 33,
             raConsoleId = 18,
@@ -982,6 +982,6 @@ object GamePlatforms {
                 }
             }
         }
-        return if (ext == "nds") bySlug("nds") else all.singleOrNull { ext in it.extensions }
+        return if (ext == "nds" || ext == "ids") bySlug("nds") else all.singleOrNull { ext in it.extensions }
     }
 }
