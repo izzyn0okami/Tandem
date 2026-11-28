@@ -29,7 +29,7 @@ import kotlinx.coroutines.launch
 
 /** Escolha das pastas de BIOS, saves e imagens (capas e outros dados de scrapers). */
 @Composable
-internal fun FoldersScreen() {
+internal fun FoldersScreen(onBack: () -> Unit) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     var tick by remember { mutableIntStateOf(0) }
@@ -61,7 +61,7 @@ internal fun FoldersScreen() {
         modifier = Modifier.fillMaxSize().padding(horizontal = 24.dp, vertical = 4.dp),
         verticalArrangement = Arrangement.spacedBy(6.dp),
     ) {
-        Text(stringResource(R.string.game_folders_title), color = GameColors.text, fontSize = 20.sp, fontWeight = FontWeight.Bold)
+        GameScreenHeader(stringResource(R.string.game_folders_title), onBack)
         Text(stringResource(R.string.game_folders_note), color = GameColors.textDim, fontSize = 12.sp)
         if (message.isNotEmpty()) Text(message, color = GameColors.textDim, fontSize = 12.sp, maxLines = 3)
         LazyColumn(verticalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxSize()) {

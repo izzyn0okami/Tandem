@@ -28,8 +28,14 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -171,6 +177,7 @@ private data class ScreenState(val key: String, val depth: Int)
 private fun GameModeRoot(refreshKey: Int, onExit: () -> Unit) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
+    val snackbarHostState = remember { SnackbarHostState() }
     var tab by remember { mutableStateOf(GameTab.Library) }
     var detailKey by remember { mutableStateOf<String?>(null) }
     var status by remember { mutableStateOf("") }
@@ -506,6 +513,19 @@ private fun GameModeRoot(refreshKey: Int, onExit: () -> Unit) {
         }
     }
 
+    LaunchedEffect(status, busy) {
+        if (status.isNotBlank() && !busy) {
+            val message = status
+            snackbarHostState.showSnackbar(message, withDismissAction = true, duration = SnackbarDuration.Short)
+            if (status == message) status = ""
+        }
+    }
+    LaunchedEffect(remote.error) {
+        if (remote.error.isNotBlank()) {
+            snackbarHostState.showSnackbar(remote.error, withDismissAction = true, duration = SnackbarDuration.Long)
+        }
+    }
+
     val needsAccess = !hasAccess && !GameLibrarySettings.isInsideApp(context, rootPath)
 
     val selectTab: (GameTab) -> Unit = {
@@ -517,182 +537,171 @@ private fun GameModeRoot(refreshKey: Int, onExit: () -> Unit) {
         showScraper = false
         showServer = false
     }
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .onStepKeys(Key.ButtonL1, Key.ButtonR1) { step ->
-                if (detail == null) selectTab(cycle(GameTab.entries, tab, step))
+    Box(modifier = Modifier.fillMaxSize()) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .onStepKeys(Key.ButtonL1, Key.ButtonR1) { step ->
+                    if (detail == null) selectTab(cycle(GameTab.entries, tab, step))
+                }
+                .background(Brush.verticalGradient(listOf(GameColors.backgroundTop, GameColors.background)))
+                .windowInsetsPadding(WindowInsets.safeDrawing),
+        ) {
+            val current = detail
+            if (current == null) {
+                TopBar(
+                    selected = tab,
+                    onSelect = selectTab,
+                )
             }
-            .background(Brush.verticalGradient(listOf(GameColors.backgroundTop, GameColors.background)))
-            .windowInsetsPadding(WindowInsets.safeDrawing),
-    ) {
-        val current = detail
-        if (current == null) {
-            TopBar(
-                selected = tab,
-                onSelect = selectTab,
-            )
-        }
-        val subScreen = showBios || showEmulators || showFolders || showCores || showScraper || showServer
-        val depth = if (current != null || subScreen) 1 else 0
-        val screenKey = when {
-            current != null -> "detail:${current.key}"
-            tab == GameTab.Settings && showBios -> "bios"
-            tab == GameTab.Settings && showEmulators -> "emulators"
-            tab == GameTab.Settings && showFolders -> "folders"
-            tab == GameTab.Settings && showCores -> "cores"
-            tab == GameTab.Settings && showScraper -> "scraper"
-            tab == GameTab.Settings && showServer -> "server"
-            else -> "tab:${tab.name}"
-        }
-        Box(modifier = Modifier.weight(1f)) {
-            AnimatedContent(
-                targetState = ScreenState(screenKey, depth),
-                transitionSpec = {
+            val subScreen = showBios || showEmulators || showFolders || showCores || showScraper || showServer
+            val depth = if (current != null || subScreen) 1 else 0
+            val screenKey = when {
+                current != null -> "detail:${current.key}"
+                tab == GameTab.Settings && showBios -> "bios"
+                tab == GameTab.Settings && showEmulators -> "emulators"
+                tab == GameTab.Settings && showFolders -> "folders"
+                tab == GameTab.Settings && showCores -> "cores"
+                tab == GameTab.Settings && showScraper -> "scraper"
+                tab == GameTab.Settings && showServer -> "server"
+                else -> "tab:${tab.name}"
+            }
+            Box(modifier = Modifier.weight(1f)) {
+                AnimatedContent(
+                    targetState = ScreenState(screenKey, depth),
+                    transitionSpec = {
+                        when {
+                            targetState.depth > initialState.depth ->
+                                (slideInHorizontally(tween(220)) { it / 4 } + fadeIn(tween(220)))
+                                    .togetherWith(slideOutHorizontally(tween(220)) { -it / 8 } + fadeOut(tween(150)))
+
+                            targetState.depth < initialState.depth ->
+                                (slideInHorizontally(tween(220)) { -it / 4 } + fadeIn(tween(220)))
+                                    .togetherWith(slideOutHorizontally(tween(220)) { it / 8 } + fadeOut(tween(150)))
+
+                            else -> fadeIn(tween(180)).togetherWith(fadeOut(tween(140)))
+                        }
+                    },
+                    label = "gameScreen",
+                ) { targetScreen ->
+                    val targetDetail = targetScreen.key
+                        .takeIf { it.startsWith("detail:") }
+                        ?.removePrefix("detail:")
+                        ?.let { key -> entries.firstOrNull { it.key == key } }
                     when {
-                        targetState.depth > initialState.depth ->
-                            (slideInHorizontally(tween(220)) { it / 4 } + fadeIn(tween(220)))
-                                .togetherWith(slideOutHorizontally(tween(220)) { -it / 8 } + fadeOut(tween(150)))
+                        targetDetail != null -> GameDetailScreen(
+                            entry = targetDetail,
+                            progress = remote.progress,
+                            syncVersion = refreshKey,
+                            busy = busy,
+                            onPlay = { play(it) },
+                            onLoad = { play(it, loadState = true) },
+                            onDownload = { remote.download(it, File(rootPath)) { scanTick++ } },
+                            onBack = { detailKey = null },
+                        )
 
-                        targetState.depth < initialState.depth ->
-                            (slideInHorizontally(tween(220)) { -it / 4 } + fadeIn(tween(220)))
-                                .togetherWith(slideOutHorizontally(tween(220)) { it / 8 } + fadeOut(tween(150)))
-
-                        else -> fadeIn(tween(180)).togetherWith(fadeOut(tween(140)))
-                    }
-                },
-                label = "gameScreen",
-            ) { targetScreen ->
-                val targetDetail = targetScreen.key
-                    .takeIf { it.startsWith("detail:") }
-                    ?.removePrefix("detail:")
-                    ?.let { key -> entries.firstOrNull { it.key == key } }
-                when {
-                    targetDetail != null -> GameDetailScreen(
-                        entry = targetDetail,
-                        progress = remote.progress,
-                        syncVersion = refreshKey,
-                        busy = busy,
-                        onPlay = { play(it) },
-                        onLoad = { play(it, loadState = true) },
-                        onDownload = { remote.download(it, File(rootPath)) { scanTick++ } },
-                        onBack = { detailKey = null },
-                    )
-
-                    targetScreen.key == "tab:Library" -> LibraryScreen(
-                        games = games,
-                        entries = entries,
-                        androidGames = androidGames,
-                        progress = remote.progress,
-                        version = version,
-                        syncVersion = refreshKey,
-                        busy = busy,
-                        onPlay = { play(it) },
-                        onOpen = { detailKey = it.key },
-                        onLaunchAndroid = { game ->
-                            if (!AndroidGames.launch(context, game)) {
-                                status = context.getString(R.string.game_mode_status_error, game.title)
-                            }
-                        },
-                        onRefresh = {
-                            scanTick++
-                            remote.requestRefresh()
-                        },
-                    )
-
-                    targetScreen.key == "bios" -> BiosScreen(rootPath = rootPath)
-
-                    targetScreen.key == "emulators" -> EmulatorsScreen()
-
-                    targetScreen.key == "folders" -> FoldersScreen()
-
-                    targetScreen.key == "cores" -> CoresScreen()
-
-                    targetScreen.key == "scraper" -> ScraperScreen()
-
-                    targetScreen.key == "server" -> ServerScreen(remote)
-
-                    targetScreen.key == "tab:Music" -> RomMMusicScreen()
-
-                    targetScreen.key == "tab:Settings" -> SettingsScreen(
-                        rootPath = rootPath,
-                        needsAccess = needsAccess,
-                        busy = busy,
-                        onChooseFolder = { folderPicker.launch(null) },
-                        onRefresh = { scanTick++ },
-                        onGrantAccess = { context.startActivity(StorageAccess.settingsIntent(context)) },
-                        onPickRom = { romPicker.launch(arrayOf("*/*")) },
-                        onOpenBios = { showBios = true },
-                        onOpenEmulators = { showEmulators = true },
-                        onOpenFolders = { showFolders = true },
-                        onOpenCores = { showCores = true },
-                        onOpenScraper = { showScraper = true },
-                        onOpenServer = { showServer = true },
-                        preferVulkan = preferVulkan,
-                        externalVulkanDriverEnabled = externalVulkanDriverEnabled,
-                        vulkanDriverLabel = vulkanDriverLabel,
-                        vulkanDriverStatus = vulkanDriverStatus,
-                        onTogglePreferVulkan = {
-                            preferVulkan = !preferVulkan
-                            GameModeSettings.setVulkanPreferred(context, preferVulkan)
-                        },
-                        onToggleExternalVulkanDriver = {
-                            externalVulkanDriverEnabled = !externalVulkanDriverEnabled
-                            GameModeSettings.setExternalVulkanDriverEnabled(context, externalVulkanDriverEnabled)
-                        },
-                        onImportVulkanDriver = {
-                            vulkanDriverPicker.launch(arrayOf("application/zip", "application/x-zip-compressed"))
-                        },
-                        onRemoveVulkanDriver = {
-                            runCatching {
-                                val importedId = AdrenoToolsDriverManager.installedIdFor(context, GameModeSettings.vulkanDriver(context))
-                                if (importedId != null) {
-                                    AdrenoToolsDriverManager.removePackage(context, importedId)
-                                } else {
-                                    VulkanDriverManager.remove(context)
+                        targetScreen.key == "tab:Library" -> LibraryScreen(
+                            games = games,
+                            entries = entries,
+                            androidGames = androidGames,
+                            progress = remote.progress,
+                            version = version,
+                            syncVersion = refreshKey,
+                            busy = busy,
+                            onPlay = { play(it) },
+                            onOpen = { detailKey = it.key },
+                            onLaunchAndroid = { game ->
+                                if (!AndroidGames.launch(context, game)) {
+                                    status = context.getString(R.string.game_mode_status_error, game.title)
                                 }
-                                GameModeSettings.setVulkanDriver(context, null)
-                                GameModeSettings.setExternalVulkanDriverEnabled(context, false)
-                                externalVulkanDriverEnabled = false
-                                vulkanDriverLabel = null
-                                vulkanDriverStatus = "Driver externo removido. O driver do Android será usado."
-                            }.onFailure { error ->
-                                vulkanDriverStatus = error.message ?: "Não foi possível remover o driver."
-                            }
-                        },
-                        onExit = onExit,
-                    )
+                            },
+                            onRefresh = {
+                                scanTick++
+                                remote.requestRefresh()
+                            },
+                        )
 
-                    else -> AchievementsScreen()
+                        targetScreen.key == "bios" -> BiosScreen(rootPath = rootPath, onBack = { showBios = false })
+
+                        targetScreen.key == "emulators" -> EmulatorsScreen(onBack = { showEmulators = false })
+
+                        targetScreen.key == "folders" -> FoldersScreen(onBack = { showFolders = false })
+
+                        targetScreen.key == "cores" -> CoresScreen(onBack = { showCores = false })
+
+                        targetScreen.key == "scraper" -> ScraperScreen(onBack = { showScraper = false })
+
+                        targetScreen.key == "server" -> ServerScreen(remote, onBack = { showServer = false })
+
+                        targetScreen.key == "tab:Music" -> RomMMusicScreen()
+
+                        targetScreen.key == "tab:Settings" -> SettingsScreen(
+                            rootPath = rootPath,
+                            needsAccess = needsAccess,
+                            busy = busy,
+                            onChooseFolder = { folderPicker.launch(null) },
+                            onRefresh = { scanTick++ },
+                            onGrantAccess = { context.startActivity(StorageAccess.settingsIntent(context)) },
+                            onPickRom = { romPicker.launch(arrayOf("*/*")) },
+                            onOpenBios = { showBios = true },
+                            onOpenEmulators = { showEmulators = true },
+                            onOpenFolders = { showFolders = true },
+                            onOpenCores = { showCores = true },
+                            onOpenScraper = { showScraper = true },
+                            onOpenServer = { showServer = true },
+                            preferVulkan = preferVulkan,
+                            externalVulkanDriverEnabled = externalVulkanDriverEnabled,
+                            vulkanDriverLabel = vulkanDriverLabel,
+                            vulkanDriverStatus = vulkanDriverStatus,
+                            onTogglePreferVulkan = {
+                                preferVulkan = !preferVulkan
+                                GameModeSettings.setVulkanPreferred(context, preferVulkan)
+                            },
+                            onToggleExternalVulkanDriver = {
+                                externalVulkanDriverEnabled = !externalVulkanDriverEnabled
+                                GameModeSettings.setExternalVulkanDriverEnabled(context, externalVulkanDriverEnabled)
+                            },
+                            onImportVulkanDriver = {
+                                vulkanDriverPicker.launch(arrayOf("application/zip", "application/x-zip-compressed"))
+                            },
+                            onRemoveVulkanDriver = {
+                                runCatching {
+                                    val importedId = AdrenoToolsDriverManager.installedIdFor(context, GameModeSettings.vulkanDriver(context))
+                                    if (importedId != null) {
+                                        AdrenoToolsDriverManager.removePackage(context, importedId)
+                                    } else {
+                                        VulkanDriverManager.remove(context)
+                                    }
+                                    GameModeSettings.setVulkanDriver(context, null)
+                                    GameModeSettings.setExternalVulkanDriverEnabled(context, false)
+                                    externalVulkanDriverEnabled = false
+                                    vulkanDriverLabel = null
+                                    vulkanDriverStatus = "Driver externo removido. O driver do Android será usado."
+                                }.onFailure { error ->
+                                    vulkanDriverStatus = error.message ?: "Não foi possível remover o driver."
+                                }
+                            },
+                            onExit = onExit,
+                        )
+
+                        else -> AchievementsScreen()
+                    }
                 }
             }
+            if (remote.refreshing) {
+                Text(
+                    text = stringResource(R.string.game_romm_updating),
+                    color = GameColors.textDim,
+                    fontSize = 12.sp,
+                    modifier = Modifier.padding(horizontal = 24.dp, vertical = 2.dp),
+                )
+            }
+            HintBar(inDetail = current != null, tab = tab)
         }
-        if (remote.refreshing) {
-            Text(
-                text = stringResource(R.string.game_romm_updating),
-                color = GameColors.textDim,
-                fontSize = 12.sp,
-                modifier = Modifier.padding(horizontal = 24.dp, vertical = 2.dp),
-            )
-        }
-        if (remote.error.isNotEmpty()) {
-            Text(
-                text = remote.error,
-                color = GameColors.danger,
-                fontSize = 12.sp,
-                maxLines = 2,
-                modifier = Modifier.padding(horizontal = 24.dp, vertical = 2.dp),
-            )
-        }
-        if (status.isNotEmpty()) {
-            Text(
-                text = status,
-                color = GameColors.textDim,
-                fontSize = 12.sp,
-                modifier = Modifier.padding(horizontal = 24.dp, vertical = 4.dp),
-            )
-        }
-        HintBar(inDetail = current != null, tab = tab)
+        SnackbarHost(
+            hostState = snackbarHostState,
+            modifier = Modifier.align(Alignment.BottomCenter).padding(16.dp),
+        )
     }
     pendingSaveSync?.let { pending ->
         SaveSyncFailureDialog(
@@ -745,9 +754,11 @@ private fun SaveSyncFailureDialog(
     ) {
         Column(
             modifier = Modifier
-                .width(520.dp)
+                .fillMaxWidth(0.94f)
+                .widthIn(max = 520.dp)
                 .background(GameColors.backgroundTop, RoundedCornerShape(14.dp))
-                .padding(28.dp),
+                .padding(28.dp)
+                .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             Text(
@@ -798,9 +809,11 @@ private fun LegacySaveClaimDialog(
     ) {
         Column(
             modifier = Modifier
-                .width(520.dp)
+                .fillMaxWidth(0.94f)
+                .widthIn(max = 520.dp)
                 .background(GameColors.backgroundTop, RoundedCornerShape(14.dp))
-                .padding(28.dp),
+                .padding(28.dp)
+                .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             Text(
@@ -847,9 +860,11 @@ private fun SaveConflictDialog(
     ) {
         Column(
             modifier = Modifier
-                .width(560.dp)
+                .fillMaxWidth(0.94f)
+                .widthIn(max = 560.dp)
                 .background(GameColors.backgroundTop, RoundedCornerShape(14.dp))
-                .padding(24.dp),
+                .padding(24.dp)
+                .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
             Text("Conflito de saves: $title", color = GameColors.text, fontSize = 21.sp, fontWeight = FontWeight.Bold)
@@ -898,9 +913,11 @@ private fun PadLostDialog(onStay: () -> Unit, onLeave: () -> Unit) {
     ) {
         Column(
             modifier = Modifier
-                .width(420.dp)
+                .fillMaxWidth(0.94f)
+                .widthIn(max = 420.dp)
                 .background(GameColors.backgroundTop, RoundedCornerShape(14.dp))
-                .padding(28.dp),
+                .padding(28.dp)
+                .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
             Text(stringResource(R.string.game_pad_disconnected_title), color = GameColors.text, fontSize = 22.sp, fontWeight = FontWeight.Bold)
@@ -925,22 +942,32 @@ private fun TopBar(selected: GameTab, onSelect: (GameTab) -> Unit) {
             color = GameColors.text,
             fontSize = 18.sp,
             fontWeight = FontWeight.Bold,
-            modifier = Modifier.padding(end = 12.dp),
+            modifier = Modifier.weight(1f),
         )
-        GameTab.entries.forEach { entry ->
-            FocusSurface(
-                onClick = { onSelect(entry) },
-                background = if (entry == selected) GameColors.surfaceHigh else GameColors.background.copy(alpha = 0f),
-            ) {
-                Text(
-                    text = stringResource(entry.label),
-                    color = if (entry == selected) GameColors.text else GameColors.textDim,
-                    fontSize = 14.sp,
-                    fontWeight = if (entry == selected) FontWeight.SemiBold else FontWeight.Normal,
-                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                )
-            }
-        }
+        GameIconButton(
+            label = stringResource(R.string.game_tab_library),
+            symbol = "▦",
+            selected = selected == GameTab.Library,
+            onClick = { onSelect(GameTab.Library) },
+        )
+        GameIconButton(
+            label = stringResource(R.string.game_tab_music),
+            symbol = "♫",
+            selected = selected == GameTab.Music,
+            onClick = { onSelect(GameTab.Music) },
+        )
+        GameIconButton(
+            label = stringResource(R.string.game_tab_achievements),
+            symbol = "🏆",
+            selected = selected == GameTab.Achievements,
+            onClick = { onSelect(GameTab.Achievements) },
+        )
+        GameIconButton(
+            label = stringResource(R.string.game_tab_settings),
+            symbol = "⚙",
+            selected = selected == GameTab.Settings,
+            onClick = { onSelect(GameTab.Settings) },
+        )
     }
 }
 

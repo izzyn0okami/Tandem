@@ -145,17 +145,17 @@ internal fun AchievementOverlay(achievement: RaAchievement, hardcore: Boolean, o
             ) {
                 Row(
                     modifier = Modifier
-                        .widthIn(max = minOf(440.dp, availableWidth * 0.52f))
+                        .widthIn(max = minOf(340.dp, availableWidth * 0.40f))
                         .shadow(18.dp, RoundedCornerShape(14.dp))
                         .background(GameColors.panel, RoundedCornerShape(14.dp))
-                        .padding(12.dp),
-                    horizontalArrangement = Arrangement.spacedBy(13.dp),
+                        .padding(9.dp),
+                    horizontalArrangement = Arrangement.spacedBy(9.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Box(
                         modifier = Modifier
                             .width(4.dp)
-                            .height(64.dp)
+                            .height(44.dp)
                             .clip(RoundedCornerShape(4.dp))
                             .background(GameColors.accent),
                     )
@@ -164,7 +164,7 @@ internal fun AchievementOverlay(achievement: RaAchievement, hardcore: Boolean, o
                             bitmap = icon!!,
                             contentDescription = null,
                             contentScale = ContentScale.Crop,
-                            modifier = Modifier.size(56.dp).clip(RoundedCornerShape(9.dp)),
+                            modifier = Modifier.size(42.dp).clip(RoundedCornerShape(9.dp)),
                         )
                     } else {
                         Box(
@@ -187,7 +187,7 @@ internal fun AchievementOverlay(achievement: RaAchievement, hardcore: Boolean, o
                         Text(
                             text = achievement.title,
                             color = GameColors.text,
-                            fontSize = 15.sp,
+                            fontSize = 13.sp,
                             fontWeight = FontWeight.SemiBold,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
@@ -196,7 +196,7 @@ internal fun AchievementOverlay(achievement: RaAchievement, hardcore: Boolean, o
                             Text(
                                 text = achievement.description,
                                 color = GameColors.textDim,
-                                fontSize = 12.sp,
+                                fontSize = 10.sp,
                                 maxLines = 2,
                                 overflow = TextOverflow.Ellipsis,
                             )
@@ -382,10 +382,10 @@ internal fun GameMessageOverlay(message: String, onDismiss: () -> Unit) {
             AnimatedVisibility(visible = visible, enter = fadeIn(), exit = fadeOut()) {
                 Column(
                     modifier = Modifier
-                        .widthIn(max = minOf(420.dp, availableWidth * 0.62f))
+                        .widthIn(max = minOf(340.dp, availableWidth * 0.45f))
                         .shadow(10.dp, RoundedCornerShape(10.dp))
                         .background(GameColors.panel, RoundedCornerShape(10.dp))
-                        .padding(horizontal = 14.dp, vertical = 10.dp),
+                        .padding(horizontal = 10.dp, vertical = 8.dp),
                     verticalArrangement = Arrangement.spacedBy(3.dp),
                 ) {
                     Text(
@@ -397,7 +397,7 @@ internal fun GameMessageOverlay(message: String, onDismiss: () -> Unit) {
                     Text(
                         text = message,
                         color = GameColors.text,
-                        fontSize = 13.sp,
+                        fontSize = 11.sp,
                         maxLines = 6,
                         overflow = TextOverflow.Ellipsis,
                     )
@@ -440,11 +440,11 @@ internal fun MasteryOverlay(mastery: RaMastery, playtimeLabel: String, userName:
             ) {
                 Row(
                     modifier = Modifier
-                        .widthIn(max = minOf(460.dp, availableWidth * 0.54f))
+                        .widthIn(max = minOf(350.dp, availableWidth * 0.42f))
                         .shadow(20.dp, RoundedCornerShape(16.dp))
                         .background(GameColors.panel, RoundedCornerShape(16.dp))
-                        .padding(14.dp),
-                    horizontalArrangement = Arrangement.spacedBy(14.dp),
+                        .padding(10.dp),
+                    horizontalArrangement = Arrangement.spacedBy(9.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     if (icon != null) {
@@ -452,11 +452,11 @@ internal fun MasteryOverlay(mastery: RaMastery, playtimeLabel: String, userName:
                             bitmap = icon!!,
                             contentDescription = null,
                             contentScale = ContentScale.Crop,
-                            modifier = Modifier.size(64.dp).clip(RoundedCornerShape(10.dp)),
+                            modifier = Modifier.size(44.dp).clip(RoundedCornerShape(8.dp)),
                         )
                     } else {
                         Box(
-                            modifier = Modifier.size(64.dp).clip(RoundedCornerShape(10.dp)).background(GameColors.surfaceHigh),
+                            modifier = Modifier.size(44.dp).clip(RoundedCornerShape(8.dp)).background(GameColors.surfaceHigh),
                             contentAlignment = Alignment.Center,
                         ) {
                             Text("🏆", fontSize = 26.sp)
@@ -479,7 +479,7 @@ internal fun MasteryOverlay(mastery: RaMastery, playtimeLabel: String, userName:
                         Text(
                             text = mastery.title,
                             color = GameColors.text,
-                            fontSize = 17.sp,
+                            fontSize = 14.sp,
                             fontWeight = FontWeight.Bold,
                             maxLines = 2,
                             overflow = TextOverflow.Ellipsis,
@@ -487,7 +487,7 @@ internal fun MasteryOverlay(mastery: RaMastery, playtimeLabel: String, userName:
                         Text(
                             text = stringResource(R.string.game_ra_mastery_subtitle, userName, playtimeLabel),
                             color = GameColors.textDim,
-                            fontSize = 12.sp,
+                            fontSize = 10.sp,
                         )
                     }
                 }

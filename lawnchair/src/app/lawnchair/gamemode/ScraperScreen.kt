@@ -29,7 +29,7 @@ import kotlinx.coroutines.withContext
 
 /** Tela para colar e testar a chave de API do SteamGridDB. */
 @Composable
-internal fun ScraperScreen() {
+internal fun ScraperScreen(onBack: () -> Unit) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     var typed by remember { mutableStateOf("") }
@@ -44,7 +44,7 @@ internal fun ScraperScreen() {
             .padding(horizontal = 24.dp, vertical = 4.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
-        Text(stringResource(R.string.game_sgdb_title), color = GameColors.text, fontSize = 20.sp, fontWeight = FontWeight.SemiBold)
+        GameScreenHeader(stringResource(R.string.game_sgdb_title), onBack)
         Text(stringResource(R.string.game_sgdb_note), color = GameColors.textDim, fontSize = 13.sp)
         if (saved) Text(stringResource(R.string.game_sgdb_saved), color = GameColors.text, fontSize = 14.sp)
         OutlinedTextField(

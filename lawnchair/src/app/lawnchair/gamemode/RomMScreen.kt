@@ -50,7 +50,7 @@ internal fun localNetworkGranted(context: Context): Boolean = Build.VERSION.SDK_
 
 /** Tela do servidor RomM (em Configurações): conectar por aprovação no navegador e gerenciar a conexão. */
 @Composable
-internal fun ServerScreen(remote: RemoteLibrary) {
+internal fun ServerScreen(remote: RemoteLibrary, onBack: () -> Unit) {
     val context = LocalContext.current
     var allowed by remember { mutableStateOf(localNetworkGranted(context)) }
     val request = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { allowed = it }
@@ -58,6 +58,7 @@ internal fun ServerScreen(remote: RemoteLibrary) {
         if (!allowed) runCatching { request.launch(LOCAL_NETWORK_PERMISSION) }
     }
     Column(modifier = Modifier.fillMaxSize()) {
+        GameScreenHeader(stringResource(R.string.game_romm_title), onBack, modifier = Modifier.padding(horizontal = 24.dp, vertical = 4.dp))
         if (!allowed) {
             Column(
                 modifier = Modifier.padding(horizontal = 24.dp, vertical = 4.dp),
@@ -125,7 +126,6 @@ private fun ConnectForm(onConnect: () -> Unit) {
             .padding(horizontal = 24.dp, vertical = 8.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
-        Text(stringResource(R.string.game_romm_title), color = GameColors.text, fontSize = 24.sp, fontWeight = FontWeight.Bold)
         Text(
             stringResource(if (manual) R.string.game_romm_howto else R.string.game_romm_howto_device),
             color = GameColors.textDim,
@@ -231,7 +231,6 @@ private fun PairingWait(pairing: DevicePairing, onApprove: (String, Long) -> Uni
             .padding(horizontal = 24.dp, vertical = 8.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
-        Text(stringResource(R.string.game_romm_title), color = GameColors.text, fontSize = 24.sp, fontWeight = FontWeight.Bold)
         Text(stringResource(R.string.game_romm_pair_code, pairing.userCode), color = GameColors.accent, fontSize = 32.sp, fontWeight = FontWeight.Bold)
         Text(stringResource(R.string.game_romm_pair_steps), color = GameColors.textDim, fontSize = 14.sp)
         Text(pairing.verificationUrl, color = GameColors.textDim, fontSize = 12.sp)
