@@ -28,6 +28,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.SnackbarDuration
@@ -751,9 +754,11 @@ private fun SaveSyncFailureDialog(
     ) {
         Column(
             modifier = Modifier
-                .width(520.dp)
+                .fillMaxWidth(0.94f)
+                .widthIn(max = 520.dp)
                 .background(GameColors.backgroundTop, RoundedCornerShape(14.dp))
-                .padding(28.dp),
+                .padding(28.dp)
+                .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             Text(
@@ -853,9 +858,11 @@ private fun SaveConflictDialog(
     ) {
         Column(
             modifier = Modifier
-                .width(560.dp)
+                .fillMaxWidth(0.94f)
+                .widthIn(max = 560.dp)
                 .background(GameColors.backgroundTop, RoundedCornerShape(14.dp))
-                .padding(24.dp),
+                .padding(24.dp)
+                .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
             Text("Conflito de saves: $title", color = GameColors.text, fontSize = 21.sp, fontWeight = FontWeight.Bold)
@@ -904,9 +911,11 @@ private fun PadLostDialog(onStay: () -> Unit, onLeave: () -> Unit) {
     ) {
         Column(
             modifier = Modifier
-                .width(420.dp)
+                .fillMaxWidth(0.94f)
+                .widthIn(max = 420.dp)
                 .background(GameColors.backgroundTop, RoundedCornerShape(14.dp))
-                .padding(28.dp),
+                .padding(28.dp)
+                .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
             Text(stringResource(R.string.game_pad_disconnected_title), color = GameColors.text, fontSize = 22.sp, fontWeight = FontWeight.Bold)
