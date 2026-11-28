@@ -216,6 +216,14 @@ object CoreRegistry {
                 "Virtual Boy; SRAM de cartucho e save states suportados",
             ),
         ),
+        "dsi" to listOf(
+            core(
+                "melonds_ds",
+                "melonDS DS",
+                "Nintendo DSi; RA suportado; save states indisponíveis no núcleo para este sistema",
+                supportsStates = false,
+            ),
+        ),
         "nds" to listOf(
             core(
                 "melonds_ds",
