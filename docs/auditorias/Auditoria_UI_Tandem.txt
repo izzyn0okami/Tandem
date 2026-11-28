@@ -203,3 +203,16 @@ ATUALIZAÇÃO DE VALIDAÇÃO — 2026-11-28 (HEAD 033a5bcf4ffa918f3559b2541fa10e
 - CI e build automatizado estão concluídos; validação visual/funcional no aparelho continua pendente. Não declarar auditoria encerrada antes do teste do usuário.
 - PR #65 continua aberta em Draft, base game-mode-m2-dev; nenhuma mesclagem foi realizada.
 - Pendências restantes: revisar redundâncias de navegação, terminar a padronização visual da biblioteca/telas auxiliares e validar foco/acessibilidade/layout no Motorola Edge 30 Fusion.
+
+
+ATUALIZAÇÃO DE VALIDAÇÃO — 2026-11-28 (HEAD f49e290b258584dfb91d991b4630116af2d595e2)
+- CI #46098827934 concluída com sucesso no HEAD f49e290b258584dfb91d991b4630116af2d595e2.
+- check-style / Spotless: sucesso; a etapa de formatação e a verificação final concluíram sem falhas.
+- Testes unitários: sucesso.
+- Build assembleLawnWithQuickstepGithubDebug: sucesso.
+- Upload do APK: sucesso. Artefato assembleLawnWithQuickstepGithubDebug, ID 15244292982, tamanho 46.715.523 bytes (aprox. 44,5 MiB / 46,7 MB decimal), SHA-256 3278b588522a90773547ed0055e58ff4c00100328df1c558aa6b70b7f9db6cf0; expira em 2027-02-26.
+- Correção validada: registros com metadados editados manualmente no RomM agora são incluídos na agregação de metadados dos detalhes, mesmo sem conteúdo automático, nomes alternativos ou IDs de provedores.
+- O HEAD da PR permanece f49e290b258584dfb91d991b4630116af2d595e2; não houve commit automático adicional de formatação nesta execução.
+- CI adicional #46098952241, disparada manualmente no mesmo HEAD, também concluiu com sucesso.
+- CI e APK estão validados. Permanecem pendentes a revisão funcional/visual de redundâncias e a validação física no Motorola Edge 30 Fusion (toque, gamepad, metadados, menus de núcleo, popups RA, paisagem e acessibilidade).
+- PR #65 permanece aberta em Draft, base game-mode-m2-dev. Nenhuma mesclagem foi realizada.
