@@ -889,3 +889,68 @@ CORREÇÃO — POLÍTICA DE RESTAURAÇÃO DE SAVE STATES PERSISTIDOS — 2026-11
 
 ## CONCLUSÃO FINAL
 Os três pilares estão integrados e incorporados à branch principal de desenvolvimento, e o HEAD atual passou pela CI completa e foi publicado como tandem-latest build 2074. Não há PR pendente. Isso encerra a etapa de integração/reconciliação dos três pilares, mas não declara compatibilidade universal de todos os cores/firmwares nem implementa funcionalidades explicitamente fora de escopo (save states remotos, WebDAV, eventos em tempo real ou reprodução de música em segundo plano). As pendências acima são melhorias/limites conhecidos e devem ser tratadas em etapas próprias, sem reabrir os estágios concluídos automaticamente.
+
+
+## RETROACHIEVEMENTS — MATRIZ DE COMPATIBILIDADE DE NÚCLEOS (2026-11-27)
+- [x] Criada branch isolada feat/ra-core-compatibility.
+- [x] Implementada allowlist por plataforma + coreId; RA/Hardcore não iniciam com núcleo fora da matriz.
+- [x] PSX e DS receberam Console IDs conhecidos (12 e 18); Beetle PSX tornou-se o núcleo padrão de PSX.
+- [x] Adicionados testes unitários básicos para PSX, DS, NES e plataforma sem Console ID.
+- [ ] Confirmar IDs ativos na API oficial; a documentação exige Web API Key.
+- [ ] CI e revisão de regressões.
+- [ ] Teste físico PSX/DS com jogos reconhecidos.
+- [ ] Resolver casos especiais: Arcade por hash, PC-88, SuperGrafx, Watara e outros sistemas sem mapeamento seguro.
+- Status: EM ANDAMENTO; branch não mesclada.
+
+
+ATUALIZAÇÃO — AUDITORIA RA / CI #2083 (2026-11-27)
+- Resultado CI #2083: falha no job de build/testes por chamada desatualizada de RaSettings.blocksStates em GameScreens.kt:767; Spotless passou.
+- Correção aplicada: chosenCoreId enviado à política de save states, commit a5cd993fe052dc60de3409a23b4882fbe1e8a84c.
+- A CI não gerou APK. Nenhum teste no aparelho foi realizado nesta execução.
+- [ ] Nova CI e build APK.
+- [ ] Validar PSX/DS no aparelho e confirmar IDs pela API oficial.
+- Status da matriz RA: EM ANDAMENTO; não mesclada.
+
+
+ATUALIZAÇÃO 2026-11-27 — CI #2087 / PR #64
+- [CI APROVADA] Workflow run #2087 / 46085298608 concluído com SUCCESS no commit `3f57453b9430ad3c5c7e02751ad072a1836c97b4` da branch `feat/ra-core-compatibility`.
+- [TESTES] `Run unit tests` concluído com sucesso.
+- [ESTILO] Spotless automático, commit/validação de formatação concluídos com sucesso.
+- [BUILD] `assembleLawnWithQuickstepGithubDebug` compilou o APK Debug com sucesso.
+- [ARTEFATO] `assembleLawnWithQuickstepGithubDebug`, ID `15238628418`, tamanho 46.667.041 bytes, SHA-256 `180b6f2a369aef225b1dde1c73a4d2703c47f8ea3f6deefa4ee7f51177441555`; disponível até 25/02/2027. Execução: https://github.com/izzyn0okami/Tandem/actions/runs/46085298608
+- [x] CI automatizada concluída: testes unitários, Spotless, build APK, upload e final-status aprovados.
+- [ ] Validar IDs ativos pela API oficial GetConsoleIDs usando Web API Key.
+- [ ] Testar RA com jogos reconhecidos de PSX e Nintendo DS no Android; a CI não substitui teste físico/online.
+- [ ] Revisar casos especiais da matriz (Arcade/hash, PC-88, SuperGrafx, Watara e demais divergências).
+- [ ] Revisão final da PR #64 e decisão de merge; PR permanece aberta e não mesclada.
+- Status: CI aprovada; implementação ainda não homologada integralmente.
+
+
+ATUALIZAÇÃO 2026-11-27 — CI APÓS ATUALIZAÇÃO DOS LOGS / PR #64
+- [CI APROVADA] Workflow run `46086477622` (execução subsequente à CI #2087) no HEAD `d809a7345ca040c50add6176a751c49c128d6e8f` concluído com sucesso.
+- [TESTES] `Run unit tests`: success.
+- [ESTILO] `Apply Spotless automatically`, `Commit formatting and rerun CI` e `Verify formatting`: success.
+- [BUILD] `assembleLawnWithQuickstepGithubDebug`: success.
+- [ARTEFATO] APK Debug publicado: `assembleLawnWithQuickstepGithubDebug`, artifact ID `15240095052`, tamanho 46.667.099 bytes, SHA-256 `b67001c16fb3f24975ef039e0ea97eb6201daf914e1cc49c5983125c48d934b9`; expira em 26/02/2027. Execução: https://github.com/izzyn0okami/Tandem/actions/runs/46086477622
+- [x] CI completa aprovada no HEAD que contém as três atualizações dos logs.
+- [ ] Confirmar IDs ativos pela API oficial GetConsoleIDs usando Web API Key.
+- [ ] Teste físico/online de RA com jogos reconhecidos de PSX e Nintendo DS no Android.
+- [ ] Revisão final de casos especiais da matriz (Arcade/hash, PC-88, SuperGrafx, Watara e outros).
+- [ ] Revisão e decisão de merge; PR #64 permanece aberta e não mesclada.
+- Estado de merge consultado: mergeable=true; branch-base sem commits pendentes de integração (22 ahead, 0 behind na comparação anterior).
+- Status: CI aprovada; compatibilidade ainda não homologada integralmente.
+
+
+ATUALIZAÇÃO 2026-11-27 — CI #2096 / PR #64
+- [CI APROVADA] Workflow run #2096 / 46088328370, HEAD `75af33161a09f170e074f671bcc9d913004fb0a8`, concluído com SUCCESS.
+- [TESTES] Job de testes unitários concluído com sucesso.
+- [ESTILO] Spotless automático, commit de formatação e verificação final concluídos com sucesso.
+- [BUILD] `assembleLawnWithQuickstepGithubDebug` compilado e enviado como artefato.
+- [ARTEFATO] ID `15240531201`, tamanho 46.666.910 bytes, SHA-256 `f9c7ef04e93d028a6340270b88d865f7e7e19de2b568afddf8cab90f88aa2e6d`; expira em 26/02/2027. Execução: https://github.com/izzyn0okami/Tandem/actions/runs/46088328370
+- [x] CI automatizada completa aprovada (testes, estilo, APK, artefato e final-status).
+- [x] PR #64 consultada: aberta, mergeable=true, 25 commits à frente e 0 atrás da base `game-mode-m2-dev`.
+- [ ] Confirmar Console IDs ativos pela API oficial GetConsoleIDs.
+- [ ] Teste físico/online com jogos reconhecidos de PSX e Nintendo DS; aprovação de CI não substitui teste no aparelho.
+- [ ] Revisar os casos especiais da matriz (Arcade/hash, PC-88, SuperGrafx, Watara e demais divergências).
+- [ ] Revisão final e autorização de merge.
+- Status: CI aprovada; PR aberta e não mesclada; homologação funcional completa ainda pendente.

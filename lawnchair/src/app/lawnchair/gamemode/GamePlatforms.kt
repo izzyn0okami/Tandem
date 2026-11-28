@@ -59,7 +59,7 @@ object GamePlatforms {
             "nes",
             "Nintendo Entertainment System",
             "fceumm",
-            setOf("nes", "unf", "unif", "fds"),
+            setOf("nes", "unf", "unif"),
             setOf("nes", "famicom", "fc"),
             10,
             7,
@@ -67,6 +67,17 @@ object GamePlatforms {
                 BiosFile("disksys.rom", "Famicom Disk System (obrigatório para jogos FDS)", "ca30b50f880eb660a320674ed365ef7a"),
                 BiosFile("gamegenie.nes", "Game Genie (opcional)", "7f98d77d7a094ad7d069b74bd553ec98"),
             ),
+        ),
+        GamePlatform(
+            "fds",
+            "Famicom Disk System",
+            "mesen",
+            setOf("fds"),
+            setOf("fds", "famicomdisksystem"),
+            11,
+            81,
+            bios = listOf(BiosFile("disksys.rom", "Famicom Disk System (obrigatório)", "ca30b50f880eb660a320674ed365ef7a")),
+            biosRequired = true,
         ),
         GamePlatform("snes", "Super Nintendo", "snes9x", setOf("sfc", "smc", "swc", "fig"), setOf("snes", "sfc", "superfamicom", "supernintendo"), 20, 3),
         GamePlatform(
@@ -133,7 +144,7 @@ object GamePlatforms {
             15,
             bios = listOf(BiosFile("bios.gg", "Game Gear BIOS (opcional)", "672e104c3be3a238301aceffc3b23fd6")),
         ),
-        GamePlatform("32x", "Sega 32X", "picodrive", setOf("32x"), setOf("32x", "sega32x"), 43),
+        GamePlatform("32x", "Sega 32X", "picodrive", setOf("32x"), setOf("32x", "sega32x"), 43, 10),
         GamePlatform(
             slug = "scd",
             name = "Sega CD",
@@ -141,6 +152,7 @@ object GamePlatforms {
             extensions = setOf("cue", "chd", "iso", "m3u"),
             folderAliases = setOf("scd", "segacd", "megacd", "segamegacd"),
             sortOrder = 44,
+            raConsoleId = 9,
             discBased = true,
             discCompanionExtensions = setOf("bin", "wav"),
             bios = listOf(
@@ -150,14 +162,15 @@ object GamePlatforms {
             ),
             biosRequired = true,
         ),
-        GamePlatform("n64", "Nintendo 64", "mupen64plus_next_gles3", setOf("z64", "n64", "v64"), setOf("n64", "nintendo64"), 50),
+        GamePlatform("n64", "Nintendo 64", "mupen64plus_next_gles3", setOf("z64", "n64", "v64"), setOf("n64", "nintendo64"), 50, 2),
         GamePlatform(
             slug = "psx",
             name = "PlayStation",
-            coreId = "pcsx_rearmed",
+            coreId = "mednafen_psx",
             extensions = setOf("cue", "chd", "pbp", "iso", "m3u"),
             folderAliases = setOf("psx", "ps1", "playstation", "playstation1", "sonyplaystation"),
             sortOrder = 60,
+            raConsoleId = 12,
             discBased = true,
             discCompanionExtensions = setOf("bin", "img", "sub", "sbi", "ccd", "wav"),
             bios = listOf(
@@ -182,6 +195,7 @@ object GamePlatforms {
             extensions = setOf("cue", "chd", "iso", "m3u", "ccd"),
             folderAliases = setOf("saturn", "segasaturn"),
             sortOrder = 45,
+            raConsoleId = 39,
             discBased = true,
             discCompanionExtensions = setOf("bin", "img", "sub", "wav"),
             bios = listOf(
@@ -197,6 +211,7 @@ object GamePlatforms {
             extensions = setOf("gdi", "cdi", "chd", "cue", "m3u"),
             folderAliases = setOf("dreamcast", "dc", "segadreamcast"),
             sortOrder = 46,
+            raConsoleId = 40,
             discBased = true,
             discCompanionExtensions = setOf("bin", "raw", "wav"),
             bios = listOf(
@@ -208,13 +223,30 @@ object GamePlatforms {
             slug = "nds",
             name = "Nintendo DS",
             coreId = "melonds_ds",
-            extensions = setOf("nds", "dsi", "ids"),
-            folderAliases = setOf("nds", "ds", "nintendods", "dsi"),
+            extensions = setOf("nds", "ids"),
+            folderAliases = setOf("nds", "ds", "nintendods"),
             sortOrder = 33,
+            raConsoleId = 18,
             bios = listOf(
                 BiosFile("bios7.bin", "DS ARM7 (opcional)", "df692a80a5b1bc90728bc3dfc76cd948"),
                 BiosFile("bios9.bin", "DS ARM9 (opcional)", "a392174eb3e572fed6447e956bde4b25"),
                 BiosFile("firmware.bin", "DS firmware (opcional)"),
+                BiosFile("dsi_bios7.bin", "DSi ARM7 (opcional)"),
+                BiosFile("dsi_bios9.bin", "DSi ARM9 (opcional)"),
+                BiosFile("dsi_firmware.bin", "DSi firmware (opcional)"),
+                BiosFile("dsi_nand.bin", "DSi NAND (opcional)"),
+                BiosFile("dsi_sd_card.bin", "DSi cartão SD (opcional)"),
+            ),
+        ),
+        GamePlatform(
+            slug = "dsi",
+            name = "Nintendo DSi",
+            coreId = "melonds_ds",
+            extensions = setOf("nds", "dsi", "ids"),
+            folderAliases = setOf("dsi", "nintendodsi"),
+            sortOrder = 34,
+            raConsoleId = 78,
+            bios = listOf(
                 BiosFile("dsi_bios7.bin", "DSi ARM7 (opcional)"),
                 BiosFile("dsi_bios9.bin", "DSi ARM9 (opcional)"),
                 BiosFile("dsi_firmware.bin", "DSi firmware (opcional)"),
@@ -229,6 +261,7 @@ object GamePlatforms {
             extensions = setOf("iso", "cso", "pbp"),
             folderAliases = setOf("psp", "playstationportable", "sonypsp"),
             sortOrder = 61,
+            raConsoleId = 41,
             discBased = true,
         ),
         GamePlatform(
@@ -238,6 +271,7 @@ object GamePlatforms {
             extensions = setOf("iso", "chd", "cue"),
             folderAliases = setOf("3do", "panasonic3do"),
             sortOrder = 62,
+            raConsoleId = 43,
             discBased = true,
             discCompanionExtensions = setOf("bin"),
             bios = listOf(
@@ -286,7 +320,7 @@ object GamePlatforms {
             bios = listOf(BiosFile("lynxboot.img", "Atari Lynx (obrigatório)", "fcd403db69f54290b51035d82f835e7b")),
             biosRequired = true,
         ),
-        GamePlatform("jaguar", "Atari Jaguar", "virtualjaguar", setOf("j64", "jag"), setOf("jaguar", "atarijaguar", "j64"), 84),
+        GamePlatform("jaguar", "Atari Jaguar", "virtualjaguar", setOf("j64", "jag"), setOf("jaguar", "atarijaguar", "j64"), 84, 17),
         GamePlatform(
             slug = "ps2",
             name = "PlayStation 2",
@@ -487,6 +521,7 @@ object GamePlatforms {
             extensions = setOf("zip"),
             folderAliases = setOf("neogeo", "neogeoaes", "neogeomvs", "neo-geo", "mvs", "aes"),
             sortOrder = 88,
+            raConsoleId = 27,
             discBased = false,
             zipIsNativeRom = true,
             bios = listOf(BiosFile("neogeo.zip", "Neo Geo (BIOS do conjunto)")),
@@ -508,6 +543,7 @@ object GamePlatforms {
             extensions = setOf("zip", "7z"),
             folderAliases = setOf("arcade", "mame", "fbneo", "arcadegames"),
             sortOrder = 119,
+            raConsoleId = 27,
             zipIsNativeRom = true,
         ),
         GamePlatform(
@@ -517,6 +553,7 @@ object GamePlatforms {
             extensions = setOf("sgx", "pce"),
             folderAliases = setOf("supergrafx", "nec-supergrafx"),
             sortOrder = 136,
+            raConsoleId = 8,
         ),
         GamePlatform(
             slug = "atari8",
@@ -612,6 +649,7 @@ object GamePlatforms {
             extensions = setOf("cue", "chd", "ccd", "iso", "m3u"),
             folderAliases = setOf("pcfx", "necpcfx", "nec-pc-fx"),
             sortOrder = 130,
+            raConsoleId = 49,
             discBased = true,
         ),
         GamePlatform(
@@ -621,6 +659,7 @@ object GamePlatforms {
             extensions = setOf("cue", "chd", "iso", "m3u"),
             folderAliases = setOf("neogeocd", "neo-geo-cd", "snkneogeocd"),
             sortOrder = 131,
+            raConsoleId = 56,
             discBased = true,
         ),
         GamePlatform(
@@ -630,6 +669,7 @@ object GamePlatforms {
             extensions = setOf("min", "pnm"),
             folderAliases = setOf("pokemini", "pokemonmini"),
             sortOrder = 132,
+            raConsoleId = 24,
         ),
         GamePlatform(
             slug = "gamewatch",
@@ -642,11 +682,21 @@ object GamePlatforms {
         ),
         GamePlatform(
             slug = "megaduck",
-            name = "Mega Duck / Watara Supervision",
+            name = "Mega Duck",
             coreId = "potator",
             extensions = setOf("bin", "ws", "sv"),
-            folderAliases = setOf("megaduck", "watara", "supervision", "watara-supervision"),
+            folderAliases = setOf("megaduck"),
             sortOrder = 134,
+            raConsoleId = 69,
+        ),
+        GamePlatform(
+            slug = "supervision",
+            name = "Watara Supervision",
+            coreId = "potator",
+            extensions = setOf("bin", "ws", "sv"),
+            folderAliases = setOf("watara", "supervision", "watara-supervision"),
+            sortOrder = 165,
+            raConsoleId = 63,
         ),
         GamePlatform(
             slug = "arduboy",
@@ -655,6 +705,7 @@ object GamePlatforms {
             extensions = setOf("hex", "arduboy"),
             folderAliases = setOf("arduboy"),
             sortOrder = 135,
+            raConsoleId = 71,
         ),
         GamePlatform(
             slug = "cdi",
@@ -681,6 +732,7 @@ object GamePlatforms {
             extensions = setOf("vec", "bin", "rom"),
             folderAliases = setOf("vectrex", "gcevectrex"),
             sortOrder = 139,
+            raConsoleId = 46,
         ),
         GamePlatform(
             slug = "odyssey2",
@@ -689,6 +741,7 @@ object GamePlatforms {
             extensions = setOf("bin", "rom"),
             folderAliases = setOf("odyssey2", "odyssey", "videopac"),
             sortOrder = 140,
+            raConsoleId = 23,
         ),
         GamePlatform(
             slug = "pc88",
@@ -697,6 +750,7 @@ object GamePlatforms {
             extensions = setOf("d88", "d77", "t88", "cmt", "m3u"),
             folderAliases = setOf("pc88", "pc8801", "necpc8801"),
             sortOrder = 141,
+            raConsoleId = 47,
             discBased = true,
         ),
         GamePlatform(
@@ -730,6 +784,7 @@ object GamePlatforms {
             extensions = setOf("wasm"),
             folderAliases = setOf("wasm4", "wasm-4"),
             sortOrder = 145,
+            raConsoleId = 72,
         ),
         GamePlatform(
             slug = "uzebox",
@@ -738,6 +793,7 @@ object GamePlatforms {
             extensions = setOf("uze"),
             folderAliases = setOf("uzebox", "uze"),
             sortOrder = 146,
+            raConsoleId = 80,
         ),
         GamePlatform(
             slug = "commanderx16",
@@ -778,6 +834,7 @@ object GamePlatforms {
             extensions = setOf("dsk", "sna", "tap", "cdt", "cpr"),
             folderAliases = setOf("amstradcpc", "amstrad-cpc", "cpc"),
             sortOrder = 151,
+            raConsoleId = 37,
         ),
         GamePlatform(
             slug = "c128",
@@ -926,6 +983,6 @@ object GamePlatforms {
                 }
             }
         }
-        return all.singleOrNull { ext in it.extensions }
+        return if (ext == "nds" || ext == "ids") bySlug("nds") else all.singleOrNull { ext in it.extensions }
     }
 }

@@ -76,7 +76,7 @@ object RaSettings {
     }
 
     /** O hardcore bloqueia estados salvos neste jogo? (só em plataformas com conquistas e com conta) */
-    fun blocksStates(context: Context, platform: GamePlatform): Boolean = hardcore(context) && isLoggedIn(context) && platform.raConsoleId != null
+    fun blocksStates(context: Context, platform: GamePlatform, coreId: String): Boolean = hardcore(context) && isLoggedIn(context) && RaCoreCompatibility.isSupported(platform, coreId)
 
     /**
      * Guarda, por caminho do arquivo, o id do jogo no RetroAchievements assim que é descoberto (ao
@@ -249,6 +249,7 @@ class RaSession(
     private val context: Context,
     private val view: GLRetroView,
     private val platform: GamePlatform,
+    private val coreId: String,
     private val romPath: String,
     private val cacheKeyPath: String = romPath,
     private val scope: CoroutineScope,
@@ -282,6 +283,7 @@ class RaSession(
     fun start() {
         val user = RaSettings.user(context) ?: return
         val token = RaSettings.token(context) ?: return
+        if (!RaCoreCompatibility.isSupported(platform, coreId)) return
         val consoleId = platform.raConsoleId ?: return
 
         active = true

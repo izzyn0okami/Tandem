@@ -764,7 +764,7 @@ internal fun GameDetailScreen(
     val hasState = remember(local?.path, chosenCoreId, coreInfo.supportsStates) {
         local != null && coreInfo.supportsStates &&
             SaveStore(context, chosenCoreId, File(local.path)).hasState() &&
-            !RaSettings.blocksStates(context, local.platform)
+            !RaSettings.blocksStates(context, local.platform, chosenCoreId)
     }
     val percent = entry.percent(progress)
     val firstFocus = remember { FocusRequester() }

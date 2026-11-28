@@ -63,6 +63,7 @@ object CoreRegistry {
     )
 
     private val catalog: Map<String, List<CoreInfo>> = mapOf(
+        "fds" to listOf(core("mesen", "Mesen", "Famicom Disk System; núcleo oficialmente compatível")),
         "nes" to listOf(
             core("fceumm", "FCEUmm", "Rápido e compatível"),
             core("nestopia", "Nestopia", "Mais preciso"),
@@ -71,6 +72,7 @@ object CoreRegistry {
         ),
         "snes" to listOf(
             core("snes9x", "Snes9x", "Rápido e compatível"),
+            core("mesen-s", "Mesen-S", "Núcleo oficialmente compatível com RetroAchievements; também emula GB/GBC"),
             core("snes9x2010", "Snes9x 2010", "Mais leve"),
             core("bsnes", "bsnes", "Mais preciso, bem mais pesado"),
             experimentalCore("bsnes-jg", "bsnes-jg", "Alternativa de alta precisão; capacidades de saves ainda não auditadas"),
@@ -99,6 +101,13 @@ object CoreRegistry {
         ),
         "sms" to masterSystemCores(),
         "gg" to masterSystemCores(),
+        "32x" to listOf(
+            core("picodrive", "PicoDrive", "Núcleo oficial para Sega 32X"),
+        ),
+        "sg1000" to listOf(
+            core("genesis_plus_gx", "Genesis Plus GX", "Núcleo recomendado para SG-1000"),
+            core("bluemsx", "blueMSX", "Alternativa compatível para SG-1000"),
+        ),
         "scd" to listOf(
             core("genesis_plus_gx", "Genesis Plus GX", "Preciso e completo; Sega CD usa arquivos BRM de backup RAM, fora do sync SRAM RomM", supportsRomMSaveSync = false),
             core(
@@ -201,6 +210,12 @@ object CoreRegistry {
             ),
             experimentalCore("parallel_dc", "Parallel DC", "Alternativa experimental; validar compatibilidade ARM64 e armazenamento de VMU"),
         ),
+        "3do" to listOf(
+            experimentalCore("opera", "Opera", "3DO; núcleo oficialmente listado para RetroAchievements"),
+        ),
+        "atari7800" to listOf(
+            experimentalCore("prosystem", "ProSystem", "Atari 7800; núcleo oficialmente listado para RetroAchievements"),
+        ),
         "psp" to listOf(
             core(
                 "ppsspp",
@@ -214,6 +229,14 @@ object CoreRegistry {
                 "mednafen_vb",
                 "Beetle VB",
                 "Virtual Boy; SRAM de cartucho e save states suportados",
+            ),
+        ),
+        "dsi" to listOf(
+            core(
+                "melonds_ds",
+                "melonDS DS",
+                "Nintendo DSi; RA suportado; save states indisponíveis no núcleo para este sistema",
+                supportsStates = false,
             ),
         ),
         "nds" to listOf(
@@ -394,7 +417,10 @@ object CoreRegistry {
             experimentalCore("gw", "Game & Watch", "Nintendo Game & Watch"),
         ),
         "megaduck" to listOf(
-            experimentalCore("potator", "Potator", "Mega Duck / Watara Supervision"),
+            experimentalCore("potator", "Potator", "Mega Duck legado; sem compatibilidade RA confirmada para este sistema"),
+        ),
+        "supervision" to listOf(
+            experimentalCore("potator", "Potator", "Watara Supervision; núcleo listado como compatível pelo RetroAchievements"),
         ),
         "arduboy" to listOf(
             experimentalCore("ardens", "Ardens", "Arduboy"),
@@ -489,6 +515,7 @@ object CoreRegistry {
         core("gambatte", "Gambatte", "Muito preciso"),
         core("sameboy", "SameBoy", "Muito preciso"),
         core("gearboy", "Gearboy", "Leve"),
+        core("vbam", "VBA-M", "Alternativa compatível com RetroAchievements"),
     )
 
     private fun masterSystemCores() = listOf(
