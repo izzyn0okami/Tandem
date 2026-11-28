@@ -100,6 +100,13 @@ object CoreRegistry {
         ),
         "sms" to masterSystemCores(),
         "gg" to masterSystemCores(),
+        "32x" to listOf(
+            core("picodrive", "PicoDrive", "Núcleo oficial para Sega 32X"),
+        ),
+        "sg1000" to listOf(
+            core("genesis_plus_gx", "Genesis Plus GX", "Núcleo recomendado para SG-1000"),
+            core("bluemsx", "blueMSX", "Alternativa compatível para SG-1000"),
+        ),
         "scd" to listOf(
             core("genesis_plus_gx", "Genesis Plus GX", "Preciso e completo; Sega CD usa arquivos BRM de backup RAM, fora do sync SRAM RomM", supportsRomMSaveSync = false),
             core(
@@ -177,6 +184,9 @@ object CoreRegistry {
             core("mednafen_lynx", "Beetle Lynx", "Alternativa"),
             core("gearlynx", "Gearlynx", "Moderno"),
         ),
+        "jaguar" to listOf(
+            experimentalCore("virtualjaguar", "Virtual Jaguar", "Atari Jaguar; núcleo oficialmente listado, sem save states e com limitações conhecidas"),
+        ),
         "ngp" to listOf(
             core("mednafen_ngp", "Beetle NeoPop", "Padrão"),
             core("race", "RACE", "Leve"),
@@ -201,6 +211,12 @@ object CoreRegistry {
                 supportsRomMSaveSync = false,
             ),
             experimentalCore("parallel_dc", "Parallel DC", "Alternativa experimental; validar compatibilidade ARM64 e armazenamento de VMU"),
+        ),
+        "3do" to listOf(
+            experimentalCore("opera", "Opera", "3DO; núcleo oficialmente listado para RetroAchievements"),
+        ),
+        "atari7800" to listOf(
+            experimentalCore("prosystem", "ProSystem", "Atari 7800; núcleo oficialmente listado para RetroAchievements"),
         ),
         "psp" to listOf(
             core(
@@ -501,6 +517,7 @@ object CoreRegistry {
         core("gambatte", "Gambatte", "Muito preciso"),
         core("sameboy", "SameBoy", "Muito preciso"),
         core("gearboy", "Gearboy", "Leve"),
+        core("vbam", "VBA-M", "Alternativa compatível com RetroAchievements"),
     )
 
     private fun masterSystemCores() = listOf(

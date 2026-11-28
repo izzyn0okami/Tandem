@@ -121,6 +121,25 @@ class RaCoreCompatibilityTest {
     }
 
     @Test
+    fun everyAllowedRaCoreIsAvailableInItsPlatformCatalog() {
+        val raPlatforms = GamePlatforms.all.filter { it.raConsoleId != null }
+
+        assertTrue("No RA-enabled platforms found", raPlatforms.isNotEmpty())
+        raPlatforms.forEach { platform ->
+            val selectableCoreIds = CoreRegistry.cores(platform).map { it.id }.toSet()
+            val allowedCoreIds = RaCoreCompatibility.supportedCoreIds(platform.slug)
+
+            assertTrue("No RA cores configured for ${platform.slug}", allowedCoreIds.isNotEmpty())
+            allowedCoreIds.forEach { coreId ->
+                assertTrue(
+                    "RA allows $coreId for ${platform.slug}, but CoreRegistry does not offer it",
+                    coreId in selectableCoreIds,
+                )
+            }
+        }
+    }
+
+    @Test
     fun platformWithoutConsoleIdNeverEnablesRa() {
         val psxWithoutId = platform("psx", null)
 
