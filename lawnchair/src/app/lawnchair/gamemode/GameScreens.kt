@@ -780,7 +780,7 @@ internal fun GameDetailScreen(
             val metadata = metadataGames.mapNotNull { it.metadata }
             fun appendValues(label: String, values: List<String>) {
                 val distinct = values.filter { it.isNotBlank() }.distinct()
-                if (distinct.isNotEmpty()) append("$label: ${distinct.joinToString(" · ")}\\n")
+                if (distinct.isNotEmpty()) append("$label: ${distinct.joinToString(" · ")}\n")
             }
             appendValues("Gêneros", metadata.flatMap { it.genres })
             appendValues("Franquias", metadata.flatMap { it.franchises })
@@ -798,13 +798,13 @@ internal fun GameDetailScreen(
                     .map { DateFormat.getDateInstance(DateFormat.MEDIUM).format(Date(it * 1000L)) },
             )
             appendValues("Avaliação RomM", metadata.mapNotNull { it.averageRating?.toString() })
-            if (metadata.any { it.hasManualMetadata }) append("Inclui metadados preenchidos manualmente no RomM.\\n")
+            if (metadata.any { it.hasManualMetadata }) append("Inclui metadados preenchidos manualmente no RomM.\n")
             appendValues("Títulos alternativos", metadataGames.flatMap { it.alternativeNames })
             metadataGames.flatMap { it.providerIds.entries }
                 .groupBy { it.key }
                 .toSortedMap()
                 .forEach { (provider, values) ->
-                    append("$provider: ${values.map { it.value }.distinct().joinToString(" · ")}\\n")
+                    append("$provider: ${values.map { it.value }.distinct().joinToString(" · ")}\n")
                 }
         }.trim()
     }
