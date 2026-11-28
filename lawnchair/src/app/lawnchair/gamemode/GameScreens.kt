@@ -816,7 +816,7 @@ internal fun GameDetailScreen(
             val values = detailGames.mapNotNull { it.userData }.distinct()
             fun appendValues(label: String, entries: List<String>) {
                 val distinct = entries.filter { it.isNotBlank() }.distinct()
-                if (distinct.isNotEmpty()) append("$label: ${distinct.joinToString(" · ")}\\n")
+                if (distinct.isNotEmpty()) append("$label: ${distinct.joinToString(" · ")}\n")
             }
             appendValues("Status", values.mapNotNull { it.status })
             appendValues("Avaliação pessoal", values.map { it.rating.toString() })
