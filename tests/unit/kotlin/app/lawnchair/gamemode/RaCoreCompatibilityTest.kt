@@ -88,7 +88,6 @@ class RaCoreCompatibilityTest {
     }
 
     @Test
-    @Test
     fun masterSystemRejectsUnlistedSmsPlusCore() {
         val masterSystem = platform("sms", 11)
 
