@@ -16,7 +16,7 @@ object RaCoreCompatibility {
         "gbc" to setOf("mgba", "gambatte", "gearboy", "vbam"),
         "gba" to setOf("mgba", "vbam", "vba_next", "mednafen_gba"),
         "genesis" to setOf("genesis_plus_gx", "picodrive"),
-        "sms" to setOf("genesis_plus_gx", "smsplus", "gearsystem"),
+        "sms" to setOf("genesis_plus_gx", "gearsystem"),
         "gg" to setOf("genesis_plus_gx", "gearsystem"),
         "32x" to setOf("picodrive"),
         "scd" to setOf("genesis_plus_gx", "picodrive"),
