@@ -11,10 +11,15 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
@@ -38,6 +43,7 @@ internal fun CoreOptionsPanel(
     onReset: () -> Unit,
 ) {
     val first = remember(selectedCategory) { FocusRequester() }
+    var confirmReset by remember { mutableStateOf(false) }
     val grouped = remember(options) { groupByCategory(options) }
     val categories = remember(grouped) {
         CoreOptionCategory.entries.filter { grouped[it].orEmpty().isNotEmpty() }
@@ -64,7 +70,7 @@ internal fun CoreOptionsPanel(
                 )
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = if (selectedCategory == null) "Opções do núcleo" else selectedCategory.label,
+                        text = selectedCategory?.label ?: "Opções do núcleo",
                         color = GameColors.text,
                         fontSize = 19.sp,
                         fontWeight = FontWeight.Bold,
@@ -158,19 +164,35 @@ internal fun CoreOptionsPanel(
                 }
             }
 
-            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                GameButton(
-                    label = stringResource(R.string.game_core_options_reset),
-                    onClick = onReset,
-                    compact = true,
-                )
-                GameButton(
-                    label = if (selectedCategory == null) "Fechar opções" else "Voltar às categorias",
-                    onClick = onBack,
-                    compact = true,
-                )
-            }
+            GameButton(
+                label = stringResource(R.string.game_core_options_reset),
+                onClick = { confirmReset = true },
+                compact = true,
+            )
         }
+    }
+
+    if (confirmReset) {
+        AlertDialog(
+            onDismissRequest = { confirmReset = false },
+            title = { Text("Redefinir opções do núcleo?") },
+            text = { Text("Todas as opções deste núcleo voltarão aos valores padrão. Isso não altera as configurações de outros núcleos.") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        confirmReset = false
+                        onReset()
+                    },
+                ) {
+                    Text("Redefinir")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { confirmReset = false }) {
+                    Text("Cancelar")
+                }
+            },
+        )
     }
 }
 
