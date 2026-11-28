@@ -242,3 +242,11 @@ ATUALIZAÇÃO DE CI DOCUMENTAL — 2026-11-28 (HEAD 0af593f3ad20548af825fb6865a8
 - Esta execução valida também o commit documental que registrou a reorganização dos detalhes em quatro abas e o teste básico do APK pelo usuário.
 - A PR #65 continua aberta em Draft, base game-mode-m2-dev, sem merge.
 - Pendências funcionais/visuais permanecem: revisar redundâncias de navegação, concluir padronização visual residual da biblioteca/telas auxiliares e validar foco, acessibilidade, gamepad e comportamento das quatro abas em diferentes jogos/telas.
+
+
+ATUALIZAÇÃO DE CI — 2026-11-28 (HEAD e8e7b225b58eb9e4fc0a9ab45c5ad7885df12dff)
+- CI #46104762212 concluída com sucesso.
+- check-style: sucesso; build assembleLawnWithQuickstepGithubDebug: sucesso; final-status: sucesso.
+- Jobs de publicação/notificação foram ignorados por não se tratar de uma execução de release.
+- Esta CI valida o commit que atualizou este registro de auditoria após a CI documental anterior.
+- A PR #65 permanece aberta em Draft, sem merge. Pendências funcionais continuam conforme a seção de critérios de conclusão.
