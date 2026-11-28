@@ -34,7 +34,7 @@ import kotlinx.coroutines.withContext
 
 /** Tela de BIOS: mostra o que falta por console e traz as três formas de adicionar. */
 @Composable
-internal fun BiosScreen(rootPath: String) {
+internal fun BiosScreen(rootPath: String, onBack: () -> Unit) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     var tick by remember { mutableIntStateOf(0) }
@@ -96,7 +96,7 @@ internal fun BiosScreen(rootPath: String) {
         modifier = Modifier.fillMaxSize().padding(horizontal = 24.dp, vertical = 4.dp),
         verticalArrangement = Arrangement.spacedBy(6.dp),
     ) {
-        Text(stringResource(R.string.game_bios_title), color = GameColors.text, fontSize = 20.sp, fontWeight = FontWeight.Bold)
+        GameScreenHeader(stringResource(R.string.game_bios_title), onBack)
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             GameButton(stringResource(R.string.game_bios_import), onClick = { picker.launch(arrayOf("*/*")) }, compact = true, enabled = !busy)
             GameButton(
