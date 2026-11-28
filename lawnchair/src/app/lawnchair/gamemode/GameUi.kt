@@ -103,12 +103,13 @@ fun GameIconButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
+    selected: Boolean = false,
 ) {
     FocusSurface(
         onClick = onClick,
         enabled = enabled,
         shape = RoundedCornerShape(8.dp),
-        background = GameColors.surface,
+        background = if (selected) GameColors.surfaceHigh else GameColors.surface,
         modifier = modifier.size(42.dp).semantics { contentDescription = label },
     ) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
