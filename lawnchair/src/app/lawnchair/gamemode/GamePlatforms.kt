@@ -682,7 +682,7 @@ object GamePlatforms {
         ),
         GamePlatform(
             slug = "megaduck",
-            name = "Mega Duck / Watara Supervision",
+            name = "Mega Duck",
             coreId = "potator",
             extensions = setOf("bin", "ws", "sv"),
             folderAliases = setOf("megaduck"),
