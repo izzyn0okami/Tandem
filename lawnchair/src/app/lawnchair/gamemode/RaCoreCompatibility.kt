@@ -10,6 +10,7 @@ object RaCoreCompatibility {
 
     private val supportedCores: Map<String, Set<String>> = mapOf(
         "nes" to setOf("fceumm", "mesen", "quicknes"),
+        "fds" to setOf("mesen"),
         "snes" to setOf("snes9x"),
         "gb" to setOf("mgba", "gambatte", "gearboy", "vbam"),
         "gbc" to setOf("mgba", "gambatte", "gearboy", "vbam"),
