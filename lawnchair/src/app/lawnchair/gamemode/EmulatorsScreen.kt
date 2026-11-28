@@ -26,7 +26,7 @@ import com.android.launcher3.R
 
 /** Emuladores externos: mostra quais estão instalados e deixa escolher qual abre cada console. */
 @Composable
-internal fun EmulatorsScreen() {
+internal fun EmulatorsScreen(onBack: () -> Unit) {
     val context = LocalContext.current
     var tick by remember { mutableIntStateOf(0) }
     val platforms = remember { GamePlatforms.all.filter { it.launch == LaunchMode.EMULATOR } }
@@ -35,7 +35,7 @@ internal fun EmulatorsScreen() {
         modifier = Modifier.fillMaxSize().padding(horizontal = 24.dp, vertical = 4.dp),
         verticalArrangement = Arrangement.spacedBy(6.dp),
     ) {
-        Text(stringResource(R.string.game_emulators_title), color = GameColors.text, fontSize = 20.sp, fontWeight = FontWeight.Bold)
+        GameScreenHeader(stringResource(R.string.game_emulators_title), onBack)
         Text(stringResource(R.string.game_emulators_note), color = GameColors.textDim, fontSize = 12.sp)
         LazyColumn(verticalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxSize()) {
             items(platforms, key = { it.slug }) { platform ->
