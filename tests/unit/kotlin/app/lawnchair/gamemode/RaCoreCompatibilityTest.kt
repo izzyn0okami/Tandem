@@ -65,6 +65,21 @@ class RaCoreCompatibilityTest {
     }
 
     @Test
+    fun additionalOfficialSystemsUseTheirOwnPlatformsAndCores() {
+        val pokemonMini = GamePlatforms.bySlug("pokemini")!!
+        val amstrad = GamePlatforms.bySlug("amstradcpc")!!
+        val supervision = GamePlatforms.bySlug("supervision")!!
+
+        assertTrue(pokemonMini.raConsoleId == 24)
+        assertTrue(RaCoreCompatibility.isSupported(pokemonMini, "pokemini"))
+        assertTrue(amstrad.raConsoleId == 37)
+        assertTrue(RaCoreCompatibility.isSupported(amstrad, "cap32"))
+        assertTrue(supervision.raConsoleId == 63)
+        assertTrue(RaCoreCompatibility.isSupported(supervision, "potator"))
+        assertFalse(RaCoreCompatibility.isSupported(GamePlatforms.bySlug("megaduck")!!, "potator"))
+    }
+
+    @Test
     fun ambiguousNdsExtensionKeepsNintendoDsAsSafeFallback() {
         assertTrue(GamePlatforms.resolve(emptyList(), "nds")?.slug == "nds")
         assertTrue(GamePlatforms.resolve(listOf("dsi"), "nds")?.slug == "dsi")
