@@ -37,6 +37,25 @@ class RaCoreCompatibilityTest {
     }
 
     @Test
+    fun nintendoDsiUsesItsOwnConsoleAndOnlyMelonDsDs() {
+        val dsi = platform("dsi", 78)
+
+        assertTrue(RaCoreCompatibility.isSupported(dsi, "melonds_ds"))
+        assertFalse(RaCoreCompatibility.isSupported(dsi, "melonds"))
+        assertFalse(RaCoreCompatibility.isSupported(dsi, "desmume"))
+    }
+
+    @Test
+    fun pc88AndSuperGrafxUseOfficiallyListedCores() {
+        val pc88 = platform("pc88", 47)
+        val supergrafx = platform("supergrafx", 8)
+
+        assertTrue(RaCoreCompatibility.isSupported(pc88, "quasi88"))
+        assertTrue(RaCoreCompatibility.isSupported(supergrafx, "mednafen_supergrafx"))
+        assertFalse(RaCoreCompatibility.isSupported(supergrafx, "mednafen_pce_fast"))
+    }
+
+    @Test
     fun knownPlatformDoesNotEnableRaForAnUnlistedCore() {
         val nes = platform("nes", 7)
 
