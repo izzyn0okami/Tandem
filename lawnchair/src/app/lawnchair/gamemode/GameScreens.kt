@@ -3,6 +3,7 @@ package app.lawnchair.gamemode
 import android.content.Intent
 import android.net.Uri
 import androidx.activity.compose.BackHandler
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -1531,6 +1532,15 @@ private fun formatPlaytime(ms: Long): String {
 }
 
 @Composable
+private enum class SettingsCategory(val title: String, val subtitle: String) {
+    LIBRARY("Biblioteca e armazenamento", "Pastas, importação e organização dos jogos"),
+    EMULATION("Emulação", "Núcleos, BIOS, emuladores e gráficos"),
+    ONLINE("RomM e serviços online", "Servidor, dispositivos e sincronização"),
+    MEDIA("Mídia e metadados", "Capas, scraping e trilhas sonoras"),
+    CONTROLS("Controles e interface", "Gamepad virtual, navegação e comportamento"),
+    SYSTEM("Sistema e diagnóstico", "Logs, informações e encerramento"),
+}
+
 internal fun SettingsScreen(
     rootPath: String,
     needsAccess: Boolean,
@@ -1556,6 +1566,12 @@ internal fun SettingsScreen(
     onExit: () -> Unit,
 ) {
     val context = LocalContext.current
+    var selectedCategory by remember { mutableStateOf<SettingsCategory?>(null) }
+    val categoryFocus = remember { FocusRequester() }
+    LaunchedEffect(selectedCategory) {
+        if (selectedCategory == null) runCatching { categoryFocus.requestFocus() }
+    }
+    BackHandler(enabled = selectedCategory != null) { selectedCategory = null }
     var virtualGamepadEnabled by remember { mutableStateOf(GameModeSettings.isVirtualGamepadEnabled(context)) }
     var virtualGamepadAutoHide by remember { mutableStateOf(GameModeSettings.isVirtualGamepadAutoHideEnabled(context)) }
     var virtualGamepadOpacity by remember { mutableStateOf(GameModeSettings.virtualGamepadOpacity(context)) }
@@ -1632,10 +1648,43 @@ internal fun SettingsScreen(
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
             .padding(horizontal = 24.dp, vertical = 4.dp)
+            .onShortcutKey(Key.ButtonB) { if (selectedCategory != null) selectedCategory = null }
             .width(520.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        SettingsSection(stringResource(R.string.game_mode_section_library))
+        if (selectedCategory == null) {
+            SettingsSection("Configurações")
+            SettingsCategory.entries.forEachIndexed { index, category ->
+                FocusSurface(
+                    onClick = { selectedCategory = category },
+                    modifier = Modifier.fillMaxWidth().then(if (index == 0) Modifier.focusRequester(categoryFocus) else Modifier),
+                    shape = RoundedCornerShape(10.dp),
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 14.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    ) {
+                        Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                            Text(category.title, color = GameColors.text, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+                            Text(category.subtitle, color = GameColors.textDim, fontSize = 11.sp)
+                        }
+                        Text("›", color = GameColors.accent, fontSize = 24.sp, fontWeight = FontWeight.Bold)
+                    }
+                }
+            }
+        } else {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                GameButton("Voltar", onClick = { selectedCategory = null }, compact = true)
+                Text(selectedCategory.title, color = GameColors.text, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+            }
+            when (selectedCategory) {
+                SettingsCategory.LIBRARY -> {
+SettingsSection(stringResource(R.string.game_mode_section_library))
         Text(
             text = stringResource(R.string.game_mode_folder_label, rootPath),
             color = GameColors.textDim,
@@ -1649,13 +1698,54 @@ internal fun SettingsScreen(
         }
         GameButton(stringResource(R.string.game_mode_play_rom), onPickRom, enabled = !busy)
         GameButton(stringResource(R.string.game_folders_open), onOpenFolders)
-
-        SettingsSection(stringResource(R.string.game_mode_section_platforms))
+                }
+                SettingsCategory.EMULATION -> {
+SettingsSection(stringResource(R.string.game_mode_section_platforms))
         GameButton(stringResource(R.string.game_bios_open), onOpenBios)
         GameButton(stringResource(R.string.game_cores_open), onOpenCores)
         GameButton(stringResource(R.string.game_emulators_open), onOpenEmulators)
 
-        SettingsSection(stringResource(R.string.game_mode_section_online))
+SettingsSection("Gráficos e Vulkan")
+        SettingsSwitchRow(
+            label = "Preferir Vulkan quando disponível",
+            checked = preferVulkan,
+            onToggle = onTogglePreferVulkan,
+        )
+        Text(
+            "O Tandem usa Vulkan quando o núcleo solicita esse modo e o dispositivo oferece suporte. A preferência também orienta núcleos que permitem escolher o renderizador.",
+            color = GameColors.textDim,
+            fontSize = 12.sp,
+        )
+        Text(
+            "Driver Adreno: ${vulkanDriverLabel ?: "driver padrão do Android"}",
+            color = GameColors.text,
+            fontSize = 13.sp,
+        )
+        if (vulkanDriverLabel != null) {
+            SettingsSwitchRow(
+                label = "Usar driver externo Adreno (Turnip)",
+                checked = externalVulkanDriverEnabled,
+                onToggle = onToggleExternalVulkanDriver,
+            )
+        }
+        GameButton(
+            label = if (vulkanDriverLabel == null) "Importar driver Turnip (.zip)" else "Substituir driver Turnip (.zip)",
+            onClick = onImportVulkanDriver,
+        )
+        if (vulkanDriverLabel != null) {
+            GameButton("Remover driver externo", onRemoveVulkanDriver, danger = true)
+        }
+        if (vulkanDriverStatus.isNotBlank()) {
+            Text(vulkanDriverStatus, color = GameColors.textDim, fontSize = 12.sp)
+        }
+        Text(
+            "Importe um pacote ZIP compatível com Android ARM64 que contenha libvulkan_freedreno.so. Recurso destinado a GPUs Adreno (Snapdragon); os ajustes são aplicados na próxima sessão.",
+            color = GameColors.textDim,
+            fontSize = 12.sp,
+        )
+                }
+                SettingsCategory.ONLINE -> {
+SettingsSection(stringResource(R.string.game_mode_section_online))
         GameButton(stringResource(R.string.game_server_open), onOpenServer)
         if (RomMSettings.isConnected(context)) {
             Text("Dispositivos registrados no RomM", color = GameColors.text, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
@@ -1733,8 +1823,9 @@ internal fun SettingsScreen(
             color = GameColors.textDim,
             fontSize = 12.sp,
         )
-
-        SettingsSection("iiDB — soundbites")
+                }
+                SettingsCategory.MEDIA -> {
+SettingsSection("iiDB — soundbites")
         Text(
             text = if (apiKeyConfigured) "Chave da iiDB configurada e protegida pelo Android Keystore." else "Informe sua chave pessoal da iiDB. Ela não será incluída no APK nem enviada aos servidores de assets.",
             color = GameColors.textDim,
@@ -1808,8 +1899,9 @@ internal fun SettingsScreen(
             label = "Sobre a iiDB / iiSU",
             onClick = { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://iisu.network/wiki/iidb-developers"))) },
         )
-
-        SettingsSection("Controles virtuais")
+                }
+                SettingsCategory.CONTROLS -> {
+SettingsSection("Controles virtuais")
         SettingsSwitchRow(
             label = "Exibir controles na tela durante os jogos",
             checked = virtualGamepadEnabled,
@@ -1868,46 +1960,7 @@ internal fun SettingsScreen(
             fontSize = 12.sp,
         )
 
-        SettingsSection("Gráficos e Vulkan")
-        SettingsSwitchRow(
-            label = "Preferir Vulkan quando disponível",
-            checked = preferVulkan,
-            onToggle = onTogglePreferVulkan,
-        )
-        Text(
-            "O Tandem usa Vulkan quando o núcleo solicita esse modo e o dispositivo oferece suporte. A preferência também orienta núcleos que permitem escolher o renderizador.",
-            color = GameColors.textDim,
-            fontSize = 12.sp,
-        )
-        Text(
-            "Driver Adreno: ${vulkanDriverLabel ?: "driver padrão do Android"}",
-            color = GameColors.text,
-            fontSize = 13.sp,
-        )
-        if (vulkanDriverLabel != null) {
-            SettingsSwitchRow(
-                label = "Usar driver externo Adreno (Turnip)",
-                checked = externalVulkanDriverEnabled,
-                onToggle = onToggleExternalVulkanDriver,
-            )
-        }
-        GameButton(
-            label = if (vulkanDriverLabel == null) "Importar driver Turnip (.zip)" else "Substituir driver Turnip (.zip)",
-            onClick = onImportVulkanDriver,
-        )
-        if (vulkanDriverLabel != null) {
-            GameButton("Remover driver externo", onRemoveVulkanDriver, danger = true)
-        }
-        if (vulkanDriverStatus.isNotBlank()) {
-            Text(vulkanDriverStatus, color = GameColors.textDim, fontSize = 12.sp)
-        }
-        Text(
-            "Importe um pacote ZIP compatível com Android ARM64 que contenha libvulkan_freedreno.so. Recurso destinado a GPUs Adreno (Snapdragon); os ajustes são aplicados na próxima sessão.",
-            color = GameColors.textDim,
-            fontSize = 12.sp,
-        )
-
-        SettingsSection(stringResource(R.string.game_mode_section_interface))
+SettingsSection(stringResource(R.string.game_mode_section_interface))
         SettingsSwitchRow(label = stringResource(R.string.game_mode_auto_enter), checked = autoEnter, onToggle = toggleAuto)
         SettingsSwitchRow(label = stringResource(R.string.game_mode_sound), checked = sound, onToggle = toggleSound)
         SettingsSwitchRow(label = stringResource(R.string.game_theme_music_toggle), checked = themeMusic, onToggle = toggleThemeMusic)
@@ -1917,11 +1970,16 @@ internal fun SettingsScreen(
             color = GameColors.textDim,
             fontSize = 12.sp,
         )
-
-        SettingsSection(stringResource(R.string.game_mode_section_other))
+                }
+                SettingsCategory.SYSTEM -> {
+SettingsSection(stringResource(R.string.game_mode_section_other))
         GameButton(stringResource(R.string.game_log_export), rememberLogExporter())
         GameButton(stringResource(R.string.game_mode_exit), onExit, danger = true)
         Box(modifier = Modifier.height(12.dp))
+                }
+                null -> Unit
+            }
+        }
     }
 }
 
