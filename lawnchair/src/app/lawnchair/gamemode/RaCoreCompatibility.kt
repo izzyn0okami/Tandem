@@ -11,7 +11,7 @@ object RaCoreCompatibility {
     private val supportedCores: Map<String, Set<String>> = mapOf(
         "nes" to setOf("fceumm", "mesen", "quicknes"),
         "fds" to setOf("mesen"),
-        "snes" to setOf("snes9x"),
+        "snes" to setOf("snes9x", "mesen-s"),
         "gb" to setOf("mgba", "gambatte", "gearboy", "vbam"),
         "gbc" to setOf("mgba", "gambatte", "gearboy", "vbam"),
         "gba" to setOf("mgba", "vbam", "vba_next", "mednafen_gba"),
@@ -40,7 +40,6 @@ object RaCoreCompatibility {
         "vb" to setOf("mednafen_vb"),
         "atari7800" to setOf("prosystem"),
         "lynx" to setOf("handy", "mednafen_lynx"),
-        "jaguar" to setOf("virtualjaguar"),
         "coleco" to setOf("bluemsx"),
         "msx" to setOf("bluemsx"),
         "intellivision" to setOf("freeintv"),

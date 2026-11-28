@@ -39,6 +39,21 @@ class RaCoreCompatibilityTest {
     }
 
     @Test
+    fun snesAllowsMesenSAndSnes9x() {
+        val snes = GamePlatforms.bySlug("snes")!!
+        assertTrue(snes.raConsoleId == 3)
+        assertTrue(RaCoreCompatibility.isSupported(snes, "snes9x"))
+        assertTrue(RaCoreCompatibility.isSupported(snes, "mesen-s"))
+    }
+
+    @Test
+    fun jaguarKeepsItsConsoleIdButDoesNotEnableUnavailableAndroidCore() {
+        val jaguar = GamePlatforms.bySlug("jaguar")!!
+        assertTrue(jaguar.raConsoleId == 17)
+        assertFalse(RaCoreCompatibility.isSupported(jaguar, "virtualjaguar"))
+    }
+
+    @Test
     fun famicomDiskSystemUsesItsDedicatedConsoleAndMesenCore() {
         val fds = GamePlatforms.bySlug("fds")!!
 

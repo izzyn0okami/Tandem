@@ -72,6 +72,7 @@ object CoreRegistry {
         ),
         "snes" to listOf(
             core("snes9x", "Snes9x", "Rápido e compatível"),
+            core("mesen-s", "Mesen-S", "Núcleo oficialmente compatível com RetroAchievements; também emula GB/GBC"),
             core("snes9x2010", "Snes9x 2010", "Mais leve"),
             core("bsnes", "bsnes", "Mais preciso, bem mais pesado"),
             experimentalCore("bsnes-jg", "bsnes-jg", "Alternativa de alta precisão; capacidades de saves ainda não auditadas"),
@@ -183,9 +184,6 @@ object CoreRegistry {
             core("handy", "Handy", "Leve"),
             core("mednafen_lynx", "Beetle Lynx", "Alternativa"),
             core("gearlynx", "Gearlynx", "Moderno"),
-        ),
-        "jaguar" to listOf(
-            experimentalCore("virtualjaguar", "Virtual Jaguar", "Atari Jaguar; núcleo oficialmente listado, sem save states e com limitações conhecidas"),
         ),
         "ngp" to listOf(
             core("mednafen_ngp", "Beetle NeoPop", "Padrão"),
