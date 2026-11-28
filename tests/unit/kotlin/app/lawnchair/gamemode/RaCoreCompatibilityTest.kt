@@ -56,6 +56,12 @@ class RaCoreCompatibilityTest {
     }
 
     @Test
+    fun ambiguousNdsExtensionKeepsNintendoDsAsSafeFallback() {
+        assertTrue(GamePlatforms.resolve(emptyList(), "nds")?.slug == "nds")
+        assertTrue(GamePlatforms.resolve(listOf("dsi"), "nds")?.slug == "dsi")
+    }
+
+    @Test
     fun knownPlatformDoesNotEnableRaForAnUnlistedCore() {
         val nes = platform("nes", 7)
 
