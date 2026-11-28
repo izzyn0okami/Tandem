@@ -232,3 +232,13 @@ ATUALIZAÇÃO DE VALIDAÇÃO — 2026-11-28 (HEAD e7906f4584af08d036a49df9643a0b
 - O usuário confirmou que instalou/testou o APK e que está funcionando. Isso valida o funcionamento básico do pacote no aparelho; não equivale a uma validação individual documentada de todos os fluxos e tamanhos de tela.
 - PR #65 permanece aberta em Draft e não foi mesclada. Não houve autorização explícita de merge nesta etapa.
 - Pendências: revisão final de redundâncias de navegação; padronização visual residual da biblioteca/telas auxiliares; testes direcionais/gamepad e acessibilidade em todos os fluxos; confirmar visualmente as quatro abas e ferramentas de saves em diferentes jogos.
+
+
+ATUALIZAÇÃO DE CI DOCUMENTAL — 2026-11-28 (HEAD 0af593f3ad20548af825fb6865a87836120617fa)
+- CI #46102710056 concluída com sucesso no HEAD da branch feat/ui-romm-inspired-overhaul.
+- check-style: sucesso.
+- Build assembleLawnWithQuickstepGithubDebug: sucesso.
+- final-status: sucesso.
+- Esta execução valida também o commit documental que registrou a reorganização dos detalhes em quatro abas e o teste básico do APK pelo usuário.
+- A PR #65 continua aberta em Draft, base game-mode-m2-dev, sem merge.
+- Pendências funcionais/visuais permanecem: revisar redundâncias de navegação, concluir padronização visual residual da biblioteca/telas auxiliares e validar foco, acessibilidade, gamepad e comportamento das quatro abas em diferentes jogos/telas.
