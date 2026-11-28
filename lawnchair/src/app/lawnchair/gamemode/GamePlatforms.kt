@@ -75,7 +75,7 @@ object GamePlatforms {
             setOf("fds"),
             setOf("fds", "famicomdisksystem"),
             11,
-            7,
+            81,
             bios = listOf(BiosFile("disksys.rom", "Famicom Disk System (obrigatório)", "ca30b50f880eb660a320674ed365ef7a")),
             biosRequired = true,
         ),
