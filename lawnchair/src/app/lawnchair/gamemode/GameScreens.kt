@@ -811,6 +811,26 @@ internal fun GameDetailScreen(
     val summary = remember(entry.key, detailGames) {
         detailGames.firstNotNullOfOrNull { game -> game.summary?.trim()?.takeIf { it.isNotBlank() } }
     }
+    val rommIdentityText = remember(entry.key, detailGames, associatedFiles) {
+        buildString {
+            fun appendValues(label: String, values: List<String>) {
+                val distinct = values.filter { it.isNotBlank() }.distinct()
+                if (distinct.isNotEmpty()) append("$label: ${distinct.joinToString(" · ")}\n")
+            }
+            appendValues("IDs RomM", detailGames.map { it.id.toString() })
+            appendValues("Arquivos principais", detailGames.map { it.fileName })
+            appendValues("Nomes no servidor", detailGames.map { it.serverName })
+            appendValues("IDs de arquivo", detailGames.flatMap { game ->
+                listOfNotNull(game.fileId?.toString()) + game.fileIds.map { it.toString() }
+            })
+            appendValues("IDs de versões relacionadas", detailGames.flatMap { game ->
+                game.siblingIds.map { it.toString() } + listOfNotNull(game.mainSiblingId?.toString())
+            })
+            appendValues("Arquivos associados (IDs)", associatedFiles.map { it.id.toString() })
+            appendValues("Formato", detailGames.map { if (it.folder) "Pasta de jogo" else "Arquivo único" })
+            if (detailGames.any { it.isEasyRpgGame }) append("Compatível com EasyRPG.\n")
+        }.trim()
+    }
     val personalDataText = remember(entry.key, detailGames) {
         buildString {
             val values = detailGames.mapNotNull { it.userData }.distinct()
@@ -1363,6 +1383,12 @@ internal fun GameDetailScreen(
                         Text(personalDataText, color = GameColors.textDim, fontSize = 12.sp)
                     }
                 }
+                if (rommIdentityText.isNotBlank()) {
+                    Column(verticalArrangement = Arrangement.spacedBy(3.dp), modifier = Modifier.padding(top = 8.dp).width(520.dp)) {
+                        Text("Identificação e versões RomM", color = GameColors.text, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                        Text(rommIdentityText, color = GameColors.textDim, fontSize = 12.sp)
+                    }
+                }
                 if (associatedFiles.isNotEmpty()) {
                     Column(verticalArrangement = Arrangement.spacedBy(3.dp), modifier = Modifier.padding(top = 8.dp).width(520.dp)) {
                         Text("Arquivos associados do RomM", color = GameColors.text, fontSize = 16.sp, fontWeight = FontWeight.Bold)
@@ -1370,12 +1396,13 @@ internal fun GameDetailScreen(
                             val category = file.category?.replaceFirstChar { it.uppercase() } ?: "Jogo"
                             val size = if (file.sizeBytes > 0L) " · ${file.sizeBytes / 1024} KB" else ""
                             val level = if (file.isTopLevel) " · Principal" else ""
+                            val fileId = " · ID ${file.id}"
                             val hashes = listOfNotNull(
                                 file.crcHash?.let { "CRC $it" },
                                 file.md5Hash?.let { "MD5 $it" },
                                 file.sha1Hash?.let { "SHA-1 $it" },
                             ).joinToString(" · ").let { if (it.isBlank()) "" else " · $it" }
-                            Text("$category · ${file.fileName}$size$level$hashes", color = GameColors.textDim, fontSize = 11.sp)
+                            Text("$category · ${file.fileName}$size$level$fileId$hashes", color = GameColors.textDim, fontSize = 11.sp)
                         }
                     }
                 }
