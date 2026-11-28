@@ -843,13 +843,24 @@ internal fun GameDetailScreen(
                 if (distinct.isNotEmpty()) append("$label: ${distinct.joinToString(" · ")}\n")
             }
             appendValues("Status", values.mapNotNull { it.status })
-            appendValues("Avaliação pessoal", values.map { it.rating.toString() })
-            appendValues("Dificuldade", values.map { it.difficulty.toString() })
-            appendValues("Conclusão", values.map { it.completion.toString() })
-            appendValues("Última vez jogado", values.mapNotNull { it.lastPlayedAtMs }
-                .map { DateFormat.getDateTimeInstance(DateFormat.MEDIUM, DateFormat.SHORT).format(Date(it)) })
-            appendValues("Criado no RomM", values.map { DateFormat.getDateTimeInstance(DateFormat.MEDIUM, DateFormat.SHORT).format(Date(it.createdAtMs)) })
-            appendValues("Atualizado no RomM", values.map { DateFormat.getDateTimeInstance(DateFormat.MEDIUM, DateFormat.SHORT).format(Date(it.updatedAtMs)) })
+            appendValues("Avaliação pessoal", values.mapNotNull { it.rating.takeIf { rating -> rating > 0 }?.toString() })
+            appendValues("Dificuldade", values.mapNotNull { it.difficulty.takeIf { difficulty -> difficulty > 0 }?.toString() })
+            appendValues("Conclusão", values.mapNotNull { it.completion.takeIf { completion -> completion > 0 }?.toString() })
+            appendValues(
+                "Última vez jogado",
+                values.mapNotNull { it.lastPlayedAtMs?.takeIf { timestamp -> timestamp > 0L } }
+                    .map { DateFormat.getDateTimeInstance(DateFormat.MEDIUM, DateFormat.SHORT).format(Date(it)) },
+            )
+            appendValues(
+                "Criado no RomM",
+                values.mapNotNull { it.createdAtMs.takeIf { timestamp -> timestamp > 0L } }
+                    .map { DateFormat.getDateTimeInstance(DateFormat.MEDIUM, DateFormat.SHORT).format(Date(it)) },
+            )
+            appendValues(
+                "Atualizado no RomM",
+                values.mapNotNull { it.updatedAtMs.takeIf { timestamp -> timestamp > 0L } }
+                    .map { DateFormat.getDateTimeInstance(DateFormat.MEDIUM, DateFormat.SHORT).format(Date(it)) },
+            )
             appendValues("Marcadores", buildList {
                 if (values.any { it.isMainSibling }) add("Versão principal")
                 if (values.any { it.backlogged }) add("Backlog")
