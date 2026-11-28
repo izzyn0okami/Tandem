@@ -30,7 +30,7 @@ import kotlinx.coroutines.launch
 
 /** Escolha do núcleo de cada console (e download dos que faltam). As opções de cada núcleo ficam no menu de pausa do jogo. */
 @Composable
-internal fun CoresScreen() {
+internal fun CoresScreen(onBack: () -> Unit) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     var tick by remember { mutableIntStateOf(0) }
@@ -57,7 +57,7 @@ internal fun CoresScreen() {
         modifier = Modifier.fillMaxSize().padding(horizontal = 24.dp, vertical = 4.dp),
         verticalArrangement = Arrangement.spacedBy(6.dp),
     ) {
-        Text(stringResource(R.string.game_cores_title), color = GameColors.text, fontSize = 20.sp, fontWeight = FontWeight.Bold)
+        GameScreenHeader(stringResource(R.string.game_cores_title), onBack)
         Text(stringResource(R.string.game_cores_note), color = GameColors.textDim, fontSize = 12.sp)
         if (message.isNotEmpty()) Text(message, color = GameColors.textDim, fontSize = 12.sp, maxLines = 2)
 
