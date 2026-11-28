@@ -1,0 +1,176 @@
+AUDITORIA COMPLETA DE UI — TANDEM COM REFERÊNCIA VISUAL ROMM
+Data: 2026-11-27
+Repositório: izzyn0okami/Tandem
+Branch-base examinada: game-mode-m2-dev
+Commit-base examinado: 5ded882cbeef032ca416bb8390de6701755b0992
+Branch de trabalho: feat/ui-romm-inspired-overhaul
+Escopo: navegação, menus, biblioteca, detalhes de jogos, metadados RomM, opções de núcleos, notificações RA, mensagens do menu inicial, botões/ícones, consistência visual e navegação por controle.
+
+DIRETRIZ VISUAL
+Usar o RomM atual como referência de organização e linguagem visual: hierarquia clara, navegação por áreas, categorias explícitas, superfícies consistentes, filtros e ações contextuais, informação distribuída em seções, metadados legíveis e densidade visual controlada. Não copiar componentes web literalmente; adaptar os padrões ao Android/Compose, tela paisagem e controle físico.
+Preservar a identidade escura do Tandem e as funções específicas de Libretro/RA. A interface deve continuar utilizável por toque, direcional e gamepad.
+
+MÉTODO E LIMITES
+- Inspeção estática da branch-base e dos arquivos centrais de UI.
+- Arquivos examinados diretamente: GameModeActivity.kt, GameScreens.kt, GameSessionActivity.kt, GameModeSettings.kt, CoreOptionsPanel.kt, RaBadge.kt, RomMScreen.kt, RomMGameData.kt, RomMInsightsPanel.kt e docs/DIAGNOSTICO_ELEMENTOS_TELA.md.
+- Consultado o log de auditoria RetroAchievements de 2026-11-27 e o log integrado dos três pilares.
+- Não foi possível realizar teste visual em emulador/aparelho nem executar build nesta etapa.
+- A inspeção é de código e não prova o comportamento em todos os tamanhos de tela, escalas, idiomas ou modos de controle.
+- A branch de trabalho foi criada a partir do HEAD da branch padrão atual game-mode-m2-dev. O nome tandem-latest não aparece como branch no repositório consultado; o README aponta game-mode-m2-dev como ramo de desenvolvimento. Não alterar release nem mesclar sem validação da CI.
+
+RESULTADO EXECUTIVO
+[EM ANDAMENTO] A interface possui funcionalidades amplas, mas cresceu por módulos e telas adicionados em etapas. A navegação ainda reflete essa evolução incremental, em vez de uma taxonomia única e coerente.
+[CONFIRMADO] O painel de opções do núcleo é atualmente uma janela central flutuante, com largura fixa de até 560dp e altura de 92% da tela. As opções são agrupadas por heurística de palavras-chave, mas todas continuam na mesma lista.
+[CONFIRMADO] Os avisos RA já são serializados em fila para evitar sobreposição; desbloqueios, Mastery/Completed e mensagens textuais usam componentes de overlay. Porém, os cartões de conquista e Mastery ocupavam largura e altura excessivas para uma notificação durante a partida.
+[IMPLEMENTADO NESTA BRANCH] Redução do tamanho dos popups de desbloqueio, Mastery/Completed e mensagens RA em RaBadge.kt. As dimensões máximas, espaçamentos, ícones e tipografia foram reduzidos para uma apresentação mais discreta.
+[PENDENTE] Reorganizar a navegação geral, converter o painel flutuante dos núcleos em navegação por menus/telas independentes, padronizar ações em botões de ícone, ampliar a exibição dos metadados RomM e converter mensagens inline do menu inicial em popups/snackbars.
+[PENDENTE] Build/CI, revisão visual em aparelho e teste com toque e gamepad.
+
+1. NAVEGAÇÃO GLOBAL E CATEGORIAS
+Arquivos principais: GameModeActivity.kt, GameScreens.kt, RomMScreen.kt, BiosScreen.kt, CoresScreen.kt, EmulatorsScreen.kt, FoldersScreen.kt e ScraperScreen.kt.
+
+Achados:
+- A tela principal controla várias áreas por estados independentes (Biblioteca, detalhes, BIOS, emuladores, pastas, núcleos, scraper e servidor).
+- As áreas são funcionais, mas a organização ainda é baseada em telas adicionadas conforme os estágios do projeto. Falta uma taxonomia única que agrupe configurações relacionadas.
+- A navegação precisa deixar explícito o que é Biblioteca, Servidor/RomM, Emulação, Núcleos/BIOS, Aparência/Interface e Sistema/Diagnóstico.
+- Ações repetidas de voltar/fechar e títulos de telas devem seguir o mesmo padrão.
+- A hierarquia precisa funcionar igualmente com toque, foco por teclado e controle físico.
+
+Proposta:
+- Criar uma navegação principal por categorias, com cada categoria abrindo sua própria tela.
+- Biblioteca e detalhes de jogos permanecem como fluxo principal.
+- Agrupar Servidor RomM, conta, sincronização e recursos online em uma área RomM.
+- Agrupar núcleos, opções, BIOS e emuladores externos em Emulação.
+- Agrupar pastas e fontes de mídia em Armazenamento e Mídia.
+- Agrupar controles, áudio de navegação e aparência em Interface.
+- Agrupar logs, diagnóstico e exportação em Sistema.
+- Remover atalhos duplicados quando a mesma ação já existir em uma categoria superior; não remover funções sem confirmar que não há dependências.
+
+2. BIBLIOTECA E PADRÕES VISUAIS
+Arquivo principal: GameScreens.kt.
+
+Achados:
+- A biblioteca já oferece pesquisa, filtro por plataforma, coleção, filtros remotos, ordenação e paginação.
+- Há vários controles de ação textual que podem ser substituídos por ícones quando o significado for inequívoco (atualizar, voltar, fechar, pesquisar, ordenar, filtrar, abrir opções).
+- Ações destrutivas ou ambíguas devem manter rótulo textual ou confirmação acessível.
+- A barra de filtros e a área de ações devem ter agrupamento e hierarquia consistentes, sem competir com a grade de jogos.
+- O foco inicial e a navegação direcional precisam ser preservados ao alterar a estrutura.
+
+Proposta:
+- Padronizar cabeçalho, ações contextuais, chips/filtros e espaçamento.
+- Usar ícones com descrição de acessibilidade e rótulos/tooltip quando necessário.
+- Manter texto em ações que não sejam universalmente reconhecíveis.
+- Reduzir bordas, caixas e textos auxiliares repetidos; usar contraste e tipografia para separar níveis.
+
+3. DETALHES DOS JOGOS E METADADOS
+Arquivo principal: GameScreens.kt; modelo de dados em RomMGameData.kt e RomMClient.kt.
+
+Achados:
+- GameDetailScreen já obtém resumo, gêneros, franquias, coleções, empresas, editoras, desenvolvedores, modos de jogo, classificação etária, número de jogadores, lançamento, avaliação RomM, nomes alternativos e IDs de provedores.
+- Também há informações pessoais RomM, notas, atividade, mídias, versões e dados de sincronização em blocos separados.
+- A string metadataText é construída a partir de um subconjunto dos campos; nomes alternativos são limitados a 12. O modelo remoto pode conter mais campos do que os exibidos atualmente.
+- A tela combina informações descritivas com ferramentas operacionais de save/sync. É necessário separar visualmente metadados do jogo, dados pessoais, mídia, versões e ferramentas.
+
+Proposta:
+- Exibir todos os metadados disponíveis no objeto detalhado retornado pelo RomM, sem fabricar valores e sem esconder campos válidos.
+- Organizar em seções recolhíveis: Visão geral, Identificação e lançamento, Gêneros e temas, Empresas, Classificação e jogadores, Arquivos e versões, Identificadores externos, Dados pessoais e Atividade.
+- Exibir somente campos com valor; manter nomes de provedores e identificadores exatos.
+- Não confundir dados locais do Tandem com os dados oficiais do servidor.
+- Preservar a descrição completa, nomes alternativos e links/IDs disponíveis.
+- Revisar o modelo RemoteGame para confirmar a cobertura total antes de declarar os metadados concluídos.
+
+4. SOBREPOSIÇÕES E OPÇÕES DOS NÚCLEOS
+Arquivo principal: CoreOptionsPanel.kt; integração em GameSessionActivity.kt.
+
+Achados:
+- CoreOptionsPanel desenha um painel central flutuante (até 560dp e 92% da altura).
+- As categorias VIDEO, AUDIO, CONTROLS, SYSTEM e OTHER são inferidas por palavras-chave; é uma boa primeira organização, mas as categorias ainda aparecem numa única lista rolável.
+- Algumas opções podem ser classificadas incorretamente pela heurística. Nenhuma opção deve ser descartada.
+- A navegação de volta atualmente fecha o painel inteiro; não há fluxo explícito categoria > opções da categoria.
+
+Proposta obrigatória:
+- Remover a janela flutuante central.
+- Abrir um menu de categorias em tela própria, no mesmo espaço do menu de pausa.
+- Ao selecionar uma categoria, abrir uma segunda tela contendo somente as opções daquela categoria.
+- Categorias iniciais: Vídeo e imagem; Áudio; Controles e entrada; Sistema e desempenho; Saves e memória; Rede/serviços; Outros.
+- Categoria sem itens não deve aparecer.
+- Manter valores atuais visíveis, seleção por gamepad, A para alterar/confirmar e B/Voltar para retornar à categoria anterior.
+- Manter reset de opções por núcleo com confirmação e indicação clara de que o reset afeta somente o núcleo atual.
+- Preservar a regra Hardcore: opções proibidas continuam bloqueadas e explicadas.
+
+5. RETROACHIEVEMENTS — NOTIFICAÇÕES E INDICADORES
+Arquivos: RaBadge.kt, GameSessionActivity.kt e RetroAchievements.kt.
+
+Achados:
+- A fila raUnlockQueue / raMasteryQueue / raNoticeQueue garante que avisos não sejam exibidos simultaneamente.
+- AchievementOverlay, MasteryOverlay e GameMessageOverlay já são popups/overlays temporários.
+- ChallengeIndicatorsRow, ProgressIndicatorBadge, LeaderboardTrackersColumn, RichPresenceOverlay e RaSyncIndicator são indicadores de estado ou acompanhamento; não devem ser confundidos com notificações de evento.
+- O popup de conquista tinha largura máxima de 440dp/52% da tela, ícone de 56dp e espaçamento grande.
+- Mastery/Completed tinha largura máxima de 460dp/54% da tela, ícone de 64dp e cartão alto.
+- Mensagens RA tinham largura máxima de 420dp/62% da tela.
+
+Implementado nesta branch:
+- AchievementOverlay: largura máxima 340dp/40%, ícone 42dp, padding e tipografia menores.
+- MasteryOverlay: largura máxima 350dp/42%, ícone 44dp e conteúdo mais compacto.
+- GameMessageOverlay: largura máxima 340dp/45%, padding e texto reduzidos.
+- Fila e tempos de exibição foram preservados nesta alteração.
+
+Pendências:
+- Validar no aparelho a legibilidade das notificações reduzidas, especialmente em 1366x768, em celulares e em escalas de fonte maiores.
+- Confirmar que todos os eventos de RA que representam notificações passam por uma das três filas de popup.
+- Manter indicadores persistentes somente quando representarem estado contínuo (desafio ativo, progresso, tracker, Rich Presence e sincronização).
+- Não converter Rich Presence em popup: é estado dinâmico e já possui controle de visibilidade.
+- Verificar acessibilidade/descrições dos badges e comportamento de fila quando várias conquistas são desbloqueadas em sequência.
+
+6. AVISOS DO MENU INICIAL
+Arquivo principal: GameModeActivity.kt; mensagens originadas também por fluxos de Biblioteca e sincronização.
+
+Achados:
+- Há estado textual de status e erro usado durante importação, download, atualização de núcleo, conexão, sincronização e resolução de conflitos.
+- Mensagens de progresso são úteis, mas a exibição inline pode deslocar conteúdo ou permanecer visível por mais tempo que o necessário.
+- Mensagens que exigem decisão do usuário (conflito, falha de sincronização com opção de continuar, confirmação de vínculo) devem continuar em diálogos/telas de decisão, não em popups descartáveis.
+
+Proposta:
+- Mensagens curtas de sucesso, informação e progresso devem usar popup/snackbar consistente, com duração proporcional e fila para evitar sobreposição.
+- Erros recuperáveis devem usar popup com ação contextual quando existir.
+- Decisões que alterem dados ou escolham save devem permanecer em diálogo de confirmação.
+- Não ocultar automaticamente mensagens de erro que exigem ação ou que possam causar perda de informação.
+- Evitar duplicar a mesma mensagem em toast, status inline e log.
+
+7. BOTÕES DE ÍCONE E ACESSIBILIDADE
+- Substituir rótulos por ícones apenas em ações padronizadas e inequívocas.
+- Adicionar contentDescription e foco acessível a todos os botões de ícone.
+- Ações pouco frequentes, destrutivas ou específicas continuam com texto.
+- Ícones devem ter hit target adequado para toque e foco visível para controle.
+- Não remover rótulos sem garantir navegação por gamepad, leitor de tela e acessibilidade.
+
+8. LIMPEZA VISUAL E CONSISTÊNCIA
+- Padronizar dimensões de cabeçalhos, cards, bordas, elevação, cores, tipografia e espaçamento.
+- Reduzir caixas aninhadas, textos de ajuda repetidos e botões com larguras arbitrárias.
+- Usar divisores e títulos de seção com parcimônia.
+- Manter estados vazios, carregamento e erro claros.
+- Usar tokens de cor e componentes comuns do GameUi/GameColors; evitar cores ou estilos locais divergentes.
+- Adaptar densidade para telefone em paisagem e telas maiores sem fixar largura que corte conteúdo.
+- Não remover ações existentes sem mapear sua função e seu ponto alternativo de acesso.
+
+9. CHECKLIST DE EXECUÇÃO
+[✓] Consultar logs anteriores de auditoria RA e dos três pilares.
+[✓] Mapear os arquivos centrais da UI e as áreas principais.
+[✓] Identificar o painel flutuante e a heurística atual de categorias dos núcleos.
+[✓] Identificar a fila e os componentes de popup RA.
+[✓] Identificar campos de metadados já consumidos nos detalhes dos jogos.
+[✓] Criar branch isolada para a reformulação.
+[✓] Reduzir dimensões dos popups RA (commit d73c6965c4230b529355d9268167e5a9c3f8520b).
+[ ] Reestruturar navegação principal por categorias.
+[ ] Transformar opções de núcleo em duas telas de menu, sem janela flutuante.
+[ ] Converter avisos curtos do menu inicial em popups/snackbars.
+[ ] Expandir detalhes para todos os metadados disponíveis no RomM.
+[ ] Padronizar botões de ícone e acessibilidade.
+[ ] Remover redundâncias após confirmar cobertura funcional.
+[ ] Executar Spotless, testes unitários e assembleLawnWithQuickstepGithubDebug.
+[ ] Revisar artefato/assinatura e resultado da CI.
+[ ] Testar no Motorola Edge 30 Fusion: navegação por toque e gamepad, detalhes, metadados, opções de núcleos, RA, mensagens e telas em paisagem.
+[ ] Atualizar este log após cada CI/PR concluída com sucesso.
+
+10. CRITÉRIO DE CONCLUSÃO
+A auditoria só será encerrada quando todas as pendências acima estiverem implementadas ou justificadas, a CI passar, a revisão de regressão estiver concluída e o usuário validar o APK no aparelho. Não mesclar automaticamente para release.
