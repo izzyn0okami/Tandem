@@ -960,6 +960,6 @@ object GamePlatforms {
                 }
             }
         }
-        return all.singleOrNull { ext in it.extensions }
+        return if (ext == "nds") bySlug("nds") else all.singleOrNull { ext in it.extensions }
     }
 }
