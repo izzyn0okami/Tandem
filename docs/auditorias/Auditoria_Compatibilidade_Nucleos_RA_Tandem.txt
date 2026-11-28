@@ -210,3 +210,19 @@ ATUALIZAÇÃO 2026-11-27 — CI #2096 / PR #64
 - [ ] Revisar os casos especiais da matriz (Arcade/hash, PC-88, SuperGrafx, Watara e demais divergências).
 - [ ] Revisão final e autorização de merge.
 - Status: CI aprovada; PR aberta e não mesclada; homologação funcional completa ainda pendente.
+
+
+
+ATUALIZAÇÃO FINAL 2026-11-28 — PR #64 MESCLADA / AUDITORIA ESTÁTICA COMPLETA DA MATRIZ RA
+- [x] Revisada a matriz de Console IDs e núcleos contra a documentação oficial atual de suporte do RetroAchievements e a tabela pública de sistemas.
+- [x] Conferidos 44 mapeamentos explícitos de plataforma/núcleo na allowlist; todos os núcleos permitidos estão presentes no catálogo de seleção do Tandem. O teste unitário percorre as plataformas RA e valida essa correspondência.
+- [x] Corrigidos/confirmados: PSX (12), DS (18), DSi (78), FDS (81), SNES/Mesen-S, SuperGrafx/PCE (8), PC-88 (47), Pokémon Mini (24), Amstrad CPC (37), Watara Supervision (63), Mega Duck (69), além de 3DO, Atari 7800, 32X, SG-1000 e demais plataformas listadas na matriz.
+- [x] Núcleos não homologados pela lista oficial permanecem fora da allowlist; o jogo continua podendo iniciar sem RA/Hardcore.
+- [x] Mega Duck e Jaguar mantêm seus Console IDs corretos, mas RA fica bloqueado no pacote Android ARM64 atual: SameDuck e Virtual Jaguar não estão disponíveis nesse catálogo de distribuição. Potator permanece associado somente a Watara Supervision.
+- [x] Testes unitários aprovados: 285 testes, incluindo integridade de todos os núcleos permitidos versus CoreRegistry.
+- [x] Spotless e build APK Debug aprovados na CI #2134 / run 46091148846.
+- [x] APK Debug publicado: artifact ID 15241930918; tamanho 46.667.680 bytes; SHA-256 3f47e8bc43ae5dec8750492f3f344a0661a304aeea2d0fb041c2706b5f74336d; expira em 26/02/2027.
+- [x] PR #64 mesclada por squash na branch game-mode-m2-dev. Merge commit: ac8c71761eb7e46e9d6cee91ce1562a7c8b1fb68.
+- [ ] Consulta autenticada à API GetConsoleIDs continua pendente por depender de Web API Key; os IDs foram cruzados com a tabela pública atual do RetroAchievements.
+- [ ] Testes físicos/online em aparelhos e jogos individuais ficam como validação contínua pós-merge, conforme solicitado pelo usuário; não são pré-requisito para esta integração.
+- Estado: matriz e catálogo integrados; CI completa aprovada; PR #64 mesclada. Correções pontuais futuras devem ser registradas conforme problemas reais forem encontrados.

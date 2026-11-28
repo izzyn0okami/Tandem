@@ -954,3 +954,15 @@ ATUALIZAÇÃO 2026-11-27 — CI #2096 / PR #64
 - [ ] Revisar os casos especiais da matriz (Arcade/hash, PC-88, SuperGrafx, Watara e demais divergências).
 - [ ] Revisão final e autorização de merge.
 - Status: CI aprovada; PR aberta e não mesclada; homologação funcional completa ainda pendente.
+
+
+
+ATUALIZAÇÃO 2026-11-28 — FECHAMENTO DA AUDITORIA RETROACHIEVEMENTS / PR #64
+- [x] Auditoria estática da matriz RA concluída e integrada: validação explícita por plataforma e núcleo, com bloqueio seguro de núcleos não suportados.
+- [x] 285 testes unitários, Spotless, build APK Debug e final-status aprovados na CI #2134 (run 46091148846).
+- [x] Catálogo RA ampliado e conferido; sistemas sem núcleo Android elegível mantêm RA bloqueado sem impedir o lançamento do jogo.
+- [x] PR #64 mesclada na game-mode-m2-dev por squash; commit ac8c71761eb7e46e9d6cee91ce1562a7c8b1fb68.
+- [x] APK Debug artifact 15241930918 publicado; SHA-256 3f47e8bc43ae5dec8750492f3f344a0661a304aeea2d0fb041c2706b5f74336d.
+- [ ] Testes físicos/online individuais continuam como validação contínua pós-merge, conforme orientação do usuário.
+- [ ] Consulta autenticada GetConsoleIDs depende de Web API Key e permanece pendente.
+- Status: etapa de integração RA encerrada; eventuais incompatibilidades reais serão corrigidas incrementalmente sem exigir teste manual de todos os sistemas.

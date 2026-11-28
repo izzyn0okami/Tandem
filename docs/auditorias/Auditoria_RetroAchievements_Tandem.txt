@@ -244,3 +244,17 @@ ATUALIZAÇÃO 2026-11-27 — CI #2096 / PR #64
 - [ ] Revisar os casos especiais da matriz (Arcade/hash, PC-88, SuperGrafx, Watara e demais divergências).
 - [ ] Revisão final e autorização de merge.
 - Status: CI aprovada; PR aberta e não mesclada; homologação funcional completa ainda pendente.
+
+
+
+ATUALIZAÇÃO 2026-11-28 — PR #64 MESCLADA / RETROACHIEVEMENTS
+- [x] A PR #64 adicionou validação de RA por plataforma + coreId e foi mesclada na game-mode-m2-dev.
+- [x] PSX e DS passam a reconhecer somente núcleos oficialmente listados; DSi usa melonDS DS e não oferece save states; FDS usa Mesen e ID 81; SNES inclui Mesen-S.
+- [x] Console IDs conferidos com a tabela pública do RetroAchievements; 44 mapeamentos explícitos de plataforma/núcleo passaram no teste de integridade contra CoreRegistry.
+- [x] Jaguar e Mega Duck não ativam RA no pacote Android ARM64 atual porque os núcleos oficiais necessários não estão disponíveis nele; os IDs corretos permanecem mapeados e os falsos positivos são bloqueados.
+- [x] CI #2134 / run 46091148846: testes unitários (285), Spotless, APK Debug, upload e final-status aprovados.
+- [x] APK Debug artifact 15241930918; SHA-256 3f47e8bc43ae5dec8750492f3f344a0661a304aeea2d0fb041c2706b5f74336d.
+- [x] Merge commit: ac8c71761eb7e46e9d6cee91ce1562a7c8b1fb68.
+- [ ] GetConsoleIDs autenticado continua pendente por depender de Web API Key.
+- [ ] Testes físicos/online por sistema serão realizados conforme uso e ocorrência de problemas; não se exige validar manualmente dezenas de sistemas antes da integração.
+- Status: integração RA mesclada e CI aprovada; correções futuras serão registradas conforme necessário.
