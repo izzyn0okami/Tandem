@@ -57,10 +57,10 @@ internal fun CoreOptionsPanel(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                GameButton(
-                    label = if (selectedCategory == null) "Fechar" else "Categorias",
+                GameIconButton(
+                    label = if (selectedCategory == null) "Fechar opções do núcleo" else "Voltar às categorias",
+                    symbol = "←",
                     onClick = onBack,
-                    compact = true,
                 )
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
