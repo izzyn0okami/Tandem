@@ -1684,7 +1684,7 @@ internal fun SettingsScreen(
                     symbol = "←",
                     onClick = { selectedCategory = null },
                 )
-                Text(selectedCategory.title, color = GameColors.text, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                Text(selectedCategory?.title.orEmpty(), color = GameColors.text, fontSize = 18.sp, fontWeight = FontWeight.Bold)
             }
             when (selectedCategory) {
                 SettingsCategory.LIBRARY -> {
