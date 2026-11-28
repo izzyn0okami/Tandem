@@ -687,6 +687,7 @@ object GamePlatforms {
             extensions = setOf("bin", "ws", "sv"),
             folderAliases = setOf("megaduck"),
             sortOrder = 134,
+            raConsoleId = 69,
         ),
         GamePlatform(
             slug = "supervision",

@@ -144,7 +144,12 @@ class RaCoreCompatibilityTest {
             val selectableCoreIds = CoreRegistry.cores(platform).map { it.id }.toSet()
             val allowedCoreIds = RaCoreCompatibility.supportedCoreIds(platform.slug)
 
-            assertTrue("No RA cores configured for ${platform.slug}", allowedCoreIds.isNotEmpty())
+            if (allowedCoreIds.isEmpty()) {
+                assertFalse(
+                    "Platform ${platform.slug} has no verified Android RA core but was marked compatible",
+                    RaCoreCompatibility.isSupported(platform, platform.coreId),
+                )
+            }
             allowedCoreIds.forEach { coreId ->
                 assertTrue(
                     "RA allows $coreId for ${platform.slug}, but CoreRegistry does not offer it",
@@ -152,6 +157,17 @@ class RaCoreCompatibilityTest {
                 )
             }
         }
+    }
+
+    @Test
+    fun systemsWithoutAnAvailableAndroidRaCoreRemainBlocked() {
+        val megaDuck = GamePlatforms.bySlug("megaduck")!!
+        val jaguar = GamePlatforms.bySlug("jaguar")!!
+
+        assertTrue(megaDuck.raConsoleId == 69)
+        assertFalse(RaCoreCompatibility.isSupported(megaDuck, "potator"))
+        assertTrue(jaguar.raConsoleId == 17)
+        assertFalse(RaCoreCompatibility.isSupported(jaguar, "virtualjaguar"))
     }
 
     @Test
