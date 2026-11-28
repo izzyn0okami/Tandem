@@ -5,11 +5,9 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -28,60 +26,113 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.android.launcher3.R
 
-/** Opções do núcleo em execução: A passa para o próximo valor, B fecha. As escolhas ficam salvas por núcleo. */
+/** Navegação de opções do núcleo: categorias e opções ocupam telas próprias, sem janela flutuante. */
 @Composable
 internal fun CoreOptionsPanel(
     coreLabel: String,
     options: List<CoreOption>,
+    selectedCategory: CoreOptionCategory?,
+    onSelectCategory: (CoreOptionCategory) -> Unit,
+    onBack: () -> Unit,
     onChange: (CoreOption, String) -> Unit,
     onReset: () -> Unit,
 ) {
-    val first = remember { FocusRequester() }
-    LaunchedEffect(Unit) { runCatching { first.requestFocus() } }
-    Box(modifier = Modifier.fillMaxSize().background(GameColors.scrim), contentAlignment = Alignment.Center) {
+    val first = remember(selectedCategory) { FocusRequester() }
+    val grouped = remember(options) { groupByCategory(options) }
+    val categories = remember(grouped) {
+        CoreOptionCategory.entries.filter { grouped[it].orEmpty().isNotEmpty() }
+    }
+    LaunchedEffect(selectedCategory) { runCatching { first.requestFocus() } }
+
+    Box(
+        modifier = Modifier.fillMaxSize().background(GameColors.panel),
+        contentAlignment = Alignment.TopStart,
+    ) {
         Column(
-            modifier = Modifier
-                .fillMaxHeight(0.92f)
-                .width(560.dp)
-                .background(GameColors.panel, RoundedCornerShape(14.dp))
-                .padding(horizontal = 20.dp, vertical = 14.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier.fillMaxSize().padding(horizontal = 24.dp, vertical = 18.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
-            Text(
-                text = stringResource(R.string.game_core_options_title, coreLabel),
-                color = GameColors.text,
-                fontSize = 18.sp,
-                fontWeight = FontWeight.Bold,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-            Text(stringResource(R.string.game_core_options_note), color = GameColors.textDim, fontSize = 12.sp)
-            if (options.isEmpty()) {
-                Text(stringResource(R.string.game_core_options_empty), color = GameColors.textDim, fontSize = 14.sp)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                GameButton(
+                    label = if (selectedCategory == null) "Fechar" else "Categorias",
+                    onClick = onBack,
+                    compact = true,
+                )
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = if (selectedCategory == null) "Opções do núcleo" else selectedCategory.label,
+                        color = GameColors.text,
+                        fontSize = 19.sp,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    Text(
+                        text = coreLabel,
+                        color = GameColors.textDim,
+                        fontSize = 11.sp,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
             }
-            val grouped = remember(options) { groupByCategory(options) }
-            var firstDrawn = false
-            LazyColumn(verticalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.weight(1f)) {
-                grouped.forEach { (category, items) ->
-                    item(key = "header_${category.name}") {
-                        Text(
-                            text = stringResource(category.titleRes).uppercase(),
-                            color = GameColors.textDim,
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Bold,
-                            modifier = Modifier.padding(top = 8.dp, bottom = 2.dp),
-                        )
+
+            Text(
+                text = stringResource(R.string.game_core_options_note),
+                color = GameColors.textDim,
+                fontSize = 12.sp,
+            )
+
+            if (options.isEmpty()) {
+                Text(
+                    text = stringResource(R.string.game_core_options_empty),
+                    color = GameColors.textDim,
+                    fontSize = 14.sp,
+                )
+            } else if (selectedCategory == null) {
+                LazyColumn(
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.weight(1f),
+                ) {
+                    itemsIndexed(categories, key = { _, category -> category.name }) { index, category ->
+                        val count = grouped[category].orEmpty().size
+                        FocusSurface(
+                            onClick = { onSelectCategory(category) },
+                            modifier = Modifier.fillMaxWidth().then(if (index == 0) Modifier.focusRequester(first) else Modifier),
+                            shape = RoundedCornerShape(10.dp),
+                        ) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 14.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                            ) {
+                                Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                                    Text(category.label, color = GameColors.text, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+                                    Text("$count opções", color = GameColors.textDim, fontSize = 11.sp)
+                                }
+                                Text("›", color = GameColors.accent, fontSize = 24.sp, fontWeight = FontWeight.Bold)
+                            }
+                        }
                     }
-                    itemsIndexed(items, key = { _, option -> option.key }) { _, option ->
-                        val isFirst = !firstDrawn
-                        if (isFirst) firstDrawn = true
+                }
+            } else {
+                val categoryOptions = grouped[selectedCategory].orEmpty()
+                LazyColumn(
+                    verticalArrangement = Arrangement.spacedBy(6.dp),
+                    modifier = Modifier.weight(1f),
+                ) {
+                    itemsIndexed(categoryOptions, key = { _, option -> option.key }) { index, option ->
                         FocusSurface(
                             onClick = { onChange(option, option.next()) },
-                            modifier = Modifier.fillMaxWidth().then(if (isFirst) Modifier.focusRequester(first) else Modifier),
+                            modifier = Modifier.fillMaxWidth().then(if (index == 0) Modifier.focusRequester(first) else Modifier),
                             shape = RoundedCornerShape(8.dp),
                         ) {
                             Row(
-                                modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 9.dp),
+                                modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 11.dp),
                                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                                 verticalAlignment = Alignment.CenterVertically,
                             ) {
@@ -93,27 +144,45 @@ internal fun CoreOptionsPanel(
                                     overflow = TextOverflow.Ellipsis,
                                     modifier = Modifier.weight(1f),
                                 )
-                                Text(text = option.current, color = GameColors.accent, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
+                                Text(
+                                    text = option.current,
+                                    color = GameColors.accent,
+                                    fontSize = 14.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    maxLines = 2,
+                                    overflow = TextOverflow.Ellipsis,
+                                )
                             }
                         }
                     }
                 }
             }
-            GameButton(stringResource(R.string.game_core_options_reset), onReset, compact = true)
+
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                GameButton(
+                    label = stringResource(R.string.game_core_options_reset),
+                    onClick = onReset,
+                    compact = true,
+                )
+                GameButton(
+                    label = if (selectedCategory == null) "Fechar opções" else "Voltar às categorias",
+                    onClick = onBack,
+                    compact = true,
+                )
+            }
         }
     }
 }
 
-/**
- * As opções vêm direto do núcleo (RetroArch/libretro) sem categoria nenhuma, então aqui a gente
- * adivinha a categoria pelo nome da chave/rótulo — só pra agrupar na tela, nada é descartado.
- */
-private enum class CoreOptionCategory(val titleRes: Int) {
-    VIDEO(R.string.game_core_category_video),
-    AUDIO(R.string.game_core_category_audio),
-    CONTROLS(R.string.game_core_category_controls),
-    SYSTEM(R.string.game_core_category_system),
-    OTHER(R.string.game_core_category_other),
+/** As opções vêm do próprio núcleo; a classificação só organiza a apresentação e nunca descarta itens. */
+internal enum class CoreOptionCategory(val label: String) {
+    VIDEO("Vídeo e imagem"),
+    AUDIO("Áudio"),
+    CONTROLS("Controles e entrada"),
+    SYSTEM("Sistema e desempenho"),
+    SAVES("Saves e memória"),
+    NETWORK("Rede e serviços"),
+    OTHER("Outros"),
 }
 
 private val videoHints = listOf(
@@ -122,9 +191,11 @@ private val videoHints = listOf(
 )
 private val audioHints = listOf("audio", "sound", "music", "volume", "mute", "mixer", "channel")
 private val controlHints = listOf("input", "button", "stick", "analog", "rumble", "touch", "lightgun", "mouse", "controller", "gamepad", "vibrat")
+private val saveHints = listOf("save", "sram", "memory card", "memcard", "autosave", "savefile", "savestate", "state slot")
+private val networkHints = listOf("network", "netplay", "wifi", "wi-fi", "http", "online", "socket", "server")
 private val systemHints = listOf(
-    "bios", "region", "system", "cpu", "timing", "overclock", "speed", "cheat", "memory",
-    "rtc", "save", "autosave", "frameskip", "fastforward", "core", "emulat", "boot", "rom", "disk", "cd_",
+    "bios", "region", "system", "cpu", "timing", "overclock", "speed", "cheat",
+    "rtc", "frameskip", "fastforward", "core", "emulat", "boot", "rom", "disk", "cd_",
 )
 
 private fun categoryFor(option: CoreOption): CoreOptionCategory {
@@ -133,14 +204,12 @@ private fun categoryFor(option: CoreOption): CoreOptionCategory {
         videoHints.any { text.contains(it) } -> CoreOptionCategory.VIDEO
         audioHints.any { text.contains(it) } -> CoreOptionCategory.AUDIO
         controlHints.any { text.contains(it) } -> CoreOptionCategory.CONTROLS
+        saveHints.any { text.contains(it) } -> CoreOptionCategory.SAVES
+        networkHints.any { text.contains(it) } -> CoreOptionCategory.NETWORK
         systemHints.any { text.contains(it) } -> CoreOptionCategory.SYSTEM
         else -> CoreOptionCategory.OTHER
     }
 }
 
-private fun groupByCategory(options: List<CoreOption>): List<Pair<CoreOptionCategory, List<CoreOption>>> {
-    val byCategory = options.groupBy(::categoryFor)
-    return CoreOptionCategory.entries.mapNotNull { category ->
-        byCategory[category]?.takeIf { it.isNotEmpty() }?.let { category to it }
-    }
-}
+private fun groupByCategory(options: List<CoreOption>): Map<CoreOptionCategory, List<CoreOption>> =
+    options.groupBy(::categoryFor)
