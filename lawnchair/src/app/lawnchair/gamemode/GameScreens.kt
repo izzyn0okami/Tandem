@@ -1393,11 +1393,6 @@ internal fun GameDetailScreen(
                         localLastPlayedMs = history.lastPlayedMs,
                     )
                 }
-                }
-                if (selectedDetailTab == "romm") {
-                detailGames.firstOrNull()?.let { remoteGame ->
-                    RomMMediaPanel(games = detailGames)
-                }
                 if (isEasyRpgGame) {
                     Column(verticalArrangement = Arrangement.spacedBy(3.dp), modifier = Modifier.padding(top = 8.dp)) {
                         Text(
@@ -1411,6 +1406,11 @@ internal fun GameDetailScreen(
                             fontSize = 11.sp,
                         )
                     }
+                }
+                }
+                if (selectedDetailTab == "romm") {
+                detailGames.firstOrNull()?.let { remoteGame ->
+                    RomMMediaPanel(games = detailGames)
                 }
                 if (metadataText.isNotBlank()) {
                     Column(verticalArrangement = Arrangement.spacedBy(3.dp), modifier = Modifier.padding(top = 8.dp).width(520.dp)) {
