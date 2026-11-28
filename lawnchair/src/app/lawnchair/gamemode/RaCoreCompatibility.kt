@@ -29,6 +29,8 @@ object RaCoreCompatibility {
         "saturn" to setOf("mednafen_saturn"),
         "dreamcast" to setOf("flycast"),
         "nds" to setOf("melonds_ds", "melonds", "desmume"),
+        "dsi" to setOf("melonds_ds"),
+        "pc88" to setOf("quasi88"),
         "psp" to setOf("ppsspp"),
         "3do" to setOf("opera"),
         "vb" to setOf("mednafen_vb"),
