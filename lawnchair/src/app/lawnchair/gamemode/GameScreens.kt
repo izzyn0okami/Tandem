@@ -4,6 +4,7 @@ import android.content.Intent
 import android.net.Uri
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -934,6 +935,7 @@ internal fun GameDetailScreen(
     var coreUpdateMessage by remember(entry.key) { mutableStateOf<String?>(null) }
     val detailScope = rememberCoroutineScope()
     var showAchievements by remember(entry.key) { mutableStateOf(false) }
+    var selectedDetailTab by remember(entry.key) { mutableStateOf("overview") }
     val achievements by produceState<List<RaEntry>?>(null, entry.key) {
         value = if (local != null) withContext(Dispatchers.IO) { loadAchievementPreview(context, local.path) } else null
     }
@@ -1022,6 +1024,16 @@ internal fun GameDetailScreen(
                     }
                     GameIconButton(label = stringResource(R.string.game_hint_back), symbol = "←", onClick = onBack)
                 }
+                Row(
+                    modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(top = 6.dp, bottom = 2.dp),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                ) {
+                    GameButton("Visão geral", { selectedDetailTab = "overview" }, compact = true, primary = selectedDetailTab == "overview")
+                    GameButton("RomM", { selectedDetailTab = "romm" }, compact = true, primary = selectedDetailTab == "romm")
+                    GameButton("Arquivos e versões", { selectedDetailTab = "files" }, compact = true, primary = selectedDetailTab == "files")
+                    GameButton("Saves e sincronização", { selectedDetailTab = "saves" }, compact = true, primary = selectedDetailTab == "saves")
+                }
+                if (selectedDetailTab == "saves") {
                 if (syncStatus != null) {
                     SaveSyncBadge(syncStatus)
                 }
@@ -1310,6 +1322,7 @@ internal fun GameDetailScreen(
                         )
                     }
                 }
+                }
                 if (local != null && coreUpdateAvailable == true) {
                     GameButton(
                         label = if (coreUpdating) "Atualizando núcleo…" else "Atualizar núcleo",
@@ -1334,7 +1347,7 @@ internal fun GameDetailScreen(
                         modifier = Modifier.width(190.dp),
                     )
                 }
-                if (manyVersions) {
+                if (selectedDetailTab == "files" && manyVersions) {
                     VersionList(
                         entry = entry,
                         progress = progress,
@@ -1343,6 +1356,7 @@ internal fun GameDetailScreen(
                         onDownload = onDownload,
                     )
                 }
+                if (selectedDetailTab == "overview") {
                 Row(horizontalArrangement = Arrangement.spacedBy(28.dp), modifier = Modifier.padding(top = 8.dp)) {
                     Stat(stringResource(R.string.game_stat_playtime), formatPlaytime(history.playtimeMs))
                     Stat(
@@ -1379,6 +1393,8 @@ internal fun GameDetailScreen(
                         localLastPlayedMs = history.lastPlayedMs,
                     )
                 }
+                }
+                if (selectedDetailTab == "romm") {
                 detailGames.firstOrNull()?.let { remoteGame ->
                     RomMMediaPanel(games = detailGames)
                 }
@@ -1408,6 +1424,8 @@ internal fun GameDetailScreen(
                         Text(personalDataText, color = GameColors.textDim, fontSize = 12.sp)
                     }
                 }
+                }
+                if (selectedDetailTab == "files") {
                 if (rommIdentityText.isNotBlank()) {
                     Column(verticalArrangement = Arrangement.spacedBy(3.dp), modifier = Modifier.padding(top = 8.dp).width(520.dp)) {
                         Text("Identificação e versões RomM", color = GameColors.text, fontSize = 16.sp, fontWeight = FontWeight.Bold)
@@ -1431,7 +1449,8 @@ internal fun GameDetailScreen(
                         }
                     }
                 }
-                if (noteGames.isNotEmpty()) {
+                }
+                if (selectedDetailTab == "romm" && noteGames.isNotEmpty()) {
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(top = 8.dp).width(520.dp)) {
                         Text("Notas do RomM", color = GameColors.text, fontSize = 16.sp, fontWeight = FontWeight.Bold)
                         when {
@@ -1460,6 +1479,8 @@ internal fun GameDetailScreen(
                         }
                     }
                 }
+                }
+                if (selectedDetailTab == "overview") {
                 AchievementSummaryRow(
                     platform = entry.platform,
                     hasLocal = local != null,
@@ -1467,6 +1488,7 @@ internal fun GameDetailScreen(
                     onOpen = { showAchievements = true },
                 )
                 local?.let { Text(text = it.path, color = GameColors.textDim, fontSize = 12.sp, modifier = Modifier.padding(top = 8.dp)) }
+                }
             }
         }
         achievements?.let { list ->
