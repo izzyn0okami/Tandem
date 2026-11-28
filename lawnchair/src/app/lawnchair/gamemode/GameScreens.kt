@@ -770,37 +770,42 @@ internal fun GameDetailScreen(
     val firstFocus = remember { FocusRequester() }
     val manyVersions = (group?.versions?.size ?: 0) > 1
     val detailGames = group?.versions.orEmpty()
-    val metadataGame = detailGames.firstOrNull {
+    val metadataGames = detailGames.filter {
         it.metadata?.hasContent == true || it.alternativeNames.isNotEmpty() || it.providerIds.isNotEmpty()
     }
     val associatedFiles = detailGames.flatMap { it.associatedFiles }.distinctBy { it.id }
     val isEasyRpgGame = detailGames.any { it.isEasyRpgGame }
-    val metadataText = remember(entry.key, metadataGame) {
+    val metadataText = remember(entry.key, metadataGames) {
         buildString {
-            val metadata = metadataGame?.metadata
+            val metadata = metadataGames.mapNotNull { it.metadata }
             fun appendValues(label: String, values: List<String>) {
-                if (values.isNotEmpty()) append("$label: ${values.joinToString(" · ")}\\n")
+                val distinct = values.filter { it.isNotBlank() }.distinct()
+                if (distinct.isNotEmpty()) append("$label: ${distinct.joinToString(" · ")}\\\\n")
             }
-            if (metadata != null) {
-                appendValues("Gêneros", metadata.genres)
-                appendValues("Franquias", metadata.franchises)
-                appendValues("Coleções", metadata.collections)
-                appendValues("Empresas", metadata.companies)
-                appendValues("Editoras", metadata.publishers)
-                appendValues("Desenvolvedores", metadata.developers)
-                appendValues("Modos", metadata.gameModes)
-                appendValues("Classificação etária", metadata.ageRatings)
-                metadata.playerCount?.let { append("Jogadores: $it\\n") }
-                metadata.firstReleaseDate?.let {
-                    append("Lançamento: ${DateFormat.getDateInstance(DateFormat.MEDIUM).format(Date(it * 1000L))}\\n")
+            appendValues("Gêneros", metadata.flatMap { it.genres })
+            appendValues("Franquias", metadata.flatMap { it.franchises })
+            appendValues("Coleções", metadata.flatMap { it.collections })
+            appendValues("Empresas", metadata.flatMap { it.companies })
+            appendValues("Editoras", metadata.flatMap { it.publishers })
+            appendValues("Desenvolvedores", metadata.flatMap { it.developers })
+            appendValues("Modos", metadata.flatMap { it.gameModes })
+            appendValues("Classificação etária", metadata.flatMap { it.ageRatings })
+            appendValues("Jogadores", metadata.mapNotNull { it.playerCount })
+            appendValues(
+                "Lançamento",
+                metadata.mapNotNull { it.firstReleaseDate }
+                    .distinct()
+                    .map { DateFormat.getDateInstance(DateFormat.MEDIUM).format(Date(it * 1000L)) },
+            )
+            appendValues("Avaliação RomM", metadata.mapNotNull { it.averageRating?.toString() })
+            if (metadata.any { it.hasManualMetadata }) append("Inclui metadados preenchidos manualmente no RomM.\\\\n")
+            appendValues("Títulos alternativos", metadataGames.flatMap { it.alternativeNames })
+            metadataGames.flatMap { it.providerIds.entries }
+                .groupBy { it.key }
+                .toSortedMap()
+                .forEach { (provider, values) ->
+                    append("$provider: ${values.map { it.value }.distinct().joinToString(" · ")}\\\\n")
                 }
-                metadata.averageRating?.let { append("Avaliação RomM: $it\\n") }
-                if (metadata.hasManualMetadata) append("Inclui metadados preenchidos manualmente no RomM.\\n")
-            }
-            metadataGame?.alternativeNames?.take(12)?.let { appendValues("Títulos alternativos", it) }
-            metadataGame?.providerIds?.toSortedMap()?.forEach { (provider, id) ->
-                append("$provider: $id\\n")
-            }
         }.trim()
     }
     val summary = remember(entry.key, detailGames) {
@@ -1331,13 +1336,16 @@ internal fun GameDetailScreen(
                 if (associatedFiles.isNotEmpty()) {
                     Column(verticalArrangement = Arrangement.spacedBy(3.dp), modifier = Modifier.padding(top = 8.dp).width(520.dp)) {
                         Text("Arquivos associados do RomM", color = GameColors.text, fontSize = 16.sp, fontWeight = FontWeight.Bold)
-                        associatedFiles.take(20).forEach { file ->
+                        associatedFiles.forEach { file ->
                             val category = file.category?.replaceFirstChar { it.uppercase() } ?: "Jogo"
                             val size = if (file.sizeBytes > 0L) " · ${file.sizeBytes / 1024} KB" else ""
-                            Text("$category · ${file.fileName}$size", color = GameColors.textDim, fontSize = 11.sp)
-                        }
-                        if (associatedFiles.size > 20) {
-                            Text("E mais ${associatedFiles.size - 20} arquivo(s) associado(s).", color = GameColors.textDim, fontSize = 11.sp)
+                            val level = if (file.isTopLevel) " · Principal" else ""
+                            val hashes = listOfNotNull(
+                                file.crcHash?.let { "CRC $it" },
+                                file.md5Hash?.let { "MD5 $it" },
+                                file.sha1Hash?.let { "SHA-1 $it" },
+                            ).joinToString(" · ").let { if (it.isBlank()) "" else " · $it" }
+                            Text("$category · ${file.fileName}$size$level$hashes", color = GameColors.textDim, fontSize = 11.sp)
                         }
                     }
                 }
