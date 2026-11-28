@@ -4,8 +4,8 @@ import android.content.Intent
 import android.net.Uri
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.background
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
@@ -1034,294 +1034,294 @@ internal fun GameDetailScreen(
                     GameButton("Saves e sincronização", { selectedDetailTab = "saves" }, compact = true, primary = selectedDetailTab == "saves")
                 }
                 if (selectedDetailTab == "saves") {
-                if (syncStatus != null) {
-                    SaveSyncBadge(syncStatus)
-                }
-                if (
-                    local != null &&
-                    entry.platform.launch == LaunchMode.LIBRETRO &&
-                    coreInfo.supportsRomMSaveSync &&
-                    RomMSettings.isConnected(context)
-                ) {
-                    if (rommLinked) {
-                        Text("Vínculo com RomM confirmado para esta conta.", color = GameColors.accent, fontSize = 13.sp)
-                    } else if (rommLinkAmbiguous) {
-                        GameButton(
-                            label = "Resolver vínculo ambíguo",
-                            onClick = { showRomMLinkDialog = true },
-                            enabled = !busy,
-                            modifier = Modifier.width(250.dp),
-                        )
-                    } else {
-                        Text(
-                            "Aguardando correspondência exata no catálogo RomM.",
-                            color = GameColors.textDim,
-                            fontSize = 12.sp,
-                        )
+                    if (syncStatus != null) {
+                        SaveSyncBadge(syncStatus)
                     }
-                }
-                if (canInspectDeviceSyncSave) {
-                    GameButton(
-                        label = if (remoteSaveVersionsLoading) "Carregando histórico…" else "Histórico de SRAM",
-                        onClick = {
-                            if (!remoteSaveVersionsLoading && local != null) {
-                                remoteSaveVersionsLoading = true
-                                remoteSaveVersionsError = null
-                                saveVersionRestoreMessage = null
-                                detailScope.launch {
-                                    try {
-                                        val versions = withContext(Dispatchers.IO) {
-                                            val connection = GameIdentityResolver.connectionSnapshot(context)
-                                                ?: throw IllegalStateException("Conecte a conta RomM vinculada a este jogo.")
-                                            val romId = GameIdentityResolver.linkedRomId(context, File(local.path), connection)
-                                                ?: throw IllegalStateException("O vínculo RomM deste jogo não está disponível.")
-                                            val slot = DeviceSyncArtifactPolicy.remoteSlotForCore(chosenCoreId)
-                                            RomMClient(connection.url, connection.token)
-                                                .listRemoteFiles(RemoteFileKind.Save, romId, slot)
-                                                .filter { it.slot == slot }
-                                                .sortedByDescending { it.updatedAtMs }
-                                        }
-                                        remoteSaveVersions = versions
-                                        if (versions.isEmpty()) saveVersionRestoreMessage = "Nenhuma versão de SRAM foi encontrada neste slot."
-                                    } catch (error: CancellationException) {
-                                        throw error
-                                    } catch (error: Exception) {
-                                        remoteSaveVersionsError = error.message ?: "Não foi possível carregar o histórico do RomM."
-                                        GameLog.error("Device Sync", "falha ao consultar histórico SRAM de ${entry.title}", error)
-                                    } finally {
-                                        remoteSaveVersionsLoading = false
-                                    }
-                                }
-                            }
-                        },
-                        enabled = !remoteSaveVersionsLoading && !deviceSyncExecutionLoading && !busy,
-                        modifier = Modifier.width(210.dp),
-                    )
-                    remoteSaveVersions?.let { versions ->
-                        Text(
-                            text = "Histórico de SRAM no RomM — ${versions.size} versão(ões). A mais recente aparece primeiro.",
-                            color = GameColors.text,
-                            fontSize = 13.sp,
-                        )
-                        versions.forEachIndexed { index, version ->
-                            val timestamp = if (version.updatedAtMs > 0L) {
-                                DateFormat.getDateTimeInstance().format(Date(version.updatedAtMs))
-                            } else {
-                                "Data não informada"
-                            }
+                    if (
+                        local != null &&
+                        entry.platform.launch == LaunchMode.LIBRETRO &&
+                        coreInfo.supportsRomMSaveSync &&
+                        RomMSettings.isConnected(context)
+                    ) {
+                        if (rommLinked) {
+                            Text("Vínculo com RomM confirmado para esta conta.", color = GameColors.accent, fontSize = 13.sp)
+                        } else if (rommLinkAmbiguous) {
+                            GameButton(
+                                label = "Resolver vínculo ambíguo",
+                                onClick = { showRomMLinkDialog = true },
+                                enabled = !busy,
+                                modifier = Modifier.width(250.dp),
+                            )
+                        } else {
                             Text(
-                                text = buildString {
-                                    append(if (index == 0) "Mais recente • " else "Versão histórica • ")
-                                    append(timestamp)
-                                    version.emulator?.let { append(" • Núcleo: $it") }
-                                    version.sizeBytes?.let { append(" • $it bytes") }
-                                    version.contentHash?.let { append(" • MD5 ${it.take(8)}") }
-                                },
+                                "Aguardando correspondência exata no catálogo RomM.",
                                 color = GameColors.textDim,
                                 fontSize = 12.sp,
                             )
-                            GameButton(
-                                label = "Restaurar esta versão (ID ${version.id})",
-                                onClick = { pendingSaveVersionRestore = version },
-                                enabled = !saveVersionRestoreLoading && !busy,
-                                modifier = Modifier.width(260.dp),
-                            )
                         }
                     }
-                    remoteSaveVersionsError?.let { error ->
-                        Text("Falha ao consultar histórico: $error", color = GameColors.danger, fontSize = 12.sp)
-                    }
-                    saveVersionRestoreMessage?.let { message ->
-                        Text(message, color = GameColors.accent, fontSize = 12.sp)
-                    }
-                    GameButton(
-                        label = if (deviceSyncInspectionLoading) "Inspecionando save…" else "Inspecionar save no RomM",
-                        onClick = {
-                            if (!deviceSyncInspectionLoading && local != null) {
-                                deviceSyncInspectionLoading = true
-                                deviceSyncInspection = null
-                                deviceSyncInspectionError = null
-                                detailScope.launch {
-                                    try {
-                                        val inspection = withContext(Dispatchers.IO) {
-                                            RomMDeviceSyncDiagnostics.inspectLocalSave(
-                                                context = context,
-                                                romPath = local.path,
-                                                coreId = chosenCoreId,
-                                                platformSlug = entry.platform.slug,
-                                            )
+                    if (canInspectDeviceSyncSave) {
+                        GameButton(
+                            label = if (remoteSaveVersionsLoading) "Carregando histórico…" else "Histórico de SRAM",
+                            onClick = {
+                                if (!remoteSaveVersionsLoading && local != null) {
+                                    remoteSaveVersionsLoading = true
+                                    remoteSaveVersionsError = null
+                                    saveVersionRestoreMessage = null
+                                    detailScope.launch {
+                                        try {
+                                            val versions = withContext(Dispatchers.IO) {
+                                                val connection = GameIdentityResolver.connectionSnapshot(context)
+                                                    ?: throw IllegalStateException("Conecte a conta RomM vinculada a este jogo.")
+                                                val romId = GameIdentityResolver.linkedRomId(context, File(local.path), connection)
+                                                    ?: throw IllegalStateException("O vínculo RomM deste jogo não está disponível.")
+                                                val slot = DeviceSyncArtifactPolicy.remoteSlotForCore(chosenCoreId)
+                                                RomMClient(connection.url, connection.token)
+                                                    .listRemoteFiles(RemoteFileKind.Save, romId, slot)
+                                                    .filter { it.slot == slot }
+                                                    .sortedByDescending { it.updatedAtMs }
+                                            }
+                                            remoteSaveVersions = versions
+                                            if (versions.isEmpty()) saveVersionRestoreMessage = "Nenhuma versão de SRAM foi encontrada neste slot."
+                                        } catch (error: CancellationException) {
+                                            throw error
+                                        } catch (error: Exception) {
+                                            remoteSaveVersionsError = error.message ?: "Não foi possível carregar o histórico do RomM."
+                                            GameLog.error("Device Sync", "falha ao consultar histórico SRAM de ${entry.title}", error)
+                                        } finally {
+                                            remoteSaveVersionsLoading = false
                                         }
-                                        deviceSyncInspection = inspection
-                                        val counts = DeviceSyncAction.entries.associateWith { action ->
-                                            inspection.negotiation.operations.count { it.action == action }
-                                        }
-                                        GameLog.log(
-                                            "Device Sync",
-                                            "inspeção somente leitura concluída para ${entry.title}; save local incluído=${inspection.localSaveIncluded}; " +
-                                                counts.entries.joinToString { "${it.key}=${it.value}" } +
-                                                "; nenhuma operação aplicada",
-                                        )
-                                    } catch (error: CancellationException) {
-                                        deviceSyncInspectionLoading = false
-                                        throw error
-                                    } catch (error: Exception) {
-                                        deviceSyncInspectionError = error.message ?: "Não foi possível inspecionar o save no RomM."
-                                        GameLog.error("Device Sync", "falha na inspeção somente leitura de ${entry.title}", error)
-                                    } finally {
-                                        deviceSyncInspectionLoading = false
                                     }
                                 }
-                            }
-                        },
-                        enabled = !deviceSyncInspectionLoading && !deviceSyncExecutionLoading && !busy,
-                        modifier = Modifier.width(230.dp),
-                    )
-                    deviceSyncInspection?.let { inspection ->
-                        val operations = inspection.negotiation.operations
-                        Text(
-                            text = "Inspeção concluída — ROM #${inspection.romId}. " +
-                                if (inspection.localSaveIncluded) "Save local encontrado." else "Nenhum save local válido encontrado.",
-                            color = GameColors.text,
-                            fontSize = 13.sp,
+                            },
+                            enabled = !remoteSaveVersionsLoading && !deviceSyncExecutionLoading && !busy,
+                            modifier = Modifier.width(210.dp),
                         )
-                        Text(
-                            text = "Sem alterações: nenhuma operação foi aplicada. " +
-                                "Sem ação: ${operations.count { it.action == DeviceSyncAction.NoOp }} · " +
-                                "Enviar: ${operations.count { it.action == DeviceSyncAction.Upload }} · " +
-                                "Baixar: ${operations.count { it.action == DeviceSyncAction.Download }} · " +
-                                "Conflitos: ${operations.count { it.action == DeviceSyncAction.Conflict }} · " +
-                                "Excluir: ${operations.count { it.action == DeviceSyncAction.Delete }} · " +
-                                "Desconhecidas: ${operations.count { it.action == DeviceSyncAction.Unknown }}",
-                            color = GameColors.textDim,
-                            fontSize = 12.sp,
-                        )
-                        Text(
-                            text = "Save local: " +
-                                (inspection.localSaveSizeBytes?.let { "$it bytes" } ?: "ausente") +
-                                " · atualizado: ${inspection.localSaveUpdatedAt ?: "—"} · MD5: " +
-                                (inspection.localSaveMd5?.take(8) ?: "—") +
-                                ". Operações remotas: " +
-                                operations.joinToString(" | ") { op ->
-                                    "${op.action}/ROM ${op.romId}/slot ${op.slot ?: "—"}/ID ${op.saveId ?: "—"}/" +
-                                        "${op.fileName ?: "—"}/emulador ${op.emulator ?: "—"}/" +
-                                        "atualizado ${op.serverUpdatedAt ?: "—"}/MD5 ${op.serverContentHash?.take(8) ?: "—"}"
-                                },
-                            color = GameColors.textDim,
-                            fontSize = 11.sp,
-                        )
-                    }
-                    deviceSyncInspectionError?.let { error ->
-                        Text(
-                            text = "Falha na inspeção: $error",
-                            color = GameColors.text,
-                            fontSize = 12.sp,
-                        )
-                    }
-                    GameButton(
-                        label = if (deviceSyncExecutionLoading) "Sincronizando save…" else "Sincronizar save com RomM",
-                        onClick = {
-                            if (!deviceSyncExecutionLoading && local != null) {
-                                deviceSyncExecutionLoading = true
-                                deviceSyncExecution = null
-                                deviceSyncExecutionError = null
-                                detailScope.launch {
-                                    try {
-                                        val result = withContext(Dispatchers.IO) {
-                                            RomMDeviceSyncRunner.synchronizeLocalSave(
-                                                context = context,
-                                                romPath = local.path,
-                                                coreId = chosenCoreId,
-                                                platformSlug = entry.platform.slug,
-                                            )
-                                        }
-                                        deviceSyncExecution = result
-                                        GameLog.log(
-                                            "Device Sync",
-                                            "sincronização do save concluída para ${entry.title}; " +
-                                                "upload=${result.uploaded}, download=${result.downloaded}, noOp=${result.noOp}, " +
-                                                "conflict=${result.conflictsPreserved}, delete_ignored=${result.deletesIgnored}, " +
-                                                "unknown_ignored=${result.unknownIgnored}, failed=${result.failed}",
-                                        )
-                                    } catch (error: CancellationException) {
-                                        deviceSyncExecutionLoading = false
-                                        throw error
-                                    } catch (error: Exception) {
-                                        deviceSyncExecutionError = error.message ?: "Não foi possível sincronizar o save com o RomM."
-                                        GameLog.error("Device Sync", "falha na sincronização do save de ${entry.title}", error)
-                                    } finally {
-                                        deviceSyncExecutionLoading = false
-                                    }
-                                }
-                            }
-                        },
-                        enabled = !deviceSyncExecutionLoading && !deviceSyncInspectionLoading && !busy,
-                        primary = true,
-                        modifier = Modifier.width(260.dp),
-                    )
-                    deviceSyncExecution?.let { result ->
-                        Text(
-                            text = "Sincronização do save — ROM #${result.romId}: " +
-                                "${result.uploaded} envio(s), ${result.downloaded} download(s), ${result.noOp} sem alteração.",
-                            color = GameColors.text,
-                            fontSize = 13.sp,
-                        )
-                        Text(
-                            text = "Conflitos preservados: ${result.conflictsPreserved} · " +
-                                "exclusões recusadas: ${result.deletesIgnored} · " +
-                                "operações desconhecidas: ${result.unknownIgnored} · falhas: ${result.failed}. " +
-                                "Save states e artefatos não elegíveis não foram incluídos.",
-                            color = GameColors.textDim,
-                            fontSize = 12.sp,
-                        )
-                        if (result.conflictsPreserved > 0 && local != null) {
+                        remoteSaveVersions?.let { versions ->
                             Text(
-                                "As versões local e remota foram preservadas. Escolha manter a versão local abaixo ou use o Histórico de SRAM para restaurar uma versão do RomM.",
-                                color = GameColors.accent,
-                                fontSize = 12.sp,
+                                text = "Histórico de SRAM no RomM — ${versions.size} versão(ões). A mais recente aparece primeiro.",
+                                color = GameColors.text,
+                                fontSize = 13.sp,
                             )
-                            GameButton(
-                                label = if (deviceSyncExecutionLoading) "Resolvendo conflito…" else "Manter versão local e publicar no RomM",
-                                onClick = {
-                                    if (!deviceSyncExecutionLoading) {
-                                        deviceSyncExecutionLoading = true
-                                        detailScope.launch {
-                                            try {
-                                                val message = RomMDeviceSyncRunner.resolveConflictKeepLocal(
+                            versions.forEachIndexed { index, version ->
+                                val timestamp = if (version.updatedAtMs > 0L) {
+                                    DateFormat.getDateTimeInstance().format(Date(version.updatedAtMs))
+                                } else {
+                                    "Data não informada"
+                                }
+                                Text(
+                                    text = buildString {
+                                        append(if (index == 0) "Mais recente • " else "Versão histórica • ")
+                                        append(timestamp)
+                                        version.emulator?.let { append(" • Núcleo: $it") }
+                                        version.sizeBytes?.let { append(" • $it bytes") }
+                                        version.contentHash?.let { append(" • MD5 ${it.take(8)}") }
+                                    },
+                                    color = GameColors.textDim,
+                                    fontSize = 12.sp,
+                                )
+                                GameButton(
+                                    label = "Restaurar esta versão (ID ${version.id})",
+                                    onClick = { pendingSaveVersionRestore = version },
+                                    enabled = !saveVersionRestoreLoading && !busy,
+                                    modifier = Modifier.width(260.dp),
+                                )
+                            }
+                        }
+                        remoteSaveVersionsError?.let { error ->
+                            Text("Falha ao consultar histórico: $error", color = GameColors.danger, fontSize = 12.sp)
+                        }
+                        saveVersionRestoreMessage?.let { message ->
+                            Text(message, color = GameColors.accent, fontSize = 12.sp)
+                        }
+                        GameButton(
+                            label = if (deviceSyncInspectionLoading) "Inspecionando save…" else "Inspecionar save no RomM",
+                            onClick = {
+                                if (!deviceSyncInspectionLoading && local != null) {
+                                    deviceSyncInspectionLoading = true
+                                    deviceSyncInspection = null
+                                    deviceSyncInspectionError = null
+                                    detailScope.launch {
+                                        try {
+                                            val inspection = withContext(Dispatchers.IO) {
+                                                RomMDeviceSyncDiagnostics.inspectLocalSave(
                                                     context = context,
                                                     romPath = local.path,
                                                     coreId = chosenCoreId,
                                                     platformSlug = entry.platform.slug,
                                                 )
-                                                saveVersionRestoreMessage = message
-                                                deviceSyncExecution = result.copy(
-                                                    conflictsPreserved = 0,
-                                                    uploaded = result.uploaded + 1,
-                                                )
-                                            } catch (error: CancellationException) {
-                                                throw error
-                                            } catch (error: Exception) {
-                                                saveVersionRestoreMessage = error.message ?: "Não foi possível resolver o conflito."
-                                                GameLog.error("Device Sync", "falha na resolução explícita do conflito de ${entry.title}", error)
-                                            } finally {
-                                                deviceSyncExecutionLoading = false
                                             }
+                                            deviceSyncInspection = inspection
+                                            val counts = DeviceSyncAction.entries.associateWith { action ->
+                                                inspection.negotiation.operations.count { it.action == action }
+                                            }
+                                            GameLog.log(
+                                                "Device Sync",
+                                                "inspeção somente leitura concluída para ${entry.title}; save local incluído=${inspection.localSaveIncluded}; " +
+                                                    counts.entries.joinToString { "${it.key}=${it.value}" } +
+                                                    "; nenhuma operação aplicada",
+                                            )
+                                        } catch (error: CancellationException) {
+                                            deviceSyncInspectionLoading = false
+                                            throw error
+                                        } catch (error: Exception) {
+                                            deviceSyncInspectionError = error.message ?: "Não foi possível inspecionar o save no RomM."
+                                            GameLog.error("Device Sync", "falha na inspeção somente leitura de ${entry.title}", error)
+                                        } finally {
+                                            deviceSyncInspectionLoading = false
                                         }
                                     }
-                                },
-                                enabled = !deviceSyncExecutionLoading && !busy,
-                                primary = true,
-                                modifier = Modifier.width(300.dp),
+                                }
+                            },
+                            enabled = !deviceSyncInspectionLoading && !deviceSyncExecutionLoading && !busy,
+                            modifier = Modifier.width(230.dp),
+                        )
+                        deviceSyncInspection?.let { inspection ->
+                            val operations = inspection.negotiation.operations
+                            Text(
+                                text = "Inspeção concluída — ROM #${inspection.romId}. " +
+                                    if (inspection.localSaveIncluded) "Save local encontrado." else "Nenhum save local válido encontrado.",
+                                color = GameColors.text,
+                                fontSize = 13.sp,
+                            )
+                            Text(
+                                text = "Sem alterações: nenhuma operação foi aplicada. " +
+                                    "Sem ação: ${operations.count { it.action == DeviceSyncAction.NoOp }} · " +
+                                    "Enviar: ${operations.count { it.action == DeviceSyncAction.Upload }} · " +
+                                    "Baixar: ${operations.count { it.action == DeviceSyncAction.Download }} · " +
+                                    "Conflitos: ${operations.count { it.action == DeviceSyncAction.Conflict }} · " +
+                                    "Excluir: ${operations.count { it.action == DeviceSyncAction.Delete }} · " +
+                                    "Desconhecidas: ${operations.count { it.action == DeviceSyncAction.Unknown }}",
+                                color = GameColors.textDim,
+                                fontSize = 12.sp,
+                            )
+                            Text(
+                                text = "Save local: " +
+                                    (inspection.localSaveSizeBytes?.let { "$it bytes" } ?: "ausente") +
+                                    " · atualizado: ${inspection.localSaveUpdatedAt ?: "—"} · MD5: " +
+                                    (inspection.localSaveMd5?.take(8) ?: "—") +
+                                    ". Operações remotas: " +
+                                    operations.joinToString(" | ") { op ->
+                                        "${op.action}/ROM ${op.romId}/slot ${op.slot ?: "—"}/ID ${op.saveId ?: "—"}/" +
+                                            "${op.fileName ?: "—"}/emulador ${op.emulator ?: "—"}/" +
+                                            "atualizado ${op.serverUpdatedAt ?: "—"}/MD5 ${op.serverContentHash?.take(8) ?: "—"}"
+                                    },
+                                color = GameColors.textDim,
+                                fontSize = 11.sp,
+                            )
+                        }
+                        deviceSyncInspectionError?.let { error ->
+                            Text(
+                                text = "Falha na inspeção: $error",
+                                color = GameColors.text,
+                                fontSize = 12.sp,
+                            )
+                        }
+                        GameButton(
+                            label = if (deviceSyncExecutionLoading) "Sincronizando save…" else "Sincronizar save com RomM",
+                            onClick = {
+                                if (!deviceSyncExecutionLoading && local != null) {
+                                    deviceSyncExecutionLoading = true
+                                    deviceSyncExecution = null
+                                    deviceSyncExecutionError = null
+                                    detailScope.launch {
+                                        try {
+                                            val result = withContext(Dispatchers.IO) {
+                                                RomMDeviceSyncRunner.synchronizeLocalSave(
+                                                    context = context,
+                                                    romPath = local.path,
+                                                    coreId = chosenCoreId,
+                                                    platformSlug = entry.platform.slug,
+                                                )
+                                            }
+                                            deviceSyncExecution = result
+                                            GameLog.log(
+                                                "Device Sync",
+                                                "sincronização do save concluída para ${entry.title}; " +
+                                                    "upload=${result.uploaded}, download=${result.downloaded}, noOp=${result.noOp}, " +
+                                                    "conflict=${result.conflictsPreserved}, delete_ignored=${result.deletesIgnored}, " +
+                                                    "unknown_ignored=${result.unknownIgnored}, failed=${result.failed}",
+                                            )
+                                        } catch (error: CancellationException) {
+                                            deviceSyncExecutionLoading = false
+                                            throw error
+                                        } catch (error: Exception) {
+                                            deviceSyncExecutionError = error.message ?: "Não foi possível sincronizar o save com o RomM."
+                                            GameLog.error("Device Sync", "falha na sincronização do save de ${entry.title}", error)
+                                        } finally {
+                                            deviceSyncExecutionLoading = false
+                                        }
+                                    }
+                                }
+                            },
+                            enabled = !deviceSyncExecutionLoading && !deviceSyncInspectionLoading && !busy,
+                            primary = true,
+                            modifier = Modifier.width(260.dp),
+                        )
+                        deviceSyncExecution?.let { result ->
+                            Text(
+                                text = "Sincronização do save — ROM #${result.romId}: " +
+                                    "${result.uploaded} envio(s), ${result.downloaded} download(s), ${result.noOp} sem alteração.",
+                                color = GameColors.text,
+                                fontSize = 13.sp,
+                            )
+                            Text(
+                                text = "Conflitos preservados: ${result.conflictsPreserved} · " +
+                                    "exclusões recusadas: ${result.deletesIgnored} · " +
+                                    "operações desconhecidas: ${result.unknownIgnored} · falhas: ${result.failed}. " +
+                                    "Save states e artefatos não elegíveis não foram incluídos.",
+                                color = GameColors.textDim,
+                                fontSize = 12.sp,
+                            )
+                            if (result.conflictsPreserved > 0 && local != null) {
+                                Text(
+                                    "As versões local e remota foram preservadas. Escolha manter a versão local abaixo ou use o Histórico de SRAM para restaurar uma versão do RomM.",
+                                    color = GameColors.accent,
+                                    fontSize = 12.sp,
+                                )
+                                GameButton(
+                                    label = if (deviceSyncExecutionLoading) "Resolvendo conflito…" else "Manter versão local e publicar no RomM",
+                                    onClick = {
+                                        if (!deviceSyncExecutionLoading) {
+                                            deviceSyncExecutionLoading = true
+                                            detailScope.launch {
+                                                try {
+                                                    val message = RomMDeviceSyncRunner.resolveConflictKeepLocal(
+                                                        context = context,
+                                                        romPath = local.path,
+                                                        coreId = chosenCoreId,
+                                                        platformSlug = entry.platform.slug,
+                                                    )
+                                                    saveVersionRestoreMessage = message
+                                                    deviceSyncExecution = result.copy(
+                                                        conflictsPreserved = 0,
+                                                        uploaded = result.uploaded + 1,
+                                                    )
+                                                } catch (error: CancellationException) {
+                                                    throw error
+                                                } catch (error: Exception) {
+                                                    saveVersionRestoreMessage = error.message ?: "Não foi possível resolver o conflito."
+                                                    GameLog.error("Device Sync", "falha na resolução explícita do conflito de ${entry.title}", error)
+                                                } finally {
+                                                    deviceSyncExecutionLoading = false
+                                                }
+                                            }
+                                        }
+                                    },
+                                    enabled = !deviceSyncExecutionLoading && !busy,
+                                    primary = true,
+                                    modifier = Modifier.width(300.dp),
+                                )
+                            }
+                        }
+                        deviceSyncExecutionError?.let { error ->
+                            Text(
+                                text = "Falha na sincronização save: $error",
+                                color = GameColors.danger,
+                                fontSize = 12.sp,
                             )
                         }
                     }
-                    deviceSyncExecutionError?.let { error ->
-                        Text(
-                            text = "Falha na sincronização save: $error",
-                            color = GameColors.danger,
-                            fontSize = 12.sp,
-                        )
-                    }
-                }
                 }
                 if (local != null && coreUpdateAvailable == true) {
                     GameButton(
@@ -1357,98 +1357,98 @@ internal fun GameDetailScreen(
                     )
                 }
                 if (selectedDetailTab == "overview") {
-                Row(horizontalArrangement = Arrangement.spacedBy(28.dp), modifier = Modifier.padding(top = 8.dp)) {
-                    Stat(stringResource(R.string.game_stat_playtime), formatPlaytime(history.playtimeMs))
-                    Stat(
-                        stringResource(R.string.game_stat_last_played),
-                        if (history.played) {
-                            DateFormat.getDateInstance(DateFormat.MEDIUM).format(Date(history.lastPlayedMs))
-                        } else {
-                            stringResource(R.string.game_never_played)
-                        },
-                    )
-                    Stat(stringResource(R.string.game_stat_origin), stringResource(if (group != null) R.string.game_origin_server else R.string.game_origin_local))
-                }
-                coreUpdateMessage?.let { message ->
-                    Text(text = message, color = GameColors.textDim, fontSize = 12.sp)
-                }
-                if (!summary.isNullOrBlank()) {
-                    Column(
-                        verticalArrangement = Arrangement.spacedBy(5.dp),
-                        modifier = Modifier.padding(top = 8.dp).width(520.dp),
-                    ) {
-                        Text("Descrição", color = GameColors.text, fontSize = 16.sp, fontWeight = FontWeight.Bold)
-                        Text(
-                            text = summary,
-                            color = GameColors.textDim,
-                            fontSize = 14.sp,
-                            lineHeight = 20.sp,
+                    Row(horizontalArrangement = Arrangement.spacedBy(28.dp), modifier = Modifier.padding(top = 8.dp)) {
+                        Stat(stringResource(R.string.game_stat_playtime), formatPlaytime(history.playtimeMs))
+                        Stat(
+                            stringResource(R.string.game_stat_last_played),
+                            if (history.played) {
+                                DateFormat.getDateInstance(DateFormat.MEDIUM).format(Date(history.lastPlayedMs))
+                            } else {
+                                stringResource(R.string.game_never_played)
+                            },
+                        )
+                        Stat(stringResource(R.string.game_stat_origin), stringResource(if (group != null) R.string.game_origin_server else R.string.game_origin_local))
+                    }
+                    coreUpdateMessage?.let { message ->
+                        Text(text = message, color = GameColors.textDim, fontSize = 12.sp)
+                    }
+                    if (!summary.isNullOrBlank()) {
+                        Column(
+                            verticalArrangement = Arrangement.spacedBy(5.dp),
+                            modifier = Modifier.padding(top = 8.dp).width(520.dp),
+                        ) {
+                            Text("Descrição", color = GameColors.text, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                            Text(
+                                text = summary,
+                                color = GameColors.textDim,
+                                fontSize = 14.sp,
+                                lineHeight = 20.sp,
+                            )
+                        }
+                    }
+                    detailGames.firstOrNull()?.let { remoteGame ->
+                        RomMGameDataPanel(
+                            game = remoteGame,
+                            localPlaytimeMs = history.playtimeMs,
+                            localLastPlayedMs = history.lastPlayedMs,
                         )
                     }
-                }
-                detailGames.firstOrNull()?.let { remoteGame ->
-                    RomMGameDataPanel(
-                        game = remoteGame,
-                        localPlaytimeMs = history.playtimeMs,
-                        localLastPlayedMs = history.lastPlayedMs,
-                    )
-                }
-                if (isEasyRpgGame) {
-                    Column(verticalArrangement = Arrangement.spacedBy(3.dp), modifier = Modifier.padding(top = 8.dp)) {
-                        Text(
-                            "EasyRPG · jogo de RPG Maker 2000/2003",
-                            color = GameColors.accent,
-                            fontSize = 13.sp,
-                        )
-                        Text(
-                            "A sincronização dos saves nativos .lsd ainda não foi validada no Tandem.",
-                            color = GameColors.textDim,
-                            fontSize = 11.sp,
-                        )
-                    }
-                }
-                }
-                if (selectedDetailTab == "romm") {
-                detailGames.firstOrNull()?.let { remoteGame ->
-                    RomMMediaPanel(games = detailGames)
-                }
-                if (metadataText.isNotBlank()) {
-                    Column(verticalArrangement = Arrangement.spacedBy(3.dp), modifier = Modifier.padding(top = 8.dp).width(520.dp)) {
-                        Text("Metadados do RomM", color = GameColors.text, fontSize = 16.sp, fontWeight = FontWeight.Bold)
-                        Text(metadataText, color = GameColors.textDim, fontSize = 12.sp)
-                    }
-                }
-                if (personalDataText.isNotBlank()) {
-                    Column(verticalArrangement = Arrangement.spacedBy(3.dp), modifier = Modifier.padding(top = 8.dp).width(520.dp)) {
-                        Text("Dados pessoais no RomM", color = GameColors.text, fontSize = 16.sp, fontWeight = FontWeight.Bold)
-                        Text(personalDataText, color = GameColors.textDim, fontSize = 12.sp)
-                    }
-                }
-                }
-                if (selectedDetailTab == "files") {
-                if (rommIdentityText.isNotBlank()) {
-                    Column(verticalArrangement = Arrangement.spacedBy(3.dp), modifier = Modifier.padding(top = 8.dp).width(520.dp)) {
-                        Text("Identificação e versões RomM", color = GameColors.text, fontSize = 16.sp, fontWeight = FontWeight.Bold)
-                        Text(rommIdentityText, color = GameColors.textDim, fontSize = 12.sp)
-                    }
-                }
-                if (associatedFiles.isNotEmpty()) {
-                    Column(verticalArrangement = Arrangement.spacedBy(3.dp), modifier = Modifier.padding(top = 8.dp).width(520.dp)) {
-                        Text("Arquivos associados do RomM", color = GameColors.text, fontSize = 16.sp, fontWeight = FontWeight.Bold)
-                        associatedFiles.forEach { file ->
-                            val category = file.category?.replaceFirstChar { it.uppercase() } ?: "Jogo"
-                            val size = if (file.sizeBytes > 0L) " · ${file.sizeBytes / 1024} KB" else ""
-                            val level = if (file.isTopLevel) " · Principal" else ""
-                            val fileId = " · ID ${file.id}"
-                            val hashes = listOfNotNull(
-                                file.crcHash?.let { "CRC $it" },
-                                file.md5Hash?.let { "MD5 $it" },
-                                file.sha1Hash?.let { "SHA-1 $it" },
-                            ).joinToString(" · ").let { if (it.isBlank()) "" else " · $it" }
-                            Text("$category · ${file.fileName}$size$level$fileId$hashes", color = GameColors.textDim, fontSize = 11.sp)
+                    if (isEasyRpgGame) {
+                        Column(verticalArrangement = Arrangement.spacedBy(3.dp), modifier = Modifier.padding(top = 8.dp)) {
+                            Text(
+                                "EasyRPG · jogo de RPG Maker 2000/2003",
+                                color = GameColors.accent,
+                                fontSize = 13.sp,
+                            )
+                            Text(
+                                "A sincronização dos saves nativos .lsd ainda não foi validada no Tandem.",
+                                color = GameColors.textDim,
+                                fontSize = 11.sp,
+                            )
                         }
                     }
                 }
+                if (selectedDetailTab == "romm") {
+                    detailGames.firstOrNull()?.let { remoteGame ->
+                        RomMMediaPanel(games = detailGames)
+                    }
+                    if (metadataText.isNotBlank()) {
+                        Column(verticalArrangement = Arrangement.spacedBy(3.dp), modifier = Modifier.padding(top = 8.dp).width(520.dp)) {
+                            Text("Metadados do RomM", color = GameColors.text, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                            Text(metadataText, color = GameColors.textDim, fontSize = 12.sp)
+                        }
+                    }
+                    if (personalDataText.isNotBlank()) {
+                        Column(verticalArrangement = Arrangement.spacedBy(3.dp), modifier = Modifier.padding(top = 8.dp).width(520.dp)) {
+                            Text("Dados pessoais no RomM", color = GameColors.text, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                            Text(personalDataText, color = GameColors.textDim, fontSize = 12.sp)
+                        }
+                    }
+                }
+                if (selectedDetailTab == "files") {
+                    if (rommIdentityText.isNotBlank()) {
+                        Column(verticalArrangement = Arrangement.spacedBy(3.dp), modifier = Modifier.padding(top = 8.dp).width(520.dp)) {
+                            Text("Identificação e versões RomM", color = GameColors.text, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                            Text(rommIdentityText, color = GameColors.textDim, fontSize = 12.sp)
+                        }
+                    }
+                    if (associatedFiles.isNotEmpty()) {
+                        Column(verticalArrangement = Arrangement.spacedBy(3.dp), modifier = Modifier.padding(top = 8.dp).width(520.dp)) {
+                            Text("Arquivos associados do RomM", color = GameColors.text, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                            associatedFiles.forEach { file ->
+                                val category = file.category?.replaceFirstChar { it.uppercase() } ?: "Jogo"
+                                val size = if (file.sizeBytes > 0L) " · ${file.sizeBytes / 1024} KB" else ""
+                                val level = if (file.isTopLevel) " · Principal" else ""
+                                val fileId = " · ID ${file.id}"
+                                val hashes = listOfNotNull(
+                                    file.crcHash?.let { "CRC $it" },
+                                    file.md5Hash?.let { "MD5 $it" },
+                                    file.sha1Hash?.let { "SHA-1 $it" },
+                                ).joinToString(" · ").let { if (it.isBlank()) "" else " · $it" }
+                                Text("$category · ${file.fileName}$size$level$fileId$hashes", color = GameColors.textDim, fontSize = 11.sp)
+                            }
+                        }
+                    }
                 }
                 if (selectedDetailTab == "romm" && noteGames.isNotEmpty()) {
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(top = 8.dp).width(520.dp)) {
@@ -1480,13 +1480,13 @@ internal fun GameDetailScreen(
                     }
                 }
                 if (selectedDetailTab == "overview") {
-                AchievementSummaryRow(
-                    platform = entry.platform,
-                    hasLocal = local != null,
-                    entries = achievements,
-                    onOpen = { showAchievements = true },
-                )
-                local?.let { Text(text = it.path, color = GameColors.textDim, fontSize = 12.sp, modifier = Modifier.padding(top = 8.dp)) }
+                    AchievementSummaryRow(
+                        platform = entry.platform,
+                        hasLocal = local != null,
+                        entries = achievements,
+                        onOpen = { showAchievements = true },
+                    )
+                    local?.let { Text(text = it.path, color = GameColors.textDim, fontSize = 12.sp, modifier = Modifier.padding(top = 8.dp)) }
                 }
             }
         }
