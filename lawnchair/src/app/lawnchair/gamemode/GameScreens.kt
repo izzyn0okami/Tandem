@@ -731,12 +731,16 @@ private fun HeroSection(
                     enabled = !busy,
                     modifier = Modifier.width(140.dp).focusRequester(focus),
                 )
-                GameButton(label = stringResource(R.string.game_details), onClick = onDetails, modifier = Modifier.width(120.dp))
+                GameIconButton(
+                    label = stringResource(R.string.game_details),
+                    symbol = "ⓘ",
+                    onClick = onDetails,
+                )
                 if (showThemeButton) {
-                    GameButton(
+                    GameIconButton(
                         label = stringResource(if (themePlaying) R.string.game_theme_stop else R.string.game_theme_play),
+                        symbol = if (themePlaying) "Ⅱ" else "♫",
                         onClick = onToggleTheme,
-                        modifier = Modifier.width(170.dp),
                     )
                 }
             }
