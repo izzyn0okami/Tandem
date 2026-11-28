@@ -23,8 +23,8 @@ RESULTADO EXECUTIVO
 [CONFIRMADO] O painel de opções do núcleo é atualmente uma janela central flutuante, com largura fixa de até 560dp e altura de 92% da tela. As opções são agrupadas por heurística de palavras-chave, mas todas continuam na mesma lista.
 [CONFIRMADO] Os avisos RA já são serializados em fila para evitar sobreposição; desbloqueios, Mastery/Completed e mensagens textuais usam componentes de overlay. Porém, os cartões de conquista e Mastery ocupavam largura e altura excessivas para uma notificação durante a partida.
 [IMPLEMENTADO NESTA BRANCH] Redução do tamanho dos popups de desbloqueio, Mastery/Completed e mensagens RA em RaBadge.kt. As dimensões máximas, espaçamentos, ícones e tipografia foram reduzidos para uma apresentação mais discreta.
-[PENDENTE] Reorganizar a navegação geral, converter o painel flutuante dos núcleos em navegação por menus/telas independentes, padronizar ações em botões de ícone, ampliar a exibição dos metadados RomM e converter mensagens inline do menu inicial em popups/snackbars.
-[PENDENTE] Build/CI, revisão visual em aparelho e teste com toque e gamepad.
+[IMPLEMENTADO PARCIALMENTE] Configurações agora são organizadas em seis categorias; opções dos núcleos usam menus em tela cheia; mensagens de status/erro do menu inicial usam Snackbar; metadados são agregados entre versões e exibem todos os títulos/IDs/arquivos/checksums; há um botão de ícone acessível reutilizável. A navegação principal fora de Configurações e a padronização das demais telas ainda estão pendentes.
+[EM ANDAMENTO] CI #46094482305 (head aafe763ad6f84d3a20195a8172098e63cec33c40). Revisão visual em aparelho e teste com toque/gamepad ainda pendentes.
 
 1. NAVEGAÇÃO GLOBAL E CATEGORIAS
 Arquivos principais: GameModeActivity.kt, GameScreens.kt, RomMScreen.kt, BiosScreen.kt, CoresScreen.kt, EmulatorsScreen.kt, FoldersScreen.kt e ScraperScreen.kt.
@@ -161,16 +161,24 @@ Proposta:
 [✓] Identificar campos de metadados já consumidos nos detalhes dos jogos.
 [✓] Criar branch isolada para a reformulação.
 [✓] Reduzir dimensões dos popups RA (commit d73c6965c4230b529355d9268167e5a9c3f8520b).
-[ ] Reestruturar navegação principal por categorias.
-[ ] Transformar opções de núcleo em duas telas de menu, sem janela flutuante.
-[ ] Converter avisos curtos do menu inicial em popups/snackbars.
-[ ] Expandir detalhes para todos os metadados disponíveis no RomM.
-[ ] Padronizar botões de ícone e acessibilidade.
+[ ] Reestruturar navegação principal fora da área Configurações e revisar menus redundantes.
+[✓] Transformar opções de núcleo em menu de categorias + telas de opções, sem janela flutuante (PR #65).
+[✓] Converter avisos curtos e erros do menu inicial em Snackbar/Popup (PR #65).
+[✓] Agregar metadados de todas as versões, exibir títulos alternativos e IDs sem limite e mostrar checksums dos arquivos (PR #65).
+[✓] Criar botão de ícone acessível e aplicá-lo aos retornos e categorias de configurações (PR #65).
+[✓] Organizar Configurações em seis categorias independentes (PR #65).
 [ ] Remover redundâncias após confirmar cobertura funcional.
-[ ] Executar Spotless, testes unitários e assembleLawnWithQuickstepGithubDebug.
+[ ] Confirmar Spotless, testes unitários e assembleLawnWithQuickstepGithubDebug no HEAD final.
 [ ] Revisar artefato/assinatura e resultado da CI.
 [ ] Testar no Motorola Edge 30 Fusion: navegação por toque e gamepad, detalhes, metadados, opções de núcleos, RA, mensagens e telas em paisagem.
 [ ] Atualizar este log após cada CI/PR concluída com sucesso.
+
+ATUALIZAÇÃO DE IMPLEMENTAÇÃO — 2026-11-27
+- PR #65 aberta em Draft: https://github.com/izzyn0okami/Tandem/pull/65.
+- Commits de UI nesta branch: redução de popups RA; menus independentes de opções de núcleo; Snackbar para status do menu inicial; metadados agregados e arquivos com checksums; categorias de Configurações; botão de ícone com descrição acessível.
+- A branch tandem-latest não existe no repositório consultado (API retornou 404); a PR usa game-mode-m2-dev, branch padrão atual.
+- CI mais recente observada no momento da atualização: run 46094482305, ainda em andamento. Não registrar sucesso até conclusão real.
+- Nenhuma mesclagem foi feita. A PR permanece Draft e depende de CI e teste no aparelho.
 
 10. CRITÉRIO DE CONCLUSÃO
 A auditoria só será encerrada quando todas as pendências acima estiverem implementadas ou justificadas, a CI passar, a revisão de regressão estiver concluída e o usuário validar o APK no aparelho. Não mesclar automaticamente para release.
