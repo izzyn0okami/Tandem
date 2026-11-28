@@ -103,8 +103,8 @@ fun FocusSurface(
 fun GameScreenHeader(
     title: String,
     onBack: () -> Unit,
-    subtitle: String? = null,
     modifier: Modifier = Modifier,
+    subtitle: String? = null,
 ) {
     Row(
         modifier = modifier.fillMaxWidth().padding(bottom = 6.dp),
